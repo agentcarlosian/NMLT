@@ -1,0 +1,58 @@
+// Design fixture: syntax and semantics are not yet stable.
+
+enum Phase {
+  proposed,
+  authorized,
+  dispatched,
+  effect_confirmed,
+  evaluated,
+  selected,
+  rejected,
+  indeterminate,
+}
+
+system ProviderAttempt {
+  state phase: Phase = proposed
+  state bound: Bool = false
+  state armed: Bool = false
+  state dispatch_count: Nat = 0
+  state response_intact: Bool = false
+  state evaluation_passed: Bool = false
+
+  capability provider_call: Once<ProviderEffect>
+
+  action bind {
+    require phase == proposed
+    set bound = true
+    set phase = authorized
+  }
+
+  action arm {
+    require phase == authorized and bound
+    set armed = true
+  }
+
+  action dispatch {
+    require phase == authorized and bound and armed
+    require dispatch_count == 0
+    consume provider_call
+    set dispatch_count = 1
+    set phase = dispatched
+  }
+
+  action lose_response {
+    require phase == dispatched
+    set phase = indeterminate
+  }
+
+  safety DispatchRequiresArm =
+    always(dispatch_count > 0 implies bound and armed)
+
+  safety SelectionRequiresPassingEvidence =
+    always(phase == selected implies response_intact and evaluation_passed)
+
+  temporal NoBlindReplay =
+    always(phase == indeterminate implies next(not enabled(dispatch)))
+
+  observe phase, dispatch_count, response_intact, evaluation_passed
+}

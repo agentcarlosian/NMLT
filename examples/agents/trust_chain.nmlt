@@ -1,0 +1,31 @@
+// Design fixture for trust that must remain traceable to an authority grant.
+
+enum Trust {
+  untrusted,
+  agent_attested,
+  human_granted,
+}
+
+system AgentTrustChain {
+  state messages: Seq<Message> = []
+  state executed: Set<ActionId> = {}
+
+  port input requests: Message
+  port output effects: Action
+
+  action forward(message: Message, receiver: Agent) {
+    require authorized_scope(message) covers receiver
+    emit requests(message with receiver = receiver)
+  }
+
+  action execute(action: Action) {
+    require provenance(action).trust == human_granted
+    require provenance(action).scope covers action
+    set executed = executed union {action.id}
+    emit effects(action)
+  }
+
+  safety NoSilentAuthorityWidening =
+    always(forall action in executed:
+      provenance(action).trust == human_granted)
+}

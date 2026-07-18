@@ -1,0 +1,8 @@
+// Expected after semantic checking: SelectionRequiresPass is refuted.
+system PassingSelectionMutant {
+  state phase: Phase = evaluated
+  state passed: Bool = false
+
+  action select { set phase = selected }
+  safety SelectionRequiresPass = always(phase == selected implies passed)
+}

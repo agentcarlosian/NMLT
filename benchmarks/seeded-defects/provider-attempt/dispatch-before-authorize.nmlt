@@ -1,0 +1,9 @@
+// Expected after semantic checking: DispatchRequiresArm is refuted.
+system DispatchBeforeAuthorizeMutant {
+  state phase: Phase = proposed
+  state armed: Bool = false
+  state dispatched: Bool = false
+
+  action dispatch { set dispatched = true }
+  safety DispatchRequiresArm = always(dispatched implies armed)
+}

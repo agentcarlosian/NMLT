@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/evidence-manifest.schema.json",
+  "title": "NMLT evidence manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "artifact",
+    "claim",
+    "result",
+    "method",
+    "assumptions",
+    "negative_controls",
+    "residual_gaps"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.1.0" },
+    "manifest_id": { "type": "string", "minLength": 1 },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^[a-z0-9_-]+:[A-Fa-f0-9]+$" }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "enum": [
+            "well_formedness",
+            "type_safety",
+            "behavioral_safety",
+            "behavioral_liveness",
+            "refinement",
+            "resource_bound",
+            "evidence_integrity",
+            "other"
+          ]
+        }
+      }
+    },
+    "result": {
+      "enum": [
+        "proved",
+        "model_checked",
+        "tested",
+        "monitored",
+        "refuted",
+        "unknown",
+        "indeterminate"
+      ]
+    },
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "engine": { "type": "string", "minLength": 1 },
+        "engine_version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bounds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "observations": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "trusted_components": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "certificate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "reference"],
+      "properties": {
+        "format": { "type": "string", "minLength": 1 },
+        "reference": { "type": "string", "minLength": 1 }
+      }
+    },
+    "witness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "reference"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "reference": { "type": "string", "minLength": 1 }
+      }
+    },
+    "negative_controls": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "residual_gaps": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "result": { "const": "model_checked" } },
+        "required": ["result"]
+      },
+      "then": {
+        "required": ["scope"],
+        "properties": {
+          "scope": {
+            "required": ["bounds"],
+            "properties": { "bounds": { "minItems": 1 } }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "result": { "const": "proved" } },
+        "required": ["result"]
+      },
+      "then": { "required": ["certificate"] }
+    }
+  ]
+}

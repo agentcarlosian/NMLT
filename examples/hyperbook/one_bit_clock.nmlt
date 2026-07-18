@@ -1,0 +1,14 @@
+// Design fixture inspired by the one-bit clock teaching example.
+
+system OneBitClock {
+  state bit: Bool = false
+
+  action tick {
+    set bit = not bit
+  }
+
+  safety BooleanState = always(bit == true or bit == false)
+  temporal KeepsTicking = fair(tick) implies always(eventually(changed(bit)))
+
+  observe bit
+}

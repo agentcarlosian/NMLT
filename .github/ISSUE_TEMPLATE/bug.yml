@@ -1,0 +1,38 @@
+name: Bug report
+description: Report incorrect implemented behavior in NMLT tooling.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not report exploitable security issues publicly; see SECURITY.md.
+  - type: input
+    id: revision
+    attributes:
+      label: Revision
+      description: Commit or exact source revision.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior and basis
+      description: Include the RFC, test, or documented contract when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence class and residual uncertainty

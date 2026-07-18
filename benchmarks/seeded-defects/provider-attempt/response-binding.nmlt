@@ -1,0 +1,9 @@
+// Expected after semantic checking: EvaluationRequiresIntactResponse is refuted.
+system ResponseBindingMutant {
+  state phase: Phase = dispatched
+  state response_intact: Bool = false
+
+  action evaluate { set phase = evaluated }
+  safety EvaluationRequiresIntactResponse =
+    always(phase == evaluated implies response_intact)
+}

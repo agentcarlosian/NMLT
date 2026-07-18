@@ -1,0 +1,11 @@
+// Expected after semantic checking: NoBlindReplay is refuted.
+system BlindReplayMutant {
+  state phase: Phase = dispatched
+  state dispatch_count: Nat = 1
+
+  action lose_response { set phase = indeterminate }
+  action dispatch { require phase == indeterminate; set dispatch_count = dispatch_count + 1 }
+
+  temporal NoBlindReplay =
+    always(phase == indeterminate implies next(not enabled(dispatch)))
+}

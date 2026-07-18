@@ -1,0 +1,17 @@
+[package]
+name = "nmlt-cli"
+description = "Command-line frontend for NMLT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "nmlt"
+path = "src/main.rs"
+
+[dependencies]
+nmlt-core = { path = "../nmlt-core" }
+
+[lints]
+workspace = true

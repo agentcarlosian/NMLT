@@ -1,0 +1,52 @@
+{
+  "schema_version": "0.1.0",
+  "suite_id": "provider-attempt-seeded-defects-v1",
+  "description": "Reference lifecycle plus four independent semantic mutants.",
+  "cases": [
+    {
+      "id": "provider-attempt-reference",
+      "path": "seeded-defects/provider-attempt/reference.nmlt",
+      "class": "reference",
+      "property": "all provider-attempt safety claims",
+      "expected": "accepted",
+      "support": "planned",
+      "origin": "Technicusverus provider-attempt model"
+    },
+    {
+      "id": "dispatch-before-authorize",
+      "path": "seeded-defects/provider-attempt/dispatch-before-authorize.nmlt",
+      "class": "semantic_mutant",
+      "property": "DispatchRequiresArm",
+      "expected": "refuted",
+      "support": "planned",
+      "origin": "Technicusverus negative control"
+    },
+    {
+      "id": "blind-replay",
+      "path": "seeded-defects/provider-attempt/blind-replay.nmlt",
+      "class": "semantic_mutant",
+      "property": "NoBlindReplay",
+      "expected": "refuted",
+      "support": "planned",
+      "origin": "Technicusverus negative control"
+    },
+    {
+      "id": "response-binding",
+      "path": "seeded-defects/provider-attempt/response-binding.nmlt",
+      "class": "semantic_mutant",
+      "property": "EvaluationRequiresIntactResponse",
+      "expected": "refuted",
+      "support": "planned",
+      "origin": "Technicusverus negative control"
+    },
+    {
+      "id": "passing-selection",
+      "path": "seeded-defects/provider-attempt/passing-selection.nmlt",
+      "class": "semantic_mutant",
+      "property": "SelectionRequiresPass",
+      "expected": "refuted",
+      "support": "planned",
+      "origin": "Technicusverus negative control"
+    }
+  ]
+}

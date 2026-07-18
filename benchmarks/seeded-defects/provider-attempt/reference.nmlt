@@ -1,0 +1,18 @@
+// Expected after semantic checking: accepted.
+system ProviderAttemptReference {
+  state phase: Phase = proposed
+  state armed: Bool = false
+  state dispatched: Bool = false
+  state response_intact: Bool = false
+  state passed: Bool = false
+
+  action arm { require phase == authorized; set armed = true }
+  action dispatch { require armed; set dispatched = true }
+  action evaluate { require response_intact; set phase = evaluated }
+  action select { require passed; set phase = selected }
+
+  safety DispatchRequiresArm = always(dispatched implies armed)
+  safety EvaluationRequiresIntactResponse =
+    always(phase == evaluated implies response_intact)
+  safety SelectionRequiresPass = always(phase == selected implies passed)
+}
