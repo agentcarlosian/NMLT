@@ -1,19 +1,7 @@
 use std::collections::BTreeSet;
 
+use crate::lexer::{Token, TokenKind, lex_source};
 use crate::{Diagnostic, Span};
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-enum TokenKind {
-    Identifier(String),
-    LeftBrace,
-    RightBrace,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct Token {
-    kind: TokenKind,
-    span: Span,
-}
 
 /// A structurally recognized top-level system declaration.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -28,7 +16,7 @@ pub struct ParsedFile {
     pub systems: Vec<SystemDecl>,
 }
 
-/// Parse the structural shell of an NMLT source file.
+/// Parse the structural shell of an NMLT source file over the lossless lexer.
 ///
 /// Only top-level `system Name { ... }` declarations and delimiter integrity
 /// are checked. Successful parsing is not type checking or verification.
@@ -41,8 +29,17 @@ pub fn parse_source(source: &str) -> Result<ParsedFile, Vec<Diagnostic>> {
         )]);
     }
 
-    let tokens = lex(source)?;
-    let mut diagnostics = validate_braces(&tokens);
+    let lexed = lex_source(source);
+    if !lexed.diagnostics.is_empty() {
+        return Err(lexed.diagnostics);
+    }
+
+    let tokens = lexed
+        .tokens
+        .iter()
+        .filter(|token| !token.kind.is_trivia())
+        .collect::<Vec<_>>();
+    let mut diagnostics = validate_delimiters(&tokens);
     if !diagnostics.is_empty() {
         return Err(diagnostics);
     }
@@ -52,11 +49,7 @@ pub fn parse_source(source: &str) -> Result<ParsedFile, Vec<Diagnostic>> {
     let mut index = 0;
 
     while index < tokens.len() {
-        let TokenKind::Identifier(keyword) = &tokens[index].kind else {
-            index += 1;
-            continue;
-        };
-        if keyword != "system" {
+        if tokens[index].kind != TokenKind::Identifier || tokens[index].text(source) != "system" {
             index += 1;
             continue;
         }
@@ -69,7 +62,7 @@ pub fn parse_source(source: &str) -> Result<ParsedFile, Vec<Diagnostic>> {
             ));
             break;
         };
-        let TokenKind::Identifier(name) = &name_token.kind else {
+        if name_token.kind != TokenKind::Identifier {
             diagnostics.push(Diagnostic::error(
                 "NMLT0003",
                 "expected a system name after `system`",
@@ -77,11 +70,12 @@ pub fn parse_source(source: &str) -> Result<ParsedFile, Vec<Diagnostic>> {
             ));
             index += 1;
             continue;
-        };
+        }
+        let name = name_token.text(source);
 
         let Some(open_index) = tokens[index + 2..]
             .iter()
-            .position(|token| matches!(token.kind, TokenKind::LeftBrace))
+            .position(|token| token.kind == TokenKind::LeftBrace)
             .map(|offset| index + 2 + offset)
         else {
             diagnostics.push(Diagnostic::error(
@@ -93,10 +87,10 @@ pub fn parse_source(source: &str) -> Result<ParsedFile, Vec<Diagnostic>> {
         };
 
         let close_index = matching_right_brace(&tokens, open_index)
-            .expect("brace validation guarantees a matching delimiter");
+            .expect("delimiter validation guarantees a matching delimiter");
         let declaration_span = Span::new(tokens[index].span.start, tokens[close_index].span.end);
 
-        if !names.insert(name.clone()) {
+        if !names.insert(name.to_owned()) {
             diagnostics.push(Diagnostic::error(
                 "NMLT0006",
                 format!("duplicate system declaration `{name}`"),
@@ -104,7 +98,7 @@ pub fn parse_source(source: &str) -> Result<ParsedFile, Vec<Diagnostic>> {
             ));
         } else {
             systems.push(SystemDecl {
-                name: name.clone(),
+                name: name.to_owned(),
                 span: declaration_span,
             });
         }
@@ -126,127 +120,69 @@ pub fn parse_source(source: &str) -> Result<ParsedFile, Vec<Diagnostic>> {
     }
 }
 
-fn lex(source: &str) -> Result<Vec<Token>, Vec<Diagnostic>> {
-    let bytes = source.as_bytes();
-    let mut tokens = Vec::new();
-    let mut index = 0;
-
-    while index < bytes.len() {
-        match bytes[index] {
-            b'/' if bytes.get(index + 1) == Some(&b'/') => {
-                index += 2;
-                while index < bytes.len() && bytes[index] != b'\n' {
-                    index += 1;
-                }
-            }
-            b'/' if bytes.get(index + 1) == Some(&b'*') => {
-                let start = index;
-                index += 2;
-                let mut closed = false;
-                while index + 1 < bytes.len() {
-                    if bytes[index] == b'*' && bytes[index + 1] == b'/' {
-                        index += 2;
-                        closed = true;
-                        break;
-                    }
-                    index += 1;
-                }
-                if !closed {
-                    return Err(vec![Diagnostic::error(
-                        "NMLT0007",
-                        "unterminated block comment",
-                        Some(Span::new(start, bytes.len())),
-                    )]);
-                }
-            }
-            b'"' => {
-                let start = index;
-                index += 1;
-                let mut closed = false;
-                while index < bytes.len() {
-                    match bytes[index] {
-                        b'\\' => index = (index + 2).min(bytes.len()),
-                        b'"' => {
-                            index += 1;
-                            closed = true;
-                            break;
-                        }
-                        _ => index += 1,
-                    }
-                }
-                if !closed {
-                    return Err(vec![Diagnostic::error(
-                        "NMLT0008",
-                        "unterminated string literal",
-                        Some(Span::new(start, bytes.len())),
-                    )]);
-                }
-            }
-            b'{' => {
-                tokens.push(Token {
-                    kind: TokenKind::LeftBrace,
-                    span: Span::new(index, index + 1),
-                });
-                index += 1;
-            }
-            b'}' => {
-                tokens.push(Token {
-                    kind: TokenKind::RightBrace,
-                    span: Span::new(index, index + 1),
-                });
-                index += 1;
-            }
-            byte if byte.is_ascii_alphabetic() || byte == b'_' => {
-                let start = index;
-                index += 1;
-                while index < bytes.len()
-                    && (bytes[index].is_ascii_alphanumeric() || bytes[index] == b'_')
-                {
-                    index += 1;
-                }
-                tokens.push(Token {
-                    kind: TokenKind::Identifier(source[start..index].to_owned()),
-                    span: Span::new(start, index),
-                });
-            }
-            _ => index += 1,
-        }
-    }
-
-    Ok(tokens)
-}
-
-fn validate_braces(tokens: &[Token]) -> Vec<Diagnostic> {
+fn validate_delimiters(tokens: &[&Token]) -> Vec<Diagnostic> {
     let mut stack = Vec::new();
     let mut diagnostics = Vec::new();
 
     for token in tokens {
-        match token.kind {
-            TokenKind::LeftBrace => stack.push(token.span),
-            TokenKind::RightBrace => {
-                if stack.pop().is_none() {
-                    diagnostics.push(Diagnostic::error(
-                        "NMLT0002",
-                        "unmatched closing brace",
-                        Some(token.span),
-                    ));
-                }
-            }
-            TokenKind::Identifier(_) => {}
+        if is_open(token.kind) {
+            stack.push((token.kind, token.span));
+            continue;
+        }
+        if !is_close(token.kind) {
+            continue;
+        }
+        let Some((open, _)) = stack.pop() else {
+            diagnostics.push(Diagnostic::error(
+                "NMLT0002",
+                "unmatched closing delimiter",
+                Some(token.span),
+            ));
+            continue;
+        };
+        if matching_close(open) != token.kind {
+            diagnostics.push(Diagnostic::error(
+                "NMLT0002",
+                "mismatched closing delimiter",
+                Some(token.span),
+            ));
         }
     }
 
-    for span in stack {
+    for (_, span) in stack {
         diagnostics.push(Diagnostic::error(
             "NMLT0002",
-            "unclosed opening brace",
+            "unclosed opening delimiter",
             Some(span),
         ));
     }
     diagnostics
 }
 
-fn matching_right_brace(tokens: &[Token], open_index: usize) -> Option<usize> {
+fn is_open(kind: TokenKind) -> bool {
+    matches!(
+        kind,
+        TokenKind::LeftBrace | TokenKind::LeftParen | TokenKind::LeftBracket
+    )
+}
+
+fn is_close(kind: TokenKind) -> bool {
+    matches!(
+        kind,
+        TokenKind::RightBrace | TokenKind::RightParen | TokenKind::RightBracket
+    )
+}
+
+fn matching_close(kind: TokenKind) -> TokenKind {
+    match kind {
+        TokenKind::LeftBrace => TokenKind::RightBrace,
+        TokenKind::LeftParen => TokenKind::RightParen,
+        TokenKind::LeftBracket => TokenKind::RightBracket,
+        _ => unreachable!("only opening delimiters are stacked"),
+    }
+}
+
+fn matching_right_brace(tokens: &[&Token], open_index: usize) -> Option<usize> {
     let mut depth = 0;
     for (index, token) in tokens.iter().enumerate().skip(open_index) {
         match token.kind {
@@ -257,7 +193,7 @@ fn matching_right_brace(tokens: &[Token], open_index: usize) -> Option<usize> {
                     return Some(index);
                 }
             }
-            TokenKind::Identifier(_) => {}
+            _ => {}
         }
     }
     None
@@ -290,9 +226,11 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unbalanced_braces() {
-        let diagnostics = parse_source("system Broken {").unwrap_err();
-        assert!(diagnostics.iter().any(|item| item.code == "NMLT0002"));
+    fn rejects_unbalanced_or_mismatched_delimiters() {
+        for source in ["system Broken {", "system Broken { action x(] }"] {
+            let diagnostics = parse_source(source).unwrap_err();
+            assert!(diagnostics.iter().any(|item| item.code == "NMLT0002"));
+        }
     }
 
     #[test]

@@ -4,6 +4,7 @@ description = "Shared structural syntax, diagnostics, and evidence types for NML
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
 publish = false
 
 [lints]

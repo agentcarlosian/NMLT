@@ -1,0 +1,12 @@
+// Canonical C01: the smallest state/action/invariant example.
+
+system BooleanToggle {
+  state bit: Bool = false
+
+  action toggle {
+    set bit = not bit
+  }
+
+  safety BooleanClosure = always(bit == true or bit == false)
+  observe bit
+}

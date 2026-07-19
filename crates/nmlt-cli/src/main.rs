@@ -4,13 +4,14 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use nmlt_core::diagnostic::line_column;
-use nmlt_core::{Diagnostic, EvidenceManifest, ParsedFile, parse_source};
+use nmlt_core::{Diagnostic, EvidenceManifest, ParsedFile, lex_source, parse_source};
 
 const HELP: &str = "\
 NMLT structural frontend (pre-alpha)\n\n\
 Usage:\n\
   nmlt check <file>       Check structural system declarations\n\
   nmlt inspect <file>     List structurally recognized systems\n\
+  nmlt tokens <file>      Print the lossless Phase 1 token stream\n\
   nmlt evidence <file>    Emit an explicitly unknown evidence scaffold\n\
   nmlt version            Print the frontend version\n\
   nmlt help               Show this help\n\n\
@@ -52,6 +53,10 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             }
             Ok(())
         }
+        "tokens" => {
+            let path = single_path_argument(command, &arguments[1..])?;
+            print_tokens(&path)
+        }
         unknown => Err(format!("unknown command `{unknown}`\n\n{HELP}")),
     }
 }
@@ -74,6 +79,25 @@ fn load_and_parse(path: &Path) -> Result<ParsedFile, String> {
         Ok(parsed) => Ok(parsed),
         Err(diagnostics) => Err(render_diagnostics(path, &source, &diagnostics)),
     }
+}
+
+fn print_tokens(path: &Path) -> Result<(), String> {
+    let source = fs::read_to_string(path)
+        .map_err(|error| format!("could not read `{}`: {error}", path.display()))?;
+    let lexed = lex_source(&source);
+    if !lexed.diagnostics.is_empty() {
+        return Err(render_diagnostics(path, &source, &lexed.diagnostics));
+    }
+    for token in lexed.tokens {
+        println!(
+            "{}..{}\t{}\t{}",
+            token.span.start,
+            token.span.end,
+            token.kind,
+            token.text(&source).escape_debug()
+        );
+    }
+    Ok(())
 }
 
 fn render_diagnostics(path: &Path, source: &str, diagnostics: &[Diagnostic]) -> String {

@@ -39,6 +39,14 @@ refuted | unknown | indeterminate
 ## Schema
 
 The draft machine contract is `schemas/evidence-manifest.schema.json`.
+Canonical identity and serialization are governed by accepted RFC 0004 and
+`docs/artifact-identity.md`. Schema-valid legacy `structural:*` manifests are
+explicitly noncanonical and have a result ceiling of `unknown`.
+
+Every semantic result must bind a canonical source or source-set ID, claim ID,
+configuration ID, engine executable digest, and trusted-component identities.
+References to witnesses and certificates are content-addressed; paths are
+display metadata only.
 
 ## Negative controls
 
@@ -50,7 +58,6 @@ The draft machine contract is `schemas/evidence-manifest.schema.json`.
 
 ## Open questions
 
-- Canonical serialization and hashing rules.
-- Certificate storage versus content-addressed references.
 - Signature and transparency-log support.
 - Composition rules for evidence covering multiple claims and components.
+- Which checked certificate formats are accepted for each proof backend.

@@ -3,6 +3,13 @@
 NMLT is currently an early research project with a maintainer-led governance
 model. This document is expected to evolve before the first public release.
 
+## License stewardship
+
+The project is distributed under Apache License 2.0. Maintainers must preserve
+required notices and provenance, may not relicense accepted contributions
+without the rights and recorded decision to do so, and must review imported
+code or data for license compatibility before inclusion.
+
 ## Roles
 
 - **Maintainers** merge changes, accept RFCs, define releases, and protect the

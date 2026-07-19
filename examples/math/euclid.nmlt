@@ -1,0 +1,23 @@
+// Canonical C03: total arithmetic plus a terminating algorithmic behavior.
+
+system Euclid {
+  input left: PosNat
+  input right: PosNat
+
+  state x: PosNat = left
+  state y: PosNat = right
+
+  action reduce_left {
+    require x > y
+    set x = x - y
+  }
+
+  action reduce_right {
+    require y > x
+    set y = y - x
+  }
+
+  safety GcdPreserved = always(gcd(x, y) == gcd(left, right))
+  temporal Terminates = eventually(x == y)
+  observe x, y
+}

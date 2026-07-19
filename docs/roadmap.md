@@ -2,21 +2,22 @@
 
 Dates are planning ranges, not commitments. Advancement depends on exit gates.
 
-## Phase 0: charter and corpus
+## Phase 0: charter and corpus (complete 2026-07-18)
 
 - Freeze design principles and non-goals.
-- Select 15–20 canonical examples.
+- Freeze ten canonical examples for v1; expand only through a new corpus
+  version.
 - Establish RFC, decision, evidence, and benchmark formats.
 - Compare representative encodings with TLA+, Quint, and P.
 
 Exit: the proposed language has a clear negative space and testable thesis.
 
-## Phase 1: calculus
+## Phase 1: syntax and semantic skeleton (started 2026-07-18)
 
-- Define static, operational, and trace semantics.
+- Implement the accepted lossless lexical contract and green-tree design.
+- Define static, operational, and trace semantics from RFC 0001.
 - Select resource and capability algebra interfaces.
-- Define composition and refinement judgments.
-- Mechanize the initial metatheory.
+- Define and mechanize composition and refinement judgments.
 
 Exit: the kernel fragment has no known unsound placeholders.
 

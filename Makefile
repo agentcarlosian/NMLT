@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test examples ci
+.PHONY: help fmt fmt-check check lint test corpus examples comparisons ci
 
 help:
 	@echo "NMLT development targets"
@@ -7,7 +7,9 @@ help:
 	@echo "  check      Type-check the Rust workspace"
 	@echo "  lint       Run Clippy with warnings denied"
 	@echo "  test       Run all Rust tests"
-	@echo "  examples   Structurally check NMLT design fixtures"
+	@echo "  corpus     Verify frozen canonical source identities"
+	@echo "  examples   Structurally check all canonical NMLT fixtures"
+	@echo "  comparisons Validate NMLT and Quint; optionally TLC and P"
 	@echo "  ci         Run the complete local CI gate"
 
 fmt:
@@ -25,9 +27,15 @@ lint:
 test:
 	cargo test --workspace --all-targets
 
-examples:
-	cargo run --quiet -p nmlt-cli -- check examples/technicus/provider_attempt.nmlt
-	cargo run --quiet -p nmlt-cli -- check examples/hyperbook/one_bit_clock.nmlt
-	cargo run --quiet -p nmlt-cli -- check examples/agents/trust_chain.nmlt
+corpus:
+	python3 tools/canonical_examples.py
 
-ci: fmt-check check lint test examples
+examples:
+	@for source in $$(find examples -name '*.nmlt' -type f | sort); do \
+		cargo run --quiet -p nmlt-cli -- check "$$source"; \
+	done
+
+comparisons:
+	./tools/validate_comparisons.sh
+
+ci: fmt-check check lint test corpus examples comparisons

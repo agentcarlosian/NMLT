@@ -32,3 +32,18 @@ fn evidence_is_unknown() {
     assert!(stdout.contains("\"result\": \"unknown\""));
     assert!(stdout.contains("Only structural parsing ran."));
 }
+
+#[test]
+fn prints_lossless_tokens_including_trivia() {
+    let output = Command::new(env!("CARGO_BIN_EXE_nmlt"))
+        .arg("tokens")
+        .arg(example_path())
+        .output()
+        .expect("run nmlt");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("LineComment"));
+    assert!(stdout.contains("Whitespace"));
+    assert!(stdout.contains("Identifier\tsystem"));
+}

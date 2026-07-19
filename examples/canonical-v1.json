@@ -1,0 +1,99 @@
+{
+  "corpus_version": "nmlt-canonical-v1",
+  "frozen_on": "2026-07-18",
+  "identity_spec": "docs/artifact-identity.md",
+  "source_set_id": "nmlt-source-set-v1:sha256:56b2de44fae6b973f257ccd9eedf8e734e963f42b3fc1225e2b04fb156002319",
+  "claims_are": "provisional_handles_until_semantic_ir_v1",
+  "examples": [
+    {
+      "id": "C01",
+      "path": "examples/basics/boolean_toggle.nmlt",
+      "source_id": "nmlt-source-v1:sha256:7244c232d3d82e92d34127663d3d6d82928a722f45907f677d0921b47e2ed110",
+      "intent": "Toggle one Boolean while remaining in the Boolean state space.",
+      "claims": ["BooleanClosure"],
+      "negative_control": {"id": "NC-C01-TYPE", "mutation": "assign a non-Boolean value", "expected": "type_error"},
+      "intended_evidence": ["type_safety", "behavioral_safety"]
+    },
+    {
+      "id": "C02",
+      "path": "examples/hyperbook/one_bit_clock.nmlt",
+      "source_id": "nmlt-source-v1:sha256:4d61dacabaf98297ec4eb6d1aa51ccdb69b2022bcc909509e3be48f393e3ce5f",
+      "intent": "Alternate a visible bit forever under declared fairness.",
+      "claims": ["BooleanState", "KeepsTicking"],
+      "negative_control": {"id": "NC-C02-STUTTER", "mutation": "tick leaves the bit unchanged", "expected": "liveness_refutation"},
+      "intended_evidence": ["behavioral_safety", "behavioral_liveness"]
+    },
+    {
+      "id": "C03",
+      "path": "examples/math/euclid.nmlt",
+      "source_id": "nmlt-source-v1:sha256:4cfc9bb326c8dba4148f468dab9ccf905a824dd87a236adcd29776dd22f90136",
+      "intent": "Compute a GCD by terminating invariant-preserving subtraction.",
+      "claims": ["GcdPreserved", "Terminates"],
+      "negative_control": {"id": "NC-C03-SUBTRACT", "mutation": "subtract the larger value from the smaller", "expected": "safety_refutation"},
+      "intended_evidence": ["proved", "behavioral_liveness"]
+    },
+    {
+      "id": "C04",
+      "path": "examples/technicus/provider_attempt.nmlt",
+      "source_id": "nmlt-source-v1:sha256:d028b75d0e89509a5cb88acd889522f1f68582176248aa77b630785684927eec",
+      "intent": "Dispatch one authorized external effect and preserve ambiguity without replay.",
+      "claims": ["DispatchRequiresArm", "SelectionRequiresPassingEvidence", "NoBlindReplay"],
+      "negative_control": {"id": "NC-C04-PROTOCOL", "mutation": "remove authorization, replay, corrupt binding, or select failing evidence", "expected": "typed_or_model_refutation"},
+      "intended_evidence": ["type_safety", "behavioral_safety", "behavioral_liveness"]
+    },
+    {
+      "id": "C05",
+      "path": "examples/concurrency/two_process_mutex.nmlt",
+      "source_id": "nmlt-source-v1:sha256:d6c8f29e8e0ee751f0e892b6b2ef5f3d5c98e2a058706b24ccb30c0fdcb28b9d",
+      "intent": "Permit either process to enter while never admitting both.",
+      "claims": ["MutualExclusion", "NoStarvation"],
+      "negative_control": {"id": "NC-C05-GUARD", "mutation": "remove the peer-critical guard", "expected": "safety_refutation"},
+      "intended_evidence": ["behavioral_safety", "behavioral_liveness"]
+    },
+    {
+      "id": "C06",
+      "path": "examples/refinement/bounded_channel.nmlt",
+      "source_id": "nmlt-source-v1:sha256:b7e47bb5a98358b7eeadf913d8534f473d3a4e21de993e2faaaf66d284ec16c1",
+      "intent": "Implement an abstract FIFO stream through a hidden bounded buffer.",
+      "claims": ["CapacityBound", "FifoPrefix", "Delivery"],
+      "negative_control": {"id": "NC-C06-FIFO", "mutation": "receive from the tail instead of the head", "expected": "refinement_refutation"},
+      "intended_evidence": ["behavioral_safety", "behavioral_liveness", "refinement"]
+    },
+    {
+      "id": "C07",
+      "path": "examples/agents/trust_chain.nmlt",
+      "source_id": "nmlt-source-v1:sha256:3cf590bbd79a05411e6ed088c701811d7aa721c15104b0d088b3aa4871a6b143",
+      "intent": "Allow effects only when authority provenance reaches a human grant.",
+      "claims": ["NoSilentAuthorityWidening"],
+      "negative_control": {"id": "NC-C07-TRUST", "mutation": "treat agent attestation as a human grant", "expected": "authority_refutation"},
+      "intended_evidence": ["type_safety", "behavioral_safety"]
+    },
+    {
+      "id": "C08",
+      "path": "examples/runtime/durable_controller.nmlt",
+      "source_id": "nmlt-source-v1:sha256:800709a36075ee54312a0f7a0fbbdb5d967ff267e31d0ed80a8ee00b4d89671a",
+      "intent": "Relate a crash-safe journal to an at-most-once external effect.",
+      "claims": ["JournalBeforeEffect", "AtMostOnceEffect", "NoBlindReplay"],
+      "negative_control": {"id": "NC-C08-REPLAY", "mutation": "retry an indeterminate dispatch", "expected": "trace_refinement_refutation"},
+      "intended_evidence": ["behavioral_safety", "behavioral_liveness", "refinement"]
+    },
+    {
+      "id": "C09",
+      "path": "examples/distributed/two_phase_commit.nmlt",
+      "source_id": "nmlt-source-v1:sha256:c6da77f7c99c80d2a17858537ec989887e805fae6771c8316f3d17371de254b5",
+      "intent": "Reach one terminal decision and teach participants without disagreement.",
+      "claims": ["Agreement", "CommitRequiresPrepared"],
+      "negative_control": {"id": "NC-C09-EARLY", "mutation": "commit before every participant prepares", "expected": "safety_refutation"},
+      "intended_evidence": ["behavioral_safety"]
+    },
+    {
+      "id": "C10",
+      "path": "examples/resources/token_bucket.nmlt",
+      "source_id": "nmlt-source-v1:sha256:28c6faa532604fdca96df4e6e35ab3cd79b7fc0d7908b09340fcf8c646a803c0",
+      "intent": "Admit work only within an explicit quantitative budget.",
+      "claims": ["Capacity", "NoOverdraft", "Accounted"],
+      "negative_control": {"id": "NC-C10-OVERDRAW", "mutation": "admit a cost larger than the token balance", "expected": "grade_or_safety_refutation"},
+      "intended_evidence": ["type_safety", "behavioral_safety", "resource_bound"]
+    }
+  ]
+}

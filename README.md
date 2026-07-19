@@ -9,10 +9,10 @@ language inspired by TLA+ and contemporary mathematics.
 ## Status
 
 NMLT is **pre-alpha research software**. The repository currently defines the
-project charter, proposed semantics, RFC process, example corpus, benchmark
-shape, evidence format, and a minimal structural frontend. It does not yet
-provide semantic verification, model checking, code generation, or a stable
-language syntax.
+project charter, candidate behavior rules, RFC process, frozen example corpus,
+comparative models, evidence identity rules, and the first lossless lexer. It
+does not yet provide semantic verification, model checking, code generation,
+or a complete stable language syntax.
 
 The frontend deliberately reports `unknown` when asked for evidence. A parsed
 file is not a verified program.
@@ -35,6 +35,7 @@ Requirements: a current stable Rust toolchain and GNU Make.
 make ci
 cargo run -p nmlt-cli -- check examples/technicus/provider_attempt.nmlt
 cargo run -p nmlt-cli -- inspect examples/technicus/provider_attempt.nmlt
+cargo run -p nmlt-cli -- tokens examples/technicus/provider_attempt.nmlt
 cargo run -p nmlt-cli -- evidence examples/technicus/provider_attempt.nmlt
 ```
 
@@ -45,6 +46,7 @@ not claim verification.
 
 ```text
 crates/       Minimal Rust frontend and CLI
+comparisons/  Equivalent frozen models in TLA+, Quint, and P
 docs/         Manifesto, semantics, architecture, method, and roadmap
 rfcs/         Proposed language and evidence decisions
 examples/     Design fixtures drawn from the source corpora
@@ -53,7 +55,8 @@ schemas/      Machine-readable evidence and benchmark contracts
 tests/        Cross-crate fixtures and future integration tests
 ```
 
-Start with [the manifesto](docs/manifesto.md), then read the
+Start with the canonical [execution plan](Plan.md) and
+[manifesto](docs/manifesto.md), then read the
 [design principles](docs/design-principles.md), [core calculus](docs/core-calculus.md),
 and [architecture](docs/architecture.md). Proposed changes enter through the
 [RFC process](rfcs/README.md).
@@ -74,5 +77,5 @@ The first semantic milestone is the durable provider-attempt protocol:
 ## Contribution and governance
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [GOVERNANCE.md](GOVERNANCE.md), and
-[SECURITY.md](SECURITY.md). The project license is intentionally undecided; do
-not assume permission beyond applicable law until a license is selected.
+[SECURITY.md](SECURITY.md). NMLT is licensed under the
+[Apache License 2.0](LICENSE). Contributions are accepted under the same terms.

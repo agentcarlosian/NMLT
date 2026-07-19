@@ -17,14 +17,28 @@
   ],
   "properties": {
     "schema_version": { "const": "0.1.0" },
-    "manifest_id": { "type": "string", "minLength": 1 },
+    "manifest_id": {
+      "type": "string",
+      "oneOf": [
+        { "pattern": "^nmlt-evidence-v1:sha256:[0-9a-f]{64}$" },
+        { "pattern": "^structural:.+$" }
+      ],
+      "$comment": "structural:* is a legacy noncanonical scaffold restricted to result unknown"
+    },
     "artifact": {
       "type": "object",
       "additionalProperties": false,
       "required": ["path"],
       "properties": {
         "path": { "type": "string", "minLength": 1 },
-        "digest": { "type": "string", "pattern": "^[a-z0-9_-]+:[A-Fa-f0-9]+$" }
+        "source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        },
+        "source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-set-v1:sha256:[0-9a-f]{64}$"
+        }
       }
     },
     "claim": {
@@ -118,6 +132,15 @@
     }
   },
   "allOf": [
+    {
+      "if": {
+        "properties": { "manifest_id": { "pattern": "^structural:" } },
+        "required": ["manifest_id"]
+      },
+      "then": {
+        "properties": { "result": { "const": "unknown" } }
+      }
+    },
     {
       "if": {
         "properties": { "result": { "const": "model_checked" } },

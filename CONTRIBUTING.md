@@ -3,6 +3,15 @@
 NMLT separates research claims, language decisions, and implementation work so
 that an attractive prototype cannot silently outrun its evidence.
 
+## Contribution license
+
+NMLT is licensed under the Apache License, Version 2.0. Unless you explicitly
+mark a communication as "Not a Contribution," any contribution intentionally
+submitted for inclusion is offered under the same license, as described by
+section 5 of `LICENSE`. By submitting, you represent that you have the right to
+do so. The project does not require a contributor license agreement at this
+stage.
+
 ## Before changing the language
 
 Use an RFC for any change to syntax, typing, semantics, trusted components,

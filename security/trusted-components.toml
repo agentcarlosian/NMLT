@@ -1,0 +1,75 @@
+manifest_version = "1.0.0"
+status = "pre-alpha"
+reviewed = "2026-07-18"
+identity_requirement = "Bind this file and every listed source with RFC 0004 before semantic claims."
+
+[[claim_profiles]]
+name = "structural_acceptance"
+result_ceiling = "unknown"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "nmlt_core.diagnostic",
+  "nmlt_core.lexer",
+  "nmlt_core.syntax",
+  "nmlt_core.evidence_scaffold",
+  "nmlt_cli",
+  "build.release_process",
+]
+
+[[claim_profiles]]
+name = "canonical_source_identity_reference"
+result_ceiling = "identity_only"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.python3",
+  "python.hashlib_sha256",
+  "tools.canonical_examples",
+  "docs.artifact_identity",
+]
+
+[[components]]
+id = "nmlt_core.lexer"
+paths = ["crates/nmlt-core/src/lexer.rs"]
+role = "Lossless byte coverage and lexical classification under RFC 0003."
+
+[[components]]
+id = "nmlt_core.syntax"
+paths = ["crates/nmlt-core/src/syntax.rs"]
+role = "Delimiter validation and structural system recognition only."
+
+[[components]]
+id = "nmlt_core.diagnostic"
+paths = ["crates/nmlt-core/src/diagnostic.rs"]
+role = "Stable diagnostic codes and byte-span rendering."
+
+[[components]]
+id = "nmlt_core.evidence_scaffold"
+paths = ["crates/nmlt-core/src/evidence.rs", "schemas/evidence-manifest.schema.json"]
+role = "Emit explicit unknown structural scaffolds; no canonical evidence ID yet."
+
+[[components]]
+id = "nmlt_cli"
+paths = ["crates/nmlt-cli/src/main.rs"]
+role = "Read source, invoke the frontend, preserve result ceiling, and render output."
+
+[[components]]
+id = "tools.canonical_examples"
+paths = ["tools/canonical_examples.py", "docs/artifact-identity.md"]
+role = "Reference calculation and readback of source/source-set identity."
+
+outside_tcb = [
+  "examples and comparison models",
+  "documentation prose and visual renderers",
+  "AI and generated code",
+  "search strategies, fuzzers, and test counts",
+  "TLC, Quint, P, SMT solvers, and proof search unless checked by a narrower accepted checker",
+  "runtime traces before authenticated refinement checking",
+]
+
+forbidden_claims = [
+  "semantic verification from structural parsing",
+  "unbounded proof from finite exploration",
+  "safe automatic replay after an indeterminate external effect",
+  "production authorization by any pre-alpha NMLT result",
+]

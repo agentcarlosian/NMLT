@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "validated_on": "2026-07-18",
+  "models": {
+    "nmlt": {
+      "tool": "nmlt-cli 0.0.1",
+      "command": "cargo run --quiet -p nmlt-cli -- check examples/technicus/provider_attempt.nmlt",
+      "scope": "structural_only"
+    },
+    "tla_plus": {
+      "tool": "TLA+ Tools 2.0 development build 2026-07-18, revision 30cc360",
+      "executable_sha256": "cc4803dce2a8ffaf0f5920a9dc39df4b5ee34ab4cb53fb58ac557277a7e516b3",
+      "command": "java -cp tla2tools.jar tlc2.TLC -cleanup -deadlock -config comparisons/provider-attempt/tla/ProviderAttempt.cfg comparisons/provider-attempt/tla/ProviderAttempt.tla",
+      "scope": "complete_finite_explicit_state_model_check",
+      "result": "passed: 7 distinct reachable states; all five invariants held"
+    },
+    "quint": {
+      "tool": "@informalsystems/quint 0.32.0",
+      "command": "npx --yes @informalsystems/quint@0.32.0 typecheck comparisons/provider-attempt/quint/provider_attempt.qnt",
+      "scope": "parse_and_typecheck"
+    },
+    "p": {
+      "tool": "P 3.1.0",
+      "runtime": ".NET SDK 8.0.423",
+      "command": "p compile --pproj comparisons/provider-attempt/p/ProviderAttempt.pproj && p check PGenerated/PChecker/net8.0/ProviderAttempt.dll --testcase tcProviderAttempt --schedules 100 --max-steps 100 --fail-on-maxsteps",
+      "scope": "compile_typecheck_and_bounded_systematic_testing",
+      "result": "passed: 100 schedules; 0 bugs; 11-12 scheduling points"
+    }
+  },
+  "limitations": [
+    "NMLT validation is structural only.",
+    "Quint validation is parse and typecheck only; model checking is deferred until Apalache provisioning is pinned.",
+    "P evidence is bounded randomized systematic testing, not exhaustive proof.",
+    "TLC deadlock checking is disabled because terminal states stutter in the declared Spec."
+  ]
+}

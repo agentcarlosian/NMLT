@@ -1,0 +1,25 @@
+// Canonical C10: quantitative grades bound resource consumption.
+
+system TokenBucket {
+  const capacity: PosNat
+  const refill_rate: PosNat
+
+  state tokens: Nat = capacity
+  state consumed: Nat = 0
+
+  action admit(cost: PosNat) grade {requests: 1, cost: cost} {
+    require cost <= tokens
+    set tokens = tokens - cost
+    set consumed = consumed + cost
+  }
+
+  action refill {
+    set tokens = min(capacity, tokens + refill_rate)
+  }
+
+  safety Capacity = always(tokens <= capacity)
+  safety NoOverdraft = always(tokens >= 0)
+  resource Accounted = always(consumed + tokens >= capacity)
+
+  observe tokens, consumed
+}

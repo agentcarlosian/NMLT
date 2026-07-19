@@ -12,10 +12,14 @@ These documents distinguish current behavior from research intent.
 6. [Evidence model](evidence-model.md)
 7. [Research method](research-method.md)
 8. [Roadmap](roadmap.md)
+9. [Phase 0 closeout and Phase 1 kickoff](phase-0-closeout.md)
 
 Supporting material includes the [competitor matrix](competitor-matrix.md),
 [glossary](glossary.md), [source corpus](source-corpus.md), and
-[decision records](decisions/README.md).
+[decision records](decisions/README.md). Security and evidence readers should
+also use the [threat model](threat-model.md),
+[artifact identity rules](artifact-identity.md), and
+[research notes](research-notes/phase-0-foundations-2026-07-18.md).
 
 Normative status is assigned by accepted RFCs. Documents in this directory are
 research guidance unless an accepted RFC explicitly makes a section normative.

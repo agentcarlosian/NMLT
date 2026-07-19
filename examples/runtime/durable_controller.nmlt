@@ -1,0 +1,44 @@
+// Canonical C08: persisted traces must not replay an ambiguous external effect.
+
+enum DurablePhase {
+  idle,
+  prepared,
+  dispatched,
+  committed,
+  indeterminate,
+}
+
+system DurableController {
+  state phase: DurablePhase = idle
+  state journaled: Bool = false
+  state effect_count: Nat = 0
+
+  action prepare {
+    require phase == idle
+    set journaled = true
+    set phase = prepared
+  }
+
+  action dispatch {
+    require phase == prepared and journaled and effect_count == 0
+    set effect_count = 1
+    set phase = dispatched
+  }
+
+  action acknowledge {
+    require phase == dispatched
+    set phase = committed
+  }
+
+  action lose_acknowledgement {
+    require phase == dispatched
+    set phase = indeterminate
+  }
+
+  safety JournalBeforeEffect = always(effect_count > 0 implies journaled)
+  safety AtMostOnceEffect = always(effect_count <= 1)
+  temporal NoBlindReplay =
+    always(phase == indeterminate implies next(not enabled(dispatch)))
+
+  observe phase, journaled, effect_count
+}

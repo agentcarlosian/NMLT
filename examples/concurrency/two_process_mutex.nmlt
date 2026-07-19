@@ -1,0 +1,39 @@
+// Canonical C05: mutual exclusion with explicit process-local control state.
+
+enum Location {
+  idle,
+  waiting,
+  critical,
+}
+
+system TwoProcessMutex {
+  state pc: Map<Process, Location> = {p0: idle, p1: idle}
+  state turn: Process = p0
+
+  action request(process: Process) {
+    require pc[process] == idle
+    set pc[process] = waiting
+  }
+
+  action enter(process: Process) {
+    require pc[process] == waiting
+    require pc[other(process)] != critical
+    require turn == process or pc[other(process)] == idle
+    set pc[process] = critical
+  }
+
+  action leave(process: Process) {
+    require pc[process] == critical
+    set pc[process] = idle
+    set turn = other(process)
+  }
+
+  safety MutualExclusion =
+    always(not (pc[p0] == critical and pc[p1] == critical))
+
+  temporal NoStarvation =
+    forall process in Process: fair(enter(process)) implies
+      always(pc[process] == waiting implies eventually(pc[process] == critical))
+
+  observe pc, turn
+}

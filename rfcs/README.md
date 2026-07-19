@@ -31,5 +31,7 @@ evidence.
 
 | RFC | Title | Status |
 |---|---|---|
-| 0001 | Behavior types | Draft |
+| 0001 | Behavior types | Under review |
 | 0002 | Evidence manifests | Draft |
+| 0003 | Lexical grammar v1 | Accepted |
+| 0004 | Canonical artifact identity | Accepted |

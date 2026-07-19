@@ -1,0 +1,29 @@
+// Canonical C06: bounded FIFO behavior intended to refine an abstract channel.
+
+system BoundedChannel {
+  const capacity: PosNat
+  input stream: InfiniteSeq<Message>
+
+  state input: InfiniteSeq<Message> = stream
+  state output: Seq<Message> = []
+  state channel: Seq<Message> = []
+
+  action send {
+    require length(channel) < capacity
+    set channel = append(channel, head(input))
+    set input = tail(input)
+  }
+
+  action receive {
+    require length(channel) > 0
+    set output = append(output, head(channel))
+    set channel = tail(channel)
+  }
+
+  safety CapacityBound = always(length(channel) <= capacity)
+  safety FifoPrefix = always(output is_prefix_of stream)
+  temporal Delivery = fair(receive) implies always(eventually(channel == []))
+
+  observe output
+  hide input, channel
+}

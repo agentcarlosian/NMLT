@@ -17,6 +17,12 @@ include credentials, private data, or destructive proof-of-concept payloads.
 
 ## Trusted computing base
 
-The trusted computing base is not yet frozen. Current code performs only
-structural parsing and evidence scaffolding. Future releases must publish an
-explicit trusted-component manifest before making verification claims.
+The pre-alpha, claim-specific trusted computing base is defined in
+[`security/trusted-components.toml`](security/trusted-components.toml), and its
+boundaries and attacker stories are documented in
+[`docs/threat-model.md`](docs/threat-model.md). Current code performs only
+lossless lexing, structural parsing, diagnostics, and unknown evidence
+scaffolding. The manifest's `result_ceiling` is authoritative.
+
+Future semantic releases must replace provisional component identities with
+exact RFC 0004 identities and obtain the reviews required by `GOVERNANCE.md`.

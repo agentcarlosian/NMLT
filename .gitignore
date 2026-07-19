@@ -2,11 +2,17 @@
 /build/
 /dist/
 /target/
+**/PGenerated/
+**/PCheckerOutput/
+**/*_TTrace_*.tla
+**/*_TTrace_*.bin
 
 # Local caches and environments
 /.cache/
 /.direnv/
 /.venv/
+__pycache__/
+*.py[cod]
 
 # Secrets and local configuration
 .env

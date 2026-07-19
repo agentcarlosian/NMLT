@@ -1,0 +1,45 @@
+// Canonical C09: coordinator and participants agree on one terminal decision.
+
+enum Decision {
+  undecided,
+  commit,
+  abort,
+}
+
+system TwoPhaseCommit {
+  const participants: FiniteSet<Participant>
+
+  state prepared: Set<Participant> = {}
+  state decision: Decision = undecided
+  state learned: Map<Participant, Decision> = map_default(undecided)
+
+  action prepare(participant: Participant) {
+    require participant in participants
+    require decision == undecided
+    set prepared = prepared union {participant}
+  }
+
+  action decide_commit {
+    require prepared == participants
+    set decision = commit
+  }
+
+  action decide_abort {
+    require decision == undecided
+    set decision = abort
+  }
+
+  action learn(participant: Participant) {
+    require participant in participants and decision != undecided
+    set learned[participant] = decision
+  }
+
+  safety Agreement =
+    always(forall p, q in participants:
+      learned[p] != undecided and learned[q] != undecided implies learned[p] == learned[q])
+
+  safety CommitRequiresPrepared =
+    always(decision == commit implies prepared == participants)
+
+  observe decision, learned
+}

@@ -1,6 +1,8 @@
 # Core calculus sketch
 
-Status: research sketch, non-normative.
+Status: explanatory companion to the mechanizable candidate in RFC 0001.
+
+RFC 0001 is authoritative where this overview and the candidate rules differ.
 
 ## Objective
 
