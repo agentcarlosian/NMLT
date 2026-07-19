@@ -54,6 +54,10 @@ language. Technical identifiers such as `.nmlt`, crate names, evidence domains,
 and Lean namespaces are unchanged. The accepted naming decision is recorded in
 [ADR 0003](docs/decisions/0003-project-identity.md).
 
+Latin companion form: ***Nova Mathematica · Linguae · Technicae***. The
+separators are deliberate: this is a four-part research title preserving
+N–M–L–T, not a claim that the words form one classical prose sentence.
+
 ## Quick start
 
 `make ci` requires Linux x86_64 for byte-identical persisted executable

@@ -193,32 +193,39 @@ The necessary distinction is:
 This decision is recorded in
 [ADR 0003](../decisions/0003-project-identity.md).
 
-### Latin candidate
+### Latin companion and correction
 
-*Nova Mathematica Lingua Testimonii* is a plausible acronym-preserving epithet,
-approximately “a new mathematical language of evidence.” `nova` and
-`mathematica` modify feminine singular `lingua`; `testimonii` is a genitive of
-`testimonium`, a word used for evidence, testimony, or witness. The lexical
-anchors are Lewis and Short's entry for
-[`lingua`](https://classics.andrewgadsden.com/lewisandshort/entry/n26692) and
-the Computational Historical Semantics entry for
-[`testimonium`](https://cld.bbaw.de/lemma/lat/testimonium).
+The maintained companion form is ***Nova Mathematica · Linguae ·
+Technicae***. The centered dots are semantic punctuation: they present four
+title elements preserving N–M–L–T instead of pretending that a word-for-word
+English expansion is one classical Latin sentence.
 
-It is better as an epithet or component codename than as the official program
-expansion: it describes one language and omits techniques; *testimonium* can
-also carry legal or religious connotations. `Testimonium` is a particularly
-strong future candidate for the evidence/certificate kernel, subject to a
-classicist review and a fuller name/trademark/package collision search.
+`technicus, technica, technicum` is a Neo-Latin adjective meaning “technical”;
+`technicae` is its nominative feminine plural form. In this research title it
+is used substantivally for the program's plural techniques. The form and its
+Neo-Latin status are recorded by the
+[`technicus` dictionary entry](https://latin-dictionary.net/definition/36822/technicus-technica-technicum),
+and the
+[`technicae` inflection entry](https://en.wiktionary.org/wiki/technicae)
+confirms the feminine plural morphology. A specialist review remains useful
+before treating the title as polished continuous Latin prose.
+
+The earlier draft *Nova Mathematica Lingua Testimonii* was structurally wrong
+for the intended expansion: `Testimonium` supplies evidence/testimony rather
+than techniques and makes the language singular. `Testimonium` remains a
+separate, unassigned naming candidate. It could name the flagship programming
+language or an evidence/certificate/attestation subsystem, but this note does
+not decide between those roles.
 
 ### Preliminary collision check
 
 Exact searches found no established programming language using the full
-English expansion, the Latin phrase, or NMLT as its primary language name.
-They did find unrelated expansions of the initials in industrial and
-organizational contexts. This is sufficient to keep the repository name during
-research, but it is not legal or trademark clearance and should be repeated
-across package registries, domains, and relevant jurisdictions before a public
-release.
+English expansion, the corrected Latin companion form, or NMLT as its primary
+language name. They did find unrelated expansions of the initials in
+industrial and organizational contexts. This is sufficient to keep the
+repository name during research, but it is not legal or trademark clearance
+and should be repeated across package registries, domains, and relevant
+jurisdictions before a public release.
 
 ## Decision
 
@@ -227,5 +234,6 @@ release.
 - Near-term technical focus: **M9 source-to-typed-core integration**.
 - Next research focus: temporal/refinement/compositional mathematics and
   verified lowering, in that order.
-- Latin: retained as a candidate epithet or kernel codename, not adopted as an
-  alternate official expansion.
+- Latin companion: ***Nova Mathematica · Linguae · Technicae***.
+- `Testimonium`: retained separately as an unassigned candidate for the
+  flagship language or an evidence-oriented subsystem.

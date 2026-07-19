@@ -6,6 +6,9 @@ language. The plural form is intentional: one syntax is not enough. The
 program must connect mathematical formalisms, human-facing and core languages,
 evidence formats, and repeatable development and verification techniques.
 
+Its Latin companion form is ***Nova Mathematica · Linguae · Technicae***.
+`Technicae` keeps techniques—plural—in the T position.
+
 ## Thesis
 
 To truly progress, humanity needs new mathematics, new languages, and new

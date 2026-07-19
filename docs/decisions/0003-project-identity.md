@@ -28,6 +28,11 @@ The canonical thesis is:
 > To truly progress, humanity needs new mathematics, new languages, and new
 > techniques.
 
+The official Latin companion form is ***Nova Mathematica · Linguae ·
+Technicae***. The centered dots mark four title elements and preserve the
+N–M–L–T initials; the form is a Neo-Latin research title rather than a single
+classical prose sentence.
+
 Repository, package, schema, evidence-domain, Lean-namespace, file-extension,
 and CLI identifiers remain unchanged. This decision changes public identity
 and prose, not source or artifact identity algorithms.
@@ -54,14 +59,14 @@ and prose, not source or artifact identity algorithms.
 blurs the difference between the program, the flagship language, and the
 methods and formal artifact languages it develops.
 
-### Latin expansion
+### Testimonium-based expansion
 
-*Nova Mathematica Lingua Testimonii* is a defensible candidate epithet for the
-flagship language, approximately “a new mathematical language of evidence.” It
-captures the evidence thesis but denotes one language and does not express the
-program's techniques. It is therefore not the official expansion. A future RFC
-or branding decision may use *Testimonium* as a component codename after a
-collision and specialist language review.
+An earlier draft used *Nova Mathematica Lingua Testimonii*. It is rejected as
+an NMLT expansion because `Testimonium` means evidence or testimony, not
+techniques, and the phrase collapses the program's plural languages and
+techniques into one language. **Testimonium remains unassigned**: a future RFC
+may consider it as the flagship programming-language name or as the name of an
+evidence, certificate, or attestation subsystem.
 
 ### Renaming the repository or flagship language
 
