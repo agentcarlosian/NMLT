@@ -96,8 +96,8 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
 
 fn compile_path(path: &Path, source: String) -> Result<nmlt_kernel::CheckedProgram, String> {
     let canonical_path = path.canonicalize().map_err(|error| error.to_string())?;
-    let canonical_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
+    let canonical_root = std::env::current_dir()
+        .map_err(|error| error.to_string())?
         .canonicalize()
         .map_err(|error| error.to_string())?;
     let repository_path = canonical_path.strip_prefix(canonical_root).map_or_else(

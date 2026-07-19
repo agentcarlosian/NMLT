@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "result_id": "nmlt-benchmark-result-v1:sha256:413a17982d10d4b7c5b665e3b3d079ea22307fb8495ef247598a8fad440e339e",
+  "result_id": "nmlt-benchmark-result-v1:sha256:71bd7d6d13faa9a8478af7d3f4d83d0bb523b9e541d1378dace0694bb45dcb02",
   "case_id": "provider-attempt-reference",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
@@ -9,10 +9,10 @@
   "engine": {
     "name": "nmlt-explicit-state",
     "version": "0.0.1",
-    "source_set_id": "nmlt-engine-source-set-v1:sha256:149d1e10b7011f9392b827ce5d43838832693dded7ec19ccf6c09dc7fa0bb4d2",
+    "source_set_id": "nmlt-engine-source-set-v1:sha256:ffc946905121f61908838f1ee10ba2a63872b3924e5073e30f69acc0f9cbdaf1",
     "elaborator_source_set_id": "nmlt-elaborator-source-set-v1:sha256:ac12fafbc81ce8c9611310ea13fd5de1b4eebbc4d6e167c6f0bd42d3f0686079",
     "kernel_source_set_id": "nmlt-kernel-source-set-v1:sha256:80399f96617d312c58a45be3c64b3dd6329943fb37a9ab614a59295877ec09cf",
-    "executable_sha256": "f6d20d6ac79f082c7560bf8fdba7ef3c43feb40f5699e23a27dd7c5e28890bb1",
+    "executable_sha256": "90407978325f0212042b7955a0178900bcf8563b7afecb5a75531dcbbeac2df7",
     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
     "target": "x86_64-unknown-linux-gnu",
     "algorithm": "deterministic-bfs-v1",
