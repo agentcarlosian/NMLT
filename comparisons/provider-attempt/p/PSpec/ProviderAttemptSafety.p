@@ -8,8 +8,8 @@ spec ProviderAttemptSafety observes eSnapshot {
       assert snapshot.phase != SELECTED ||
         (snapshot.responseIntact && snapshot.evaluationPassed),
         "selection requires intact passing evidence";
-      assert snapshot.phase != INDETERMINATE || snapshot.dispatchCount == 1,
-        "indeterminate must follow exactly one dispatch";
+      assert snapshot.phase != INDETERMINATE || !snapshot.dispatchEnabled,
+        "indeterminate must not enable another dispatch";
     }
   }
 }

@@ -1,0 +1,1 @@
+Declare a Boolean readiness state in a well-formed system.

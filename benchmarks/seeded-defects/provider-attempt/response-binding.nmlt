@@ -1,4 +1,5 @@
-// Expected after semantic checking: EvaluationRequiresIntactResponse is refuted.
+// Oracle: EvaluationRequiresIntactResponse is refuted by one unbound evaluation.
+// Current supported result: unknown (the frontend is structural only).
 system ResponseBindingMutant {
   state phase: Phase = dispatched
   state response_intact: Bool = false

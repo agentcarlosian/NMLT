@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/temporal-evidence-v1.schema.json",
+  "title": "NMLT Phase 4 temporal/refinement/runtime evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evidence_id", "fixture", "graph_id", "graph", "provider_blind_replay", "temporal", "refinement", "runtime", "independent_replay", "residual_gaps", "implementation"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "evidence_id": { "pattern": "^nmlt-temporal-evidence-v1:sha256:[0-9a-f]{64}$" },
+    "fixture": { "const": "phase4-temporal-refinement-runtime-v1" },
+    "graph_id": { "pattern": "^nmlt-temporal-graph-v1:sha256:[0-9a-f]{64}$" },
+    "graph": {
+      "type": "object",
+      "required": ["semantics", "states", "initial", "transitions"],
+      "properties": {
+        "semantics": { "const": "finite-graph-v1+universal-identity-stutter-v1" },
+        "states": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "initial": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } },
+        "transitions": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+      }
+    },
+    "provider_blind_replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["property_id", "formula", "semantics", "projection_id", "projection", "reference_graph_id", "reference_graph", "mutant_graph_id", "mutant_graph", "reference", "mutant", "reference_temporal", "mutant_temporal"],
+      "properties": {
+        "property_id": { "pattern": "^nmlt-benchmark-property-v1:sha256:[0-9a-f]{64}$" },
+        "formula": { "const": "always(phase == indeterminate implies not enabled(dispatch))" },
+        "semantics": { "const": "finite-observation-quotient+universal-identity-stutter-v1" },
+        "projection_id": { "pattern": "^nmlt-mapping-v1:sha256:[0-9a-f]{64}$" },
+        "projection": { "type": "object" },
+        "reference_graph_id": { "pattern": "^nmlt-temporal-graph-v1:sha256:[0-9a-f]{64}$" },
+        "reference_graph": { "$ref": "#/$defs/provider_graph" },
+        "mutant_graph_id": { "pattern": "^nmlt-temporal-graph-v1:sha256:[0-9a-f]{64}$" },
+        "mutant_graph": { "$ref": "#/$defs/provider_graph" },
+        "reference": { "$ref": "#/$defs/provider_result" },
+        "mutant": {
+          "allOf": [
+            { "$ref": "#/$defs/provider_result" },
+            {
+              "type": "object",
+              "required": ["witness"],
+              "properties": {
+                "witness": {
+                  "type": "object",
+                  "required": ["steps"],
+                  "properties": {
+                    "steps": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "reference_temporal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["result", "explored_states"],
+          "properties": {
+            "result": { "const": "model_checked" },
+            "explored_states": { "const": 9 }
+          }
+        },
+        "mutant_temporal": { "$ref": "#/$defs/lasso_refutation" }
+      }
+    },
+    "temporal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["property", "predicate_id", "predicate", "without_fairness", "with_fairness"],
+      "properties": {
+        "property": { "const": "eventually(done)" },
+        "predicate_id": { "pattern": "^nmlt-temporal-predicate-v1:sha256:[0-9a-f]{64}$" },
+        "predicate": { "type": "object" },
+        "without_fairness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["result", "fairness_set_id", "stem_states", "stem_transitions", "loop_states", "loop_transitions"],
+          "properties": {
+            "result": { "const": "refuted" },
+            "fairness_set_id": { "pattern": "^nmlt-fairness-set-v1:sha256:[0-9a-f]{64}$" },
+            "stem_states": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } },
+            "stem_transitions": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+            "loop_states": { "type": "array", "minItems": 2, "items": { "type": "integer", "minimum": 0 } },
+            "loop_transitions": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } }
+          }
+        },
+        "with_fairness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["result", "fairness_set_id", "assumptions"],
+          "properties": {
+            "result": { "const": "model_checked" },
+            "fairness_set_id": { "pattern": "^nmlt-fairness-set-v1:sha256:[0-9a-f]{64}$" },
+            "assumptions": { "const": ["weak:work"] }
+          }
+        }
+      }
+    },
+    "refinement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "refinement_id", "mapping_id", "spec", "hidden_actions", "state_map", "checked_states", "checked_transitions"],
+      "properties": {
+        "result": { "const": "accepted" },
+        "refinement_id": { "pattern": "^nmlt-refinement-v1:sha256:[0-9a-f]{64}$" },
+        "mapping_id": { "pattern": "^nmlt-mapping-v1:sha256:[0-9a-f]{64}$" },
+        "spec": { "type": "object" },
+        "hidden_actions": { "const": ["cache"] },
+        "state_map": { "const": [0, 0, 1] },
+        "checked_states": { "type": "integer", "minimum": 1 },
+        "checked_transitions": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "mapping_id", "mapping", "accepted_journal_id", "accepted_journal", "contradictory_journal_id", "contradictory_journal", "accepted_trace", "contradictory_trace", "rejected_record_index", "rejected_candidates_before", "rejected_reason"],
+      "properties": {
+        "case_id": { "pattern": "^nmlt-runtime-case-v1:sha256:[0-9a-f]{64}$" },
+        "mapping_id": { "pattern": "^nmlt-mapping-v1:sha256:[0-9a-f]{64}$" },
+        "mapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["done"],
+          "properties": { "done": { "const": "done" } }
+        },
+        "accepted_journal": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/journal_record" }
+        },
+        "accepted_journal_id": { "pattern": "^nmlt-journal-v1:sha256:[0-9a-f]{64}$" },
+        "contradictory_journal": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/journal_record" }
+        },
+        "contradictory_journal_id": { "pattern": "^nmlt-journal-v1:sha256:[0-9a-f]{64}$" },
+        "accepted_trace": { "const": "accepted" },
+        "contradictory_trace": { "const": "rejected" },
+        "rejected_record_index": { "const": 1 },
+        "rejected_candidates_before": { "const": [0] },
+        "rejected_reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "independent_replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["replayer", "lasso", "weak_fairness", "refinement", "accepted_journal", "contradictory_journal", "provider_no_blind_replay"],
+      "properties": {
+        "replayer": { "const": "nmlt-python-fixture-replay-v1" },
+        "lasso": { "const": true },
+        "weak_fairness": { "const": true },
+        "refinement": { "const": true },
+        "accepted_journal": { "const": true },
+        "contradictory_journal": { "const": true },
+        "provider_no_blind_replay": { "const": true }
+      }
+    },
+    "residual_gaps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checker_version", "source_set_id", "toolchain", "executable_sha256", "replayer_sha256"],
+      "properties": {
+        "checker_version": { "const": "0.0.1" },
+        "source_set_id": { "pattern": "^nmlt-temporal-source-set-v1:sha256:[0-9a-f]{64}$" },
+        "toolchain": { "type": "string", "minLength": 1 },
+        "executable_sha256": { "pattern": "^[0-9a-f]{64}$" },
+        "replayer_sha256": { "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  },
+  "$defs": {
+    "provider_graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semantics", "states", "initial", "transitions"],
+      "properties": {
+        "semantics": { "const": "finite-observation-quotient+universal-identity-stutter-v1" },
+        "states": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+        "initial": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } },
+        "transitions": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+      }
+    },
+    "lasso_refutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "stem_states", "stem_transitions", "loop_states", "loop_transitions"],
+      "properties": {
+        "result": { "const": "refuted" },
+        "stem_states": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } },
+        "stem_transitions": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "loop_states": { "type": "array", "minItems": 2, "items": { "type": "integer", "minimum": 0 } },
+        "loop_transitions": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 0 } }
+      }
+    },
+    "provider_result": {
+      "type": "object",
+      "required": ["case_id", "result_path", "source_id", "result_id", "classification"],
+      "properties": {
+        "case_id": { "type": "string", "minLength": 1 },
+        "result_path": { "type": "string", "minLength": 1 },
+        "source_id": { "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$" },
+        "result_id": { "pattern": "^nmlt-benchmark-result-v1:sha256:[0-9a-f]{64}$" },
+        "classification": { "enum": ["model_checked", "refuted"] }
+      }
+    },
+    "journal_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "action", "observations"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0 },
+        "action": { "enum": ["initial", "work"] },
+        "observations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["done"],
+          "properties": { "done": { "type": "boolean" } }
+        }
+      }
+    }
+  }
+}

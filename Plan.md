@@ -1,8 +1,10 @@
 # NMLT Execution Plan
 
-- Status: Active
-- Current phase: Phase 1 — syntax and semantic skeleton
-- Planning baseline: `6bd302b` (`chore: establish NMLT research scaffold`)
+- Status: Active pre-alpha research prototype
+- Implementation status: bounded milestones exist across Phases 0–7; open
+  exit and promotion gates are recorded below
+- Active milestone: M8 — integration, independent reproduction, and release hardening
+- Initial planning baseline: `6bd302b` (`chore: establish NMLT research scaffold`)
 - Updated: 2026-07-18
 
 ## 1. Objective
@@ -30,24 +32,50 @@ The repository currently contains:
 - the research charter, architecture, proposed core calculus, language sketch,
   evidence model, and RFC process;
 - examples derived from the Hyperbook, agent trust, and Technicusverus;
-- a five-case provider-attempt benchmark containing one reference model and
-  four independent semantic mutants;
-- JSON Schemas for evidence and benchmark manifests;
-- a dependency-free Rust workspace with `nmlt-core` and `nmlt-cli`;
-- an RFC-defined lossless lexer plus structural recognition of balanced
-  `system Name { ... }` declarations;
-- `check`, `inspect`, and `evidence` CLI commands;
+- a v2 provider-attempt benchmark containing one reference model, four
+  independent semantic mutants, three integrity controls, and a one-shot
+  replay regression that distinguishes the corrected `NoBlindReplay` claim;
+- JSON Schemas and independent readback harnesses for benchmark, model-check,
+  temporal, multi-engine, agentic, graded, and general evidence artifacts;
+- a Rust workspace with `nmlt-core`, `nmlt-engine`, `nmlt-temporal`,
+  `nmlt-verify`, `nmlt-agent`, `nmlt-grades`, and `nmlt-cli`;
+- an RFC-defined lossless lexer, immutable CST, recovering declaration parser,
+  diagnostic snapshots, and preservation formatter;
+- `check`, `inspect`, `tokens`, `typecheck`, `model-check`, and `evidence` CLI
+  commands;
+- a typed executable provider fragment with explicit frames, affine
+  capabilities, deterministic BFS, and structured counterexamples;
+- source-bound persisted results that accept the provider reference within
+  the frozen 10,000-state/100-step configuration and refute all four seeded
+  semantic mutants with structured witnesses;
+- finite lasso, fairness, stuttering, hiding, forward-simulation refinement,
+  and three-valued runtime-journal checking with independently replayed
+  Phase 4 evidence, including a manually projected provider observation graph
+  for temporal `NoBlindReplay`;
+- a finite Boolean VC boundary with deterministic reachability, independent
+  inductiveness enumeration, a checked finite-invariant certificate, and
+  raw-preserving fail-closed composition;
+- an authority-bounded deterministic repair-protocol baseline over three
+  hand-authored held-out tasks, linked to a synthetic runtime-drift artifact
+  graph;
+- one independent graded-resource experiment over cost, privacy, energy, and
+  uncertainty annotations, with checked arithmetic and negative controls;
 - explicitly `unknown` structural evidence, with no false verification claim;
 - formatting, Clippy, tests, example checks, and GitHub CI.
 
 What does **not** exist yet:
 
-- a complete parser grammar or lossless syntax tree beyond the token stream;
-- name resolution or module semantics;
-- type checking;
-- action, behavior, temporal, composition, or refinement semantics;
-- model checking, proof checking, symbolic verification, or trace monitoring;
-- cryptographic artifact binding;
+- complete name resolution and executable module semantics for the full
+  lossless surface language;
+- general action inputs, language-integrated grades, ports, open composition,
+  or closed algebraic-constructor resolution in the executable core;
+- an infinite-state or general source-language temporal/refinement checker,
+  liveness-refinement proof, or authenticated deployed-runtime monitor;
+- verified source-to-transition-graph or source-to-VC elaboration, general SMT
+  solving, or a native proof-assistant certificate return path;
+- a mechanized program-level metatheory for temporal refinement, evidence
+  composition, agentic repair, or grade-preserving source/Rust elaboration;
+- cryptographic signatures, a transparency log, or journal attestation;
 - code generation;
 - a stable release.
 
@@ -72,8 +100,15 @@ The first research alpha succeeds when NMLT can:
 10. reproduce the complete result from a clean checkout using one documented
     command.
 
+Items 1–7 and 9 now have local, bounded implementations and checked-in evidence
+for the provider slice. Item 8 is exercised only by synthetic persisted journal
+fixtures, not observations from a deployed runtime. Item 10 remains a
+release-hardening requirement: this plan does not treat an in-place workspace
+run as independent clean-checkout reproduction.
+
 The project does not claim a general-purpose verified programming language at
-that point. It claims one validated vertical slice.
+that point. It claims several identity-bound experimental slices whose
+assurance subjects and residual gaps remain separate.
 
 ## 4. Non-goals for the first alpha
 
@@ -265,6 +300,9 @@ Exit gate:
 Goal: replace structural scanning with a real, lossless frontend while keeping
 the language intentionally small.
 
+Completed 2026-07-18. The frontend gate is syntax-only: recovery constructs an
+error-bearing tree and never promotes malformed input to semantic acceptance.
+
 Deliverables:
 
 - lexical grammar and tokens;
@@ -294,6 +332,10 @@ Exit gate:
 ### Phase 2 — Typed behavioral core
 
 Goal: implement the smallest useful version of the new mathematics.
+
+Completed 2026-07-18 for the provider-effect slice. The Rust/Lean
+correspondence is guarded by a shared provider vector; full compiler
+correctness remains an explicitly recorded residual gap rather than an axiom.
 
 Deliverables:
 
@@ -326,6 +368,21 @@ Exit gate:
 
 Goal: validate the first complete semantic slice.
 
+Bounded implementation milestone completed 2026-07-18 for provider-attempt
+suite v2. The deterministic BFS
+engine exhausted the reference graph within `max_states = 10000` and
+`max_depth = 100`, and all four primary mutants were refuted. The v2
+correction replaced the off-by-one successor-state `NoBlindReplay` formula
+with the state-local rule
+`always(phase == indeterminate implies not enabled(dispatch))`. A permanent
+one-shot control demonstrates the distinction under the Phase 3 execution
+profile: `next` ranges over declared action successors, with an
+identity-stutter successor added only at terminal states. Under that explicitly
+stutter-sensitive profile, the old formula accepts one replay that the
+corrected formula refutes at state zero. This is not a claim about RFC 0007 or
+Phase 4 universal identity-stutter closure; under universal stuttering the old
+`next` formula is also refuted at the initial state.
+
 Deliverables:
 
 - initialization and next-state evaluation;
@@ -345,10 +402,29 @@ Exit gate:
 - bounds, assumptions, and engine identity are recorded;
 - rerunning from a clean checkout reproduces the same classifications.
 
+Gate result: the semantic and evidence clauses pass under local deterministic
+readback, including exact source, engine source-set, executable, toolchain,
+configuration, and result identities. Independent clean-checkout reproduction
+has not yet been recorded, so the complete Phase 3/release gate remains open
+under M8.
+
 ### Phase 4 — Temporal properties and refinement
 
 Goal: restore the full behavioral ideas that distinguish TLA+-inspired work
 from ordinary contract checking.
+
+Bounded implementation milestone completed 2026-07-18 for canonical finite
+graphs. `nmlt-temporal` checks eventuality and leads-to with deterministic
+lasso witnesses, explicit weak and strong action fairness, universal identity
+stutter, observation projection, action hiding, finite one-step forward
+simulation, and three-valued runtime journals. `TemporalChecker::always`
+additionally checks the corrected provider
+`NoBlindReplay` property over a nine-state property-relevant reference
+observation graph and a one-state blind-replay mutant graph. The mutant returns
+a zero-transition stem and an infinite identity-stutter lasso at the violating
+initial state. Phase 4 evidence binds the exact property, sources, Phase 3
+results, graphs, projection, implementation, and replay identities; Python
+independently checks projected enabledness and replays the provider lasso.
 
 Deliverables:
 
@@ -367,10 +443,24 @@ Exit gate:
 - concrete persisted traces are accepted or rejected with localized reasons;
 - fairness assumptions are visible in evidence.
 
+Gate result: the generic finite temporal/refinement/runtime fixture and the
+provider-specific temporal clause pass at their exact finite scopes. The
+provider source-to-observation-graph construction is manually audited rather
+than compiler-derived. This is not a general temporal-language implementation,
+infinite-state checking, liveness-refinement proof, verified source-to-graph
+translation, or runtime-journal authenticity.
+
 ### Phase 5 — Multiple verification engines
 
 Goal: route claims to the cheapest soundly applicable oracle without changing
 their meaning.
+
+Completed 2026-07-18 for a hand-constructed finite Boolean safety VC.
+`nmlt-verify` checks the provider dispatch property by deterministic reachable
+state exploration and by separate finite inductiveness enumeration. The
+second route returns a locally checked finite-invariant certificate;
+composition retains both raw results and maps disagreement, stale identity,
+or bounded-proof laundering to `unknown`.
 
 Deliverables:
 
@@ -388,83 +478,133 @@ Exit gate:
 - bounded evidence cannot be serialized as `proved`;
 - backend versions and trusted components are exact.
 
+Gate result: passed for the exact two-observable VC. Its `proved` result is
+scoped to `finite_vc_only`; the manual source projection omits other provider
+state, both engines run in one Rust process, and no verified NMLT-to-VC
+compiler is claimed.
+
 ### Phase 6 — Runtime and agentic workflow
 
-Goal: demonstrate the complete new technique from intent through deployment
-evidence.
+Goal: demonstrate the new technique from intent through runtime evidence while
+keeping repair outside the claim authority.
+
+Completed 2026-07-18 as a deterministic protocol-conformance baseline, not an
+LLM evaluation. `nmlt-agent` moved three hand-authored held-out fixtures from
+0/3 baseline completion to 3/3 after one structured-feedback repair each,
+rejected all 21 protected-artifact modification probes, retained and killed
+all three negative controls, and promoted no `unknown` or conflict. The
+combined evidence graph links exact intent, property, oracle, candidate,
+feedback, proposal, evaluation, finite model, implementation, runtime witness,
+drift event, and residual-gap artifacts.
 
 Deliverables:
 
 - formal-query or intent-capsule review;
 - semantic mutation generation;
 - compiler-guided localized repair;
-- runtime monitors and drift events;
+- runtime-journal checking and drift events;
 - authority controls preventing automatic weakening of trusted claims;
 - evaluation against held-out formalization tasks.
 
 Exit gate:
 
-- agent assistance measurably improves semantic completion;
+- the deterministic assistant improves completion on the frozen three-task
+  baseline;
 - no benchmark pass depends on silently modifying the trusted property;
 - runtime drift is classified and linked to its model and implementation;
 - human reviewers can inspect intent, evidence, witness, and residual gaps from
   one artifact graph.
 
+Gate result: passed as protocol evidence for these three fixtures. It does not
+measure generalization, model-based agent performance, or production repair;
+the runtime journal is synthetic and has no authenticity or completeness
+attestation.
+
 ### Phase 7 — Independent research extensions
 
-Possible tracks:
+Completed 2026-07-18 for one experimental track: conservative graded-resource
+modalities. `nmlt-grades` computes a checked product of declared cost,
+privacy-loss, energy, and uncertainty upper bounds; supports sequential,
+choice, conservative-parallel, and finite-repeat composition; preserves
+overflow and unbounded repetition as `unknown`; and reproduces a
+schema-validated provider-pipeline result with negative controls.
+
+Completed track deliverables:
+
+- RFC 0012 and a separate `.nmltg` prototype language;
+- exact, exceeded, and unknown budget outcomes;
+- finite law sampling plus a noncommutative-algebra rejection control;
+- pinned Lean 4.30 proofs for the exact mathematical product algebra,
+  nonempty-finite choice distribution, product order, and Boolean budget
+  predicate;
+- source-, implementation-, executable-, toolchain-, schema-, and
+  validator-bound evidence;
+- explicit trusted-annotation assumptions and residual gaps.
+
+Prototype gate result: passed only for this independent modality experiment.
+The standalone mathematical algebra is kernel-checked, but the promotion gate
+remains closed: the Rust `u64` implementation is only manually aligned with
+Lean's `Nat` model; the parser, analyzer, and grade-preservation connection are
+unverified; atom annotations are trusted; privacy sensitivity and mechanisms
+are not checked; energy has no operational measurement model; and uncertainty
+is an abstract saturated upper bound. The experiment does not strengthen a
+main-language NMLT claim.
+
+Other possible tracks remain future work:
 
 - guarded cubical equality and proof-relevant equivalence;
 - hybrid dynamics and differential invariants;
 - probabilistic temporal properties;
-- richer graded modalities for privacy, cost, energy, and uncertainty;
+- alternative grade algebras and language-integrated quantitative modalities;
 - categorical libraries for reusable open-system composition.
 
-Each track requires its own RFC, metatheory, implementation, backend, negative
-controls, and benchmark. None blocks the first alpha.
+Each additional track requires its own RFC, metatheory, implementation,
+backend, negative controls, and benchmark. None blocks the first alpha.
 
-## 8. Immediate execution backlog
+## 8. Initial execution backlog
 
-Work should proceed in this order.
+This historical backlog is complete. New integration and release-hardening
+work is tracked under M8 rather than being retroactively folded into these
+Phase 0–2 tasks.
 
 ### P0 — Decisions that unblock implementation
 
 - [x] `NMLT-P0-001`: Decide and record license.
 - [x] `NMLT-P0-002`: Write the lexical grammar RFC.
 - [x] `NMLT-P0-003`: Select the lossless syntax-tree representation by ADR.
-- [ ] `NMLT-P0-004`: Define canonical diagnostics and snapshot format.
+- [x] `NMLT-P0-004`: Define canonical diagnostics and snapshot format.
 - [x] `NMLT-P0-005`: Define canonical source identity and hashing requirements.
 - [x] `NMLT-P0-006`: Create the trusted-computing-base threat model.
 
 ### P1 — Real frontend
 
 - [x] `NMLT-P1-001`: Replace the structural scanner with a token stream.
-- [ ] `NMLT-P1-002`: Parse modules, data declarations, systems, and state.
-- [ ] `NMLT-P1-003`: Parse action blocks and explicit updates.
-- [ ] `NMLT-P1-004`: Preserve comments and whitespace in a lossless tree.
-- [ ] `NMLT-P1-005`: Implement parser recovery without accepting ambiguous
+- [x] `NMLT-P1-002`: Parse modules, data declarations, systems, and state.
+- [x] `NMLT-P1-003`: Parse action blocks and explicit updates.
+- [x] `NMLT-P1-004`: Preserve comments and whitespace in a lossless tree.
+- [x] `NMLT-P1-005`: Implement parser recovery without accepting ambiguous
   semantics.
-- [ ] `NMLT-P1-006`: Add formatter round-trip and idempotence tests.
+- [x] `NMLT-P1-006`: Add formatter round-trip and idempotence tests.
 
 ### P1 — Mathematical core
 
 - [x] `NMLT-P1-101`: Formalize candidate behavior-type formation rules.
-- [ ] `NMLT-P1-102`: Formalize state and action typing judgments.
-- [ ] `NMLT-P1-103`: Select the v1 capability discipline.
-- [ ] `NMLT-P1-104`: Define observation and stuttering semantics.
-- [ ] `NMLT-P1-105`: Choose a mechanization environment and repository layout.
-- [ ] `NMLT-P1-106`: Prove or refute refinement congruence for the candidate
+- [x] `NMLT-P1-102`: Formalize state and action typing judgments.
+- [x] `NMLT-P1-103`: Select the v1 capability discipline.
+- [x] `NMLT-P1-104`: Define observation and stuttering semantics.
+- [x] `NMLT-P1-105`: Choose a mechanization environment and repository layout.
+- [x] `NMLT-P1-106`: Prove or refute refinement congruence for the candidate
   composition rule.
 
 ### P1 — Benchmark integrity
 
-- [ ] `NMLT-P1-201`: Add intent capsules for all five provider cases.
-- [ ] `NMLT-P1-202`: Freeze property identities and expected witnesses.
-- [ ] `NMLT-P1-203`: Record exact source-corpus provenance without copying
+- [x] `NMLT-P1-201`: Add intent capsules for all five provider cases.
+- [x] `NMLT-P1-202`: Freeze property identities and expected witnesses.
+- [x] `NMLT-P1-203`: Record exact source-corpus provenance without copying
   protected material.
-- [ ] `NMLT-P1-204`: Add malformed, vacuous-property, and weakened-invariant
+- [x] `NMLT-P1-204`: Add malformed, vacuous-property, and weakened-invariant
   controls.
-- [ ] `NMLT-P1-205`: Add schema validation to `make ci` without depending on a
+- [x] `NMLT-P1-205`: Add schema validation to `make ci` without depending on a
   globally installed Python package.
 
 ## 9. Canonical example ladder
@@ -543,7 +683,8 @@ Track metrics by claim class and benchmark rather than as one project score.
 - repair success per structured feedback round;
 - whole-program regeneration avoided;
 - specification weakening attempts blocked;
-- human intent agreement on held-out tasks.
+- human intent agreement on held-out tasks (unmeasured in the v1 deterministic
+  baseline).
 
 ## 12. Risk register
 
@@ -564,23 +705,28 @@ Track metrics by claim class and benchmark rather than as one project score.
 
 ### `0.0.x` — Research scaffold
 
-Unstable syntax and no semantic verification. Structural tooling and design
-artifacts only.
+Historical scaffold scope: unstable syntax, structural tooling, and design
+artifacts only. The working tree has advanced beyond this scope, but no new
+release tag is asserted here.
 
 ### `0.1.0` — Provider-attempt research alpha
 
 Requires the Phase 3 exit gate: typed behavioral core, executable finite model,
-four detected semantic mutants, structured traces, and bound evidence.
+four detected semantic mutants, structured traces, and bounded evidence. The
+bounded implementation is present; independent clean-checkout reproduction is
+still required before cutting the release.
 
 ### `0.2.0` — Temporal and refinement alpha
 
 Requires fairness, stuttering, hiding, one checked refinement, and one concrete
-trace adapter.
+trace adapter. These exist for finite fixtures only; no tag or general temporal
+language claim follows automatically.
 
 ### `0.3.0` — Multi-engine alpha
 
 Requires two independent verification routes and fail-closed disagreement
-handling.
+handling. The implemented routes share one finite Boolean VC and one Rust
+process, and the source-to-VC translation remains unverified.
 
 ### `1.0.0`
 
@@ -607,11 +753,11 @@ result from becoming architecture.
 
 ## 15. Next milestone
 
-The active milestone is **M1: Lossless Frontend Contract**. Phase 1 started on
-2026-07-18 with RFC 0003, ADR 0002, and the lossless token stream; the green
-tree and declaration parser remain in progress.
+**M1: Lossless Frontend Contract** completed on 2026-07-18 with RFC 0003, ADR
+0002, the immutable lossless tree, deterministic recovery, stable diagnostic
+snapshots, preservation formatting, and corpus-wide round-trip tests.
 
-M1 is complete when:
+The completed M1 gate is:
 
 1. a lexical grammar RFC is accepted;
 2. a lossless syntax-tree ADR is accepted;
@@ -619,7 +765,47 @@ M1 is complete when:
    lossless tree;
 4. formatting is idempotent and preserves comments;
 5. malformed fixtures return stable diagnostics;
-6. the CLI continues to emit only `unknown` evidence because semantic checking
-   has not yet run.
+6. syntax-only commands make no semantic assurance claim and the structural
+   `evidence` scaffold remains explicitly `unknown`.
 
-M1 should be completed before adding model-checker or AI-generation code.
+**M2: Typed Provider Core and Checked Metatheory** completed on 2026-07-18.
+Rust and Lean agree on a frozen provider correspondence vector covering
+simultaneous updates, frames, blocked states, affine authority, and property
+indexing. Lean checks preservation, progress/blockage, frame soundness,
+capability no-duplication/no-fabrication, and indexing without `sorry` or a
+project-defined axiom. Full parser-to-Lean compiler correctness is not claimed.
+
+**M3: Reproducible Provider Model Checking** has its local implementation and
+evidence milestone complete for provider suite v2: one bounded reference
+acceptance, four structured mutant refutations, exact identities, and
+independent result readback. Independent clean-checkout reproduction remains
+open.
+
+**M4: Finite Temporal and Runtime Evidence** has its finite milestone complete
+for generic lasso/fairness, refinement, synthetic journals, and provider
+`NoBlindReplay` over an independently replayed, manually audited observation
+graph. General source-derived temporal checking remains open.
+
+**M5: Finite Multi-engine Composition** completed for one hand-constructed
+two-observable provider VC, including certificate checking and fail-closed
+negative controls.
+
+**M6: Authority-bounded Repair Protocol** completed as a deterministic
+three-task baseline linked to the Phase 4 runtime-drift evidence. It is not an
+LLM capability result.
+
+**M7: Graded-resource Experiment** completed as a separate annotated-plan
+track with a kernel-checked mathematical product algebra. Its promotion gate
+remains closed pending typed-core/analyzer integration, verified Rust
+correspondence, and semantics for the accepted resource annotations.
+
+The active milestone is **M8: Integration, Independent Reproduction, and
+Release Hardening**:
+
+1. run the complete documented gate from an independent clean checkout and
+   record the environment and outcomes;
+2. review the final TCB and evidence identities after the implementation
+   freeze;
+3. keep the frontend, provider core, temporal graph, finite VC, agentic
+   protocol, and graded experiment as distinct assurance subjects;
+4. decide whether the bounded provider slice is ready for a `0.1.0` tag.

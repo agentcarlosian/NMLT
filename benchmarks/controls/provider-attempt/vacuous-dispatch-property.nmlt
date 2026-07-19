@@ -1,0 +1,9 @@
+// Integrity control: the property holds only because dispatch is unreachable.
+system VacuousDispatchPropertyControl {
+  state armed: Bool = false
+  state dispatched: Bool = false
+
+  action idle { set armed = armed }
+
+  safety DispatchRequiresArm = always(dispatched implies armed)
+}

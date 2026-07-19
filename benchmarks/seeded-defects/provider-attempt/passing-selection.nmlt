@@ -1,4 +1,5 @@
-// Expected after semantic checking: SelectionRequiresPass is refuted.
+// Oracle: SelectionRequiresPass is refuted by one failing selection.
+// Current supported result: unknown (the frontend is structural only).
 system PassingSelectionMutant {
   state phase: Phase = evaluated
   state passed: Bool = false

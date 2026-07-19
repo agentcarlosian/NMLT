@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "property_id": "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe",
+  "handle": "ProviderAttempt.NoBlindReplay",
+  "claim_kind": "behavioral_safety",
+  "statement": "Once dispatch outcome is indeterminate, the same attempt cannot dispatch again without authoritative reconciliation.",
+  "nmlt_formula": "always(phase == indeterminate implies not enabled(dispatch))",
+  "observables": ["phase", "dispatch_count", "enabled(dispatch)"],
+  "anti_vacuity_obligations": [
+    "A reachable trace enters the indeterminate phase after one dispatch.",
+    "Enabledness is checked in that current indeterminate state, before any replay transition.",
+    "The reference model disables dispatch from indeterminate."
+  ]
+}

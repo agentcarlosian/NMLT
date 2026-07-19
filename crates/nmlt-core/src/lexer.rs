@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{Diagnostic, Span};
 
 /// A lossless lexical category. Token text is always recovered from its span.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TokenKind {
     Whitespace,
     LineComment,

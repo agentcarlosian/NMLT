@@ -1,0 +1,18 @@
+[package]
+name = "nmlt-grades"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Deterministic graded-resource analysis prototype for NMLT"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[example]]
+name = "graded_evidence"
+path = "examples/graded_evidence.rs"
+
+[lints]
+workspace = true

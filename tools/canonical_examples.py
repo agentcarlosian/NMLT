@@ -25,6 +25,70 @@ EXPECTED = (
 )
 SOURCE_PREFIX = "nmlt-source-v1:sha256:"
 SOURCE_SET_PREFIX = "nmlt-source-set-v1:sha256:"
+EXAMPLE_PREFIX = "nmlt-canonical-example-v1:sha256:"
+CORPUS_PREFIX = "nmlt-canonical-corpus-v1:sha256:"
+
+
+class DuplicateKey(ValueError):
+    pass
+
+
+def reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    value: dict[str, object] = {}
+    for key, item in pairs:
+        if key in value:
+            raise DuplicateKey(f"duplicate JSON member {key!r}")
+        value[key] = item
+    return value
+
+
+def reject_number(raw: str) -> object:
+    raise ValueError(f"canonical registry subset does not permit number {raw!r}")
+
+
+def parse_registry(text: str) -> dict[str, object]:
+    value = json.loads(
+        text,
+        object_pairs_hook=reject_duplicate_pairs,
+        parse_float=reject_number,
+        parse_int=reject_number,
+        parse_constant=reject_number,
+    )
+    if not isinstance(value, dict):
+        raise ValueError("canonical registry must be a JSON object")
+    return value
+
+
+def load_registry() -> dict[str, object]:
+    return parse_registry(MANIFEST.read_text(encoding="utf-8"))
+
+
+def canonical_json(value: object) -> bytes:
+    """Encode the manifest's string/array/object subset deterministically."""
+    return json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+
+
+def content_id(prefix: str, domain: bytes, value: object) -> str:
+    encoded = canonical_json(value)
+    return prefix + hashlib.sha256(
+        domain + len(encoded).to_bytes(8, "big") + encoded
+    ).hexdigest()
+
+
+def example_id(value: dict[str, object]) -> str:
+    payload = dict(value)
+    payload.pop("entry_id", None)
+    return content_id(
+        EXAMPLE_PREFIX, b"NMLT-CANONICAL-EXAMPLE\0v1\0", payload
+    )
+
+
+def corpus_id(value: dict[str, object]) -> str:
+    payload = dict(value)
+    payload.pop("corpus_id", None)
+    return content_id(CORPUS_PREFIX, b"NMLT-CANONICAL-CORPUS\0v1\0", payload)
 
 
 def source_digest(data: bytes) -> bytes:
@@ -50,9 +114,16 @@ def source_set_id(entries: tuple[tuple[str, str], ...]) -> str:
 def verify() -> list[str]:
     errors: list[str] = []
     try:
-        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+        manifest = load_registry()
+    except (OSError, ValueError, json.JSONDecodeError) as error:
         return [f"cannot read {MANIFEST.relative_to(ROOT)}: {error}"]
+
+    try:
+        parse_registry('{"id":"C01","id":"forged"}')
+    except DuplicateKey:
+        pass
+    else:
+        errors.append("duplicate-member parser self-test did not reject ambiguity")
 
     if manifest.get("corpus_version") != "nmlt-canonical-v1":
         errors.append("corpus_version must be nmlt-canonical-v1")
@@ -73,6 +144,11 @@ def verify() -> list[str]:
         expected_id = source_id(path)
         if item.get("source_id") != expected_id:
             errors.append(f"stale source_id for {path_text}: expected {expected_id}")
+        expected_entry_id = example_id(item)
+        if item.get("entry_id") != expected_entry_id:
+            errors.append(
+                f"stale entry_id for {path_text}: expected {expected_entry_id}"
+            )
         if not item.get("intent"):
             errors.append(f"missing intent for {path_text}")
         if not item.get("claims"):
@@ -84,6 +160,18 @@ def verify() -> list[str]:
     expected_set = source_set_id(EXPECTED)
     if manifest.get("source_set_id") != expected_set:
         errors.append(f"stale source_set_id: expected {expected_set}")
+    expected_corpus_id = corpus_id(manifest)
+    if manifest.get("corpus_id") != expected_corpus_id:
+        errors.append(f"stale corpus_id: expected {expected_corpus_id}")
+
+    claim_probe = json.loads(json.dumps(actual_entries[0]))
+    claim_probe["claims"].append("forged-claim-with-unchanged-source")
+    if example_id(claim_probe) == example_id(actual_entries[0]):
+        errors.append("canonical entry identity does not bind intended claims")
+    corpus_probe = json.loads(json.dumps(manifest))
+    corpus_probe["examples"][0]["intent"] += " forged"
+    if corpus_id(corpus_probe) == corpus_id(manifest):
+        errors.append("canonical corpus identity does not bind example intent")
     return errors
 
 
@@ -94,9 +182,19 @@ def main() -> int:
     )
     args = parser.parse_args()
     if args.print_ids:
-        for example_id, portable_path in EXPECTED:
-            print(example_id, portable_path, source_id(ROOT / portable_path))
+        manifest = load_registry()
+        for example_handle, portable_path in EXPECTED:
+            item = next(
+                item for item in manifest["examples"] if item["id"] == example_handle
+            )
+            print(
+                example_handle,
+                portable_path,
+                source_id(ROOT / portable_path),
+                example_id(item),
+            )
         print("SET", source_set_id(EXPECTED))
+        print("CORPUS", corpus_id(manifest))
         return 0
 
     errors = verify()
@@ -104,7 +202,10 @@ def main() -> int:
         for error in errors:
             print(f"error: {error}", file=sys.stderr)
         return 1
-    print("ok: nmlt-canonical-v1 (10 examples; source identities current)")
+    print(
+        "ok: nmlt-canonical-v1 "
+        "(10 examples; source, intent, claim, control, and corpus identities current)"
+    )
     return 0
 
 

@@ -1,0 +1,1 @@
+Represent readiness as a Boolean state.

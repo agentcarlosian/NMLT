@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "witness_id": "nmlt-expected-counterexample-v1:sha256:45bb21364362c8ab809b4366ac099ee2084fe89380f54df5f85ed1deab3e9c63",
+  "status": "expected_not_observed",
+  "case_id": "passing-selection",
+  "property_id": "nmlt-benchmark-property-v1:sha256:03a2a2ee37e3191d1f81ca722e60fb600efc60310c4855196904f0fd6ada7ba6",
+  "minimal_transition_count": 1,
+  "initial_observation": {
+    "phase": "evaluated",
+    "passed": false
+  },
+  "steps": [
+    {
+      "action": "select",
+      "resulting_observation": {
+        "phase": "selected",
+        "passed": false
+      }
+    }
+  ],
+  "violation": {
+    "state_index": 1,
+    "predicate": "selected implies passed",
+    "explanation": "A failing evaluation reaches the selected phase."
+  },
+  "normalization": {
+    "state_field_order": ["phase", "passed"],
+    "transition_tie_break": "lexicographic action name then canonical state bytes"
+  }
+}

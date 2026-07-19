@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
+  "corpus_id": "technicusverus-provider-attempt-snapshot-2026-07-18",
+  "source_repository": {
+    "kind": "local_git_snapshot",
+    "name": "technicusverus",
+    "revision": "a6802d9e13500113d096f4f66f806d0dc26248fc",
+    "revision_date": "2026-07-18T20:25:04-05:00",
+    "remote": null
+  },
+  "source_artifacts": [
+    {
+      "path": "formal/TechnicusverusAttempt.tla",
+      "sha256": "692c8ebf9e10d622e4e8abad254ccc2ce65c52c923e6689ec22b181c3b2928e2",
+      "role": "bounded lifecycle and four independent control switches"
+    },
+    {
+      "path": "reliability/technicusverus.action-effect-protocol.json",
+      "sha256": "684bd9616393e6d32c68d2b26985048a752458ab6f46abf4e12af35acf32de81",
+      "role": "provider action/effect lifecycle contract"
+    },
+    {
+      "path": "reliability/technicusverus.reliability-contract.json",
+      "sha256": "7949c594be9c9dfdf263f286dfd4091316257bc08ce9355a3d5a95dae385bdf4",
+      "role": "claim boundary and promotion constraints"
+    }
+  ],
+  "license": {
+    "spdx": "MIT",
+    "path": "LICENSE",
+    "sha256": "078e565e57c7ede91a9b49c69ab4efee5d06d0cd9aa0f303d58a700c73c8bce2"
+  },
+  "derivation": {
+    "method": "independent_reencoding",
+    "copied_source_bytes": false,
+    "statement": "NMLT fixtures independently encode the lifecycle obligations; this repository stores no upstream source text."
+  },
+  "availability": {
+    "upstream_required_for_validation": false,
+    "reason": "The immutable revision, paths, SHA-256 digests, and license identity are sufficient provenance metadata for a clean NMLT checkout."
+  }
+}

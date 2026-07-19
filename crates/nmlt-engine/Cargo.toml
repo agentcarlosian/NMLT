@@ -1,0 +1,14 @@
+[package]
+name = "nmlt-engine"
+description = "Typed behavioral core and deterministic verification engine for NMLT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+nmlt-core = { path = "../nmlt-core" }
+
+[lints]
+workspace = true

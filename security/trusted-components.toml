@@ -1,7 +1,35 @@
-manifest_version = "1.0.0"
+manifest_version = "1.1.0"
 status = "pre-alpha"
 reviewed = "2026-07-18"
-identity_requirement = "Bind this file and every listed source with RFC 0004 before semantic claims."
+identity_requirement = "Every assurance manifest binds the exact source/source set, engine source set and executable, and each relied-on component by a content address; generic and graded assurance evidence also binds the exact bytes of this inventory, which names roles but is not itself a digest ledger."
+
+outside_tcb = [
+  "examples, intent prose, benchmark expectations, dashboards, and visual renderers",
+  "AI-generated repair candidates and the nmlt-agent deterministic assistant baseline",
+  "fuzzers, mutation generators, proof search, and test counts",
+  "TLC, Quint, P, SMT solvers, and proof-assistant stdout unless a narrower trusted checker validates a certificate for the exact obligation",
+  "nmlt-verify reachability, induction, SMT, and proof-return producers when a checked certificate or replayed witness is the accepted basis",
+  "runtime events and traces before the declared observation/refinement adapter checks them",
+]
+
+residual_trust = [
+  "host CPU, memory, kernel, filesystem, process isolation, clocks, and SHA-256 implementation",
+  "GitHub-hosted ubuntu-latest runner image and network delivery are not content-pinned",
+  "rustup/elan and language release download/bootstrap chains are version-pinned but their installed binaries are not yet recorded by digest in this repository",
+  "Python 3 and its standard library are supplied by the runner and are not version- or binary-digest-pinned",
+  "Cargo/Lean dependency acquisition, linker, system libraries, and build environment are not yet reproducibly attested",
+  "local content addresses establish byte identity, not authorship, freshness, signing, or transparency-log inclusion",
+  "no verified compiler theorem connects the Rust executable frontend/IR to the Lean metatheory",
+]
+
+forbidden_claims = [
+  "semantic verification from structural parsing",
+  "unbounded proof from finite exploration",
+  "proof acceptance from solver status, proof-assistant stdout, or an unchecked/non-content-addressed certificate",
+  "safe automatic replay after an indeterminate external effect",
+  "production authorization by any pre-alpha NMLT result",
+  "signing, provenance, or transparency from an unsigned digest-only manifest",
+]
 
 [[claim_profiles]]
 name = "structural_acceptance"
@@ -9,12 +37,11 @@ result_ceiling = "unknown"
 trusted = [
   "host.hardware_os_filesystem",
   "toolchain.rust",
+  "nmlt_core.frontend",
   "nmlt_core.diagnostic",
-  "nmlt_core.lexer",
-  "nmlt_core.syntax",
   "nmlt_core.evidence_scaffold",
   "nmlt_cli",
-  "build.release_process",
+  "build.ci_release",
 ]
 
 [[claim_profiles]]
@@ -23,53 +50,302 @@ result_ceiling = "identity_only"
 trusted = [
   "host.hardware_os_filesystem",
   "toolchain.python3",
-  "python.hashlib_sha256",
+  "crypto.sha256",
   "tools.canonical_examples",
   "docs.artifact_identity",
 ]
 
-[[components]]
-id = "nmlt_core.lexer"
-paths = ["crates/nmlt-core/src/lexer.rs"]
-role = "Lossless byte coverage and lexical classification under RFC 0003."
+[[claim_profiles]]
+name = "typed_bounded_model_check"
+result_ceiling = "model_checked_or_refuted"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "nmlt_core.frontend",
+  "nmlt_engine.semantic_kernel",
+  "nmlt_engine.explicit_state",
+  "tools.model_result_checker",
+  "tools.evidence_checker",
+  "crypto.sha256",
+]
+
+[[claim_profiles]]
+name = "temporal_refinement_and_runtime_trace"
+result_ceiling = "model_checked_refuted_or_monitored"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "nmlt_temporal.kernel",
+  "tools.temporal_evidence_checker",
+  "crypto.sha256",
+]
+
+[[claim_profiles]]
+name = "checked_finite_verification_condition"
+result_ceiling = "proved_for_exact_finite_vc_only"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "nmlt_verify.vc_kernel",
+  "nmlt_verify.certificate_checker",
+  "nmlt_verify.result_normalizer",
+  "tools.multi_engine_evidence_checker",
+  "crypto.sha256",
+]
+
+[[claim_profiles]]
+name = "agentic_repair_evaluation"
+result_ceiling = "tested"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "nmlt_agent.authority_kernel",
+  "nmlt_agent.evaluation_harness",
+  "tools.agentic_evidence_checker",
+  "tools.benchmark_integrity_checker",
+  "crypto.sha256",
+]
+
+[[claim_profiles]]
+name = "graded_resource_analysis"
+result_ceiling = "model_checked_or_refuted"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "nmlt_grades.kernel",
+  "tools.graded_evidence_checker",
+  "crypto.sha256",
+]
+
+[[claim_profiles]]
+name = "lean_metatheory"
+result_ceiling = "proved_for_the_checked_lean_statements_only"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.lean",
+  "ci.lean_action",
+  "nmlt_lean.statements",
+  "lean.kernel_and_nanoda",
+  "tools.metatheory_policy_checker",
+]
 
 [[components]]
-id = "nmlt_core.syntax"
-paths = ["crates/nmlt-core/src/syntax.rs"]
-role = "Delimiter validation and structural system recognition only."
+id = "host.hardware_os_filesystem"
+paths = []
+role = "Read exact bytes and execute trusted code; a compromised host can forge all local evidence."
+
+[[components]]
+id = "crypto.sha256"
+paths = []
+role = "SHA-256 collision/second-preimage resistance and the host implementations used by Rust/Python are trusted for v1 identity."
+
+[[components]]
+id = "toolchain.rust"
+paths = ["rust-toolchain.toml", "Cargo.lock"]
+version = "1.94.0"
+role = "Compile the Rust workspace. The version declaration is exact; bootstrap binaries and system linker remain residual trust."
+
+[[components]]
+id = "toolchain.lean"
+paths = [
+  "mechanization/lean/lean-toolchain",
+  "mechanization/lean/lakefile.toml",
+  "mechanization/lean/lake-manifest.json",
+]
+version = "v4.30.0"
+role = "Compile Lean statements and proofs. Downloaded tool binaries are not yet recorded by digest."
+
+[[components]]
+id = "toolchain.python3"
+paths = []
+role = "Execute the standard-library-only identity and evidence checkers; runtime binary and stdlib are runner-supplied residual trust."
+
+[[components]]
+id = "ci.checkout_action"
+paths = [".github/workflows/ci.yml"]
+version = "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+role = "Fetch the repository in CI at the documented v4.2.2 action commit."
+
+[[components]]
+id = "ci.lean_action"
+paths = [".github/workflows/ci.yml"]
+version = "leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9"
+role = "Build and run NanoDA under the documented v1.5.0 action commit."
+
+[[components]]
+id = "lean.kernel_and_nanoda"
+paths = []
+role = "Check the elaborated Lean proof terms; exact installed binary digests are not yet persisted."
+
+[[components]]
+id = "nmlt_core.frontend"
+paths = [
+  "crates/nmlt-core/src/lexer.rs",
+  "crates/nmlt-core/src/cst.rs",
+  "crates/nmlt-core/src/syntax.rs",
+]
+role = "Lossless lexing, immutable CST construction, recovery, and structural recognition."
 
 [[components]]
 id = "nmlt_core.diagnostic"
 paths = ["crates/nmlt-core/src/diagnostic.rs"]
-role = "Stable diagnostic codes and byte-span rendering."
+role = "Stable diagnostic classification and byte-span rendering."
 
 [[components]]
 id = "nmlt_core.evidence_scaffold"
 paths = ["crates/nmlt-core/src/evidence.rs", "schemas/evidence-manifest.schema.json"]
-role = "Emit explicit unknown structural scaffolds; no canonical evidence ID yet."
+role = "Emit only legacy structural unknown scaffolds and define the generic manifest shape."
 
 [[components]]
 id = "nmlt_cli"
 paths = ["crates/nmlt-cli/src/main.rs"]
-role = "Read source, invoke the frontend, preserve result ceiling, and render output."
+role = "Route frontend, type-check, and model-check commands without raising a method's result ceiling."
+
+[[components]]
+id = "nmlt_engine.semantic_kernel"
+paths = [
+  "crates/nmlt-engine/src/ast.rs",
+  "crates/nmlt-engine/src/parser.rs",
+  "crates/nmlt-engine/src/types.rs",
+]
+role = "Parse/elaborate the executable fragment and enforce type, frame, system-index, and affine-capability rules."
+
+[[components]]
+id = "nmlt_engine.explicit_state"
+paths = ["crates/nmlt-engine/src/model.rs"]
+role = "Evaluate simultaneous updates and classify deterministic finite exploration, bounds, and counterexamples."
+
+[[components]]
+id = "nmlt_temporal.kernel"
+paths = [
+  "crates/nmlt-temporal/src/graph.rs",
+  "crates/nmlt-temporal/src/temporal.rs",
+  "crates/nmlt-temporal/src/observation.rs",
+  "crates/nmlt-temporal/src/refinement.rs",
+  "crates/nmlt-temporal/src/runtime.rs",
+]
+role = "Construct finite graphs/lassos, interpret explicit fairness and hiding, check finite simulation, and classify supplied traces."
+
+[[components]]
+id = "nmlt_verify.vc_kernel"
+paths = ["crates/nmlt-verify/src/ir.rs", "crates/nmlt-verify/src/identity.rs"]
+role = "Validate and identify the finite verification condition and evaluate its closed Boolean expressions."
+
+[[components]]
+id = "nmlt_verify.certificate_checker"
+paths = ["crates/nmlt-verify/src/certificate.rs"]
+role = "Reconstruct and check the exact finite invariant certificate obligation."
+
+[[components]]
+id = "nmlt_verify.result_normalizer"
+paths = ["crates/nmlt-verify/src/evidence.rs"]
+role = "Replay witnesses, reject stale/disagreeing returns, and cap results unless a certificate is accepted."
+
+[[components]]
+id = "nmlt_agent.authority_kernel"
+paths = [
+  "crates/nmlt-agent/src/authority.rs",
+  "crates/nmlt-agent/src/artifact.rs",
+  "crates/nmlt-agent/src/digest.rs",
+  "crates/nmlt-agent/src/graph.rs",
+]
+role = "Bind protected artifacts/spans and reject repairs outside declared edit authority."
+
+[[components]]
+id = "nmlt_agent.evaluation_harness"
+paths = [
+  "crates/nmlt-agent/src/evaluation.rs",
+  "crates/nmlt-agent/src/feedback.rs",
+  "crates/nmlt-agent/src/bin/evaluate.rs",
+]
+role = "Apply deterministic evaluation policy and report repair metrics; it does not establish semantic proof."
+
+[[components]]
+id = "nmlt_grades.kernel"
+paths = [
+  "crates/nmlt-grades/src/algebra.rs",
+  "crates/nmlt-grades/src/parser.rs",
+  "crates/nmlt-grades/src/checker.rs",
+]
+role = "Interpret product grades and check declared finite resource budgets."
+
+[[components]]
+id = "nmlt_lean.statements"
+paths = [
+  "mechanization/lean/NMLT.lean",
+  "mechanization/lean/NMLT/Core/TypedCore.lean",
+  "mechanization/lean/NMLT/Core/Transition.lean",
+  "mechanization/lean/NMLT/Core/Provider.lean",
+  "mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean",
+  "mechanization/lean/NMLT/Grades/Algebra.lean",
+  "mechanization/lean/NMLT/Typing/Judgments.lean",
+  "mechanization/lean/NMLT/Metatheory/Soundness.lean",
+]
+role = "Definitions and theorem statements whose exact compiled proof terms are accepted; scope does not extend to Rust correspondence."
 
 [[components]]
 id = "tools.canonical_examples"
-paths = ["tools/canonical_examples.py", "docs/artifact-identity.md"]
-role = "Reference calculation and readback of source/source-set identity."
+paths = ["tools/canonical_examples.py"]
+role = "Reference calculation and readback of exact source/source-set identity."
 
-outside_tcb = [
-  "examples and comparison models",
-  "documentation prose and visual renderers",
-  "AI and generated code",
-  "search strategies, fuzzers, and test counts",
-  "TLC, Quint, P, SMT solvers, and proof search unless checked by a narrower accepted checker",
-  "runtime traces before authenticated refinement checking",
-]
+[[components]]
+id = "docs.artifact_identity"
+paths = ["docs/artifact-identity.md"]
+role = "Normative v1 domain separation, canonicalization subset, and identity contract."
 
-forbidden_claims = [
-  "semantic verification from structural parsing",
-  "unbounded proof from finite exploration",
-  "safe automatic replay after an indeterminate external effect",
-  "production authorization by any pre-alpha NMLT result",
+[[components]]
+id = "tools.benchmark_integrity_checker"
+paths = [
+  "tools/validate_benchmark_integrity.py",
+  "schemas/benchmark-suite-v1.schema.json",
+  "schemas/benchmark-result-v1.schema.json",
 ]
+role = "Validate frozen intent/property/witness/result bindings and schema subsets."
+
+[[components]]
+id = "tools.model_result_checker"
+paths = [
+  "tools/check_model_reports.py",
+  "schemas/model-check-report.schema.json",
+  "schemas/benchmark-result-v1.schema.json",
+]
+role = "Rebuild/run the bounded engine, bind executable/source/configuration identities, and independently read back result reports."
+
+[[components]]
+id = "tools.evidence_checker"
+paths = [
+  "tools/check_evidence.py",
+  "schemas/evidence-manifest.schema.json",
+  "tools/validate_benchmark_integrity.py",
+]
+role = "Recompute manifest/source bindings and reject missing engine, TCB, bounds, witness, and certificate requirements."
+
+[[components]]
+id = "tools.temporal_evidence_checker"
+paths = ["tools/check_temporal_evidence.py", "schemas/temporal-evidence-v1.schema.json"]
+role = "Rebuild and read back finite temporal, refinement, and runtime evidence."
+
+[[components]]
+id = "tools.multi_engine_evidence_checker"
+paths = ["tools/check_multi_engine_evidence.py", "schemas/multi-engine-evidence-v1.schema.json"]
+role = "Read back independent raw routes, checked certificates, disagreement policy, and exact engine bindings."
+
+[[components]]
+id = "tools.agentic_evidence_checker"
+paths = ["tools/check_phase6_evidence.py", "schemas/phase6-evidence-graph-v1.schema.json"]
+role = "Rebuild/read back the authority-bounded repair evaluation and its exact runtime-drift artifact edge."
+
+[[components]]
+id = "tools.graded_evidence_checker"
+paths = ["tools/check_graded_evidence.py", "schemas/graded-evidence-v1.schema.json"]
+role = "Rebuild/read back graded-resource results, adversarial controls, and exact separately checked Lean algebra bindings."
+
+[[components]]
+id = "tools.metatheory_policy_checker"
+paths = ["tools/check_metatheory.sh"]
+role = "Reject forbidden proof placeholders and invoke the pinned Lean build; the shell and host tools remain trusted."
+
+[[components]]
+id = "build.ci_release"
+paths = ["Makefile", "Cargo.toml", "Cargo.lock", ".github/workflows/ci.yml"]
+role = "Compose repository gates with least-privilege CI. This is not yet a reproducible or signed release pipeline."

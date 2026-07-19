@@ -1,0 +1,4 @@
+// Frontend control: the missing closing brace must be rejected.
+system MalformedProviderAttemptControl {
+  state dispatched: Bool = false
+  action dispatch { set dispatched = true }

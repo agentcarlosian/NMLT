@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:9ca9153e20808ea02be39a56290da9a622a86fdf734de03000471190dbccea2a",
+  "case_id": "blind-replay",
+  "case_class": "semantic_mutant",
+  "source": {
+    "path": "benchmarks/seeded-defects/provider-attempt/blind-replay.nmlt",
+    "source_id": "nmlt-source-v1:sha256:1d61387c8998f8e2bda759a2ba05d66201507e522bbedf5bc4483b3ed4afaaac"
+  },
+  "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
+  "intent": "Demonstrate that blindly redispatching an indeterminate provider attempt violates the ambiguity boundary.",
+  "property_ids": [
+    "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe"
+  ],
+  "positive_scenarios": [
+    "observe that dispatch is enabled in the initial indeterminate state whose recorded dispatch count is already one"
+  ],
+  "forbidden_scenarios": [
+    "treat indeterminate as confirmed no-effect",
+    "repair the mutant or weaken NoBlindReplay during evaluation"
+  ],
+  "anti_vacuity_obligations": [
+    "Dispatch is enabled in the initial indeterminate state.",
+    "Current-state enabledness refutes the property before a replay transition is taken."
+  ],
+  "expected": {
+    "current_evidence_class": "refuted",
+    "intended_evidence_class": "refuted",
+    "oracle_outcome": "refuted",
+    "support": "current",
+    "result": {
+      "path": "benchmarks/results/provider-attempt/blind-replay.json",
+      "result_id": "nmlt-benchmark-result-v1:sha256:233d9ffc3ff20115de663aec6ac355492563ccafdd064ec6853bdeee15672d98"
+    },
+    "witness_ids": [
+      "nmlt-expected-counterexample-v1:sha256:da4bbd49ff308c67dc37ae24f5f7ed5e6ff11eb1e12312a313a6365a72cacf2e"
+    ]
+  },
+  "change_control": {
+    "status": "frozen",
+    "frozen_on": "2026-07-18",
+    "rule": "Changing intent, properties, source bytes, witness shape, or oracle requires a new suite version."
+  }
+}

@@ -1,0 +1,1 @@
+Dispatch must remain reachable after authorization; deleting its authority guard must be refuted.

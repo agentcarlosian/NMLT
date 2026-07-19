@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/phase6-evidence-graph-v1.schema.json",
+  "title": "NMLT Phase 6 authority and runtime-drift artifact graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "graph_id",
+    "fixture",
+    "evaluation_binding",
+    "runtime_binding",
+    "metrics",
+    "nodes",
+    "edges",
+    "implementation",
+    "residual_gaps"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "graph_id": {
+      "type": "string",
+      "pattern": "^nmlt-phase6-graph-v1:sha256:[0-9a-f]{64}$"
+    },
+    "fixture": { "const": "authority-repair-and-runtime-drift-v1" },
+    "evaluation_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "content_sha256",
+        "suite_path",
+        "suite_sha256",
+        "assistant_kind",
+        "checker_id"
+      ],
+      "properties": {
+        "path": { "const": "benchmarks/agentic/evaluation.json" },
+        "content_sha256": { "$ref": "#/$defs/sha256" },
+        "suite_path": { "const": "benchmarks/agentic/suite.json" },
+        "suite_sha256": { "$ref": "#/$defs/sha256" },
+        "assistant_kind": {
+          "const": "deterministic_protocol_conformance_baseline_not_llm_evidence"
+        },
+        "checker_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "runtime_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "content_sha256",
+        "model_id",
+        "implementation_id",
+        "runtime_case_id",
+        "journal_id",
+        "classification",
+        "record_index",
+        "reason"
+      ],
+      "properties": {
+        "path": { "const": "benchmarks/results/temporal/phase4-evidence.json" },
+        "content_sha256": { "$ref": "#/$defs/sha256" },
+        "model_id": {
+          "pattern": "^nmlt-temporal-graph-v1:sha256:[0-9a-f]{64}$"
+        },
+        "implementation_id": {
+          "pattern": "^nmlt-temporal-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "runtime_case_id": {
+          "pattern": "^nmlt-runtime-case-v1:sha256:[0-9a-f]{64}$"
+        },
+        "journal_id": {
+          "pattern": "^nmlt-journal-v1:sha256:[0-9a-f]{64}$"
+        },
+        "classification": { "const": "rejected" },
+        "record_index": { "type": "integer", "minimum": 0 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tasks",
+        "baseline_completed",
+        "assisted_completed",
+        "integrity_attempts",
+        "integrity_rejections",
+        "controls_retained",
+        "controls_killed",
+        "unknown_promotions",
+        "conflict_promotions"
+      ],
+      "properties": {
+        "tasks": { "const": 3 },
+        "baseline_completed": { "const": 0 },
+        "assisted_completed": { "const": 3 },
+        "integrity_attempts": { "const": 21 },
+        "integrity_rejections": { "const": 21 },
+        "controls_retained": { "const": 3 },
+        "controls_killed": { "const": 3 },
+        "unknown_promotions": { "const": 0 },
+        "conflict_promotions": { "const": 0 }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_set_id",
+        "toolchain",
+        "target",
+        "executable_sha256",
+        "reproducer_sha256"
+      ],
+      "properties": {
+        "source_set_id": {
+          "pattern": "^nmlt-agent-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "toolchain": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "executable_sha256": { "pattern": "^[0-9a-f]{64}$" },
+        "reproducer_sha256": { "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "residual_gaps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "digest", "summary", "result_class"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "digest": { "$ref": "#/$defs/sha256" },
+        "summary": { "type": "string", "minLength": 1 },
+        "result_class": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1 }
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "locator": { "type": "string", "minLength": 1 },
+        "binding_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "relation", "to"],
+      "properties": {
+        "from": { "type": "string", "minLength": 1 },
+        "relation": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

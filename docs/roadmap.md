@@ -1,64 +1,77 @@
 # Roadmap
 
-Dates are planning ranges, not commitments. Advancement depends on exit gates.
+Dates are records or planning ranges, not release commitments. The detailed
+gates and residual gaps live in [`Plan.md`](../Plan.md). “Complete” below means
+complete only at the explicitly bounded research scope; it never means a
+stable, general-purpose, verified language.
 
-## Phase 0: charter and corpus (complete 2026-07-18)
+## Phase 0 — Foundation and research contract (complete 2026-07-18)
 
-- Freeze design principles and non-goals.
-- Freeze ten canonical examples for v1; expand only through a new corpus
-  version.
-- Establish RFC, decision, evidence, and benchmark formats.
-- Compare representative encodings with TLA+, Quint, and P.
+Apache-2.0 contribution terms, ten identity-frozen canonical examples,
+NMLT/TLA+/Quint/P comparison fixtures, candidate behavior rules, a
+claim-specific TCB threat model, and source/evidence identity requirements.
 
-Exit: the proposed language has a clear negative space and testable thesis.
+## Phase 1 — Syntax and semantic skeleton (complete 2026-07-18)
 
-## Phase 1: syntax and semantic skeleton (started 2026-07-18)
+Lossless tokens and immutable CST, deterministic recovery, stable spans,
+preservation formatting, declaration/action shells, and a partial untyped-core
+projection. Raw expressions and surface-only declarations retain no inferred
+semantic assurance.
 
-- Implement the accepted lossless lexical contract and green-tree design.
-- Define static, operational, and trace semantics from RFC 0001.
-- Select resource and capability algebra interfaces.
-- Define and mechanize composition and refinement judgments.
+## Phase 2 — Typed behavioral core (complete for the provider slice 2026-07-18)
 
-Exit: the kernel fragment has no known unsound placeholders.
+Contextual provider elaboration, typed state/actions, explicit frames, affine
+provider capability, and a Rust/Lean correspondence vector with checked kernel
+theorems. Full surface-to-kernel compiler correctness is not claimed.
 
-## Phase 2: executable alpha
+## Phase 3 — Behavior execution (bounded implementation complete 2026-07-18)
 
-- Build a lossless parser, resolver, type checker, formatter, and interpreter.
-- Stabilize diagnostics and source mapping.
-- Execute the initial example corpus.
+Deterministic bounded BFS accepts one frozen reference and refutes four
+semantic mutants with source-bound structured traces. Suite v2 corrects
+`NoBlindReplay` to current-state enabledness and freezes a distinguishing
+one-shot regression. The Phase 3/release gate remains open until independent
+clean-checkout reproduction is recorded.
 
-Exit: deterministic execution and reproducible frontend behavior.
+## Phase 4 — Temporal properties and refinement (finite-fixture milestone complete 2026-07-18)
 
-## Phase 3: verification
+Finite fair-lasso checking, weak/strong fairness, stuttering, hiding,
+one-step forward simulation, and accepted/rejected/unknown runtime-journal
+conformance with independent evidence replay on a canonical finite fixture.
+Provider `NoBlindReplay` is also checked with finite `always` semantics over a
+nine-state reference observation graph; the blind mutant has a zero-step stem
+and identity-stutter infinite lasso that the Python harness independently
+replays. The source-to-observation-graph projection is manually audited, not
+compiler-derived. No general temporal language, infinite-state, or
+liveness-refinement proof is claimed.
 
-- Implement explicit-state exploration and structured counterexamples.
-- Add symbolic and proof backend protocols.
-- Bind results into evidence manifests.
-- Exercise seeded negative controls.
+## Phase 5 — Multiple verification engines (complete for one finite VC 2026-07-18)
 
-Exit: all required provider-attempt mutants are detected and classified.
+One manual two-observable provider VC is checked by deterministic reachability
+and separate finite inductiveness enumeration. Certificates are checked and
+disagreement fails closed. The `proved` result applies only to that exact VC,
+not to the full NMLT source translation.
 
-## Phase 4: refinement and runtime
+## Phase 6 — Runtime and agentic workflow (complete as a deterministic baseline 2026-07-18)
 
-- Add trace adapters for concrete runtimes.
-- Generate model-based tests and runtime monitors.
-- Detect typed specification drift.
+Protected edit authority, structured feedback, localized repair, held-out
+fixtures, negative controls, and a source-bound artifact graph linked to a
+synthetic drift event. The three-task result is protocol-conformance evidence,
+not an LLM capability or production-runtime claim.
 
-Exit: a concrete durable controller demonstrably refines its NMLT model.
+## Phase 7 — Independent research extensions (one prototype track complete 2026-07-18)
 
-## Phase 5: agentic workflow
+The first track checks a product of declared cost, privacy, energy, and
+uncertainty upper bounds in a separate annotated-plan language. Trusted
+annotations, no privacy/physical model, and no verified correspondence between
+the Rust analyzer and its kernel-checked Lean algebra keep its promotion gate
+closed. Cubical, hybrid, probabilistic, alternative-grade, and open-system
+tracks remain future work.
 
-- Add progressive formalization and compiler-guided repair.
-- Evaluate semantic mutation and intent review.
-- Enforce edit authority between trusted specifications and generated code.
+## Active milestone — M8 integration and release hardening
 
-Exit: agent assistance improves measured semantic outcomes without weakening
-trusted claims.
-
-## Phase 6: research extensions
-
-Evaluate cubical equality, hybrid dynamics, probability, and additional
-quantitative modalities as independent extensions.
-
-Exit: each accepted extension has metatheory, implementation, backend support,
-negative controls, and representative benchmarks.
+- reproduce the full gate from an independent clean checkout;
+- review final TCB and evidence identities after implementation freeze;
+- preserve the distinct assurance subject and ceiling of every research slice;
+- decide whether the bounded provider work is ready for a `0.1.0` tag;
+- pursue full frontend resolution/elaboration and verified source-to-IR
+  connections without weakening existing evidence classes.

@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "witness_id": "nmlt-expected-counterexample-v1:sha256:ef750d2addd7c3dacb4d0095890c6f96037eb416238c98d5ff60ae1814f03627",
+  "status": "expected_not_observed",
+  "case_id": "dispatch-before-authorize",
+  "property_id": "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd",
+  "minimal_transition_count": 1,
+  "initial_observation": {
+    "phase": "proposed",
+    "armed": false,
+    "dispatched": false
+  },
+  "steps": [
+    {
+      "action": "dispatch",
+      "resulting_observation": {
+        "phase": "proposed",
+        "armed": false,
+        "dispatched": true
+      }
+    }
+  ],
+  "violation": {
+    "state_index": 1,
+    "predicate": "dispatched implies armed",
+    "explanation": "Dispatch is true while armed is false."
+  },
+  "normalization": {
+    "state_field_order": ["phase", "armed", "dispatched"],
+    "transition_tie_break": "lexicographic action name then canonical state bytes"
+  }
+}

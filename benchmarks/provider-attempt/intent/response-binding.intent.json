@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:23e7e8aacd8d069f8824252baf88386d4e9afaee8bb509d38bd2f14e62cdc3e5",
+  "case_id": "response-binding",
+  "case_class": "semantic_mutant",
+  "source": {
+    "path": "benchmarks/seeded-defects/provider-attempt/response-binding.nmlt",
+    "source_id": "nmlt-source-v1:sha256:3f491ca3c289a1d5eff7d11519fb4509e60345aa8eb60819baa1ad442460462e"
+  },
+  "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
+  "intent": "Demonstrate that evaluating without an intact response binding violates evidence integrity.",
+  "property_ids": [
+    "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0"
+  ],
+  "positive_scenarios": [
+    "take evaluate from dispatched while response_intact is false"
+  ],
+  "forbidden_scenarios": [
+    "infer response binding from phase alone",
+    "repair the mutant or weaken EvaluationRequiresIntactResponse during evaluation"
+  ],
+  "anti_vacuity_obligations": [
+    "Evaluation is enabled in the initial state.",
+    "The evaluated state with response_intact false is reachable in exactly one transition."
+  ],
+  "expected": {
+    "current_evidence_class": "refuted",
+    "intended_evidence_class": "refuted",
+    "oracle_outcome": "refuted",
+    "support": "current",
+    "result": {
+      "path": "benchmarks/results/provider-attempt/response-binding.json",
+      "result_id": "nmlt-benchmark-result-v1:sha256:a2c9e69f88b6f1340cbfbb9bb43fde3cfbd7904db8b46970c38f4f8b4ac0a8e7"
+    },
+    "witness_ids": [
+      "nmlt-expected-counterexample-v1:sha256:ebae96b362b15cff69eb2e8f8631b1e19d6ffc703494d609fc98b4b1384155b7"
+    ]
+  },
+  "change_control": {
+    "status": "frozen",
+    "frozen_on": "2026-07-18",
+    "rule": "Changing intent, properties, source bytes, witness shape, or oracle requires a new suite version."
+  }
+}

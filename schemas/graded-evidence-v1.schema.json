@@ -1,0 +1,362 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/graded-evidence-v1.schema.json",
+  "title": "NMLT Phase 7 graded-resource executable evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "fixture",
+    "manifest_id",
+    "reference",
+    "algebra",
+    "bounds",
+    "negative_controls",
+    "assumptions",
+    "residual_gaps",
+    "metatheory",
+    "implementation"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "fixture": { "const": "phase7-graded-resources-v1" },
+    "manifest_id": {
+      "type": "string",
+      "pattern": "^nmlt-evidence-v1:sha256:[0-9a-f]{64}$"
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "claim_spec_source_id",
+        "claim_id",
+        "claim_handle",
+        "claim",
+        "decision",
+        "usage",
+        "budget"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        },
+        "claim_spec_source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        },
+        "claim_id": {
+          "type": "string",
+          "pattern": "^nmlt-graded-claim-v1:sha256:[0-9a-f]{64}$"
+        },
+        "claim_handle": { "const": "Grades.ProviderPipeline.WithinBudget" },
+        "claim": {
+          "const": "Under the declared annotations and bounded composition rules, the provider pipeline is componentwise within its declared product budget."
+        },
+        "decision": { "const": "within_budget" },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cost_ticks", "privacy_micro_epsilon", "energy_microjoules", "uncertainty_ppm"],
+          "properties": {
+            "cost_ticks": { "const": 66 },
+            "privacy_micro_epsilon": { "const": 500000 },
+            "energy_microjoules": { "const": 155 },
+            "uncertainty_ppm": { "const": 47000 }
+          }
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cost_ticks", "privacy_micro_epsilon", "energy_microjoules", "uncertainty_ppm"],
+          "properties": {
+            "cost_ticks": { "const": 100 },
+            "privacy_micro_epsilon": { "const": 550000 },
+            "energy_microjoules": { "const": 180 },
+            "uncertainty_ppm": { "const": 60000 }
+          }
+        }
+      }
+    },
+    "algebra": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "carrier",
+        "sequence",
+        "choice",
+        "parallel",
+        "sample_count",
+        "sampled_law_result",
+        "sampled_laws"
+      ],
+      "properties": {
+        "carrier": { "const": "Nat64 x Nat64 x Nat64 x Ppm" },
+        "sequence": {
+          "const": "componentwise_checked_add_with_saturated_uncertainty"
+        },
+        "choice": { "const": "componentwise_max" },
+        "parallel": {
+          "const": "componentwise_checked_add_without_disjointness_evidence"
+        },
+        "sample_count": { "const": 4 },
+        "sampled_law_result": { "const": "passed" },
+        "sampled_laws": {
+          "const": [
+            "identity",
+            "commutativity",
+            "associativity",
+            "choice_idempotence",
+            "zero_bottom",
+            "sequence_distributes_over_choice"
+          ]
+        }
+      }
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integer_representation",
+        "uncertainty_scale_ppm",
+        "reference_iteration_bounds",
+        "overflow_result"
+      ],
+      "properties": {
+        "integer_representation": { "const": "u64_checked" },
+        "uncertainty_scale_ppm": { "const": 1000000 },
+        "reference_iteration_bounds": { "const": "finite_explicit" },
+        "overflow_result": { "const": "unknown" }
+      }
+    },
+    "negative_controls": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "expected", "observed", "dimensions", "actual", "limit"],
+            "properties": {
+              "name": { "const": "privacy_budget_violation" },
+              "expected": { "const": "exceeded" },
+              "observed": { "const": "exceeded" },
+              "dimensions": { "const": ["privacy_micro_epsilon"] },
+              "actual": { "const": 500001 },
+              "limit": { "const": 400000 }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "expected", "observed", "code"],
+            "properties": {
+              "name": { "const": "unknown_iteration" },
+              "expected": { "const": "unknown" },
+              "observed": { "const": "unknown" },
+              "code": { "const": "NMLT-GRADE-UNKNOWN-ITERATION" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "expected", "observed", "code"],
+            "properties": {
+              "name": { "const": "invalid_uncertainty" },
+              "expected": { "const": "parse_rejected" },
+              "observed": { "const": "parse_rejected" },
+              "code": { "const": "NMLT-GRADE-PARSE-GRADE" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "expected", "observed", "law"],
+            "properties": {
+              "name": { "const": "noncommutative_word_algebra" },
+              "expected": { "const": "law_rejected" },
+              "observed": { "const": "law_rejected" },
+              "law": { "const": "sequence_commutative" }
+            }
+          }
+        ]
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "residual_gaps": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "metatheory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "source_set_id",
+        "lean_tcb_source_set_id",
+        "root_source_id",
+        "entrypoint_source_id",
+        "checker_source_id",
+        "toolchain",
+        "theorem_handles",
+        "declared_kernel_dependencies",
+        "validation_gate",
+        "rust_correspondence",
+        "verified_rust_extraction"
+      ],
+      "properties": {
+        "scope": { "const": "mathematical_grade_algebra_only" },
+        "source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "lean_tcb_source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "root_source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        },
+        "entrypoint_source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        },
+        "checker_source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        },
+        "toolchain": { "const": "v4.30.0" },
+        "theorem_handles": {
+          "const": [
+            "NMLT.Grades.zero_sequential",
+            "NMLT.Grades.sequential_zero",
+            "NMLT.Grades.sequential_comm",
+            "NMLT.Grades.sequential_assoc",
+            "NMLT.Grades.zero_parallel",
+            "NMLT.Grades.parallel_zero",
+            "NMLT.Grades.parallel_comm",
+            "NMLT.Grades.parallel_assoc",
+            "NMLT.Grades.zero_choice",
+            "NMLT.Grades.choice_zero",
+            "NMLT.Grades.choice_comm",
+            "NMLT.Grades.choice_assoc",
+            "NMLT.Grades.choice_self",
+            "NMLT.Grades.zero_le",
+            "NMLT.Grades.le_iff_choice_eq_right",
+            "NMLT.Grades.sequential_mono",
+            "NMLT.Grades.sequential_choice_distrib",
+            "NMLT.Grades.sequential_nonempty_choices_distrib",
+            "NMLT.Grades.budgetAccept_iff",
+            "NMLT.Grades.budgetAccept_sound"
+          ]
+        },
+        "declared_kernel_dependencies": {
+          "const": ["propext", "Quot.sound"]
+        },
+        "validation_gate": {
+          "const": "./tools/check_metatheory.sh (separate pinned Lean gate)"
+        },
+        "rust_correspondence": {
+          "const": "manual_operation_level_alignment"
+        },
+        "verified_rust_extraction": { "const": false }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_set_id",
+        "toolchain",
+        "executable_sha256",
+        "control_source_ids",
+        "trusted_component_source_ids"
+      ],
+      "properties": {
+        "source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "toolchain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "host", "rustc_sha256"],
+          "properties": {
+            "version": { "type": "string", "minLength": 1 },
+            "host": { "type": "string", "minLength": 1 },
+            "rustc_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "executable_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "control_source_ids": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "privacy_budget_violation",
+            "unknown_iteration",
+            "invalid_uncertainty"
+          ],
+          "properties": {
+            "privacy_budget_violation": {
+              "type": "string",
+              "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+            },
+            "unknown_iteration": {
+              "type": "string",
+              "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+            },
+            "invalid_uncertainty": {
+              "type": "string",
+              "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+            }
+          }
+        },
+        "trusted_component_source_ids": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_harness",
+            "evidence_schema",
+            "schema_validator",
+            "trusted_component_inventory"
+          ],
+          "properties": {
+            "evidence_harness": {
+              "type": "string",
+              "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+            },
+            "evidence_schema": {
+              "type": "string",
+              "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+            },
+            "schema_validator": {
+              "type": "string",
+              "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+            },
+            "trusted_component_inventory": {
+              "type": "string",
+              "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

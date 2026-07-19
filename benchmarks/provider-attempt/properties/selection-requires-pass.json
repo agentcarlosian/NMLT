@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "property_id": "nmlt-benchmark-property-v1:sha256:03a2a2ee37e3191d1f81ca722e60fb600efc60310c4855196904f0fd6ada7ba6",
+  "handle": "ProviderAttempt.SelectionRequiresPass",
+  "claim_kind": "behavioral_safety",
+  "statement": "Only a provider response whose bound evaluation passed may be selected.",
+  "nmlt_formula": "always(phase == selected implies passed)",
+  "observables": ["phase", "passed"],
+  "anti_vacuity_obligations": [
+    "A reachable reference trace selects a passing evaluation.",
+    "A reachable reference trace evaluates a failing response without selecting it."
+  ]
+}

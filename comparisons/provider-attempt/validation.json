@@ -4,33 +4,53 @@
   "models": {
     "nmlt": {
       "tool": "nmlt-cli 0.0.1",
-      "command": "cargo run --quiet -p nmlt-cli -- check examples/technicus/provider_attempt.nmlt",
-      "scope": "structural_only"
+      "command": "cargo run --quiet -p nmlt-cli -- model-check --json examples/technicus/provider_attempt.nmlt",
+      "scope": "complete_bounded_explicit_state_model_check",
+      "evidence_origin": "reproduced locally on 2026-07-18",
+      "result": "passed: frontier exhausted within max_states=10000 and max_depth=100; 5 states; 6 transitions; all 3 declared properties model_checked"
     },
     "tla_plus": {
-      "tool": "TLA+ Tools 2.0 development build 2026-07-18, revision 30cc360",
-      "executable_sha256": "cc4803dce2a8ffaf0f5920a9dc39df4b5ee34ab4cb53fb58ac557277a7e516b3",
-      "command": "java -cp tla2tools.jar tlc2.TLC -cleanup -deadlock -config comparisons/provider-attempt/tla/ProviderAttempt.cfg comparisons/provider-attempt/tla/ProviderAttempt.tla",
+      "tool": "TLC 2.19 of 08 August 2024, revision 5a47802",
+      "executable_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+      "command": "java -cp tla2tools.jar tlc2.TLC -cleanup -deadlock -metadir <temporary-directory>/tlc-states -config comparisons/provider-attempt/tla/ProviderAttempt.cfg comparisons/provider-attempt/tla/ProviderAttempt.tla",
       "scope": "complete_finite_explicit_state_model_check",
+      "source_sha256": {
+        "comparisons/provider-attempt/tla/ProviderAttempt.tla": "ba09720a9b0ec8fa983b48a79066cec8cce63b0d92b76948bee17275471c5e06",
+        "comparisons/provider-attempt/tla/ProviderAttempt.cfg": "ea17d636a7bcfe4a38811222d70dadaee02ea459911541dd34bfcdacd45a8b27"
+      },
+      "evidence_origin": "reproduced locally on 2026-07-18 using TLA2TOOLS_JAR",
       "result": "passed: 7 distinct reachable states; all five invariants held"
     },
     "quint": {
       "tool": "@informalsystems/quint 0.32.0",
       "command": "npx --yes @informalsystems/quint@0.32.0 typecheck comparisons/provider-attempt/quint/provider_attempt.qnt",
-      "scope": "parse_and_typecheck"
+      "scope": "parse_and_typecheck",
+      "source_sha256": {
+        "comparisons/provider-attempt/quint/provider_attempt.qnt": "10ae76d892a35a92818f00681f6b9f60c529ec65487c2d2422a6803c18db178a"
+      },
+      "evidence_origin": "reproduced locally on 2026-07-18",
+      "result": "passed"
     },
     "p": {
       "tool": "P 3.1.0",
       "runtime": ".NET SDK 8.0.423",
       "command": "p compile --pproj comparisons/provider-attempt/p/ProviderAttempt.pproj && p check PGenerated/PChecker/net8.0/ProviderAttempt.dll --testcase tcProviderAttempt --schedules 100 --max-steps 100 --fail-on-maxsteps",
       "scope": "compile_typecheck_and_bounded_systematic_testing",
-      "result": "passed: 100 schedules; 0 bugs; 11-12 scheduling points"
+      "source_sha256": {
+        "comparisons/provider-attempt/p/PSrc/ProviderAttempt.p": "2886f62b396fe901cd97045b49367dcdd9a7c670f4951617075953e0ef4d8645",
+        "comparisons/provider-attempt/p/PSpec/ProviderAttemptSafety.p": "ab0f432870114d4e416abdac1d0beed812e3c4c35a9108fed89e2a0bd0bfe381",
+        "comparisons/provider-attempt/p/PTst/ProviderAttemptTest.p": "3fc7aafe505ee1ac4a2b84d7a72845128927a525835006393eb7ef2dd8d2e6d6",
+        "comparisons/provider-attempt/p/ProviderAttempt.pproj": "e76d5153b1bc88d600f09a4b795466a18d8b5614f8a0226430b905a820943bda"
+      },
+      "evidence_origin": "not reproduced after the NoBlindReplay enabledness correction; P/.NET unavailable in the current validation environment",
+      "result": "not_run"
     }
   },
   "limitations": [
-    "NMLT validation is structural only.",
+    "NMLT's model_checked classification means this finite fixture's reachable frontier was exhausted before the configured state and depth ceilings; it is not deductive proof or full-compiler verification.",
+    "The canonical NMLT reference has no transition to selected, so SelectionRequiresPassingEvidence is currently vacuous; the TLA+, Quint, and P comparison encodings include explicit passing and failing terminal actions.",
     "Quint validation is parse and typecheck only; model checking is deferred until Apalache provisioning is pinned.",
-    "P evidence is bounded randomized systematic testing, not exhaustive proof.",
+    "The corrected P source is byte-bound above but unvalidated: the earlier external bounded run predates the NoBlindReplay enabledness correction, and P/.NET was unavailable for a replacement run.",
     "TLC deadlock checking is disabled because terminal states stutter in the declared Spec."
   ]
 }

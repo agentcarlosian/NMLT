@@ -52,7 +52,7 @@ system ProviderAttempt {
     always(phase == selected implies response_intact and evaluation_passed)
 
   temporal NoBlindReplay =
-    always(phase == indeterminate implies next(not enabled(dispatch)))
+    always(phase == indeterminate implies not enabled(dispatch))
 
   observe phase, dispatch_count, response_intact, evaluation_passed
 }

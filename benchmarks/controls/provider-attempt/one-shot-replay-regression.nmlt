@@ -1,0 +1,19 @@
+// Semantic regression control for the provider-attempt v2 correction.
+// A single dispatch is enabled at indeterminate and then moves to reconciled.
+// Under the Phase 3 action-step/terminal-stutter profile, the historical
+// next-state formula accepts that replay because dispatch is disabled in its
+// declared-action successor. The corrected current-state formula refutes it
+// at state zero. This fixture makes no RFC 0007 universal-stutter claim.
+system OneShotReplayRegressionControl {
+  state phase: Phase = indeterminate
+
+  action dispatch {
+    require phase == indeterminate
+    set phase = reconciled
+  }
+
+  temporal HistoricalNextNoBlindReplay =
+    always(phase == indeterminate implies next(not enabled(dispatch)))
+  temporal CorrectedNoBlindReplay =
+    always(phase == indeterminate implies not enabled(dispatch))
+}

@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/benchmark-suite-v1.schema.json",
+  "title": "NMLT frozen benchmark suite v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "suite_id",
+    "suite_status",
+    "description",
+    "source_set_id",
+    "identity_contract",
+    "result_class_policy",
+    "provenance",
+    "property_contracts",
+    "cases",
+    "controls"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "suite_id": { "const": "provider-attempt-seeded-defects-v1" },
+    "suite_status": { "const": "intent_frozen_executable_results_current" },
+    "description": { "type": "string", "minLength": 1 },
+    "source_set_id": {
+      "type": "string",
+      "pattern": "^nmlt-source-set-v1:sha256:[0-9a-f]{64}$"
+    },
+    "identity_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "artifact", "claim_boundary"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "artifact": { "type": "string", "minLength": 1 },
+        "claim_boundary": { "type": "string", "minLength": 1 }
+      }
+    },
+    "result_class_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["current", "reason", "allowed_current", "excluded_promotion"],
+      "properties": {
+        "current": { "const": "source_bound_bounded_execution" },
+        "reason": { "type": "string", "minLength": 1 },
+        "allowed_current": { "const": ["model_checked", "refuted"] },
+        "excluded_promotion": { "const": "proved" }
+      }
+    },
+    "provenance": { "$ref": "#/$defs/provenance_ref" },
+    "property_contracts": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/property_ref" }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/case" }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/control" }
+    }
+  },
+  "$defs": {
+    "portable_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?/)(?!.*//)[^\\u0000]+$"
+    },
+    "source_id": {
+      "type": "string",
+      "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+    },
+    "property_id": {
+      "type": "string",
+      "pattern": "^nmlt-benchmark-property-v1:sha256:[0-9a-f]{64}$"
+    },
+    "provenance_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "provenance_id"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portable_path" },
+        "provenance_id": {
+          "type": "string",
+          "pattern": "^nmlt-benchmark-provenance-v1:sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "property_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "property_id"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portable_path" },
+        "property_id": { "$ref": "#/$defs/property_id" }
+      }
+    },
+    "intent_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "capsule_id"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portable_path" },
+        "capsule_id": {
+          "type": "string",
+          "pattern": "^nmlt-intent-capsule-v1:sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "witness_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "witness_id"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portable_path" },
+        "witness_id": {
+          "type": "string",
+          "pattern": "^nmlt-expected-counterexample-v1:sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "result_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "result_id"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portable_path" },
+        "result_id": {
+          "type": "string",
+          "pattern": "^nmlt-benchmark-result-v1:sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "source_id",
+        "class",
+        "intent_capsule",
+        "property_ids",
+        "oracle_outcome",
+        "intended_evidence_class",
+        "current_evidence_class",
+        "support",
+        "result",
+        "expected_witnesses"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+        "path": { "$ref": "#/$defs/portable_path" },
+        "source_id": { "$ref": "#/$defs/source_id" },
+        "class": { "enum": ["reference", "semantic_mutant"] },
+        "intent_capsule": { "$ref": "#/$defs/intent_ref" },
+        "property_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/property_id" }
+        },
+        "oracle_outcome": {
+          "enum": ["holds_within_frozen_future_bounds", "refuted"]
+        },
+        "intended_evidence_class": { "enum": ["model_checked", "refuted"] },
+        "current_evidence_class": { "enum": ["model_checked", "refuted"] },
+        "support": { "const": "current" },
+        "result": { "$ref": "#/$defs/result_ref" },
+        "expected_witnesses": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/witness_ref" }
+        }
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "source_id",
+        "class",
+        "expected_control_outcome",
+        "current_evidence_class",
+        "support",
+        "rationale"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+        "path": { "$ref": "#/$defs/portable_path" },
+        "source_id": { "$ref": "#/$defs/source_id" },
+        "class": { "enum": ["malformed", "vacuous_property", "weakened_invariant"] },
+        "property_id": { "$ref": "#/$defs/property_id" },
+        "expected_control_outcome": {
+          "enum": [
+            "frontend_rejected",
+            "integrity_rejected_for_vacuity",
+            "integrity_rejected_for_property_identity_mismatch"
+          ]
+        },
+        "current_evidence_class": { "const": "unknown" },
+        "support": { "enum": ["current", "fixture_only"] },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

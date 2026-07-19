@@ -1,4 +1,5 @@
-// Expected after semantic checking: DispatchRequiresArm is refuted.
+// Oracle: DispatchRequiresArm is refuted by one unauthorized dispatch.
+// Current supported result: unknown (the frontend is structural only).
 system DispatchBeforeAuthorizeMutant {
   state phase: Phase = proposed
   state armed: Bool = false

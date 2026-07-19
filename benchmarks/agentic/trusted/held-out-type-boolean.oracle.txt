@@ -1,0 +1,1 @@
+Reject numeric literals used as Boolean initializers.

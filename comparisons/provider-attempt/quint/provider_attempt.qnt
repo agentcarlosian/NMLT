@@ -101,5 +101,5 @@ module provider_attempt {
   val selectionRequiresPassingEvidence =
     phase == Selected implies (responseIntact and evaluationPassed)
   val atMostOneDispatch = dispatchCount <= 1
-  val noBlindReplay = phase == Indeterminate implies dispatchCount == 1
+  val noBlindReplay = phase == Indeterminate implies not(enabled(dispatch))
 }

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "property_id": "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0",
+  "handle": "ProviderAttempt.EvaluationRequiresIntactResponse",
+  "claim_kind": "behavioral_safety",
+  "statement": "Evaluation consumes only an intact terminal response bound to the same provider attempt.",
+  "nmlt_formula": "always(phase == evaluated implies response_intact)",
+  "observables": ["phase", "response_intact"],
+  "anti_vacuity_obligations": [
+    "A reachable trace performs evaluation with an intact response.",
+    "The negative control can reach evaluated with response_intact equal to false."
+  ]
+}

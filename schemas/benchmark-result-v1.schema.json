@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/benchmark-result-v1.schema.json",
+  "title": "NMLT benchmark execution result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "result_id",
+    "case_id",
+    "source",
+    "engine",
+    "configuration",
+    "assumptions",
+    "trusted_components",
+    "negative_controls",
+    "report"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "result_id": {
+      "type": "string",
+      "pattern": "^nmlt-benchmark-result-v1:sha256:[0-9a-f]{64}$"
+    },
+    "case_id": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "source_id"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "source_set_id", "executable_sha256", "toolchain", "target", "algorithm", "report_schema"],
+      "properties": {
+        "name": { "const": "nmlt-explicit-state" },
+        "version": { "type": "string", "minLength": 1 },
+        "source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-engine-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "executable_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "toolchain": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "algorithm": { "const": "deterministic-bfs-v1" },
+        "report_schema": { "const": "model-check-report/1.0.0" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_states", "max_depth", "action_order", "terminal_behavior"],
+      "properties": {
+        "max_states": { "type": "integer", "minimum": 1 },
+        "max_depth": { "type": "integer", "minimum": 0 },
+        "action_order": { "const": "lexicographic-action-then-state" },
+        "terminal_behavior": { "const": "identity-stutter" }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "trusted_components": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "negative_controls": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "report": { "type": "object" }
+  }
+}

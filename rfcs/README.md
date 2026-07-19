@@ -35,3 +35,11 @@ evidence.
 | 0002 | Evidence manifests | Draft |
 | 0003 | Lexical grammar v1 | Accepted |
 | 0004 | Canonical artifact identity | Accepted |
+| 0005 | State and action typing v1 | Under review |
+| 0006 | Explicit affine capabilities v1 | Under review |
+| 0007 | Observation and stuttering semantics v1 | Under review |
+| 0008 | Lean mechanization and compositional refinement | Under review |
+| 0009 | Finite temporal, refinement, and runtime semantics | Draft |
+| 0010 | Multiple verification engines and checked evidence composition | Draft |
+| 0011 | Authority-bounded agentic formalization and repair | Under review |
+| 0012 | Conservative graded-resource modalities | Experimental |

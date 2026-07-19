@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:7394aa5e62b10c989cd5741043b9220aee31b88f3fb82dac6b106e73c0008549",
+  "case_id": "dispatch-before-authorize",
+  "case_class": "semantic_mutant",
+  "source": {
+    "path": "benchmarks/seeded-defects/provider-attempt/dispatch-before-authorize.nmlt",
+    "source_id": "nmlt-source-v1:sha256:5755f61bb3fc209fb06161660cef7cb89b542b2d8e32aed412360146c935da66"
+  },
+  "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
+  "intent": "Demonstrate that dispatch without prior arming violates the provider authority boundary.",
+  "property_ids": [
+    "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd"
+  ],
+  "positive_scenarios": [
+    "take dispatch immediately from proposed with armed equal to false"
+  ],
+  "forbidden_scenarios": [
+    "classify structural acceptance as semantic acceptance",
+    "repair the mutant or weaken DispatchRequiresArm during evaluation"
+  ],
+  "anti_vacuity_obligations": [
+    "The unauthorized dispatch action is enabled in the initial state.",
+    "The violating state is reachable in exactly one transition."
+  ],
+  "expected": {
+    "current_evidence_class": "refuted",
+    "intended_evidence_class": "refuted",
+    "oracle_outcome": "refuted",
+    "support": "current",
+    "result": {
+      "path": "benchmarks/results/provider-attempt/dispatch-before-authorize.json",
+      "result_id": "nmlt-benchmark-result-v1:sha256:66ec3fb205903d3120669022adc4e05f9b983cfd949f96c67e3694bd2a334ab3"
+    },
+    "witness_ids": [
+      "nmlt-expected-counterexample-v1:sha256:ef750d2addd7c3dacb4d0095890c6f96037eb416238c98d5ff60ae1814f03627"
+    ]
+  },
+  "change_control": {
+    "status": "frozen",
+    "frozen_on": "2026-07-18",
+    "rule": "Changing intent, properties, source bytes, witness shape, or oracle requires a new suite version."
+  }
+}

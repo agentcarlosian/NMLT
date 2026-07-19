@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:7785908e6fd7b0618582e27c214d8d4b47348f6b6d540bba193b23c73e4905e4",
+  "case_id": "passing-selection",
+  "case_class": "semantic_mutant",
+  "source": {
+    "path": "benchmarks/seeded-defects/provider-attempt/passing-selection.nmlt",
+    "source_id": "nmlt-source-v1:sha256:ae395e8f3941be5647d30015e7689332e3bcf00948329e3d8b88960b65e71f37"
+  },
+  "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
+  "intent": "Demonstrate that selecting an evaluation that did not pass violates the selection gate.",
+  "property_ids": [
+    "nmlt-benchmark-property-v1:sha256:03a2a2ee37e3191d1f81ca722e60fb600efc60310c4855196904f0fd6ada7ba6"
+  ],
+  "positive_scenarios": [
+    "take select immediately from evaluated while passed is false"
+  ],
+  "forbidden_scenarios": [
+    "treat reaching evaluated as equivalent to passing",
+    "repair the mutant or weaken SelectionRequiresPass during evaluation"
+  ],
+  "anti_vacuity_obligations": [
+    "Selection is enabled in the initial state.",
+    "The selected state with passed false is reachable in exactly one transition."
+  ],
+  "expected": {
+    "current_evidence_class": "refuted",
+    "intended_evidence_class": "refuted",
+    "oracle_outcome": "refuted",
+    "support": "current",
+    "result": {
+      "path": "benchmarks/results/provider-attempt/passing-selection.json",
+      "result_id": "nmlt-benchmark-result-v1:sha256:8c2777d129192e7941d596a4f392fa924147cb97bbd6821d272d3d5db0846ea7"
+    },
+    "witness_ids": [
+      "nmlt-expected-counterexample-v1:sha256:45bb21364362c8ab809b4366ac099ee2084fe89380f54df5f85ed1deab3e9c63"
+    ]
+  },
+  "change_control": {
+    "status": "frozen",
+    "frozen_on": "2026-07-18",
+    "rule": "Changing intent, properties, source bytes, witness shape, or oracle requires a new suite version."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "witness_id": "nmlt-expected-counterexample-v1:sha256:ebae96b362b15cff69eb2e8f8631b1e19d6ffc703494d609fc98b4b1384155b7",
+  "status": "expected_not_observed",
+  "case_id": "response-binding",
+  "property_id": "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0",
+  "minimal_transition_count": 1,
+  "initial_observation": {
+    "phase": "dispatched",
+    "response_intact": false
+  },
+  "steps": [
+    {
+      "action": "evaluate",
+      "resulting_observation": {
+        "phase": "evaluated",
+        "response_intact": false
+      }
+    }
+  ],
+  "violation": {
+    "state_index": 1,
+    "predicate": "evaluated implies response_intact",
+    "explanation": "Evaluation completes with no intact response binding."
+  },
+  "normalization": {
+    "state_field_order": ["phase", "response_intact"],
+    "transition_tie_break": "lexicographic action name then canonical state bytes"
+  }
+}

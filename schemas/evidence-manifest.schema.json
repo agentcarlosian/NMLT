@@ -79,13 +79,25 @@
       "properties": {
         "kind": { "type": "string", "minLength": 1 },
         "engine": { "type": "string", "minLength": 1 },
-        "engine_version": { "type": "string", "minLength": 1 }
+        "engine_version": { "type": "string", "minLength": 1 },
+        "engine_source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-(?:[a-z0-9-]+-)?source-set-v[0-9]+:sha256:[0-9a-f]{64}$"
+        },
+        "engine_executable_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
       }
     },
     "scope": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "configuration_id": {
+          "type": "string",
+          "pattern": "^nmlt-config-v1:sha256:[0-9a-f]{64}$"
+        },
         "bounds": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
@@ -102,7 +114,8 @@
     },
     "trusted_components": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/trustedComponent" }
     },
     "certificate": {
       "type": "object",
@@ -110,7 +123,8 @@
       "required": ["format", "reference"],
       "properties": {
         "format": { "type": "string", "minLength": 1 },
-        "reference": { "type": "string", "minLength": 1 }
+        "reference": { "$ref": "#/$defs/rawSha256" },
+        "path": { "type": "string", "minLength": 1 }
       }
     },
     "witness": {
@@ -119,16 +133,42 @@
       "required": ["kind", "reference"],
       "properties": {
         "kind": { "type": "string", "minLength": 1 },
-        "reference": { "type": "string", "minLength": 1 }
+        "reference": { "$ref": "#/$defs/contentAddressWithFragment" }
       }
     },
     "negative_controls": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 }
+      "items": { "$ref": "#/$defs/contentAddress" }
     },
     "residual_gaps": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "rawSha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "contentAddress": {
+      "type": "string",
+      "pattern": "^(?:sha256:[0-9a-f]{64}|nmlt-[a-z0-9-]+:sha256:[0-9a-f]{64})$"
+    },
+    "contentAddressWithFragment": {
+      "type": "string",
+      "pattern": "^(?:sha256:[0-9a-f]{64}|nmlt-[a-z0-9-]+:sha256:[0-9a-f]{64})(?:#[A-Za-z0-9._~=%&+/-]+)?$"
+    },
+    "trustedComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "identity"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+        },
+        "identity": { "$ref": "#/$defs/contentAddress" }
+      }
     }
   },
   "allOf": [
@@ -139,6 +179,42 @@
       },
       "then": {
         "properties": { "result": { "const": "unknown" } }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": {
+            "enum": ["proved", "model_checked", "tested", "monitored", "refuted"]
+          }
+        },
+        "required": ["result"]
+      },
+      "then": {
+        "required": ["scope", "trusted_components"],
+        "properties": {
+          "artifact": {
+            "oneOf": [
+              { "required": ["source_id"] },
+              { "required": ["source_set_id"] }
+            ]
+          },
+          "method": {
+            "required": [
+              "engine",
+              "engine_version",
+              "engine_source_set_id",
+              "engine_executable_sha256"
+            ]
+          },
+          "scope": { "required": ["configuration_id"] },
+          "claim": {
+            "properties": {
+              "id": { "$ref": "#/$defs/contentAddress" }
+            }
+          },
+          "trusted_components": { "minItems": 1 }
+        }
       }
     },
     {
@@ -161,7 +237,19 @@
         "properties": { "result": { "const": "proved" } },
         "required": ["result"]
       },
-      "then": { "required": ["certificate"] }
+      "then": {
+        "required": ["certificate"],
+        "properties": {
+          "certificate": { "required": ["path"] }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "result": { "const": "refuted" } },
+        "required": ["result"]
+      },
+      "then": { "required": ["witness"] }
     }
   ]
 }

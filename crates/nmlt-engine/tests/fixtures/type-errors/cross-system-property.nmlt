@@ -1,0 +1,4 @@
+system CrossSystemProperty {
+  state ok: Bool = true
+  temporal Invalid = always(next(enabled(OtherSystemAction)))
+}

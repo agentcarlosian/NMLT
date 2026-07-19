@@ -8,14 +8,22 @@ language inspired by TLA+ and contemporary mathematics.
 
 ## Status
 
-NMLT is **pre-alpha research software**. The repository currently defines the
-project charter, candidate behavior rules, RFC process, frozen example corpus,
-comparative models, evidence identity rules, and the first lossless lexer. It
-does not yet provide semantic verification, model checking, code generation,
-or a complete stable language syntax.
+NMLT is **pre-alpha research software**. Phases 0–7 now have executable,
+identity-bound prototypes at deliberately narrow scopes: a lossless recovering
+frontend; a typed provider core and bounded explicit-state checker; finite
+temporal, refinement, and runtime-journal checking; a finite Boolean VC with
+two checked routes; an authority-bounded deterministic repair baseline; and
+one independent graded-resource experiment.
 
-The frontend deliberately reports `unknown` when asked for evidence. A parsed
-file is not a verified program.
+These are separate assurance subjects, not a complete language pipeline. NMLT
+does not yet provide full surface-language resolution and execution, verified
+source-to-IR elaboration, general or infinite-state verification, production
+runtime attestation, general AI-repair evidence, signed evidence, or code
+generation.
+
+The structural `evidence` command deliberately reports `unknown`. Semantic
+claims require `typecheck` or `model-check`; bounded exploration is reported as
+`model_checked`, never as proof. A parsed file is not a verified program.
 
 ## The three programs
 
@@ -29,7 +37,13 @@ file is not a verified program.
 
 ## Quick start
 
-Requirements: a current stable Rust toolchain and GNU Make.
+`make ci` requires Linux x86_64 for byte-identical persisted executable
+evidence, the Rust toolchain pinned by `rust-toolchain.toml`, GNU Make,
+Bash/coreutils, Python 3.11+, and Node/npm with registry access (or a populated npm
+cache) for pinned Quint 0.32.0. The separate metatheory gate requires Elan and
+the pinned Lean 4.30.0 toolchain. TLC is run when `TLA2TOOLS_JAR` is set; P/.NET
+is optional and the current corrected P model remains explicitly unvalidated
+when it is absent.
 
 ```bash
 make ci
@@ -37,20 +51,26 @@ cargo run -p nmlt-cli -- check examples/technicus/provider_attempt.nmlt
 cargo run -p nmlt-cli -- inspect examples/technicus/provider_attempt.nmlt
 cargo run -p nmlt-cli -- tokens examples/technicus/provider_attempt.nmlt
 cargo run -p nmlt-cli -- evidence examples/technicus/provider_attempt.nmlt
+cargo run -p nmlt-cli -- typecheck benchmarks/seeded-defects/provider-attempt/reference.nmlt
+cargo run -p nmlt-cli -- model-check --json benchmarks/seeded-defects/provider-attempt/reference.nmlt
 ```
 
-The `evidence` command emits a scaffold manifest with result `unknown`; it does
-not claim verification.
+The `evidence` command emits a structural scaffold with result `unknown`; it
+does not claim verification. Persisted, source-bound results live under
+`benchmarks/results/` and `benchmarks/grades/`. The corresponding reproduction
+targets are `model-reports`, `temporal-evidence`, `multi-engine-evidence`,
+`agentic-evidence`, and `graded-evidence`.
 
 ## Repository map
 
 ```text
-crates/       Minimal Rust frontend and CLI
-comparisons/  Equivalent frozen models in TLA+, Quint, and P
+crates/       Frontend, provider engine, temporal/VC checkers, repair and grade prototypes, CLI
+comparisons/  Comparable frozen provider models in TLA+, Quint, and P
 docs/         Manifesto, semantics, architecture, method, and roadmap
 rfcs/         Proposed language and evidence decisions
 examples/     Design fixtures drawn from the source corpora
 benchmarks/   Seeded-defect benchmark definitions
+mechanization/ Pinned Lean metatheory and semantic counterexamples
 schemas/      Machine-readable evidence and benchmark contracts
 tests/        Cross-crate fixtures and future integration tests
 ```
@@ -61,18 +81,27 @@ Start with the canonical [execution plan](Plan.md) and
 and [architecture](docs/architecture.md). Proposed changes enter through the
 [RFC process](rfcs/README.md).
 
-## Initial vertical slice
+## Implemented research slices
 
-The first semantic milestone is the durable provider-attempt protocol:
+The durable provider-attempt protocol anchors the current slices:
 
-1. represent authorization, dispatch, response binding, evaluation, selection,
-   and ambiguity;
-2. detect dispatch-before-authorize, blind replay, corrupt response binding,
-   and selection of a failing result;
-3. return structured counterexample traces;
-4. emit an evidence manifest containing scope, bounds, assumptions, negative
-   controls, and residual gaps;
-5. validate concrete runtime traces against the abstract behavior.
+1. the v2 bounded engine accepts the reference within frozen bounds and
+   refutes dispatch-before-authorize, corrected state-local blind replay,
+   corrupt response binding, and selection of a failing result;
+2. finite temporal evidence replays a canonical lasso/fairness fixture, one
+   forward-simulation refinement, accepted/rejected synthetic journals, and
+   provider `NoBlindReplay` over a manually projected nine-state observation
+   graph with an identity-stutter mutant lasso;
+3. two finite VC routes agree on the manual two-observable dispatch claim and
+   fail closed on disagreement or assurance laundering;
+4. a deterministic three-task repair baseline enforces edit authority and
+   links a synthetic drift event into one artifact graph;
+5. a separate annotated-plan experiment checks one product grade over cost,
+   privacy, energy, and uncertainty, with a kernel-checked mathematical algebra
+   but no annotation-soundness or Rust/Lean compiler-correspondence claim.
+
+See [Plan.md](Plan.md) for the exact gates, evidence boundaries, and residual
+gaps. Passing any one slice does not verify arbitrary NMLT source.
 
 ## Contribution and governance
 

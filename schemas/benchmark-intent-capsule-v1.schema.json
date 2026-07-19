@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/benchmark-intent-capsule-v1.schema.json",
+  "title": "NMLT benchmark intent capsule v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "capsule_id",
+    "case_id",
+    "case_class",
+    "source",
+    "provenance_id",
+    "intent",
+    "property_ids",
+    "positive_scenarios",
+    "forbidden_scenarios",
+    "anti_vacuity_obligations",
+    "expected",
+    "change_control"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "capsule_id": {
+      "type": "string",
+      "pattern": "^nmlt-intent-capsule-v1:sha256:[0-9a-f]{64}$"
+    },
+    "case_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+    "case_class": { "enum": ["reference", "semantic_mutant"] },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "source_id"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "provenance_id": {
+      "type": "string",
+      "pattern": "^nmlt-benchmark-provenance-v1:sha256:[0-9a-f]{64}$"
+    },
+    "intent": { "type": "string", "minLength": 1 },
+    "property_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^nmlt-benchmark-property-v1:sha256:[0-9a-f]{64}$"
+      }
+    },
+    "positive_scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "forbidden_scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "anti_vacuity_obligations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "current_evidence_class",
+        "intended_evidence_class",
+        "oracle_outcome",
+        "support",
+        "result",
+        "witness_ids"
+      ],
+      "properties": {
+        "current_evidence_class": { "enum": ["model_checked", "refuted"] },
+        "intended_evidence_class": { "enum": ["model_checked", "refuted"] },
+        "oracle_outcome": {
+          "enum": ["holds_within_frozen_future_bounds", "refuted"]
+        },
+        "support": { "const": "current" },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "result_id"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "result_id": {
+              "type": "string",
+              "pattern": "^nmlt-benchmark-result-v1:sha256:[0-9a-f]{64}$"
+            }
+          }
+        },
+        "witness_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^nmlt-expected-counterexample-v1:sha256:[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "change_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "frozen_on", "rule"],
+      "properties": {
+        "status": { "const": "frozen" },
+        "frozen_on": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "rule": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

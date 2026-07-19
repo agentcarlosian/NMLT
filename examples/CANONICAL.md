@@ -1,9 +1,14 @@
 # Canonical example corpus v1
 
-Status: frozen on 2026-07-18. The ten paths, intent statements, claim names,
-negative-control meanings, and ordering below form corpus `nmlt-canonical-v1`.
-Changing any of them requires a new corpus version; correcting a source file
-also changes its canonical source identity.
+Status: non-authoritative human-readable summary of the corpus frozen on
+2026-07-18. The sole machine-readable authority is
+[`canonical-v1.json`](canonical-v1.json), currently identified as
+`nmlt-canonical-corpus-v1:sha256:7e57ecaa99607ff5fd292e7499d82b9bb38354cb77371b440018993301e63999`.
+It fixes the exact paths, intent strings, claim handles, structured negative
+controls, ordering, entry identities, and source-set identity. The table below
+paraphrases some fields for readers and must never be used to calculate or
+validate the corpus. Changing an authoritative field or source requires the
+identity/version procedure defined by that JSON record.
 
 These files are design fixtures. Until a later phase supplies the stated
 oracle, their intended result is `unknown`; structural acceptance never
@@ -22,9 +27,9 @@ establishes the intended claim.
 | C09 | `distributed/two_phase_commit.nmlt` | Reach one terminal decision and teach participants without disagreement. | `Agreement`, `CommitRequiresPrepared` | Commit before every participant prepares. | Distributed-state model checker |
 | C10 | `resources/token_bucket.nmlt` | Admit work only within an explicit quantitative budget. | `Capacity`, `NoOverdraft`, `Accounted` | Admit a cost larger than the token balance. | Graded type checker plus invariant checker |
 
-The machine-readable freeze is `canonical-v1.json`. Source identities use the
-rules in `docs/artifact-identity.md`; the manifest is regenerated or verified
-with `tools/canonical_examples.py`.
+Source identities use the rules in `docs/artifact-identity.md`; the
+machine-readable corpus is regenerated or verified with
+`tools/canonical_examples.py`.
 
 ## Plain-language witness obligations
 

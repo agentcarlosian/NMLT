@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0.0",
+  "fixture": "provider-dispatch-two-engine-v1",
+  "source": {
+    "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
+    "content_sha256": "sha256:c8f862e719ecb20cd75c02e11cc32ef00a6026650121bad52421e19ecb6a4b82",
+    "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c"
+  },
+  "claim": {
+    "path": "benchmarks/provider-attempt/properties/dispatch-requires-arm.json",
+    "handle": "ProviderAttempt.DispatchRequiresArm",
+    "content_sha256": "sha256:0a0765d17784c40ef1ee37b873d1006352010b80038839ff8ec2d14a2d22c3b3",
+    "property_id": "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd"
+  },
+  "abstraction": {
+    "variables": [
+      "armed",
+      "dispatched"
+    ],
+    "kind": "manual-observable-projection",
+    "compiler_verified": false
+  },
+  "vc_digest": "sha256:e7a38452e14a47da9743e6fa795f307e8b0c8ee1ff956f15e7419aaf9365189c",
+  "engines": [
+    {
+      "name": "nmlt-explicit-reachability",
+      "version": "0.0.1",
+      "method": "deterministic-bfs/1",
+      "build_digest": "sha256:21ce96cf7731bf0564f9d4ae731ba4017d5a762d93765ce9acb315bad016b73c",
+      "raw_status": "model_checked",
+      "raw_output": "holds; frontier exhausted; reachable_states=3",
+      "scope": {
+        "kind": "complete_finite",
+        "states": 3
+      },
+      "normalized": "model_checked",
+      "certificate_accepted": true,
+      "certificate": {
+        "format": "nmlt-finite-invariant/1",
+        "vc_digest": "sha256:e7a38452e14a47da9743e6fa795f307e8b0c8ee1ff956f15e7419aaf9365189c",
+        "invariant_states": [
+          0,
+          1,
+          3
+        ]
+      },
+      "witness_states": []
+    },
+    {
+      "name": "nmlt-finite-inductiveness",
+      "version": "0.0.1",
+      "method": "finite-inductiveness-enumeration/1",
+      "build_digest": "sha256:21ce96cf7731bf0564f9d4ae731ba4017d5a762d93765ce9acb315bad016b73c",
+      "raw_status": "proved",
+      "raw_output": "holds; initiation and consecution enumerated; valuations=4",
+      "scope": {
+        "kind": "complete_finite",
+        "states": 4
+      },
+      "normalized": "proved",
+      "certificate_accepted": true,
+      "certificate": {
+        "format": "nmlt-finite-invariant/1",
+        "vc_digest": "sha256:e7a38452e14a47da9743e6fa795f307e8b0c8ee1ff956f15e7419aaf9365189c",
+        "invariant_states": [
+          0,
+          1,
+          3
+        ]
+      },
+      "witness_states": []
+    }
+  ],
+  "composite": {
+    "classification": "proved",
+    "assurance_subject": "finite_vc_only",
+    "raw_results_retained": 2,
+    "disagreements": []
+  },
+  "anti_vacuity": {
+    "classification": "refuted",
+    "witness_states": [
+      0,
+      1,
+      3
+    ]
+  },
+  "negative_controls": {
+    "disagreement": {
+      "classification": "unknown",
+      "raw_results_retained": 2,
+      "reason_count": 2
+    },
+    "bounded_proof_laundering": {
+      "classification": "unknown"
+    }
+  },
+  "residual_gaps": [
+    "the full NMLT-to-VC translation is not yet verified",
+    "the manual projection omits phase, authority provenance, and attempt identity",
+    "both engines and the checker execute in one Rust process"
+  ],
+  "implementation": {
+    "source_set_id": "nmlt-verify-source-set-v1:sha256:ece869799871bb0759264a7f3d87fc63b8ce62543385947a11ec9ac5029da6a5",
+    "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+    "target": "x86_64-unknown-linux-gnu",
+    "executable_sha256": "2b3c3f72247f8fb160bc970a5aebae5a5fc35418b119da19c2b289eb89919520"
+  },
+  "evidence_id": "nmlt-multi-engine-evidence-v1:sha256:762052864c91da046f4816f08961a56cca4a60b3203e8cc7bb88fd451691a17b"
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/agentic-artifact-graph-v1.schema.json",
+  "title": "NMLT agentic artifact graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "graph_id", "nodes", "edges"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "graph_id": { "type": "string", "minLength": 1 },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "role", "digest", "summary", "result_class"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "role": { "enum": ["intent", "property", "oracle", "candidate", "feedback", "proposal", "evaluation"] },
+          "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "summary": { "type": "string" },
+          "result_class": {
+            "oneOf": [
+              { "type": "null" },
+              { "enum": ["syntax_accepted", "type_accepted", "model_checked", "refuted", "unknown", "conflict"] }
+            ]
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "relation", "to"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "relation": { "enum": ["constrains", "controls", "produced", "seeded", "checked_in", "rechecked_as"] },
+          "to": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

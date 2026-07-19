@@ -1,0 +1,5 @@
+system InvalidUpdateTarget {
+  state ok: Bool = true
+  action corrupt { set missing = false }
+  safety Safe = always(ok)
+}

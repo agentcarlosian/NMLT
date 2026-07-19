@@ -1,0 +1,1 @@
+Dispatch is permitted only after an independently reachable authorization step.

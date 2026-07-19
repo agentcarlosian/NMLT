@@ -1,5 +1,13 @@
 [workspace]
-members = ["crates/nmlt-core", "crates/nmlt-cli"]
+members = [
+    "crates/nmlt-core",
+    "crates/nmlt-engine",
+    "crates/nmlt-temporal",
+    "crates/nmlt-verify",
+    "crates/nmlt-grades",
+    "crates/nmlt-agent",
+    "crates/nmlt-cli",
+]
 default-members = ["crates/nmlt-cli"]
 resolver = "3"
 

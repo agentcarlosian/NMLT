@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:fa05ff66de16dec624ede0d72eda90d07318aa3285be324b20290581b0eb7d46",
+  "case_id": "provider-attempt-reference",
+  "case_class": "reference",
+  "source": {
+    "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
+    "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c"
+  },
+  "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
+  "intent": "Authorize and dispatch one provider attempt, preserve response binding, prohibit replay after ambiguity, and select only passing evidence.",
+  "property_ids": [
+    "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd",
+    "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe",
+    "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0",
+    "nmlt-benchmark-property-v1:sha256:03a2a2ee37e3191d1f81ca722e60fb600efc60310c4855196904f0fd6ada7ba6"
+  ],
+  "positive_scenarios": [
+    "authorize, arm, dispatch, receive an intact response, evaluate pass, then select",
+    "authorize, arm, dispatch, lose the response, then remain indeterminate without replay",
+    "receive an intact response and evaluate failure without selecting it"
+  ],
+  "forbidden_scenarios": [
+    "dispatch before the attempt is armed",
+    "dispatch the same attempt again after an indeterminate outcome",
+    "evaluate a response whose binding is not intact",
+    "select an evaluation that did not pass"
+  ],
+  "anti_vacuity_obligations": [
+    "Each property antecedent is reachable in at least one frozen scenario.",
+    "Both passing and failing evaluation branches are reachable.",
+    "The ambiguity branch is reachable after exactly one dispatch."
+  ],
+  "expected": {
+    "current_evidence_class": "model_checked",
+    "intended_evidence_class": "model_checked",
+    "oracle_outcome": "holds_within_frozen_future_bounds",
+    "support": "current",
+    "result": {
+      "path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
+      "result_id": "nmlt-benchmark-result-v1:sha256:041d2323125aa10f97cd97e5a5970bb9ec40e254b520e3cc0fd1a42aa6be9408"
+    },
+    "witness_ids": []
+  },
+  "change_control": {
+    "status": "frozen",
+    "frozen_on": "2026-07-18",
+    "rule": "Changing intent, properties, source bytes, or oracle requires a new suite version."
+  }
+}

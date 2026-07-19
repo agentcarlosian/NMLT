@@ -1,0 +1,13 @@
+[package]
+name = "nmlt-temporal"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+license = "Apache-2.0"
+description = "Finite temporal, fairness, refinement, and runtime trace semantics for NMLT"
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

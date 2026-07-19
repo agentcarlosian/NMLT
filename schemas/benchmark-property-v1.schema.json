@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/benchmark-property-v1.schema.json",
+  "title": "NMLT frozen benchmark property contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "property_id",
+    "handle",
+    "claim_kind",
+    "statement",
+    "nmlt_formula",
+    "observables",
+    "anti_vacuity_obligations"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "property_id": {
+      "type": "string",
+      "pattern": "^nmlt-benchmark-property-v1:sha256:[0-9a-f]{64}$"
+    },
+    "handle": { "type": "string", "pattern": "^ProviderAttempt\\.[A-Za-z][A-Za-z0-9]+$" },
+    "claim_kind": { "const": "behavioral_safety" },
+    "statement": { "type": "string", "minLength": 1 },
+    "nmlt_formula": { "type": "string", "minLength": 1 },
+    "observables": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "anti_vacuity_obligations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

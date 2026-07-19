@@ -1,0 +1,10 @@
+system DuplicatedCapability {
+  state called: Bool = false
+  capability provider_call: Once<Effect>
+  action call_twice {
+    consume provider_call
+    consume provider_call
+    set called = true
+  }
+  safety Safe = always(called implies called)
+}

@@ -1,8 +1,9 @@
 # NMLT trusted-computing-base threat model
 
-- Scope: repository-wide pre-alpha NMLT frontend, artifacts, CI, and planned
-  verification boundaries
-- Model version: 1.0
+- Scope: repository-wide pre-alpha NMLT frontend, typed/bounded engines,
+  temporal/refinement and resource extensions, agentic evaluation, artifacts,
+  and CI
+- Model version: 1.1
 - Reviewed: 2026-07-18
 - Security policy: `SECURITY.md`
 - Trusted-component manifest: `security/trusted-components.toml`
@@ -15,11 +16,13 @@ artifacts. Its central security property is **claim integrity**: no input,
 backend, cache, contributor, or renderer may cause a result to be interpreted
 as stronger, newer, broader, or better bound than the evidence establishes.
 
-Today the executable code lexes losslessly, recognizes structural `system`
-declarations, renders diagnostics, and emits an `unknown` evidence scaffold. It
-does not type-check, execute behavior semantics, model-check, prove, refine, or
-authorize effects. The threat model includes planned boundaries so new code
-cannot silently inherit more trust than this baseline.
+The repository now contains a lossless frontend, a deliberately narrow typed
+executable fragment with deterministic finite exploration, finite temporal and
+refinement checks, a finite verification-condition/certificate checker,
+authority-bounded repair evaluation, and a graded-resource prototype. These
+components establish only their documented finite or statement-local claims.
+They do not form a verified compiler, do not authenticate runtime events, and
+do not authorize external effects.
 
 ### Assets
 
@@ -75,37 +78,43 @@ untrusted source/imports
         |
         v
 [B1 byte reader + lossless lexer + parser]
-        | syntax/diagnostics only
+        | CST, declarations, diagnostics
         v
-[B2 resolver + type/elaboration kernel]        (planned)
+[B2 resolver + type/elaboration/behavior kernel]
         | typed core + obligations
         v
 [B3 untrusted search engines/backends]
         | raw result/certificate/witness
         v
-[B4 narrow result/proof checker + classifier]  (planned)
+[B4 narrow result/proof checker + classifier]
         | canonical evidence
         v
 [B5 artifact store, CI, release, renderers]
         |
         v
-[B6 runtime adapters and effect controllers]   (planned, never implicit)
+[B6 runtime adapters and effect controllers]   (never implicit)
 ```
 
-- **B1:** OS filesystem and UTF-8 decoding enter the current Rust frontend.
-  Source, paths, comments, strings, and sizes are untrusted. Success means only
-  structural acceptance.
-- **B2:** Future name resolution, type checking, frame elaboration, behavior
-  semantics, and canonical core encoding enter the semantic TCB.
+- **B1:** OS filesystem and UTF-8 decoding enter the Rust frontend. Source,
+  paths, comments, strings, and sizes are untrusted. Frontend success means
+  only structural acceptance.
+- **B2:** The current executable-fragment parser, contextual elaborator, type
+  checker, frame/capability rules, simultaneous-update evaluator, and property
+  indexing enter the TCB for typed finite results. Unsupported language forms
+  must be rejected, not approximated as success.
 - **B3:** TLC, Quint, P, SMT solvers, proof search, AI systems, and generated
   code may discover evidence but are untrusted unless a narrower checker
   validates a certificate under the exact obligation.
-- **B4:** Result adapters and proof checkers may construct claim classes only
-  when their method-specific requirements hold. Timeouts and missing terminal
-  output map to `unknown` or `indeterminate`, never success.
-- **B5:** JSON parsing, RFC 8785 canonicalization, SHA-256, signatures, schema
-  validation, caches, CI actions, registries, and release tooling protect
-  artifact identity. Human-facing renderers do not determine result class.
+- **B4:** The explicit-state readback, temporal/refinement readback,
+  finite-invariant certificate checker, evidence normalizer, agentic authority
+  evaluator, and graded checker may construct only their method-specific result
+  classes. Timeouts, missing terminal output, unchecked certificates, and
+  engine disagreement map to `unknown` or `indeterminate`, never success.
+- **B5:** Duplicate-rejecting JSON parsing, the documented canonical JSON
+  subset, SHA-256, schema validation, checkers, caches, CI actions, registries,
+  and release tooling protect artifact identity. Human-facing renderers do not
+  determine result class. NMLT has no signature or transparency-log
+  implementation today.
 - **B6:** Runtime traces are untrusted observations. A trace adapter must bind
   clock/order assumptions and may monitor only declared observations. No
   pre-alpha evidence permits automatic safety-critical effects.
@@ -114,21 +123,45 @@ untrusted source/imports
 
 The normative inventory is `security/trusted-components.toml`.
 
-For current structural acceptance, trust is limited to hardware/OS process and
-filesystem behavior, the pinned Rust compiler and standard library,
-`nmlt-core::lexer`, `nmlt-core::syntax`, diagnostic rendering, `nmlt-cli`, and
-the build/release procedure. The example body is not semantically interpreted.
+For structural acceptance, trust is limited to hardware/OS process and
+filesystem behavior, the pinned Rust declaration and resulting compiler and
+standard library, the NMLT frontend/diagnostic code, `nmlt-cli`, and the
+build/CI procedure. The example body is not semantically interpreted by this
+claim profile.
 
 For canonical source IDs produced by the Phase 0 reference tool, Python 3,
 `pathlib`, `hashlib` and its SHA-256 implementation, the identity algorithm,
 and filesystem bytes are additionally trusted. This reference is not yet a
 proof-producing kernel.
 
+For a typed bounded result, the parser/elaborator/type checker, operational
+semantics, deterministic explorer, report/evidence checkers, Rust build output,
+and their exact identities are additionally trusted. Temporal, refinement,
+runtime-trace, agentic-evaluation, graded-resource, multi-engine, and Lean
+claims each have narrower profiles in the inventory. Trust is not transitive
+across profiles: for example, a Lean proof does not establish a Rust execution
+claim without the missing correspondence theorem.
+
 The following are explicitly outside the TCB: documentation prose, examples,
-comparison models, benchmark expectations, AI output, fuzzers, search
-strategies, model checkers without checked certificates, pretty-printers,
-dashboards, and test counts. They improve assurance but cannot construct a
-stronger result by themselves.
+comparison models, benchmark expectations, AI repair candidates, fuzzers,
+search/proof strategies, unchecked solver/model-checker returns,
+pretty-printers, dashboards, and test counts. They improve assurance but cannot
+construct a stronger result by themselves.
+
+Every non-structural assurance manifest must name exactly one artifact
+source/source-set identity, an engine name/version/source-set/executable digest,
+and a nonempty list of content-addressed trusted components. Generic assurance
+evidence must include the exact `security/trusted-components.toml` digest. The
+graded metatheory evidence additionally checks that the
+`nmlt_lean.statements` inventory is exactly the repository-local import closure
+of `NMLT.lean`, and binds that source set. `proved` also requires a local path
+and raw-SHA-256 certificate reference. JSON Schema checks this shape;
+`tools/check_evidence.py` confines paths, recomputes exact source and manifest
+IDs, resolves the claim, configuration, engine, trusted components, negative
+controls, and witness against current repository artifacts, and verifies local
+certificate bytes. Generic source sets fail closed until membership readback
+exists. A syntactically valid digest by itself is never evidence that the named
+bytes exist or that a claim is true.
 
 ### Assumptions
 
@@ -137,6 +170,10 @@ stronger result by themselves.
 - Maintainer keys and private reporting channels are protected outside NMLT.
 - SHA-256 collision and second-preimage resistance remain adequate for v1.
 - The checked-out toolchain and source correspond to their recorded identities.
+- GitHub Actions `checkout` and the Lean build action execute the exact commits
+  recorded in CI; the `ubuntu-latest` image, network delivery, rustup/elan
+  bootstrap binaries, Python runtime, linker, and system libraries remain
+  residual trust rather than reproducibly attested inputs.
 - External tool documentation accurately describes the invoked version only;
   backend truth is not assumed from branding or exit code.
 - Human intent cannot be derived from source alone. Intent capsules, semantic
@@ -155,22 +192,24 @@ stronger result by themselves.
 6. Indeterminate external effects cannot be blindly retried.
 7. Hidden state and trace events cannot be omitted from a refinement without a
    declared observation/hiding map.
+8. Digest-only evidence must not be presented as signed, authenticated, or
+   transparency-logged provenance.
 
 ## Attack Surface, Mitigations, and Attacker Stories
 
 | Surface / attacker story | Impact | Existing mitigation | Required or residual work |
 |---|---|---|---|
-| A source uses comments, strings, Unicode, or delimiter recovery to smuggle a fake declaration. | Wrong program is analyzed. | RFC 0003 lossless tokens; keywords arise only from identifier tokens; byte spans round-trip. | Full error-recovering parser and differential/fuzz tests are Phase 1 work. |
-| A huge file, identifier, comment, or finite domain exhausts memory/time. | Denial of service; possible lost terminal evidence. | Current lexer is linear and contains no unsafe code. | Add input, state-space, time, memory, and output limits; classify limit exits as `unknown`, never retry effects. |
-| CRLF, Unicode normalization, symlinks, or path moves make evidence appear current. | Stale or substituted source. | RFC 0004 hashes exact bytes and separately binds portable source-set paths. | Integrate IDs into CLI; define symlink/import resolution before semantic evidence. |
-| An attacker edits `manifest_id` or reorders JSON to forge a digest. | Evidence substitution. | RFC 8785 canonicalization excludes the identity/signature fields and requires recomputation. | Implement JCS conformance vectors; current `structural:*` IDs remain noncanonical placeholders. |
-| A bounded run is labelled `proved`, or a timeout is treated as a pass. | False assurance. | Closed result enum, schema conditions, explicit residual gaps, governance rule. | Method-specific constructors and independent readback are not implemented yet. |
-| A malicious backend returns `sat/unsat`, a corrupt proof, or a witness for another claim. | False result or misleading diagnosis. | Backends are outside TCB by policy; identities must bind raw outputs. | Add narrow proof/result checkers and adversarial adapter tests before semantic claims. |
-| A counterexample/certificate reference uses traversal, symlink swap, or decompression bomb. | File disclosure, substitution, or DoS. | No artifact loader exists today. | Future loaders require content-addressed references, root confinement, size limits, and no implicit execution. |
-| An AI or repair loop weakens the property, benchmark, bounds, or negative control. | Reward hacking and false validation. | Trusted intent/claims are separated from generated implementation; source IDs invalidate results. | Enforce edit authority and review signatures before agentic workflows. |
-| CI or a dependency is replaced; mutable action tags fetch new code. | Compromised releases/checkers. | Minimal dependency-free Rust code; least-privilege `contents: read`. | Pin CI actions by digest, add release provenance/SBOM, review lockfile and tool bootstrap hashes. |
+| A source uses comments, strings, Unicode, or delimiter recovery to smuggle a fake declaration. | Wrong program is analyzed. | RFC 0003 lossless tokens; immutable lossless CST; recovery diagnostics; canonical/provider round-trip and malformed-input tests. | Differential fuzzing and import-resolution adversarial tests remain. |
+| A huge file, identifier, comment, or finite domain exhausts memory/time. | Denial of service; possible lost terminal evidence. | Lexer is linear; explicit-state bounds return `unknown` instead of success. | Add wall-time, memory, input, and output limits; never retry effects from a resource-limit exit. |
+| CRLF, Unicode normalization, symlinks, or path moves make evidence appear current. | Stale or substituted source. | RFC 0004 exact-byte hashes; provider evidence checker confines repository-relative paths and recomputes `source_id`. | Complete import/source-set membership and symlink-race handling remain. |
+| An attacker edits `manifest_id` or reorders JSON to forge a digest. | Evidence substitution. | Canonical subset encoding excludes identity/signature fields, recomputes the digest, rejects duplicate keys, and tests member-order invariance. | Full RFC 8785 numeric conformance and a versioned migration remain. `structural:*` is deliberately noncanonical/unknown. |
+| A bounded run is labelled `proved`, or a timeout is treated as a pass. | False assurance. | Schema/checker enforce bounds and frontier completion; the bounded producer refuses `proved`; adversarial promotion tests run independently of provider artifacts. | Do not generalize the finite-VC proof class to unbounded language semantics. |
+| A malicious backend returns `sat/unsat`, a corrupt proof, or a witness for another claim. | False result or misleading diagnosis. | Backends are outside TCB; nmlt-verify checks a narrow finite certificate and binds the exact VC; plain status/stdout remains unknown. | Independent review and scalable certificate formats remain. |
+| A counterexample/certificate reference uses traversal, symlink swap, or decompression bomb. | File disclosure, substitution, or DoS. | Generic references are content-addressed; local checker paths are confined and regular-file/exact-byte checked. | General artifact-store loaders still need size limits, race-safe opens, and no implicit execution/decompression. |
+| An AI or repair loop weakens the property, benchmark, bounds, or negative control. | Reward hacking and false validation. | Protected spans/digests and explicit edit authority separate claims/controls from repair candidates; evaluation is only `tested`. | Human review authority, hosted branch protection, and authenticated approvals remain. No signature claim is made. |
+| CI or a dependency is replaced; mutable action tags fetch new code. | Compromised releases/checkers. | Least-privilege `contents: read`; checkout v4.2.2 and Lean action v1.5.0 are commit-pinned; language versions are exact. | Runner image, rustup/elan downloads, Python, linker/system libraries, provenance/SBOM, signing, and transparency remain unpinned/unimplemented. |
 | A malicious contributor changes checker and tests together. | Backdoored TCB with passing CI. | RFC/ADR process and planned independent TCB review. | Enforce protected reviews/CODEOWNERS once hosted; use semantic mutants and independent implementations. |
-| Runtime events are omitted, reordered, duplicated, or forged. | Incorrect conformance or unsafe replay. | Proposed typed trace/refinement contract and durable examples. | Authenticate event sources, declare order/clock assumptions, preserve unknown cells; runtime adapters are not implemented. |
+| Runtime events are omitted, reordered, duplicated, or forged. | Incorrect conformance or unsafe replay. | Finite runtime adapter declares observations, preserves three-valued outcomes, and localizes contradictions. | Authenticate event sources and bind order/clock assumptions before deployment; the adapter does not authorize effects. |
 | Diagnostics, traces, or evidence capture credentials/private source. | Confidentiality breach. | Reporting policy forbids secrets; no network or telemetry in current frontend. | Add redaction policy and fixture tests before external adapters/log ingestion. |
 | A renderer displays a green badge while machine data says unknown. | Human false assurance. | Machine result is authoritative; current CLI prints explicit structural-only note. | Add presentation conformance tests and never infer class from color/text. |
 
@@ -192,6 +231,12 @@ stronger result by themselves.
 5. **Checked-code bypass:** return a valid certificate for a different formula
    or theory version. The certificate checker must reconstruct the exact
    obligation and bind checker/theory identities.
+6. **Trust-me manifest:** label a nonexistent path `proved`, name an arbitrary
+   engine/version, use `trusted_components: ["trust-me"]`, and point at a
+   non-content-addressed certificate. The generic schema rejects the missing
+   exact engine/TCB/certificate shapes, and independent readback rejects the
+   nonexistent or source-mismatched artifact even if all supplied digest text
+   is syntactically well formed.
 
 ## Severity Calibration (Critical, High, Medium, Low)
 

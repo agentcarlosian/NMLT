@@ -1,52 +1,220 @@
 {
-  "schema_version": "0.1.0",
-  "suite_id": "provider-attempt-seeded-defects-v1",
-  "description": "Reference lifecycle plus four independent semantic mutants.",
+  "schema_version": "1.0.0",
+  "suite_id": "provider-attempt-seeded-defects-v2",
+  "suite_status": "intent_frozen_executable_results_current",
+  "description": "One provider-attempt reference, four independent semantic mutants, three integrity controls, and one executable semantic-regression control.",
+  "source_set_id": "nmlt-source-set-v1:sha256:cc43fcb4d0fe8308bd5abfceed809b938351479ec9926c4507c2248df9fa6334",
+  "identity_contract": {
+    "source": "NMLT-SOURCE/v1 as specified by docs/artifact-identity.md",
+    "artifact": "Restricted canonical JSON with the identity member removed and an artifact-specific NMLT v1 domain separator",
+    "claim_boundary": "Benchmark property IDs bind frozen intent contracts; they are not typed-core semantic claim IDs."
+  },
+  "result_class_policy": {
+    "current": "source_bound_bounded_execution",
+    "reason": "Deterministic explicit-state reports bind exact sources and finite bounds; model_checked is bounded evidence and never means proved.",
+    "allowed_current": ["model_checked", "refuted"],
+    "excluded_promotion": "proved"
+  },
+  "provenance": {
+    "path": "benchmarks/provider-attempt/provenance.json",
+    "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105"
+  },
+  "property_contracts": [
+    {
+      "path": "benchmarks/provider-attempt/properties/dispatch-requires-arm.json",
+      "property_id": "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd"
+    },
+    {
+      "path": "benchmarks/provider-attempt/properties/no-blind-replay.json",
+      "property_id": "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe"
+    },
+    {
+      "path": "benchmarks/provider-attempt/properties/evaluation-requires-intact-response.json",
+      "property_id": "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0"
+    },
+    {
+      "path": "benchmarks/provider-attempt/properties/selection-requires-pass.json",
+      "property_id": "nmlt-benchmark-property-v1:sha256:03a2a2ee37e3191d1f81ca722e60fb600efc60310c4855196904f0fd6ada7ba6"
+    }
+  ],
   "cases": [
     {
       "id": "provider-attempt-reference",
-      "path": "seeded-defects/provider-attempt/reference.nmlt",
+      "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
+      "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c",
       "class": "reference",
-      "property": "all provider-attempt safety claims",
-      "expected": "accepted",
-      "support": "planned",
-      "origin": "Technicusverus provider-attempt model"
+      "intent_capsule": {
+        "path": "benchmarks/provider-attempt/intent/provider-attempt-reference.intent.json",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:fa05ff66de16dec624ede0d72eda90d07318aa3285be324b20290581b0eb7d46"
+      },
+      "property_ids": [
+        "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd",
+        "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe",
+        "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0",
+        "nmlt-benchmark-property-v1:sha256:03a2a2ee37e3191d1f81ca722e60fb600efc60310c4855196904f0fd6ada7ba6"
+      ],
+      "oracle_outcome": "holds_within_frozen_future_bounds",
+      "intended_evidence_class": "model_checked",
+      "current_evidence_class": "model_checked",
+      "support": "current",
+      "result": {
+        "path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
+        "result_id": "nmlt-benchmark-result-v1:sha256:041d2323125aa10f97cd97e5a5970bb9ec40e254b520e3cc0fd1a42aa6be9408"
+      },
+      "expected_witnesses": []
     },
     {
       "id": "dispatch-before-authorize",
-      "path": "seeded-defects/provider-attempt/dispatch-before-authorize.nmlt",
+      "path": "benchmarks/seeded-defects/provider-attempt/dispatch-before-authorize.nmlt",
+      "source_id": "nmlt-source-v1:sha256:5755f61bb3fc209fb06161660cef7cb89b542b2d8e32aed412360146c935da66",
       "class": "semantic_mutant",
-      "property": "DispatchRequiresArm",
-      "expected": "refuted",
-      "support": "planned",
-      "origin": "Technicusverus negative control"
+      "intent_capsule": {
+        "path": "benchmarks/provider-attempt/intent/dispatch-before-authorize.intent.json",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:7394aa5e62b10c989cd5741043b9220aee31b88f3fb82dac6b106e73c0008549"
+      },
+      "property_ids": [
+        "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd"
+      ],
+      "oracle_outcome": "refuted",
+      "intended_evidence_class": "refuted",
+      "current_evidence_class": "refuted",
+      "support": "current",
+      "result": {
+        "path": "benchmarks/results/provider-attempt/dispatch-before-authorize.json",
+        "result_id": "nmlt-benchmark-result-v1:sha256:66ec3fb205903d3120669022adc4e05f9b983cfd949f96c67e3694bd2a334ab3"
+      },
+      "expected_witnesses": [
+        {
+          "path": "benchmarks/provider-attempt/expected-counterexamples/dispatch-before-authorize.json",
+          "witness_id": "nmlt-expected-counterexample-v1:sha256:ef750d2addd7c3dacb4d0095890c6f96037eb416238c98d5ff60ae1814f03627"
+        }
+      ]
     },
     {
       "id": "blind-replay",
-      "path": "seeded-defects/provider-attempt/blind-replay.nmlt",
+      "path": "benchmarks/seeded-defects/provider-attempt/blind-replay.nmlt",
+      "source_id": "nmlt-source-v1:sha256:1d61387c8998f8e2bda759a2ba05d66201507e522bbedf5bc4483b3ed4afaaac",
       "class": "semantic_mutant",
-      "property": "NoBlindReplay",
-      "expected": "refuted",
-      "support": "planned",
-      "origin": "Technicusverus negative control"
+      "intent_capsule": {
+        "path": "benchmarks/provider-attempt/intent/blind-replay.intent.json",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:9ca9153e20808ea02be39a56290da9a622a86fdf734de03000471190dbccea2a"
+      },
+      "property_ids": [
+        "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe"
+      ],
+      "oracle_outcome": "refuted",
+      "intended_evidence_class": "refuted",
+      "current_evidence_class": "refuted",
+      "support": "current",
+      "result": {
+        "path": "benchmarks/results/provider-attempt/blind-replay.json",
+        "result_id": "nmlt-benchmark-result-v1:sha256:233d9ffc3ff20115de663aec6ac355492563ccafdd064ec6853bdeee15672d98"
+      },
+      "expected_witnesses": [
+        {
+          "path": "benchmarks/provider-attempt/expected-counterexamples/blind-replay.json",
+          "witness_id": "nmlt-expected-counterexample-v1:sha256:da4bbd49ff308c67dc37ae24f5f7ed5e6ff11eb1e12312a313a6365a72cacf2e"
+        }
+      ]
     },
     {
       "id": "response-binding",
-      "path": "seeded-defects/provider-attempt/response-binding.nmlt",
+      "path": "benchmarks/seeded-defects/provider-attempt/response-binding.nmlt",
+      "source_id": "nmlt-source-v1:sha256:3f491ca3c289a1d5eff7d11519fb4509e60345aa8eb60819baa1ad442460462e",
       "class": "semantic_mutant",
-      "property": "EvaluationRequiresIntactResponse",
-      "expected": "refuted",
-      "support": "planned",
-      "origin": "Technicusverus negative control"
+      "intent_capsule": {
+        "path": "benchmarks/provider-attempt/intent/response-binding.intent.json",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:23e7e8aacd8d069f8824252baf88386d4e9afaee8bb509d38bd2f14e62cdc3e5"
+      },
+      "property_ids": [
+        "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0"
+      ],
+      "oracle_outcome": "refuted",
+      "intended_evidence_class": "refuted",
+      "current_evidence_class": "refuted",
+      "support": "current",
+      "result": {
+        "path": "benchmarks/results/provider-attempt/response-binding.json",
+        "result_id": "nmlt-benchmark-result-v1:sha256:a2c9e69f88b6f1340cbfbb9bb43fde3cfbd7904db8b46970c38f4f8b4ac0a8e7"
+      },
+      "expected_witnesses": [
+        {
+          "path": "benchmarks/provider-attempt/expected-counterexamples/response-binding.json",
+          "witness_id": "nmlt-expected-counterexample-v1:sha256:ebae96b362b15cff69eb2e8f8631b1e19d6ffc703494d609fc98b4b1384155b7"
+        }
+      ]
     },
     {
       "id": "passing-selection",
-      "path": "seeded-defects/provider-attempt/passing-selection.nmlt",
+      "path": "benchmarks/seeded-defects/provider-attempt/passing-selection.nmlt",
+      "source_id": "nmlt-source-v1:sha256:ae395e8f3941be5647d30015e7689332e3bcf00948329e3d8b88960b65e71f37",
       "class": "semantic_mutant",
-      "property": "SelectionRequiresPass",
-      "expected": "refuted",
-      "support": "planned",
-      "origin": "Technicusverus negative control"
+      "intent_capsule": {
+        "path": "benchmarks/provider-attempt/intent/passing-selection.intent.json",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:7785908e6fd7b0618582e27c214d8d4b47348f6b6d540bba193b23c73e4905e4"
+      },
+      "property_ids": [
+        "nmlt-benchmark-property-v1:sha256:03a2a2ee37e3191d1f81ca722e60fb600efc60310c4855196904f0fd6ada7ba6"
+      ],
+      "oracle_outcome": "refuted",
+      "intended_evidence_class": "refuted",
+      "current_evidence_class": "refuted",
+      "support": "current",
+      "result": {
+        "path": "benchmarks/results/provider-attempt/passing-selection.json",
+        "result_id": "nmlt-benchmark-result-v1:sha256:8c2777d129192e7941d596a4f392fa924147cb97bbd6821d272d3d5db0846ea7"
+      },
+      "expected_witnesses": [
+        {
+          "path": "benchmarks/provider-attempt/expected-counterexamples/passing-selection.json",
+          "witness_id": "nmlt-expected-counterexample-v1:sha256:45bb21364362c8ab809b4366ac099ee2084fe89380f54df5f85ed1deab3e9c63"
+        }
+      ]
+    }
+  ],
+  "controls": [
+    {
+      "id": "malformed-unclosed-system",
+      "path": "benchmarks/controls/provider-attempt/malformed-unclosed-system.nmlt",
+      "source_id": "nmlt-source-v1:sha256:d495f69886c4e5e2626ef8d4034315aa2f6d0f17f1f8b9204dea730bf8c1516a",
+      "class": "malformed",
+      "expected_control_outcome": "frontend_rejected",
+      "current_evidence_class": "unknown",
+      "support": "current",
+      "rationale": "A missing system delimiter must produce a structural diagnostic, never semantic evidence."
+    },
+    {
+      "id": "vacuous-dispatch-property",
+      "path": "benchmarks/controls/provider-attempt/vacuous-dispatch-property.nmlt",
+      "source_id": "nmlt-source-v1:sha256:db4feefcb0b6748dfca2ef395a85635b1d7ac542f81842c558233697a6b9c352",
+      "class": "vacuous_property",
+      "property_id": "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd",
+      "expected_control_outcome": "integrity_rejected_for_vacuity",
+      "current_evidence_class": "unknown",
+      "support": "fixture_only",
+      "rationale": "DispatchRequiresArm is logically true only because no transition can set dispatched to true."
+    },
+    {
+      "id": "weakened-dispatch-invariant",
+      "path": "benchmarks/controls/provider-attempt/weakened-dispatch-invariant.nmlt",
+      "source_id": "nmlt-source-v1:sha256:414de2c8b70a991f32999f67307e0375640ea952a305d5023a91df2cf2301c42",
+      "class": "weakened_invariant",
+      "property_id": "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd",
+      "expected_control_outcome": "integrity_rejected_for_property_identity_mismatch",
+      "current_evidence_class": "unknown",
+      "support": "fixture_only",
+      "rationale": "The property handle is retained while its formula is weakened to a tautology."
+    },
+    {
+      "id": "one-shot-replay-regression",
+      "path": "benchmarks/controls/provider-attempt/one-shot-replay-regression.nmlt",
+      "source_id": "nmlt-source-v1:sha256:d30e6cb68ddbcac3875ec8b72071b3f4c3d6b4f852403856c8624cd0a3314d4b",
+      "class": "semantic_regression",
+      "property_id": "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe",
+      "expected_control_outcome": "model_checker_refuted",
+      "current_evidence_class": "refuted",
+      "support": "current",
+      "rationale": "Under the Phase 3 action-step/terminal-stutter profile, a one-shot dispatch from indeterminate to reconciled is accepted by the superseded next-state formula but refuted at state zero by the corrected current-state property; no RFC 0007 universal-stutter claim is made."
     }
   ]
 }

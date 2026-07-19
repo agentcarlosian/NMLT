@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0.0",
+  "result_id": "nmlt-benchmark-result-v1:sha256:8c2777d129192e7941d596a4f392fa924147cb97bbd6821d272d3d5db0846ea7",
+  "case_id": "passing-selection",
+  "source": {
+    "path": "benchmarks/seeded-defects/provider-attempt/passing-selection.nmlt",
+    "source_id": "nmlt-source-v1:sha256:ae395e8f3941be5647d30015e7689332e3bcf00948329e3d8b88960b65e71f37"
+  },
+  "engine": {
+    "name": "nmlt-explicit-state",
+    "version": "0.0.1",
+    "source_set_id": "nmlt-engine-source-set-v1:sha256:7f658612bdef56f2c4e2eee8a17f76dd7877de4f5cc34882ecec822530b45a37",
+    "executable_sha256": "acbb7331173d093a0b60fa00ee312e5a744ce14a3e7c8bbf318a92577f88862b",
+    "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+    "target": "x86_64-unknown-linux-gnu",
+    "algorithm": "deterministic-bfs-v1",
+    "report_schema": "model-check-report/1.0.0"
+  },
+  "configuration": {
+    "max_states": 10000,
+    "max_depth": 100,
+    "action_order": "lexicographic-action-then-state",
+    "terminal_behavior": "identity-stutter"
+  },
+  "assumptions": [
+    "The executable provider fragment and i64 arithmetic match the frozen source intent.",
+    "A model_checked result requires exhaustion of the reachable frontier within both bounds."
+  ],
+  "trusted_components": [
+    "nmlt-core lossless lexer",
+    "nmlt-engine parser, contextual elaborator, type checker, evaluator, and BFS explorer",
+    "Rust standard library ordered collections and integer operations"
+  ],
+  "negative_controls": [
+    "dispatch-before-authorize",
+    "blind-replay",
+    "response-binding",
+    "passing-selection"
+  ],
+  "report": {
+    "schema_version": "1.0.0",
+    "system": "PassingSelectionMutant",
+    "result": "refuted",
+    "complete": true,
+    "explored_states": 2,
+    "explored_transitions": 2,
+    "bounds": {
+      "max_states": 10000,
+      "max_depth": 100
+    },
+    "properties": [
+      {
+        "property": "SelectionRequiresPass",
+        "result": "refuted",
+        "reason": "property `SelectionRequiresPass` is false in reachable state 1",
+        "witness": {
+          "steps": [
+            {
+              "index": 0,
+              "action": null,
+              "state": {
+                "passed": false,
+                "phase": "evaluated"
+              },
+              "available_capabilities": [],
+              "enabled_actions": [
+                "select"
+              ]
+            },
+            {
+              "index": 1,
+              "action": "select",
+              "state": {
+                "passed": false,
+                "phase": "selected"
+              },
+              "available_capabilities": [],
+              "enabled_actions": [
+                "select"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

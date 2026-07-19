@@ -1,0 +1,16 @@
+# Phase 7 reference: all quantities are declared upper-bound annotations.
+program provider_pipeline
+budget 100 550000 180 60000
+plan
+  (seq
+    (atom ingest 12 100000 30 10000)
+    (choice
+      (atom cache_hit 4 0 8 2000)
+      (seq
+        (atom remote_fetch 25 300000 70 25000)
+        (atom validate 9 0 15 5000)))
+    (par
+      (atom audit 8 50000 20 3000)
+      (atom metrics 6 0 12 2000))
+    (repeat 2
+      (atom retry_guard 3 25000 4 1000)))

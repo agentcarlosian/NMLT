@@ -1,0 +1,10 @@
+system SemanticHeldOut {
+  state armed: Bool = false;
+  state dispatched: Bool = false;
+  action authorize {
+    set armed = true;
+  }
+  action dispatch {
+    set dispatched = true;
+  }
+}

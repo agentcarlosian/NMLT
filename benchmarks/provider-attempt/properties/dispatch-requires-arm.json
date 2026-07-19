@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "property_id": "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd",
+  "handle": "ProviderAttempt.DispatchRequiresArm",
+  "claim_kind": "behavioral_safety",
+  "statement": "Every provider dispatch is preceded by durable authorization and arming for the same attempt.",
+  "nmlt_formula": "always(dispatched implies armed)",
+  "observables": ["armed", "dispatched"],
+  "anti_vacuity_obligations": [
+    "A reachable trace contains a dispatch transition.",
+    "A reachable post-dispatch state has dispatched equal to true."
+  ]
+}

@@ -38,7 +38,7 @@ system ProviderAttempt(req: Request) {
     always(dispatch_count > 0 implies authorized_before_dispatch)
 
   temporal NoBlindReplay =
-    always(phase == indeterminate implies next(not enabled(dispatch)))
+    always(phase == indeterminate implies not enabled(dispatch))
 
   refine RuntimeJournal {
     observe phase, response
@@ -47,8 +47,15 @@ system ProviderAttempt(req: Request) {
 }
 ```
 
-Current parsing recognizes only balanced `system Name { ... }` declarations.
-Every other construct above is a proposed design fixture.
+The current lossless frontend recognizes the Phase 1 declaration shells,
+including modules and surface-only data/record/function forms, systems, state,
+actions, `require`, explicit `set` targets, capabilities, properties,
+observations, and hiding. It projects the supported structure into a partial
+untyped core while preserving unsupported or recovered nodes explicitly.
+Expression precedence, name resolution, typing, effects, temporal meaning,
+refinement meaning, and general execution remain narrow or deferred; the full
+example above is still an illustrative design fixture rather than an
+end-to-end verified program.
 
 ## Candidate declaration families
 

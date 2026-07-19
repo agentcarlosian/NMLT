@@ -44,6 +44,26 @@ The textual prefix is `nmlt-source-set-v1:sha256:`. Duplicate paths are an
 error. Symlink traversal and generated/imported sources must be resolved and
 declared before this identity is computed.
 
+## Canonical-example registry identity
+
+The Phase 0 registry freezes more than source bytes. Each example entry binds
+its handle, path, source ID, prose intent, provisional claim handles, negative
+control, and intended evidence classes. Remove `entry_id`, encode the remaining
+string/array/object JSON subset as UTF-8 with object keys sorted, no insignificant
+whitespace, and no ASCII escaping, then hash:
+
+```text
+SHA256("NMLT-CANONICAL-EXAMPLE\0v1\0" || u64be(len(bytes)) || bytes)
+```
+
+The prefix is `nmlt-canonical-example-v1:sha256:`. The top-level `corpus_id`
+uses the same encoding over the entire registry with only `corpus_id` removed,
+the domain `NMLT-CANONICAL-CORPUS\0v1\0`, and prefix
+`nmlt-canonical-corpus-v1:sha256:`. Thus a change to an intended claim or
+negative control cannot retain the same entry or corpus identity even when the
+source file is unchanged. This is a registry freeze, not a semantic proof or a
+replacement for the typed claim identity below.
+
 ## Semantic and claim identity
 
 Once elaboration exists, canonical core IR uses a separately versioned binary
@@ -57,9 +77,9 @@ encoding with explicit tags and lengths. Its identity prefix is
 ```
 
 under domain `NMLT-CLAIM\0v1\0`. Human-readable names such as `C04.NoBlindReplay`
-are provisional handles, not cryptographic claim identities. Phase 0 examples
-therefore freeze handles and source IDs while leaving canonical claim IDs
-unassigned until the typed core encoding is accepted.
+are provisional handles, not cryptographic claim identities. Phase 0 therefore
+freezes their exact registry entries and source IDs while leaving semantic
+claim IDs unassigned until the typed core encoding is accepted.
 
 ## Evidence identity
 
@@ -79,8 +99,9 @@ evidence_digest = SHA256(
 manifest_id = "nmlt-evidence-v1:sha256:" || hex(evidence_digest)
 ```
 
-Removing signatures prevents circularity. A signature must sign the
-`manifest_id` together with its signature-suite identifier and key identity.
+Removing a future signatures member prevents circularity. If a signature suite
+is later specified, it must sign the `manifest_id` together with its suite and
+key identity. No signature or transparency-log format is implemented today.
 Pretty-printed and canonical representations may coexist, but consumers must
 recompute rather than trust the supplied ID.
 
@@ -97,10 +118,22 @@ A verification evidence object is incomplete unless it binds:
 - every witness, certificate, and negative-control artifact by digest;
 - assumptions and residual gaps.
 
-An engine identity is not merely a version string. The canonical engine record
-contains the executable SHA-256 digest, build/version output, platform target,
-and recursively relevant backend identities. Configuration uses JCS plus the
-domain `NMLT-CONFIG\0v1\0`.
+An engine identity is not merely a version string. Generic assurance manifests
+record `engine`, `engine_version`, `engine_source_set_id`, and
+`engine_executable_sha256`; method-specific records additionally bind build
+output, platform target, and recursively relevant backend identities.
+`trusted_components` is nonempty and contains `{id, identity}` objects, where
+`identity` is a raw `sha256:<digest>` or a versioned NMLT domain-separated
+content identity. Configuration uses canonical JSON plus the domain
+`NMLT-CONFIG\0v1\0`.
+
+Proof-certificate `reference` in the generic schema is the raw content address
+`sha256:<64 lowercase hex>`. The current local schema also requires a display
+path for `proved`; it is not authoritative, so the checker confines it to the
+repository, requires a regular file, and recomputes the reference from its
+bytes. A future remote store needs a separate retrieval/readback protocol.
+Witness references likewise begin with a content identity and may add a
+fragment selecting an item inside the addressed artifact.
 
 ## Verification rules
 
@@ -111,7 +144,14 @@ domain `NMLT-CONFIG\0v1\0`.
   fitness for purpose.
 - SHA-256 agility requires a new identity version and migration RFC; prefixes
   must never silently change meaning.
+- A digest proves byte equality under its encoding rules, not existence in an
+  artifact store. Local assurance checkers must also resolve/read the artifact;
+  remote stores require an independently specified retrieval/readback policy.
+- A digest is not a signature, authorship statement, timestamp, or
+  transparency proof.
 
-The reference source-ID calculator is `tools/canonical_examples.py`. Evidence
-JCS support is intentionally not claimed by the pre-alpha CLI until RFC 8785
-conformance vectors are present.
+The reference source-ID calculator is `tools/canonical_examples.py`.
+`tools/check_evidence.py` implements the repository's integer/string/Boolean/
+null canonical JSON subset and duplicate-key rejection. Full RFC 8785 numeric
+conformance is intentionally not claimed by the pre-alpha CLI or checker until
+the required conformance vectors and number serialization are implemented.

@@ -1,7 +1,7 @@
 # Build output
 /build/
 /dist/
-/target/
+**/target/
 **/PGenerated/
 **/PCheckerOutput/
 **/*_TTrace_*.tla

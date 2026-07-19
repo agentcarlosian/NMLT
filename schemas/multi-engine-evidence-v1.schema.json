@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/multi-engine-evidence-v1.schema.json",
+  "title": "NMLT Phase 5 multi-engine evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_id",
+    "fixture",
+    "source",
+    "claim",
+    "abstraction",
+    "vc_digest",
+    "engines",
+    "composite",
+    "anti_vacuity",
+    "negative_controls",
+    "implementation",
+    "residual_gaps"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^nmlt-multi-engine-evidence-v1:sha256:[0-9a-f]{64}$"
+    },
+    "fixture": { "const": "provider-dispatch-two-engine-v1" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "content_sha256", "source_id"],
+      "properties": {
+        "path": {
+          "const": "benchmarks/seeded-defects/provider-attempt/reference.nmlt"
+        },
+        "content_sha256": { "$ref": "#/$defs/sha256" },
+        "source_id": {
+          "type": "string",
+          "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "handle", "content_sha256", "property_id"],
+      "properties": {
+        "path": {
+          "const": "benchmarks/provider-attempt/properties/dispatch-requires-arm.json"
+        },
+        "handle": { "const": "ProviderAttempt.DispatchRequiresArm" },
+        "content_sha256": { "$ref": "#/$defs/sha256" },
+        "property_id": {
+          "type": "string",
+          "pattern": "^nmlt-benchmark-property-v1:sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "abstraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variables", "kind", "compiler_verified"],
+      "properties": {
+        "variables": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "enum": ["armed", "dispatched"] }
+        },
+        "kind": { "const": "manual-observable-projection" },
+        "compiler_verified": { "const": false }
+      }
+    },
+    "vc_digest": { "$ref": "#/$defs/sha256" },
+    "engines": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/engine" }
+    },
+    "composite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "assurance_subject",
+        "raw_results_retained",
+        "disagreements"
+      ],
+      "properties": {
+        "classification": { "const": "proved" },
+        "assurance_subject": { "const": "finite_vc_only" },
+        "raw_results_retained": { "type": "integer", "minimum": 2 },
+        "disagreements": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "anti_vacuity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "witness_states"],
+      "properties": {
+        "classification": { "const": "refuted" },
+        "witness_states": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "negative_controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disagreement", "bounded_proof_laundering"],
+      "properties": {
+        "disagreement": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["classification", "raw_results_retained", "reason_count"],
+          "properties": {
+            "classification": { "const": "unknown" },
+            "raw_results_retained": { "type": "integer", "minimum": 2 },
+            "reason_count": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "bounded_proof_laundering": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["classification"],
+          "properties": { "classification": { "const": "unknown" } }
+        }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_set_id", "toolchain", "target", "executable_sha256"],
+      "properties": {
+        "source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-verify-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "toolchain": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "executable_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "residual_gaps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "scope": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["complete_finite", "bounded", "sampled"] },
+        "states": { "type": "integer", "minimum": 0 },
+        "max_depth": { "type": "integer", "minimum": 0 },
+        "max_states": { "type": "integer", "minimum": 0 },
+        "seed": { "type": "integer", "minimum": 0 },
+        "cases": { "type": "integer", "minimum": 0 },
+        "max_steps": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "certificate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "vc_digest", "invariant_states"],
+      "properties": {
+        "format": { "const": "nmlt-finite-invariant/1" },
+        "vc_digest": { "$ref": "#/$defs/sha256" },
+        "invariant_states": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "method",
+        "build_digest",
+        "raw_status",
+        "raw_output",
+        "scope",
+        "normalized",
+        "certificate_accepted",
+        "certificate",
+        "witness_states"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "method": { "type": "string", "minLength": 1 },
+        "build_digest": { "$ref": "#/$defs/sha256" },
+        "raw_status": {
+          "enum": ["proved", "model_checked", "tested", "refuted", "unknown", "backend_failure"]
+        },
+        "raw_output": { "type": "string", "minLength": 1 },
+        "scope": { "$ref": "#/$defs/scope" },
+        "normalized": {
+          "enum": ["proved", "model_checked", "tested", "refuted", "unknown"]
+        },
+        "certificate_accepted": { "type": "boolean" },
+        "certificate": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/certificate" }
+          ]
+        },
+        "witness_states": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

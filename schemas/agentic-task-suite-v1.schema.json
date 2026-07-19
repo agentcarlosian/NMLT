@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/agentic-task-suite-v1.schema.json",
+  "title": "NMLT authority-bounded agentic task suite",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "suite_id", "split", "assistant_interface", "tasks"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "suite_id": { "type": "string", "minLength": 1 },
+    "split": { "const": "held_out" },
+    "assistant_interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exposes", "withholds"],
+      "properties": {
+        "exposes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["task_id", "candidate_source", "editable_spans", "structured_feedback"]
+          }
+        },
+        "withholds": {
+          "type": "array",
+          "uniqueItems": true,
+          "allOf": [
+            { "contains": { "const": "expected_patch" } },
+            { "contains": { "const": "trusted_artifact_bytes" } },
+            { "contains": { "const": "expected_outcome" } }
+          ],
+          "items": {
+            "enum": ["expected_patch", "trusted_artifact_bytes", "expected_outcome", "oracle_implementation"]
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/task" }
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "digest"],
+      "properties": {
+        "role": { "enum": ["intent", "property", "oracle"] },
+        "path": { "type": "string", "pattern": "^benchmarks/agentic/trusted/[^./][^/]*\\.txt$" },
+        "digest": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_id", "stage", "candidate", "trusted_artifacts", "expected_class", "negative_control"],
+      "properties": {
+        "task_id": { "type": "string", "pattern": "^held-out-[a-z0-9-]+$" },
+        "stage": { "enum": ["syntax", "type", "semantic"] },
+        "candidate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "digest"],
+          "properties": {
+            "path": { "type": "string", "pattern": "^benchmarks/agentic/candidates/[a-z0-9-]+\\.nmlt$" },
+            "digest": { "$ref": "#/$defs/digest" }
+          }
+        },
+        "trusted_artifacts": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/artifact" }
+        },
+        "expected_class": { "enum": ["syntax_accepted", "type_accepted", "model_checked"] },
+        "negative_control": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

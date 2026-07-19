@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/benchmark-provenance-v1.schema.json",
+  "title": "NMLT benchmark source-corpus provenance v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "provenance_id",
+    "corpus_id",
+    "source_repository",
+    "source_artifacts",
+    "license",
+    "derivation",
+    "availability"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "provenance_id": {
+      "type": "string",
+      "pattern": "^nmlt-benchmark-provenance-v1:sha256:[0-9a-f]{64}$"
+    },
+    "corpus_id": { "type": "string", "minLength": 1 },
+    "source_repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name", "revision", "revision_date", "remote"],
+      "properties": {
+        "kind": { "const": "local_git_snapshot" },
+        "name": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "revision_date": { "type": "string", "minLength": 1 },
+        "remote": { "type": ["string", "null"] }
+      }
+    },
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "role"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "role": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "path", "sha256"],
+      "properties": {
+        "spdx": { "const": "MIT" },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "copied_source_bytes", "statement"],
+      "properties": {
+        "method": { "const": "independent_reencoding" },
+        "copied_source_bytes": { "const": false },
+        "statement": { "type": "string", "minLength": 1 }
+      }
+    },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upstream_required_for_validation", "reason"],
+      "properties": {
+        "upstream_required_for_validation": { "const": false },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

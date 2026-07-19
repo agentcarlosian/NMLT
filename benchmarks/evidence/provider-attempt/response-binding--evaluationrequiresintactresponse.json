@@ -1,0 +1,83 @@
+{
+  "schema_version": "0.1.0",
+  "manifest_id": "nmlt-evidence-v1:sha256:5fccd6387120524b3d22d58c77067ab2654c226c9a7fb29c1e8a7a84a395f5a6",
+  "artifact": {
+    "path": "benchmarks/seeded-defects/provider-attempt/response-binding.nmlt",
+    "source_id": "nmlt-source-v1:sha256:3f491ca3c289a1d5eff7d11519fb4509e60345aa8eb60819baa1ad442460462e"
+  },
+  "claim": {
+    "id": "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0",
+    "kind": "behavioral_safety"
+  },
+  "result": "refuted",
+  "method": {
+    "kind": "deterministic_explicit_state_bfs_v1",
+    "engine": "nmlt-explicit-state",
+    "engine_version": "0.0.1",
+    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:7f658612bdef56f2c4e2eee8a17f76dd7877de4f5cc34882ecec822530b45a37",
+    "engine_executable_sha256": "acbb7331173d093a0b60fa00ee312e5a744ce14a3e7c8bbf318a92577f88862b"
+  },
+  "scope": {
+    "configuration_id": "nmlt-config-v1:sha256:43b307c69a73b9457d5cf3838c67e9567a5d99230caeaa839463584a3d196623",
+    "bounds": [
+      "max_states=10000",
+      "max_depth=100",
+      "frontier_complete=true"
+    ],
+    "observations": [
+      "phase",
+      "response_intact"
+    ]
+  },
+  "assumptions": [
+    "The executable provider fragment and i64 arithmetic match the frozen source intent.",
+    "A model_checked result requires exhaustion of the reachable frontier within both bounds."
+  ],
+  "trusted_components": [
+    {
+      "id": "trusted-component-inventory",
+      "identity": "sha256:4e5ccff9d494e691dcc4db68fd6c2d1ac058e7386ccb592f24d35d04a92cc66b"
+    },
+    {
+      "id": "nmlt-engine-source",
+      "identity": "nmlt-engine-source-set-v1:sha256:7f658612bdef56f2c4e2eee8a17f76dd7877de4f5cc34882ecec822530b45a37"
+    },
+    {
+      "id": "nmlt-engine-executable",
+      "identity": "sha256:acbb7331173d093a0b60fa00ee312e5a744ce14a3e7c8bbf318a92577f88862b"
+    },
+    {
+      "id": "benchmark-result",
+      "identity": "nmlt-benchmark-result-v1:sha256:a2c9e69f88b6f1340cbfbb9bb43fde3cfbd7904db8b46970c38f4f8b4ac0a8e7"
+    },
+    {
+      "id": "rust-toolchain-declaration",
+      "identity": "sha256:0ceb751d66f44e50985538d239e0f5712acccb9f7e71a8afb56878f8fc2ba74a"
+    },
+    {
+      "id": "evidence-schema",
+      "identity": "sha256:21ed60d3e3ae1312075753b4d4c1a5ff1b3459d856be7a239963319f258f83e5"
+    },
+    {
+      "id": "evidence-checker",
+      "identity": "sha256:e9e43f6c22cec833bd967d39bddc1a654f46394bdd65b42733c02c47feadf6ea"
+    },
+    {
+      "id": "benchmark-integrity-checker",
+      "identity": "sha256:e3e695e0209670ee0eb5f3936b28d7e1699f2f67b50a90d4bb0849d1b59063ec"
+    }
+  ],
+  "negative_controls": [
+    "nmlt-benchmark-result-v1:sha256:a2c9e69f88b6f1340cbfbb9bb43fde3cfbd7904db8b46970c38f4f8b4ac0a8e7",
+    "nmlt-expected-counterexample-v1:sha256:ebae96b362b15cff69eb2e8f8631b1e19d6ffc703494d609fc98b4b1384155b7"
+  ],
+  "residual_gaps": [
+    "Finite explicit-state evidence is not an unbounded proof.",
+    "The executable provider fragment uses checked i64 arithmetic and open nominal constructors.",
+    "No verified compiler theorem yet connects parsed Rust IR to the Lean core."
+  ],
+  "witness": {
+    "kind": "model-check-report/1.0.0#counterexample",
+    "reference": "nmlt-benchmark-result-v1:sha256:a2c9e69f88b6f1340cbfbb9bb43fde3cfbd7904db8b46970c38f4f8b4ac0a8e7#property=EvaluationRequiresIntactResponse"
+  }
+}

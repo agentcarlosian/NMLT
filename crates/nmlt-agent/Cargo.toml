@@ -1,0 +1,18 @@
+[package]
+name = "nmlt-agent"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Authority-bounded repair protocol and deterministic conformance baseline for NMLT"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "nmlt-agent-evaluate"
+path = "src/bin/evaluate.rs"
+
+[lints]
+workspace = true

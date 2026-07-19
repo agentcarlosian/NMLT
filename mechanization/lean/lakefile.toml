@@ -1,0 +1,6 @@
+name = "nmlt-mechanization"
+version = "0.0.1"
+defaultTargets = ["NMLT"]
+
+[[lean_lib]]
+name = "NMLT"

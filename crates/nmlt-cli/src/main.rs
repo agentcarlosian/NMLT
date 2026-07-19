@@ -5,6 +5,7 @@ use std::process::ExitCode;
 
 use nmlt_core::diagnostic::line_column;
 use nmlt_core::{Diagnostic, EvidenceManifest, ParsedFile, lex_source, parse_source};
+use nmlt_engine::{CheckConfig, ResultClass, Value, check_model, compile};
 
 const HELP: &str = "\
 NMLT structural frontend (pre-alpha)\n\n\
@@ -12,6 +13,8 @@ Usage:\n\
   nmlt check <file>       Check structural system declarations\n\
   nmlt inspect <file>     List structurally recognized systems\n\
   nmlt tokens <file>      Print the lossless Phase 1 token stream\n\
+  nmlt typecheck <file>   Check the executable typed behavior fragment\n\
+  nmlt model-check [--json] <file> Explore its bounded reachable-state graph\n\
   nmlt evidence <file>    Emit an explicitly unknown evidence scaffold\n\
   nmlt version            Print the frontend version\n\
   nmlt help               Show this help\n\n\
@@ -57,7 +60,43 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             let path = single_path_argument(command, &arguments[1..])?;
             print_tokens(&path)
         }
+        "typecheck" => {
+            let path = single_path_argument(command, &arguments[1..])?;
+            let source = read_source(&path)?;
+            let typed = compile(&source).map_err(|errors| errors.join("\n"))?;
+            println!(
+                "type_checked: {} (system {}, {} state variables, {} actions, {} properties)",
+                path.display(),
+                typed.model.system_name,
+                typed.model.states.len(),
+                typed.model.actions.len(),
+                typed.model.properties.len()
+            );
+            Ok(())
+        }
+        "model-check" => {
+            let (json, path) = model_check_arguments(&arguments[1..])?;
+            let source = read_source(&path)?;
+            let typed = compile(&source).map_err(|errors| errors.join("\n"))?;
+            let report =
+                check_model(&typed, CheckConfig::default()).map_err(|errors| errors.join("\n"))?;
+            if json {
+                println!("{}", report.to_json_pretty());
+            } else {
+                print_model_report(&report);
+            }
+            Ok(())
+        }
         unknown => Err(format!("unknown command `{unknown}`\n\n{HELP}")),
+    }
+}
+
+fn model_check_arguments(arguments: &[std::ffi::OsString]) -> Result<(bool, PathBuf), String> {
+    match arguments {
+        [path] => Ok((false, PathBuf::from(path))),
+        [flag, path] if flag == "--json" => Ok((true, PathBuf::from(path))),
+        [] => Err("`model-check` requires one source path".to_owned()),
+        _ => Err("usage: nmlt model-check [--json] <file>".to_owned()),
     }
 }
 
@@ -73,12 +112,16 @@ fn single_path_argument(
 }
 
 fn load_and_parse(path: &Path) -> Result<ParsedFile, String> {
-    let source = fs::read_to_string(path)
-        .map_err(|error| format!("could not read `{}`: {error}", path.display()))?;
+    let source = read_source(path)?;
     match parse_source(&source) {
         Ok(parsed) => Ok(parsed),
         Err(diagnostics) => Err(render_diagnostics(path, &source, &diagnostics)),
     }
+}
+
+fn read_source(path: &Path) -> Result<String, String> {
+    fs::read_to_string(path)
+        .map_err(|error| format!("could not read `{}`: {error}", path.display()))
 }
 
 fn print_tokens(path: &Path) -> Result<(), String> {
@@ -148,4 +191,52 @@ fn print_inspect(path: &Path, parsed: &ParsedFile) {
 fn print_evidence(path: &Path) {
     let manifest = EvidenceManifest::structural_unknown(path.display().to_string());
     println!("{}", manifest.to_json_pretty());
+}
+
+fn print_model_report(report: &nmlt_engine::CheckReport) {
+    println!("system: {}", report.system);
+    println!("result: {}", report.class.as_str());
+    println!("complete: {}", report.complete);
+    println!("states: {}", report.explored_states);
+    println!("transitions: {}", report.explored_transitions);
+    println!(
+        "bounds: max_states={}, max_depth={}",
+        report.config.max_states, report.config.max_depth
+    );
+    for property in &report.properties {
+        println!(
+            "property: {} = {} ({})",
+            property.property,
+            property.class.as_str(),
+            property.reason
+        );
+        if property.class == ResultClass::Refuted {
+            for step in &property
+                .witness
+                .as_ref()
+                .expect("refutations carry traces")
+                .steps
+            {
+                let state = step
+                    .state
+                    .iter()
+                    .map(|(name, value)| format!("{name}={}", render_value(value)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                println!(
+                    "  [{}] {} {{{state}}}",
+                    step.index,
+                    step.action.as_deref().unwrap_or("initial")
+                );
+            }
+        }
+    }
+}
+
+fn render_value(value: &Value) -> String {
+    match value {
+        Value::Bool(value) => value.to_string(),
+        Value::Int(value) => value.to_string(),
+        Value::Symbol(value) => value.clone(),
+    }
 }

@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "witness_id": "nmlt-expected-counterexample-v1:sha256:da4bbd49ff308c67dc37ae24f5f7ed5e6ff11eb1e12312a313a6365a72cacf2e",
+  "status": "expected_not_observed",
+  "case_id": "blind-replay",
+  "property_id": "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe",
+  "minimal_transition_count": 0,
+  "initial_observation": {
+    "phase": "indeterminate",
+    "dispatch_count": 1,
+    "dispatch_enabled": true
+  },
+  "steps": [],
+  "violation": {
+    "state_index": 0,
+    "predicate": "indeterminate implies not enabled(dispatch)",
+    "explanation": "Replay is already enabled in the initial indeterminate state; no transition is needed to refute the property."
+  },
+  "normalization": {
+    "state_field_order": ["phase", "dispatch_count", "dispatch_enabled"],
+    "transition_tie_break": "lexicographic action name then canonical state bytes"
+  }
+}

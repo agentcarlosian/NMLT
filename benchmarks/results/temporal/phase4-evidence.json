@@ -1,0 +1,401 @@
+{
+  "schema_version": "1.0.0",
+  "fixture": "phase4-temporal-refinement-runtime-v1",
+  "graph_id": "nmlt-temporal-graph-v1:sha256:7cd9a36ee384964f76b4c3f8b9ea0ccad3016c9e178f864629a5ac7ed6dd849f",
+  "temporal": {
+    "property": "eventually(done)",
+    "without_fairness": {
+      "result": "refuted",
+      "stem_states": [
+        0
+      ],
+      "stem_transitions": [],
+      "loop_states": [
+        0,
+        0
+      ],
+      "loop_transitions": [
+        0
+      ],
+      "fairness_set_id": "nmlt-fairness-set-v1:sha256:57d431d46ddeced83c3412b69352e8b893027d0a801e6a611142e1ac28c263ab"
+    },
+    "with_fairness": {
+      "result": "model_checked",
+      "assumptions": [
+        "weak:work"
+      ],
+      "fairness_set_id": "nmlt-fairness-set-v1:sha256:0ac88ef2992158db99ba1923b01fa2756f5da4294f729fcc41a306d7626b766a"
+    },
+    "predicate_id": "nmlt-temporal-predicate-v1:sha256:2da6ae56d8ae7be047affa9ef629227e290def8ca0b5bab7fbc84a7089e665f1",
+    "predicate": {
+      "language": "nmlt-fixture-predicate-v1",
+      "formula": "eventually(done)",
+      "state_test": {
+        "field": "done",
+        "equals": true
+      }
+    }
+  },
+  "refinement": {
+    "result": "accepted",
+    "hidden_actions": [
+      "cache"
+    ],
+    "state_map": [
+      0,
+      0,
+      1
+    ],
+    "checked_states": 3,
+    "checked_transitions": 2,
+    "refinement_id": "nmlt-refinement-v1:sha256:c351f30ac1f4d3d943835112ef9da6c9219ecf18c5d3d56610041fac2df0f609",
+    "mapping_id": "nmlt-mapping-v1:sha256:9e0155e070565eca2f8a04b94041911fc1e64bdfd9cc32fa9a2ed7534554d96b",
+    "spec": {
+      "concrete": {
+        "states": [
+          {
+            "done": false,
+            "internal": 0
+          },
+          {
+            "done": false,
+            "internal": 1
+          },
+          {
+            "done": true,
+            "internal": 1
+          }
+        ],
+        "initial": [
+          0
+        ],
+        "transitions": [
+          {
+            "from": 0,
+            "action": "cache",
+            "to": 1
+          },
+          {
+            "from": 1,
+            "action": "publish",
+            "to": 2
+          }
+        ]
+      },
+      "abstract": {
+        "states": [
+          {
+            "done": false,
+            "internal": 99
+          },
+          {
+            "done": true,
+            "internal": 99
+          }
+        ],
+        "initial": [
+          0
+        ],
+        "transitions": [
+          {
+            "from": 0,
+            "action": "commit",
+            "to": 1
+          }
+        ]
+      },
+      "state_map": [
+        0,
+        0,
+        1
+      ],
+      "concrete_observation": {
+        "done": "done"
+      },
+      "abstract_observation": {
+        "done": "done"
+      },
+      "action_map": {
+        "cache": null,
+        "publish": "commit"
+      }
+    }
+  },
+  "runtime": {
+    "case_id": "nmlt-runtime-case-v1:sha256:0ca55bde00d4edd46c5e9a8a5f451d88f479221bfd618e71fbf3846c8e62ec34",
+    "mapping": {
+      "done": "done"
+    },
+    "accepted_journal": [
+      {
+        "sequence": 40,
+        "action": "initial",
+        "observations": {
+          "done": false
+        }
+      },
+      {
+        "sequence": 41,
+        "action": "work",
+        "observations": {
+          "done": true
+        }
+      }
+    ],
+    "contradictory_journal": [
+      {
+        "sequence": 40,
+        "action": "initial",
+        "observations": {
+          "done": false
+        }
+      },
+      {
+        "sequence": 41,
+        "action": "work",
+        "observations": {
+          "done": false
+        }
+      }
+    ],
+    "accepted_trace": "accepted",
+    "contradictory_trace": "rejected",
+    "rejected_record_index": 1,
+    "rejected_candidates_before": [
+      0
+    ],
+    "rejected_reason": "record 1 action/observations match no transition from candidate states {0}",
+    "mapping_id": "nmlt-mapping-v1:sha256:afa47e1c489446585fe31a3bd33736e0a86210b6bd4e0c35427870ecdd8946ae",
+    "accepted_journal_id": "nmlt-journal-v1:sha256:5f3ff8ec7523ac874f0586a9b64e35f1b3aeca3f907cedf57c439613b76c99ab",
+    "contradictory_journal_id": "nmlt-journal-v1:sha256:a99cb72003cda02e367b83ccec66898ae0d76f766358d9d374b90f073e7a1e47"
+  },
+  "residual_gaps": [
+    "finite graph only",
+    "provider source-to-observation-graph construction is manually audited, not compiler-verified",
+    "fairness is an explicit assumption",
+    "forward simulation does not prove liveness refinement",
+    "journal authenticity is not established"
+  ],
+  "implementation": {
+    "checker_version": "0.0.1",
+    "source_set_id": "nmlt-temporal-source-set-v1:sha256:b5d0f06b74e95f28d4bc02961e75be2cee5fadc226c36e15a3c169aa62988453",
+    "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+    "executable_sha256": "b46bfa0790c92c6efad9fc4e21760a1edaf3fccdfb6e3ff1dfe44666f4acb9bd",
+    "replayer_sha256": "900d17179674789847c9f839acbcaaeb2dd78b5ec6c7d3e465c9401889df3861"
+  },
+  "graph": {
+    "semantics": "finite-graph-v1+universal-identity-stutter-v1",
+    "states": [
+      {
+        "done": false,
+        "internal": 0
+      },
+      {
+        "done": true,
+        "internal": 0
+      }
+    ],
+    "initial": [
+      0
+    ],
+    "transitions": [
+      {
+        "from": 0,
+        "action": "idle",
+        "to": 0
+      },
+      {
+        "from": 0,
+        "action": "work",
+        "to": 1
+      }
+    ]
+  },
+  "provider_blind_replay": {
+    "property_id": "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe",
+    "formula": "always(phase == indeterminate implies not enabled(dispatch))",
+    "semantics": "finite-observation-quotient+universal-identity-stutter-v1",
+    "projection_id": "nmlt-mapping-v1:sha256:79b1ece97a43a336875592a053c1d88c884594c8f519fb32b2ea6d054e04bb6f",
+    "projection": {
+      "visible": [
+        "phase",
+        "enabled(dispatch)"
+      ],
+      "hidden": [
+        "armed",
+        "dispatched",
+        "dispatch_count",
+        "response_intact",
+        "passed"
+      ],
+      "enabledness_rule": "dispatch_enabled iff an outgoing dispatch action exists",
+      "mutant_counter_abstraction": "hide dispatch_count; preserve phase and dispatch enabledness",
+      "construction": "manual property-relevant observation graph; distinct hidden states retain distinct state IDs"
+    },
+    "reference_graph_id": "nmlt-temporal-graph-v1:sha256:1a32cf5d21cbb917065c426b3c51479db15bfb54d62cae8e738828e08fd35fab",
+    "reference_graph": {
+      "semantics": "finite-observation-quotient+universal-identity-stutter-v1",
+      "states": [
+        {
+          "phase": "proposed",
+          "dispatch_enabled": false
+        },
+        {
+          "phase": "authorized",
+          "dispatch_enabled": false
+        },
+        {
+          "phase": "authorized",
+          "dispatch_enabled": true
+        },
+        {
+          "phase": "dispatched",
+          "dispatch_enabled": false
+        },
+        {
+          "phase": "responded",
+          "dispatch_enabled": false
+        },
+        {
+          "phase": "indeterminate",
+          "dispatch_enabled": false
+        },
+        {
+          "phase": "evaluated",
+          "dispatch_enabled": false
+        },
+        {
+          "phase": "evaluated",
+          "dispatch_enabled": false
+        },
+        {
+          "phase": "selected",
+          "dispatch_enabled": false
+        }
+      ],
+      "initial": [
+        0
+      ],
+      "transitions": [
+        {
+          "from": 0,
+          "action": "authorize",
+          "to": 1
+        },
+        {
+          "from": 1,
+          "action": "arm",
+          "to": 2
+        },
+        {
+          "from": 2,
+          "action": "dispatch",
+          "to": 3
+        },
+        {
+          "from": 3,
+          "action": "receive_response",
+          "to": 4
+        },
+        {
+          "from": 3,
+          "action": "lose_response",
+          "to": 5
+        },
+        {
+          "from": 4,
+          "action": "evaluate_fail",
+          "to": 7
+        },
+        {
+          "from": 4,
+          "action": "evaluate_pass",
+          "to": 6
+        },
+        {
+          "from": 6,
+          "action": "select",
+          "to": 8
+        }
+      ]
+    },
+    "mutant_graph_id": "nmlt-temporal-graph-v1:sha256:64de262e420c74e00999f216d003e7653464f1239bdbef53f7827529e16865bf",
+    "mutant_graph": {
+      "semantics": "finite-observation-quotient+universal-identity-stutter-v1",
+      "states": [
+        {
+          "phase": "indeterminate",
+          "dispatch_enabled": true
+        }
+      ],
+      "initial": [
+        0
+      ],
+      "transitions": [
+        {
+          "from": 0,
+          "action": "dispatch",
+          "to": 0
+        }
+      ]
+    },
+    "reference": {
+      "case_id": "provider-attempt-reference",
+      "result_path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
+      "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c",
+      "result_id": "nmlt-benchmark-result-v1:sha256:041d2323125aa10f97cd97e5a5970bb9ec40e254b520e3cc0fd1a42aa6be9408",
+      "classification": "model_checked"
+    },
+    "mutant": {
+      "case_id": "blind-replay",
+      "result_path": "benchmarks/results/provider-attempt/blind-replay.json",
+      "source_id": "nmlt-source-v1:sha256:1d61387c8998f8e2bda759a2ba05d66201507e522bbedf5bc4483b3ed4afaaac",
+      "result_id": "nmlt-benchmark-result-v1:sha256:233d9ffc3ff20115de663aec6ac355492563ccafdd064ec6853bdeee15672d98",
+      "classification": "refuted",
+      "witness": {
+        "steps": [
+          {
+            "index": 0,
+            "action": null,
+            "state": {
+              "dispatch_count": 1,
+              "phase": "indeterminate"
+            },
+            "available_capabilities": [],
+            "enabled_actions": [
+              "dispatch"
+            ]
+          }
+        ]
+      }
+    },
+    "reference_temporal": {
+      "result": "model_checked",
+      "explored_states": 9
+    },
+    "mutant_temporal": {
+      "result": "refuted",
+      "stem_states": [
+        0
+      ],
+      "stem_transitions": [],
+      "loop_states": [
+        0,
+        0
+      ],
+      "loop_transitions": [
+        1
+      ]
+    }
+  },
+  "independent_replay": {
+    "replayer": "nmlt-python-fixture-replay-v1",
+    "lasso": true,
+    "weak_fairness": true,
+    "refinement": true,
+    "accepted_journal": true,
+    "contradictory_journal": true,
+    "provider_no_blind_replay": true
+  },
+  "evidence_id": "nmlt-temporal-evidence-v1:sha256:6e2220c2e40f89c80e71cb92acf2d3168df62446ff17ef03bdde78ae0e8145a5"
+}

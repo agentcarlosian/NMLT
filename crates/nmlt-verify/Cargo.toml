@@ -1,0 +1,13 @@
+[package]
+name = "nmlt-verify"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Verification-condition, multi-engine, certificate, and evidence-composition kernel for NMLT"
+publish = false
+
+[dependencies]
+
+[lints]
+workspace = true

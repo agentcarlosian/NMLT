@@ -12,7 +12,7 @@ These documents distinguish current behavior from research intent.
 6. [Evidence model](evidence-model.md)
 7. [Research method](research-method.md)
 8. [Roadmap](roadmap.md)
-9. [Phase 0 closeout and Phase 1 kickoff](phase-0-closeout.md)
+9. [Phase 0 closeout and Phase 1 completion record](phase-0-closeout.md)
 
 Supporting material includes the [competitor matrix](competitor-matrix.md),
 [glossary](glossary.md), [source corpus](source-corpus.md), and

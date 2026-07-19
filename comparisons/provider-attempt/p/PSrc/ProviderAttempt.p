@@ -13,7 +13,8 @@ type tSnapshot = (
   armed: bool,
   dispatchCount: int,
   responseIntact: bool,
-  evaluationPassed: bool
+  evaluationPassed: bool,
+  dispatchEnabled: bool
 );
 
 event eStep;
@@ -34,7 +35,8 @@ machine ProviderAttempt {
       armed = armed,
       dispatchCount = dispatchCount,
       responseIntact = responseIntact,
-      evaluationPassed = evaluationPassed
+      evaluationPassed = evaluationPassed,
+      dispatchEnabled = phase == AUTHORIZED && bound && armed && dispatchCount == 0
     );
   }
 

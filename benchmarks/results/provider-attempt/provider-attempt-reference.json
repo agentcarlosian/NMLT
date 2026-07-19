@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0.0",
+  "result_id": "nmlt-benchmark-result-v1:sha256:041d2323125aa10f97cd97e5a5970bb9ec40e254b520e3cc0fd1a42aa6be9408",
+  "case_id": "provider-attempt-reference",
+  "source": {
+    "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
+    "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c"
+  },
+  "engine": {
+    "name": "nmlt-explicit-state",
+    "version": "0.0.1",
+    "source_set_id": "nmlt-engine-source-set-v1:sha256:7f658612bdef56f2c4e2eee8a17f76dd7877de4f5cc34882ecec822530b45a37",
+    "executable_sha256": "acbb7331173d093a0b60fa00ee312e5a744ce14a3e7c8bbf318a92577f88862b",
+    "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+    "target": "x86_64-unknown-linux-gnu",
+    "algorithm": "deterministic-bfs-v1",
+    "report_schema": "model-check-report/1.0.0"
+  },
+  "configuration": {
+    "max_states": 10000,
+    "max_depth": 100,
+    "action_order": "lexicographic-action-then-state",
+    "terminal_behavior": "identity-stutter"
+  },
+  "assumptions": [
+    "The executable provider fragment and i64 arithmetic match the frozen source intent.",
+    "A model_checked result requires exhaustion of the reachable frontier within both bounds."
+  ],
+  "trusted_components": [
+    "nmlt-core lossless lexer",
+    "nmlt-engine parser, contextual elaborator, type checker, evaluator, and BFS explorer",
+    "Rust standard library ordered collections and integer operations"
+  ],
+  "negative_controls": [
+    "dispatch-before-authorize",
+    "blind-replay",
+    "response-binding",
+    "passing-selection"
+  ],
+  "report": {
+    "schema_version": "1.0.0",
+    "system": "ProviderAttemptReference",
+    "result": "model_checked",
+    "complete": true,
+    "explored_states": 9,
+    "explored_transitions": 12,
+    "bounds": {
+      "max_states": 10000,
+      "max_depth": 100
+    },
+    "properties": [
+      {
+        "property": "DispatchRequiresArm",
+        "result": "model_checked",
+        "reason": "holds on every reachable state and transition",
+        "witness": null
+      },
+      {
+        "property": "NoBlindReplay",
+        "result": "model_checked",
+        "reason": "holds on every reachable state and transition",
+        "witness": null
+      },
+      {
+        "property": "EvaluationRequiresIntactResponse",
+        "result": "model_checked",
+        "reason": "holds on every reachable state and transition",
+        "witness": null
+      },
+      {
+        "property": "SelectionRequiresPass",
+        "result": "model_checked",
+        "reason": "holds on every reachable state and transition",
+        "witness": null
+      }
+    ]
+  }
+}

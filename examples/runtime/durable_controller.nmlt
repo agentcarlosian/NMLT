@@ -38,7 +38,7 @@ system DurableController {
   safety JournalBeforeEffect = always(effect_count > 0 implies journaled)
   safety AtMostOnceEffect = always(effect_count <= 1)
   temporal NoBlindReplay =
-    always(phase == indeterminate implies next(not enabled(dispatch)))
+    always(phase == indeterminate implies not enabled(dispatch))
 
   observe phase, journaled, effect_count
 }

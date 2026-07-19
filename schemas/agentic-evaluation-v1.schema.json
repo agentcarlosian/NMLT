@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/agentic-evaluation-v1.schema.json",
+  "title": "NMLT agentic repair evaluation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "suite_id",
+    "assistant",
+    "checker_id",
+    "split",
+    "expected_patches_exposed",
+    "tasks",
+    "metrics",
+    "artifact_graph_readback_verified",
+    "artifact_graph"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "suite_id": { "const": "nmlt-agentic-held-out-v1" },
+    "assistant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "const": "deterministic_protocol_conformance_baseline_not_llm_evidence" }
+      }
+    },
+    "checker_id": { "type": "string", "minLength": 1 },
+    "split": { "const": "held_out" },
+    "expected_patches_exposed": { "const": false },
+    "artifact_graph_readback_verified": { "const": true },
+    "tasks": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id", "stage", "baseline_class", "assisted_class", "completed",
+          "feedback_rounds", "localized_edit_count", "edited_byte_extent",
+          "trusted_identities_unchanged", "negative_controls_retained", "negative_controls_killed"
+        ],
+        "properties": {
+          "task_id": { "type": "string" },
+          "stage": { "enum": ["syntax", "type", "semantic"] },
+          "baseline_class": { "enum": ["refuted", "unknown", "conflict"] },
+          "assisted_class": { "enum": ["syntax_accepted", "type_accepted", "model_checked", "refuted", "unknown", "conflict"] },
+          "completed": { "type": "boolean" },
+          "feedback_rounds": { "type": "integer", "minimum": 0 },
+          "localized_edit_count": { "type": "integer", "minimum": 0 },
+          "edited_byte_extent": { "type": "integer", "minimum": 0 },
+          "trusted_identities_unchanged": { "type": "boolean" },
+          "negative_controls_retained": { "type": "integer", "minimum": 0 },
+          "negative_controls_killed": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_count", "baseline_completed", "assisted_completed", "by_stage",
+        "feedback_rounds", "localized_edit_count", "edited_byte_extent",
+        "trusted_modification_attempts", "trusted_modification_rejections",
+        "negative_controls_retained", "negative_controls_killed",
+        "unknown_results_promoted", "conflict_results_promoted"
+      ],
+      "properties": {
+        "task_count": { "type": "integer", "minimum": 1 },
+        "baseline_completed": { "type": "integer", "minimum": 0 },
+        "assisted_completed": { "type": "integer", "minimum": 0 },
+        "by_stage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["syntax", "type", "semantic"],
+          "properties": {
+            "syntax": { "$ref": "#/$defs/stage_metrics" },
+            "type": { "$ref": "#/$defs/stage_metrics" },
+            "semantic": { "$ref": "#/$defs/stage_metrics" }
+          }
+        },
+        "feedback_rounds": { "type": "integer", "minimum": 0 },
+        "localized_edit_count": { "type": "integer", "minimum": 0 },
+        "edited_byte_extent": { "type": "integer", "minimum": 0 },
+        "trusted_modification_attempts": { "type": "integer", "minimum": 0 },
+        "trusted_modification_rejections": { "type": "integer", "minimum": 0 },
+        "negative_controls_retained": { "type": "integer", "minimum": 0 },
+        "negative_controls_killed": { "type": "integer", "minimum": 0 },
+        "unknown_results_promoted": { "const": 0 },
+        "conflict_results_promoted": { "const": 0 }
+      }
+    },
+    "artifact_graph": { "$ref": "agentic-artifact-graph-v1.schema.json" }
+  },
+  "$defs": {
+    "stage_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eligible", "baseline_completed", "assisted_completed"],
+      "properties": {
+        "eligible": { "type": "integer", "minimum": 0 },
+        "baseline_completed": { "type": "integer", "minimum": 0 },
+        "assisted_completed": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

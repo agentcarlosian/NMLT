@@ -1,0 +1,10 @@
+// Integrity control: the named property was weakened into a tautology.
+system WeakenedDispatchInvariantControl {
+  state armed: Bool = false
+  state dispatched: Bool = false
+
+  action dispatch { set dispatched = true }
+
+  safety DispatchRequiresArm =
+    always(dispatched implies (armed or not armed))
+}

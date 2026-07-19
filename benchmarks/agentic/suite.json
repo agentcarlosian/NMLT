@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0.0",
+  "suite_id": "nmlt-agentic-held-out-v1",
+  "split": "held_out",
+  "assistant_interface": {
+    "exposes": [
+      "task_id",
+      "candidate_source",
+      "editable_spans",
+      "structured_feedback"
+    ],
+    "withholds": [
+      "expected_patch",
+      "trusted_artifact_bytes",
+      "expected_outcome",
+      "oracle_implementation"
+    ]
+  },
+  "tasks": [
+    {
+      "task_id": "held-out-syntax-terminator",
+      "stage": "syntax",
+      "candidate": {
+        "path": "benchmarks/agentic/candidates/held-out-syntax.nmlt",
+        "digest": "sha256:2e6ae249d03ca68f86704876d945f7cd01389bd44d96e8895f8280841e34892f"
+      },
+      "trusted_artifacts": [
+        {
+          "role": "intent",
+          "path": "benchmarks/agentic/trusted/held-out-syntax-terminator.intent.txt",
+          "digest": "sha256:c9249df557c510b9e846f3f4556570d0d40215bcda5b0edd78de634fff1cff97"
+        },
+        {
+          "role": "property",
+          "path": "benchmarks/agentic/trusted/held-out-syntax-terminator.property.txt",
+          "digest": "sha256:0ee640a865a7a2060289dff9254a9e5395e7d94865f248eedf187f353a147940"
+        },
+        {
+          "role": "oracle",
+          "path": "benchmarks/agentic/trusted/held-out-syntax-terminator.oracle.txt",
+          "digest": "sha256:7e73614c148c2bcba13974fbca8d9f64d694c676da3abc3381cbecb7309b7248"
+        }
+      ],
+      "expected_class": "syntax_accepted",
+      "negative_control": "delete the repaired declaration terminator and require parse rejection"
+    },
+    {
+      "task_id": "held-out-type-boolean",
+      "stage": "type",
+      "candidate": {
+        "path": "benchmarks/agentic/candidates/held-out-type.nmlt",
+        "digest": "sha256:cc0809757ff27de36186ea30570115c10c7252a3860e77ef027a9ed8a643f6ca"
+      },
+      "trusted_artifacts": [
+        {
+          "role": "intent",
+          "path": "benchmarks/agentic/trusted/held-out-type-boolean.intent.txt",
+          "digest": "sha256:d00d7b5df770f3cbb49f66d92ddf57422095707118fd08da5560e24cbd6fa5a6"
+        },
+        {
+          "role": "property",
+          "path": "benchmarks/agentic/trusted/held-out-type-boolean.property.txt",
+          "digest": "sha256:24db0a9128b80f319b5349dea00a68f8700b5935cc978ac2acdde475fd0602cf"
+        },
+        {
+          "role": "oracle",
+          "path": "benchmarks/agentic/trusted/held-out-type-boolean.oracle.txt",
+          "digest": "sha256:a0348843c17e37c03bad959fc28aaa4cf515e00415b54a50767f5c6473992762"
+        }
+      ],
+      "expected_class": "type_accepted",
+      "negative_control": "replace the repaired Boolean literal with a numeric surrogate and require type rejection"
+    },
+    {
+      "task_id": "held-out-semantic-authority",
+      "stage": "semantic",
+      "candidate": {
+        "path": "benchmarks/agentic/candidates/held-out-semantic.nmlt",
+        "digest": "sha256:58bdcf012d4f4acf84d7c8ebf70509e0637814036a854b6f6a791cde59a00dcb"
+      },
+      "trusted_artifacts": [
+        {
+          "role": "intent",
+          "path": "benchmarks/agentic/trusted/held-out-semantic-authority.intent.txt",
+          "digest": "sha256:3c60135fbce33efc18a56582c3f76b302b9d1fc571cebd340ce1e065c952480f"
+        },
+        {
+          "role": "property",
+          "path": "benchmarks/agentic/trusted/held-out-semantic-authority.property.txt",
+          "digest": "sha256:afc21934e5b88731c9c92895d46f779ff1b023fd3547dd61c9b5f82e43be6bc7"
+        },
+        {
+          "role": "oracle",
+          "path": "benchmarks/agentic/trusted/held-out-semantic-authority.oracle.txt",
+          "digest": "sha256:d9d2e6414bbc8704b3df106604bf27dd685a7d6757aa1f1688b1c39b7c0b7771"
+        }
+      ],
+      "expected_class": "model_checked",
+      "negative_control": "delete the authority guard, require refutation, and separately require dispatch reachability after authorization"
+    }
+  ]
+}

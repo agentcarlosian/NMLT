@@ -1,7 +1,9 @@
 # Integration tests
 
-This directory holds cross-component fixtures and future end-to-end tests.
-Crate-local unit and CLI integration tests remain beside their Rust crates.
+This directory holds cross-component fixtures. Crate-local unit, negative,
+benchmark, and CLI integration tests remain beside their Rust crates.
 
 `fixtures/malformed-unclosed.nmlt` is expected to fail structural parsing and
-will be used by the repository-level diagnostic test suite.
+serves as a small repository-level diagnostic fixture. The frozen malformed
+benchmark control and crate-level frontend tests exercise the same rejection
+boundary in `make ci`.
