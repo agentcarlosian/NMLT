@@ -1,7 +1,8 @@
 # Research method
 
-NMLT uses evidence-directed development for both the language and programs
-written in it.
+The NMLT research program uses evidence-directed development for the flagship
+language, its mathematical and evidence languages, and programs written in
+them.
 
 ## Cycle
 

@@ -43,3 +43,4 @@ evidence.
 | 0010 | Multiple verification engines and checked evidence composition | Draft |
 | 0011 | Authority-bounded agentic formalization and repair | Under review |
 | 0012 | Conservative graded-resource modalities | Experimental |
+| 0013 | Integrated source-to-typed-core contract | Draft |

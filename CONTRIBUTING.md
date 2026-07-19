@@ -1,7 +1,8 @@
 # Contributing to NMLT
 
-NMLT separates research claims, language decisions, and implementation work so
-that an attractive prototype cannot silently outrun its evidence.
+NMLT — New Mathematics, Languages, and Techniques — separates research claims,
+flagship-language decisions, and implementation work so that an attractive
+prototype cannot silently outrun its evidence.
 
 ## Contribution license
 

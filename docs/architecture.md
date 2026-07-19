@@ -22,6 +22,12 @@ yet form a verified end-to-end compiler: finite temporal graphs and the Phase 5
 VC are constructed through explicit fixture code or a documented manual
 projection, and the graded experiment uses its own `.nmltg` input.
 
+M9 makes the source-to-typed-core prefix the active integration boundary:
+complete surface projection, deterministic resolution into `nmlt-hir`,
+bidirectional elaboration with an inspectable derivation, and independent
+validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
+[RFC 0013](../rfcs/0013-source-to-typed-core.md).
+
 ## Implemented components
 
 - `nmlt-core`: lossless tokens/CST, recovering declaration parser, stable
@@ -47,8 +53,8 @@ projection, and the graded experiment uses its own `.nmltg` input.
 
 ## Planned boundaries
 
-- Future `nmlt-hir`: resolved and typed high-level representation.
-- Future `nmlt-kernel`: small checker for type and proof evidence.
+- Active M9 `nmlt-hir`: resolved and typed high-level representation.
+- Active M9 `nmlt-kernel`: small checker for typed-core elaboration evidence.
 - Future separation of `nmlt-engine` into stable transition and model-checking
   boundaries once the first executable slice has more than one consumer.
 - Future solver integration behind the existing SMT-LIB request protocol, with

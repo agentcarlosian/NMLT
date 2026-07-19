@@ -1,7 +1,8 @@
 # Governance
 
-NMLT is currently an early research project with a maintainer-led governance
-model. This document is expected to evolve before the first public release.
+NMLT — New Mathematics, Languages, and Techniques — is currently an early
+research program with a maintainer-led governance model. This document is
+expected to evolve before the first public release.
 
 ## Current maintainer
 

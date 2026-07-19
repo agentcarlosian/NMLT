@@ -4,7 +4,7 @@ Status: illustrative design fixture, non-normative.
 
 ## Surface layers
 
-NMLT is expected to expose four coordinated layers:
+The flagship NMLT language is expected to expose four coordinated layers:
 
 1. pure mathematical definitions;
 2. systems, state, events, and actions;

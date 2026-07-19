@@ -1,8 +1,8 @@
 # Security Policy
 
-NMLT is pre-alpha and has no supported production release. Do not use it to
-authorize safety-critical, security-critical, financial, or irreversible
-effects.
+The flagship NMLT language and its research tooling are pre-alpha and have no
+supported production release. Do not use them to authorize safety-critical,
+security-critical, financial, or irreversible effects.
 
 ## Reporting
 

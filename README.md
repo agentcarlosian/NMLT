@@ -1,10 +1,14 @@
 # NMLT
 
-NMLT is a research project for a behavior-first, evidence-carrying programming
-language inspired by TLA+ and contemporary mathematics.
+**NMLT — New Mathematics, Languages, and Techniques — is an umbrella research
+program for trustworthy computation.** It investigates candidate mathematical
+foundations, develops formal languages, and tests evidence-directed
+techniques. Its first flagship language is the **NMLT language**, a
+behavior-first, evidence-carrying programming language inspired by TLA+ and
+contemporary mathematics.
 
-> To truly progress, humanity needs new mathematics, new language, and new
-> technique.
+> To truly progress, humanity needs new mathematics, new languages, and new
+> techniques.
 
 Author and maintainer: [Carlosian](AUTHORS.md)
 ([carlosian@agentmail.to](mailto:carlosian@agentmail.to)).
@@ -23,25 +27,32 @@ The complete bounded gate was reproduced from a fresh clone of commit
 [reproduction record](docs/reproduction-2026-07-18.md). This closes the M8
 reproduction gate, not the remaining research or release-promotion gaps.
 
-These are separate assurance subjects, not a complete language pipeline. NMLT
-does not yet provide full surface-language resolution and execution, verified
-source-to-IR elaboration, general or infinite-state verification, production
-runtime attestation, general AI-repair evidence, signed evidence, or code
-generation.
+These are separate assurance subjects, not a complete flagship-language
+pipeline. The active M9 milestone is integrating source through resolution and
+typed core without weakening those evidence boundaries. NMLT does not yet
+provide full surface-language resolution and execution, verified source-to-IR
+elaboration, general or infinite-state verification, production runtime
+attestation, general AI-repair evidence, signed evidence, or code generation.
 
 The structural `evidence` command deliberately reports `unknown`. Semantic
 claims require `typecheck` or `model-check`; bounded exploration is reported as
 `model_checked`, never as proof. A parsed file is not a verified program.
 
-## The three programs
+## The three research tracks
 
 - **New mathematics:** a compositional temporal type theory for behaviors,
   resources, trust, refinement, and evidence.
-- **New language:** one semantic artifact that can support specification,
-  execution, proof obligations, model-based tests, and runtime monitoring.
-- **New technique:** evidence-directed development using semantic challenges,
-  structured counterexamples, localized repair, negative controls, and explicit
-  unknown or indeterminate results.
+- **New languages:** the flagship NMLT language plus explicit core, evidence,
+  observation, and extension languages that share a semantic foundation rather
+  than becoming disconnected notations.
+- **New techniques:** evidence-directed development using semantic challenges,
+  structured counterexamples, localized repair, negative controls, and
+  explicit unknown or indeterminate results.
+
+“NMLT” names the research program and remains the name of its flagship
+language. Technical identifiers such as `.nmlt`, crate names, evidence domains,
+and Lean namespaces are unchanged. The accepted naming decision is recorded in
+[ADR 0003](docs/decisions/0003-project-identity.md).
 
 ## Quick start
 

@@ -77,6 +77,23 @@ tracks remain future work.
   rerun after correction and source-to-graph/VC/compiler correspondences remain
   manual or unverified.
 
-The active post-M8 focus is full frontend resolution/elaboration, verified
-source-to-IR connections, broader independently run comparison models, and
-release infrastructure without weakening existing evidence classes.
+## M9 — Integrated source-to-typed-core contract (active 2026-07-19)
+
+M9 replaces the current split frontend/provider parsing paths with one
+identity-bound route from exact source bytes through lossless syntax, resolved
+HIR, bidirectional elaboration, explicit typed core, and independent kernel
+validation. The bounded provider engine will consume only checked core.
+
+The first vertical slice covers explicit acyclic imports, closed enums,
+primitive scalar types, system state, action inputs, guards, simultaneous
+updates, `Once<T>` capability use, observations, and safety/temporal property
+ASTs. Unsupported constructs must fail explicitly. Promotion requires complete
+translation coverage, deterministic resolution and identities, forged/stale
+certificate rejection, two-way action semantic correspondence, affine and
+property-index preservation, and an identity-bound Rust/Lean bridge.
+
+The governing proposal is [RFC 0013](../rfcs/0013-source-to-typed-core.md).
+Once this semantic spine is trustworthy, work proceeds to deeper temporal,
+refinement, compositional, and quantitative mathematics and to broader
+independently run comparison models without weakening existing evidence
+classes.

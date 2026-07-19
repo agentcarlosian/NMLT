@@ -10,11 +10,12 @@
 
 ## Overview
 
-NMLT is research software that intends to turn source, temporal claims,
-verification results, and runtime observations into evidence-carrying
-artifacts. Its central security property is **claim integrity**: no input,
-backend, cache, contributor, or renderer may cause a result to be interpreted
-as stronger, newer, broader, or better bound than the evidence establishes.
+The NMLT research program's flagship language and tooling intend to turn
+source, temporal claims, verification results, and runtime observations into
+evidence-carrying artifacts. Their central security property is **claim
+integrity**: no input, backend, cache, contributor, or renderer may cause a
+result to be interpreted as stronger, newer, broader, or better bound than the
+evidence establishes.
 
 The repository now contains a lossless frontend, a deliberately narrow typed
 executable fragment with deterministic finite exploration, finite temporal and

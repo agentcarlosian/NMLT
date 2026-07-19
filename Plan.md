@@ -3,23 +3,29 @@
 - Status: Active pre-alpha research prototype
 - Implementation status: bounded milestones across Phases 0–7 and the M8
   independent-reproduction gate are complete; broader promotion gates remain
-- Active focus: post-M8 source-to-IR integration and broader independent validation
+- Active focus: M9 source-to-typed-core integration, followed by deeper
+  mathematical and verification work
 - Initial planning baseline: `cf4f006` (`chore: establish NMLT research scaffold`)
-- Updated: 2026-07-18
+- Updated: 2026-07-19
 
 ## 1. Objective
 
-Build NMLT into a behavior-first, evidence-carrying programming language in
+Develop **NMLT — New Mathematics, Languages, and Techniques** as an umbrella
+research program for trustworthy computation. Its first flagship language is
+the NMLT language: a behavior-first, evidence-carrying programming language in
 which specifications, executable systems, proof obligations, tests, runtime
 monitors, and refinement claims share one semantic foundation.
 
 The project has three inseparable outputs:
 
-1. **New mathematics:** a compositional temporal type theory for behavior,
+1. **New mathematics:** candidate compositional temporal type theories for behavior,
    resources, authority, refinement, and evidence.
-2. **New language:** an executable language that makes those concepts usable.
-3. **New technique:** evidence-directed development driven by semantic
-   challenges, structured witnesses, localized repair, and runtime conformance.
+2. **New languages:** the flagship surface language and explicit core,
+   evidence, observation, and extension languages that make those concepts
+   usable without hiding their semantic boundaries.
+3. **New techniques:** evidence-directed development driven by semantic
+   challenges, structured witnesses, localized repair, independent checking,
+   and runtime conformance.
 
 The thesis and boundaries are defined in
 [the manifesto](docs/manifesto.md) and
@@ -819,3 +825,73 @@ created because the corrected P model has not been rerun, source-to-temporal
 graph and source-to-VC mappings remain manual, and the general surface-to-core
 correspondence is unverified. Work continues as pre-alpha integration without
 weakening the completed bounded milestones.
+
+**M9: Integrated Source-to-Typed-Core Contract** started on 2026-07-19.
+The active contract is specified in draft
+[RFC 0013](rfcs/0013-source-to-typed-core.md), informed by the
+[2026-07-19 archive research note](docs/research-notes/source-to-typed-core-and-project-identity-2026-07-19.md).
+
+The authoritative pipeline is:
+
+```text
+exact source set
+  → lossless CST
+  → complete untyped surface AST
+  → resolved HIR with stable IDs
+  → bidirectional elaboration + derivation certificate
+  → explicit typed CoreProgram
+  → independent kernel validation
+  → CheckedProgram for engines and backend adapters
+```
+
+M9 deliberately supports a narrow but complete vertical slice: acyclic
+explicit imports; closed enumerations; `Bool`, `Nat`, and `Int`; systems and
+scalar state; action inputs; total pure expressions; guards; simultaneous
+updates; `Once<T>` capabilities; observations; and safety/temporal property
+ASTs. Records, maps, indexed types, general functions, open ports,
+language-integrated grades, refinement compilation, liveness proving, and code
+generation remain outside this gate.
+
+Deliverables:
+
+1. define canonical module, symbol, type, core-node, and derivation identities;
+2. add implemented `nmlt-hir` and `nmlt-kernel` boundaries only when their
+   responsibilities and tests are real;
+3. remove the provider compiler's second parser and make all supported source
+   pass through the lossless frontend and resolver;
+4. emit an inspectable elaboration certificate and independently validate it
+   before constructing `CheckedProgram`;
+5. migrate the bounded engine to consume checked core rather than reparsing
+   source;
+6. bind source-set, resolver, elaborator, kernel, core, and certificate
+   identities in evidence;
+7. mechanize the supported fragment's typing and operational correspondence.
+
+Required promotion obligations:
+
+- every accepted surface construct is translated exactly once and no
+  unsupported construct is silently skipped;
+- resolution is deterministic, unique, import-closed, and span preserving;
+- a checked elaboration derivation establishes that the emitted core is typed;
+- initialization, guards, simultaneous updates, frames, and action inputs are
+  preserved in both directions for the supported fragment;
+- affine capability use and behavior/property indexing survive elaboration;
+- equivalent source sets have a defined canonicality policy, while changed
+  semantic inputs invalidate prior evidence;
+- Rust fixtures and the Lean model share identity-bound correspondence vectors.
+
+Negative controls include unresolved and ambiguous names, cyclic imports,
+forged or stale certificates, dropped declarations, reordered simultaneous
+updates, implicit frames, `Nat`/`Int` coercion, temporal operators admitted as
+ordinary Boolean calls, duplicated affine capabilities, cross-system property
+use, and source/core identity substitution.
+
+The M9 gate closes only when the canonical provider source reaches the existing
+typed engine through this pipeline, all supported canonical examples either
+compile or fail with a declared feature-boundary diagnostic, seeded semantic
+mutants retain their classifications, independent certificate readback rejects
+every negative control, and no manual source-to-core path remains in the
+promoted slice. After M9, the next research sequence is behavior-indexed
+temporal typing, proof-relevant refinement, compositional open-system semantics,
+and richer quantitative mathematics—each with its own mechanization and
+comparison gate.

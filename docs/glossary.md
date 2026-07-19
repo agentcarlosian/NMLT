@@ -1,5 +1,15 @@
 # Glossary
 
+**NMLT research program**
+New Mathematics, Languages, and Techniques: the umbrella project investigating
+mathematical foundations, formal languages, and evidence-directed methods for
+trustworthy computation.
+
+**NMLT language**
+The program's first flagship language: a behavior-first, evidence-carrying
+programming language. After first mention, “NMLT” may name the language where
+the technical context is unambiguous.
+
 **Action**
 A relation between pre-state and post-state, potentially indexed by inputs,
 outputs, capabilities, and resource grades.

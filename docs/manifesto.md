@@ -1,9 +1,15 @@
 # NMLT manifesto
 
+NMLT expands to **New Mathematics, Languages, and Techniques**. It is the
+umbrella research program; the **NMLT language** is its first flagship
+language. The plural form is intentional: one syntax is not enough. The
+program must connect mathematical formalisms, human-facing and core languages,
+evidence formats, and repeatable development and verification techniques.
+
 ## Thesis
 
-To truly progress, humanity needs new mathematics, new language, and new
-technique.
+To truly progress, humanity needs new mathematics, new languages, and new
+techniques.
 
 This is not a claim that novelty is inherently valuable. It is a claim that our
 current programming abstractions poorly represent change, concurrency,
