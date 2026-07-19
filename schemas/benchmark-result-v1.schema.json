@@ -38,13 +38,21 @@
     "engine": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "version", "source_set_id", "executable_sha256", "toolchain", "target", "algorithm", "report_schema"],
+      "required": ["name", "version", "source_set_id", "elaborator_source_set_id", "kernel_source_set_id", "executable_sha256", "toolchain", "target", "algorithm", "report_schema"],
       "properties": {
         "name": { "const": "nmlt-explicit-state" },
         "version": { "type": "string", "minLength": 1 },
         "source_set_id": {
           "type": "string",
           "pattern": "^nmlt-engine-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "elaborator_source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-elaborator-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "kernel_source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-kernel-source-set-v1:sha256:[0-9a-f]{64}$"
         },
         "executable_sha256": {
           "type": "string",
@@ -53,7 +61,7 @@
         "toolchain": { "type": "string", "minLength": 1 },
         "target": { "type": "string", "minLength": 1 },
         "algorithm": { "const": "deterministic-bfs-v1" },
-        "report_schema": { "const": "model-check-report/1.0.0" }
+        "report_schema": { "const": "model-check-report/1.1.0" }
       }
     },
     "configuration": {

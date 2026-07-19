@@ -130,12 +130,21 @@ impl std::error::Error for KernelDiagnostic {}
 /// The only M9 type that grants downstream access to kernel-accepted core.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CheckedProgram {
+    resolved_program: ResolvedProgram,
     core_program: CoreProgram,
     certificate_digest: [u8; 32],
+    ruleset_bundle_digest: [u8; 32],
+    resource_policy_digest: [u8; 32],
     kernel_profile_id: KernelProfileId,
 }
 
 impl CheckedProgram {
+    /// Exact resolved HIR whose judgments were independently replayed.
+    #[must_use]
+    pub const fn resolved_program(&self) -> &ResolvedProgram {
+        &self.resolved_program
+    }
+
     #[must_use]
     pub const fn core_program(&self) -> &CoreProgram {
         &self.core_program
@@ -144,6 +153,16 @@ impl CheckedProgram {
     #[must_use]
     pub const fn certificate_digest(&self) -> &[u8; 32] {
         &self.certificate_digest
+    }
+
+    #[must_use]
+    pub const fn ruleset_bundle_digest(&self) -> &[u8; 32] {
+        &self.ruleset_bundle_digest
+    }
+
+    #[must_use]
+    pub const fn resource_policy_digest(&self) -> &[u8; 32] {
+        &self.resource_policy_digest
     }
 
     #[must_use]
@@ -279,8 +298,11 @@ pub fn check(
     };
     checker.check_all()?;
     Ok(CheckedProgram {
+        resolved_program: hir.clone(),
         core_program: core.clone(),
         certificate_digest: certificate.certificate_digest,
+        ruleset_bundle_digest: certificate.ruleset_bundle_digest,
+        resource_policy_digest: certificate.resource_policy_digest,
         kernel_profile_id: kernel_profile_id(),
     })
 }

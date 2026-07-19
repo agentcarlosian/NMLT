@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons metatheory ci reproduce
+.PHONY: help fmt fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons correspondence m9-audit metatheory ci reproduce
 
 help:
 	@echo "NMLT development targets"
@@ -17,6 +17,8 @@ help:
 	@echo "  evidence   Reproduce canonical provider evidence manifests"
 	@echo "  examples   Structurally check all canonical NMLT fixtures"
 	@echo "  comparisons Validate NMLT and Quint; optionally TLC and P"
+	@echo "  correspondence Check shared Rust/Lean M9 vectors"
+	@echo "  m9-audit   Reproduce the integrated M9 vertical slice"
 	@echo "  metatheory Build the pinned Lean kernel artifacts"
 	@echo "  ci         Run the complete local CI gate"
 	@echo "  reproduce  Run local CI plus the pinned Lean metatheory gate"
@@ -68,9 +70,15 @@ examples:
 comparisons:
 	./tools/validate_comparisons.sh
 
+correspondence:
+	python3 tools/check_m9_correspondence.py
+
+m9-audit:
+	python3 tools/check_m9_vertical_slice.py
+
 metatheory:
 	./tools/check_metatheory.sh
 
-ci: fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons
+ci: fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons correspondence m9-audit
 
 reproduce: ci metatheory

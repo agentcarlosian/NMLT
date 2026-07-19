@@ -3,9 +3,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use nmlt_compile::compile_single;
 use nmlt_core::diagnostic::line_column;
 use nmlt_core::{Diagnostic, EvidenceManifest, ParsedFile, lex_source, parse_source};
-use nmlt_engine::{CheckConfig, ResultClass, Value, check_model, compile};
+use nmlt_engine::{CheckConfig, ResultClass, Value, check_model, from_checked};
 
 const HELP: &str = "\
 NMLT structural frontend (pre-alpha)\n\n\
@@ -63,21 +64,23 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
         "typecheck" => {
             let path = single_path_argument(command, &arguments[1..])?;
             let source = read_source(&path)?;
-            let typed = compile(&source).map_err(|errors| errors.join("\n"))?;
+            let checked = compile_path(&path, source)?;
+            let typed = from_checked(&checked).map_err(|errors| errors.join("\n"))?;
             println!(
                 "type_checked: {} (system {}, {} state variables, {} actions, {} properties)",
                 path.display(),
-                typed.model.system_name,
-                typed.model.states.len(),
-                typed.model.actions.len(),
-                typed.model.properties.len()
+                typed.model().system_name,
+                typed.model().states.len(),
+                typed.model().actions.len(),
+                typed.model().properties.len()
             );
             Ok(())
         }
         "model-check" => {
             let (json, path) = model_check_arguments(&arguments[1..])?;
             let source = read_source(&path)?;
-            let typed = compile(&source).map_err(|errors| errors.join("\n"))?;
+            let checked = compile_path(&path, source)?;
+            let typed = from_checked(&checked).map_err(|errors| errors.join("\n"))?;
             let report =
                 check_model(&typed, CheckConfig::default()).map_err(|errors| errors.join("\n"))?;
             if json {
@@ -89,6 +92,27 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
         }
         unknown => Err(format!("unknown command `{unknown}`\n\n{HELP}")),
     }
+}
+
+fn compile_path(path: &Path, source: String) -> Result<nmlt_kernel::CheckedProgram, String> {
+    let canonical_path = path.canonicalize().map_err(|error| error.to_string())?;
+    let canonical_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .map_err(|error| error.to_string())?;
+    let repository_path = canonical_path.strip_prefix(canonical_root).map_or_else(
+        |_| {
+            format!(
+                "external/{}",
+                canonical_path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or("input.nmlt")
+            )
+        },
+        |relative| relative.to_string_lossy().replace('\\', "/"),
+    );
+    compile_single("Main", repository_path, source).map_err(|error| error.to_string())
 }
 
 fn model_check_arguments(arguments: &[std::ffi::OsString]) -> Result<(bool, PathBuf), String> {

@@ -9,7 +9,9 @@
 mod check;
 mod identity;
 mod input;
+mod wire;
 
 pub use check::{CheckedProgram, KernelCode, KernelDiagnostic, check};
 pub use identity::KernelProfileId;
 pub use input::{RawCertificate, RawDerivationNode, RawObligation, RawRequiredRoot};
+pub use wire::CertificateDecodeError;

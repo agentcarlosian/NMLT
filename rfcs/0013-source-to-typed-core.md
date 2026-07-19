@@ -641,7 +641,8 @@ those boundaries visible.
    aggregate core before its private constructor returns `CheckedProgram`.
    Forged, canonically resealed semantic, stale, cyclic, unreachable,
    noncanonical, unknown-tag, duplicate, and oversized controls fail closed.
-   Persisted byte decoding is deliberately assigned to M9-008.
+   Persisted byte decoding was deliberately assigned to and completed in
+   M9-008.
 7. **M9-007 — Migrate the engine.** Delete the second parser after the provider
    benchmark consumes `CheckedProgram` exclusively.
 8. **M9-008 — Bind evidence.** Extend artifact schemas/readback with source,
@@ -650,6 +651,12 @@ those boundaries visible.
    two-way action obligations or keep the promotion gate explicitly open.
 10. **M9-010 — Reproduce and audit.** Run canonical examples, all negative
     controls, seeded mutants, independent readback, and a clean-clone gate.
+
+Implementation completed on 2026-07-19. The executable gate is `make m9-audit`
+inside `make ci`; shared mathematical vectors are checked by
+`make correspondence`, and the pinned Lean package is checked separately by
+`make metatheory`. Completion does not remove the stated Rust compiler,
+canonical-decoder correspondence, hashing, or host/toolchain trust.
 
 M9 is complete only when the canonical provider model reaches the existing
 engine solely through the checked pipeline, supported examples have explicit

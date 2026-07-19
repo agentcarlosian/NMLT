@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "capsule_id": "nmlt-intent-capsule-v1:sha256:b2a2e8b803ce807f1e5e80958a62400e367176c5cdb111a48512e64888b5ad65",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:674828b23a9968317cba00c621d696ac0a561b49855165e73fc901d2d19e34e9",
   "case_id": "dispatch-before-authorize",
   "case_class": "semantic_mutant",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/dispatch-before-authorize.nmlt",
-    "source_id": "nmlt-source-v1:sha256:5755f61bb3fc209fb06161660cef7cb89b542b2d8e32aed412360146c935da66"
+    "source_id": "nmlt-source-v1:sha256:7ec7bc86cf7569c63caa1a87493e3bdb0f9af5b06cef5c60309e4d3d5632d578"
   },
   "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
   "intent": "Demonstrate that dispatch without prior arming violates the provider authority boundary.",
@@ -30,7 +30,7 @@
     "support": "current",
     "result": {
       "path": "benchmarks/results/provider-attempt/dispatch-before-authorize.json",
-      "result_id": "nmlt-benchmark-result-v1:sha256:34e4f6fd569b3a660f04695edb496a1c08a426f1bccb5733de8e73d888982890"
+      "result_id": "nmlt-benchmark-result-v1:sha256:62a00be4dec41d1f253e6f5edc5458340e0fa4e5cce58388d4cd861d31d4c6bc"
     },
     "witness_ids": [
       "nmlt-expected-counterexample-v1:sha256:ef750d2addd7c3dacb4d0095890c6f96037eb416238c98d5ff60ae1814f03627"

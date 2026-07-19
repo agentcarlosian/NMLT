@@ -156,15 +156,18 @@ The M9-005 elaborator checks/synthesizes the supported fragment and emits a
 derivation DAG. For the M9 kernel-accepted profile it is an untrusted producer:
 `nmlt-kernel` independently selects the ruleset/policy, recomputes canonical
 identities, rejects malformed graphs, reconstructs all frozen judgments and
-aggregate core records, and alone constructs `CheckedProgram`. The parser,
-projector, resolver, structural core, certificate data model, kernel, Rust
-toolchain, host, and SHA-256 remain trusted. This profile cannot establish
-temporal truth, execution safety, engine correspondence, or a verified
-compiler theorem.
+aggregate core records, and alone constructs `CheckedProgram`. Canonical
+certificate readback checks declared counts and lengths before allocation, but
+its decoder and identity wrapping remain trusted implementation code. The
+parser, projector, resolver, structural core, certificate data model/decoder,
+kernel, Rust toolchain, host, and SHA-256 remain trusted. This profile cannot
+establish temporal truth, execution safety, or a verified compiler theorem.
 
-For a typed bounded result, the parser/elaborator/type checker, operational
+For a typed bounded result, the checked-core engine adapter, operational
 semantics, deterministic explorer, report/evidence checkers, Rust build output,
-and their exact identities are additionally trusted. Temporal, refinement,
+and their exact identities are additionally trusted. The former independent
+engine parser/type inferencer has been removed; the source pipeline still
+depends on the parser, resolver, and kernel listed above. Temporal, refinement,
 runtime-trace, agentic-evaluation, graded-resource, multi-engine, and Lean
 claims each have narrower profiles in the inventory. Trust is not transitive
 across profiles: for example, a Lean proof does not establish a Rust execution

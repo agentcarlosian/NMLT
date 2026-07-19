@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "capsule_id": "nmlt-intent-capsule-v1:sha256:9016b708afd19fda2e05d78845f4c01f0593e5a5bf9fd9a15411cec24f28cd8f",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:ef30eed2d542a691eefc9e4b1fc974a929019cf50b65fe1b2d1a1d214444b6ba",
   "case_id": "passing-selection",
   "case_class": "semantic_mutant",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/passing-selection.nmlt",
-    "source_id": "nmlt-source-v1:sha256:ae395e8f3941be5647d30015e7689332e3bcf00948329e3d8b88960b65e71f37"
+    "source_id": "nmlt-source-v1:sha256:fb0145dc468ec9d587268193a03414461fb8d026823cd4f12d4a959a8bf2bfc6"
   },
   "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
   "intent": "Demonstrate that selecting an evaluation that did not pass violates the selection gate.",
@@ -30,7 +30,7 @@
     "support": "current",
     "result": {
       "path": "benchmarks/results/provider-attempt/passing-selection.json",
-      "result_id": "nmlt-benchmark-result-v1:sha256:2ebc5223d0c2f42e5f76ffcc086f4bfa772e23205dc59e272a06aacc1fc52411"
+      "result_id": "nmlt-benchmark-result-v1:sha256:33ea0d99d7d6f9257cd8d20514cc004be04cb81087e5f514fb123606692bb3f9"
     },
     "witness_ids": [
       "nmlt-expected-counterexample-v1:sha256:45bb21364362c8ab809b4366ac099ee2084fe89380f54df5f85ed1deab3e9c63"

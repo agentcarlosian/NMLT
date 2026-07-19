@@ -184,7 +184,7 @@ def build_all(suite: dict[str, Any]) -> dict[str, dict[str, Any]]:
                 if property_result["witness"] is None:
                     raise ValueError(f"{case_id}/{name}: refutation has no witness")
                 evidence["witness"] = {
-                    "kind": "model-check-report/1.0.0#counterexample",
+                    "kind": "model-check-report/1.1.0#counterexample",
                     "reference": f"{result['result_id']}#property={name}",
                 }
             evidence["manifest_id"] = evidence_id(evidence)

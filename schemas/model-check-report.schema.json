@@ -6,6 +6,7 @@
   "additionalProperties": false,
   "required": [
     "schema_version",
+    "semantic_binding",
     "system",
     "result",
     "complete",
@@ -15,7 +16,33 @@
     "properties"
   ],
   "properties": {
-    "schema_version": { "const": "1.0.0" },
+    "schema_version": { "const": "1.1.0" },
+    "semantic_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_set_id",
+        "module_map_id",
+        "surface_program_id",
+        "resolved_hir_id",
+        "core_program_id",
+        "ruleset_bundle_id",
+        "resource_policy_id",
+        "certificate_id",
+        "kernel_profile_id"
+      ],
+      "properties": {
+        "source_set_id": { "type": "string", "pattern": "^nmlt-source-set-v1:sha256:[0-9a-f]{64}$" },
+        "module_map_id": { "type": "string", "pattern": "^nmlt-module-map-v1:sha256:[0-9a-f]{64}$" },
+        "surface_program_id": { "type": "string", "pattern": "^nmlt-surface-program-v1:sha256:[0-9a-f]{64}$" },
+        "resolved_hir_id": { "type": "string", "pattern": "^nmlt-hir-resolution-v3:sha256:[0-9a-f]{64}$" },
+        "core_program_id": { "type": "string", "pattern": "^nmlt-core-program-v1:sha256:[0-9a-f]{64}$" },
+        "ruleset_bundle_id": { "type": "string", "pattern": "^nmlt-ruleset-bundle-v1:sha256:[0-9a-f]{64}$" },
+        "resource_policy_id": { "type": "string", "pattern": "^nmlt-kernel-policy-v1:sha256:[0-9a-f]{64}$" },
+        "certificate_id": { "type": "string", "pattern": "^nmlt-elaboration-certificate-v1:sha256:[0-9a-f]{64}$" },
+        "kernel_profile_id": { "type": "string", "pattern": "^nmlt-kernel-profile-v1:sha256:[0-9a-f]{64}$" }
+      }
+    },
     "system": { "type": "string", "minLength": 1 },
     "result": { "$ref": "#/$defs/result" },
     "complete": { "type": "boolean" },

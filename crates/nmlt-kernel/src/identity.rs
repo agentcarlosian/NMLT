@@ -12,6 +12,26 @@ const RULESET_DOMAIN: &[u8] = b"NMLT-RULESET-BUNDLE\0v1\0";
 const POLICY_DOMAIN: &[u8] = b"NMLT-KERNEL-POLICY\0v1\0";
 const KERNEL_PROFILE_DOMAIN: &[u8] = b"NMLT-KERNEL-PROFILE\0v1\0";
 
+pub(crate) const POLICY_LIMITS: [u64; 17] = [
+    256,
+    4 * 1024 * 1024,
+    16 * 1024 * 1024,
+    32 * 1024 * 1024,
+    32 * 1024 * 1024,
+    64 * 1024 * 1024,
+    262_144,
+    262_144,
+    524_288,
+    2_097_152,
+    32,
+    256,
+    255,
+    4_096,
+    4_096,
+    16 * 1024 * 1024,
+    65_536,
+];
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct KernelProfileId([u8; 32]);
 
@@ -50,25 +70,7 @@ pub(crate) fn ruleset_digest() -> [u8; 32] {
 
 pub(crate) fn policy_digest() -> [u8; 32] {
     let mut encoder = Encoder::with_domain(POLICY_DOMAIN);
-    for value in [
-        256_u64,
-        4 * 1024 * 1024,
-        16 * 1024 * 1024,
-        32 * 1024 * 1024,
-        32 * 1024 * 1024,
-        64 * 1024 * 1024,
-        262_144,
-        262_144,
-        524_288,
-        2_097_152,
-        32,
-        256,
-        255,
-        4_096,
-        4_096,
-        16 * 1024 * 1024,
-        65_536,
-    ] {
+    for value in POLICY_LIMITS {
         encoder.u64(value);
     }
     sha256_bytes(&encoder.finish())
@@ -89,6 +91,11 @@ pub(crate) fn derivation_digest(node: &RawDerivationNode) -> [u8; 32] {
 }
 
 pub(crate) fn certificate_digest(certificate: &RawCertificate) -> ([u8; 32], usize) {
+    let canonical = canonical_certificate(certificate);
+    (sha256_bytes(&canonical), canonical.len())
+}
+
+pub(crate) fn canonical_certificate(certificate: &RawCertificate) -> Vec<u8> {
     let mut encoder = Encoder::with_domain(CERTIFICATE_DOMAIN);
     encoder.u16(certificate.format_version);
     encoder.raw(&certificate.source_set_digest);
@@ -108,8 +115,7 @@ pub(crate) fn certificate_digest(certificate: &RawCertificate) -> ([u8; 32], usi
         encoder.raw(&node.claimed_digest);
         encode_derivation_fields(&mut encoder, node);
     }
-    let canonical = encoder.finish();
-    (sha256_bytes(&canonical), canonical.len())
+    encoder.finish()
 }
 
 fn encode_derivation_fields(encoder: &mut Encoder, node: &RawDerivationNode) {
@@ -232,5 +238,24 @@ impl Encoder {
     }
     fn finish(self) -> Vec<u8> {
         self.bytes
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::POLICY_LIMITS;
+
+    const fn permits(actual: u64, maximum: u64) -> bool {
+        actual <= maximum
+    }
+
+    #[test]
+    fn every_frozen_resource_dimension_distinguishes_maximum_and_maximum_plus_one() {
+        for maximum in POLICY_LIMITS {
+            assert!(permits(maximum, maximum));
+            assert!(!permits(maximum.checked_add(1).unwrap(), maximum));
+        }
+        assert_eq!(POLICY_LIMITS[11], 256, "DAG depth maximum drifted");
+        assert_eq!(POLICY_LIMITS.len(), 17, "resource dimension count drifted");
     }
 }

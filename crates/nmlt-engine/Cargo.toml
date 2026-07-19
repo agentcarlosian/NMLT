@@ -9,6 +9,12 @@ publish = false
 
 [dependencies]
 nmlt-core = { path = "../nmlt-core" }
+nmlt-hir = { path = "../nmlt-hir" }
+nmlt-ir = { path = "../nmlt-ir" }
+nmlt-kernel = { path = "../nmlt-kernel" }
+
+[dev-dependencies]
+nmlt-compile = { path = "../nmlt-compile" }
 
 [lints]
 workspace = true

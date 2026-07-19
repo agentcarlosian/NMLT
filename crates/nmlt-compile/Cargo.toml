@@ -1,0 +1,16 @@
+[package]
+name = "nmlt-compile"
+description = "Integrated exact-source to kernel-checked program driver for NMLT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+nmlt-elaborate = { path = "../nmlt-elaborate" }
+nmlt-hir = { path = "../nmlt-hir" }
+nmlt-kernel = { path = "../nmlt-kernel" }
+
+[lints]
+workspace = true

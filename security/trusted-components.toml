@@ -1,4 +1,4 @@
-manifest_version = "1.6.0"
+manifest_version = "1.7.0"
 status = "pre-alpha"
 reviewed = "2026-07-19"
 identity_requirement = "Every assurance manifest binds the exact source/source set, engine source set and executable, and each relied-on component by a content address; generic and graded assurance evidence also binds the exact bytes of this inventory, which names roles but is not itself a digest ledger."
@@ -110,6 +110,13 @@ trusted = [
   "host.hardware_os_filesystem",
   "toolchain.rust",
   "nmlt_core.frontend",
+  "nmlt_core.surface_projection",
+  "nmlt_hir.identity",
+  "nmlt_hir.resolver",
+  "nmlt_ir.structural_core",
+  "nmlt_certificate.syntax",
+  "nmlt_kernel.checker",
+  "nmlt_compile.driver",
   "nmlt_engine.semantic_kernel",
   "nmlt_engine.explicit_state",
   "tools.model_result_checker",
@@ -289,8 +296,9 @@ paths = [
   "crates/nmlt-certificate/src/lib.rs",
   "crates/nmlt-certificate/src/model.rs",
   "crates/nmlt-kernel/src/input.rs",
+  "crates/nmlt-kernel/src/wire.rs",
 ]
-role = "Define the in-memory certificate data accepted as untrusted input. Persisted byte decoding and schema readback remain M9-008 work."
+role = "Define in-memory and canonical byte certificate data accepted as untrusted input; the decoder checks domains, tags, lengths, counts, and policy bounds before allocation, but only the kernel can confer acceptance."
 
 [[components]]
 id = "nmlt_kernel.checker"
@@ -300,6 +308,14 @@ paths = [
   "crates/nmlt-kernel/src/lib.rs",
 ]
 role = "Independently select rules/policy, recompute identities, validate graph/resource/coverage invariants, reconstruct frozen M9-v1 judgments and aggregate core, and exclusively construct CheckedProgram. It does not call the elaborator or trust producer identity calculations."
+
+[[components]]
+id = "nmlt_compile.driver"
+paths = [
+  "crates/nmlt-compile/src/lib.rs",
+  "crates/nmlt-compile/Cargo.toml",
+]
+role = "Drive the only promoted source-to-CheckedProgram route and preserve stable stage-specific diagnostics; it is orchestration, not an additional acceptance authority."
 
 [[components]]
 id = "nmlt_core.evidence_scaffold"
@@ -315,10 +331,10 @@ role = "Route frontend, type-check, and model-check commands without raising a m
 id = "nmlt_engine.semantic_kernel"
 paths = [
   "crates/nmlt-engine/src/ast.rs",
-  "crates/nmlt-engine/src/parser.rs",
+  "crates/nmlt-engine/src/checked.rs",
   "crates/nmlt-engine/src/types.rs",
 ]
-role = "Parse/elaborate the executable fragment and enforce type, frame, system-index, and affine-capability rules."
+role = "Adapt only opaque kernel-accepted CheckedProgram values into the finite engine model, enforce explicit adapter limits, and retain the complete semantic identity binding. It performs no source parsing, name resolution, or type inference."
 
 [[components]]
 id = "nmlt_engine.explicit_state"
@@ -387,6 +403,7 @@ paths = [
   "mechanization/lean/NMLT/Core/Transition.lean",
   "mechanization/lean/NMLT/Core/Provider.lean",
   "mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean",
+  "mechanization/lean/NMLT/Correspondence/M9Kernel.lean",
   "mechanization/lean/NMLT/Grades/Algebra.lean",
   "mechanization/lean/NMLT/Typing/Judgments.lean",
   "mechanization/lean/NMLT/Metatheory/Soundness.lean",

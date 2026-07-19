@@ -62,7 +62,7 @@ HISTORICAL_NO_BLIND_REPLAY = (
 
 FROZEN_SOURCE_SET_ID = (
     "nmlt-source-set-v1:sha256:"
-    "cc43fcb4d0fe8308bd5abfceed809b938351479ec9926c4507c2248df9fa6334"
+    "e4e6e83c61476e41ca1f135c8c5255cba093fe1eae985224323ab32e1681f035"
 )
 FROZEN_SUITE_ID = "provider-attempt-seeded-defects-v2"
 FROZEN_PROVENANCE_ID = (
@@ -89,8 +89,8 @@ FROZEN_PROPERTY_IDS = {
 }
 FROZEN_CASE_BINDINGS = {
     "provider-attempt-reference": {
-        "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:9b09476a5d1a56d5a160578d030314ac93cc02051a490cb7e5c85e7938b62427",
+        "source_id": "nmlt-source-v1:sha256:7bec7cfe10cc7ae28096d880e8ff7cf0bda7e68bda57917a5691a047fe623102",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:b0153f42fac2ac4d51b772bd4b6f62144b587f9ce0fb51c76ecf7fc4d3355622",
         "properties": tuple(FROZEN_PROPERTY_IDS.values()),
         "witness_ids": (),
         "oracle": "holds_within_frozen_future_bounds",
@@ -98,11 +98,11 @@ FROZEN_CASE_BINDINGS = {
         "current": "model_checked",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:89bb74ebdae98d716eec4d42fe91a8274af4a145e670e45030acd39ec4a95818",
+        "result_id": "nmlt-benchmark-result-v1:sha256:413a17982d10d4b7c5b665e3b3d079ea22307fb8495ef247598a8fad440e339e",
     },
     "dispatch-before-authorize": {
-        "source_id": "nmlt-source-v1:sha256:5755f61bb3fc209fb06161660cef7cb89b542b2d8e32aed412360146c935da66",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:b2a2e8b803ce807f1e5e80958a62400e367176c5cdb111a48512e64888b5ad65",
+        "source_id": "nmlt-source-v1:sha256:7ec7bc86cf7569c63caa1a87493e3bdb0f9af5b06cef5c60309e4d3d5632d578",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:674828b23a9968317cba00c621d696ac0a561b49855165e73fc901d2d19e34e9",
         "properties": (FROZEN_PROPERTY_IDS["ProviderAttempt.DispatchRequiresArm"],),
         "witness_ids": (
             "nmlt-expected-counterexample-v1:sha256:ef750d2addd7c3dacb4d0095890c6f96037eb416238c98d5ff60ae1814f03627",
@@ -112,11 +112,11 @@ FROZEN_CASE_BINDINGS = {
         "current": "refuted",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/dispatch-before-authorize.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:34e4f6fd569b3a660f04695edb496a1c08a426f1bccb5733de8e73d888982890",
+        "result_id": "nmlt-benchmark-result-v1:sha256:62a00be4dec41d1f253e6f5edc5458340e0fa4e5cce58388d4cd861d31d4c6bc",
     },
     "blind-replay": {
-        "source_id": "nmlt-source-v1:sha256:1d61387c8998f8e2bda759a2ba05d66201507e522bbedf5bc4483b3ed4afaaac",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:5c4729a04d09c743825e5d3ada76ac46beba95c0d9bbedec4db3e0c44aa2c335",
+        "source_id": "nmlt-source-v1:sha256:d6bdbf48570b79437cdfbe4e132fed34df59137f5151cb6b3804db573338506d",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:6328206136dd91f6fe7e1df0c8f4f61ef32548993b93a7a4c51617e2ea5295b1",
         "properties": (FROZEN_PROPERTY_IDS["ProviderAttempt.NoBlindReplay"],),
         "witness_ids": (
             "nmlt-expected-counterexample-v1:sha256:da4bbd49ff308c67dc37ae24f5f7ed5e6ff11eb1e12312a313a6365a72cacf2e",
@@ -126,27 +126,27 @@ FROZEN_CASE_BINDINGS = {
         "current": "refuted",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/blind-replay.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:4077dc46ad1f0785afb827edb358559704da748be99dd6e395580c1b8ded7350",
+        "result_id": "nmlt-benchmark-result-v1:sha256:a566e01c62df5e92b228bd13ad72ec57a108e07d2f30ee65206508fbf59a159a",
     },
     "response-binding": {
-        "source_id": "nmlt-source-v1:sha256:3f491ca3c289a1d5eff7d11519fb4509e60345aa8eb60819baa1ad442460462e",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:767e4828af7aa3058299b2d7a1ea796d7c1723122d3ba0bfc4fb77c435aba5ff",
+        "source_id": "nmlt-source-v1:sha256:f750f47979e30377b2ed04b0f1e233196ca9429a09ceb53f3544158cc13794e6",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:6b47571c921477c4abfdfb978d4276a8d7fc35443f0cc37c287efde8028d7a11",
         "properties": (
             FROZEN_PROPERTY_IDS["ProviderAttempt.EvaluationRequiresIntactResponse"],
         ),
         "witness_ids": (
-            "nmlt-expected-counterexample-v1:sha256:ebae96b362b15cff69eb2e8f8631b1e19d6ffc703494d609fc98b4b1384155b7",
+            "nmlt-expected-counterexample-v1:sha256:18482ff41318611ea9dad3b239680d3026876be6d59bf7cd6380dc7bd9e1bb06",
         ),
         "oracle": "refuted",
         "intended": "refuted",
         "current": "refuted",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/response-binding.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:40af22e2b69999d1162e1e2d69c733bb234bfae94a6b21799f54333a1b79721d",
+        "result_id": "nmlt-benchmark-result-v1:sha256:58124ad4424830d7fc3f365fc925b43a9d46845fa4e226a3369f0e505143cfad",
     },
     "passing-selection": {
-        "source_id": "nmlt-source-v1:sha256:ae395e8f3941be5647d30015e7689332e3bcf00948329e3d8b88960b65e71f37",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:9016b708afd19fda2e05d78845f4c01f0593e5a5bf9fd9a15411cec24f28cd8f",
+        "source_id": "nmlt-source-v1:sha256:fb0145dc468ec9d587268193a03414461fb8d026823cd4f12d4a959a8bf2bfc6",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:ef30eed2d542a691eefc9e4b1fc974a929019cf50b65fe1b2d1a1d214444b6ba",
         "properties": (FROZEN_PROPERTY_IDS["ProviderAttempt.SelectionRequiresPass"],),
         "witness_ids": (
             "nmlt-expected-counterexample-v1:sha256:45bb21364362c8ab809b4366ac099ee2084fe89380f54df5f85ed1deab3e9c63",
@@ -156,7 +156,7 @@ FROZEN_CASE_BINDINGS = {
         "current": "refuted",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/passing-selection.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:2ebc5223d0c2f42e5f76ffcc086f4bfa772e23205dc59e272a06aacc1fc52411",
+        "result_id": "nmlt-benchmark-result-v1:sha256:33ea0d99d7d6f9257cd8d20514cc004be04cb81087e5f514fb123606692bb3f9",
     },
 }
 FROZEN_CONTROL_BINDINGS = {
@@ -185,7 +185,7 @@ FROZEN_CONTROL_BINDINGS = {
         "property_id": FROZEN_PROPERTY_IDS["ProviderAttempt.DispatchRequiresArm"],
     },
     "one-shot-replay-regression": {
-        "source_id": "nmlt-source-v1:sha256:d30e6cb68ddbcac3875ec8b72071b3f4c3d6b4f852403856c8624cd0a3314d4b",
+        "source_id": "nmlt-source-v1:sha256:592dc9ba532cc0bd0126c3974b7f6c5a1739e7dedcc88a505b0a96a7b7a7c856",
         "class": "semantic_regression",
         "outcome": "model_checker_refuted",
         "current": "refuted",

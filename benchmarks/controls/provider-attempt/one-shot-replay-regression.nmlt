@@ -4,6 +4,7 @@
 // next-state formula accepts that replay because dispatch is disabled in its
 // declared-action successor. The corrected current-state formula refutes it
 // at state zero. This fixture makes no RFC 0007 universal-stutter claim.
+enum Phase { proposed, authorized, dispatched_phase, responded, indeterminate, evaluated, selected, reconciled }
 system OneShotReplayRegressionControl {
   state phase: Phase = indeterminate
 

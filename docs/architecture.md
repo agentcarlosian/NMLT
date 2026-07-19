@@ -51,10 +51,13 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
 - `nmlt-certificate`: neutral certificate syntax and producer-side canonical
   identity construction. Its producer utilities do not decide acceptance.
 - `nmlt-kernel`: independent identity, graph, resource, rule, and aggregate
-  core replay. Its private fields make successful `check` the only route to
-  `CheckedProgram`.
-- `nmlt-engine`: typed provider fragment and deterministic explicit-state
-  exploration with structured counterexamples.
+  core replay plus bounded canonical certificate decoding. Its private fields
+  make successful `check` the only route to `CheckedProgram`.
+- `nmlt-compile`: the stable staged driver from exact source modules through
+  projection, resolution, elaboration, and kernel acceptance.
+- `nmlt-engine`: a checked-core adapter and deterministic explicit-state
+  exploration with structured counterexamples. It has no source parser or
+  public unchecked model constructor.
 - `nmlt-temporal`: canonical finite graphs, `always`/eventuality/lasso checking,
   weak and strong action fairness, stuttering/observation utilities, finite
   forward-simulation refinement, and three-valued journal conformance. Its
@@ -77,8 +80,9 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
   `nmlt-ir` nodes through a canonical bidirectional derivation artifact.
 - Completed M9 `nmlt-kernel` (M9-006): independent typed-core elaboration
   checker with fail-closed diagnostics and a sealed checked-program boundary.
-- Active M9 engine migration (M9-007): replace the provider parser/core route
-  with exclusive consumption of `CheckedProgram`.
+- Completed M9 integration (M9-007–010): exclusive `CheckedProgram` engine
+  entry, complete semantic evidence bindings, an extrinsic Lean reference
+  checker/correspondence model, and canonical/negative-control reproduction.
 - Future separation of `nmlt-engine` into stable transition and model-checking
   boundaries once the first executable slice has more than one consumer.
 - Future solver integration behind the existing SMT-LIB request protocol, with

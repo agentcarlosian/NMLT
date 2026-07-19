@@ -13,7 +13,11 @@ fn checks_the_provider_attempt_fixture() {
         .output()
         .expect("run nmlt");
 
-    assert!(output.status.success());
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("1 system declaration"));
     assert!(stdout.contains("no semantic verification ran"));
@@ -58,7 +62,11 @@ fn emits_structured_model_check_results() {
         .output()
         .expect("run nmlt");
 
-    assert!(output.status.success());
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("\"result\": \"refuted\""));
     assert!(stdout.contains("\"action\": \"dispatch\""));

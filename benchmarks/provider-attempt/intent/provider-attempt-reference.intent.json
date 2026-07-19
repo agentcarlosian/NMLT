@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "capsule_id": "nmlt-intent-capsule-v1:sha256:9b09476a5d1a56d5a160578d030314ac93cc02051a490cb7e5c85e7938b62427",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:b0153f42fac2ac4d51b772bd4b6f62144b587f9ce0fb51c76ecf7fc4d3355622",
   "case_id": "provider-attempt-reference",
   "case_class": "reference",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
-    "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c"
+    "source_id": "nmlt-source-v1:sha256:7bec7cfe10cc7ae28096d880e8ff7cf0bda7e68bda57917a5691a047fe623102"
   },
   "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
   "intent": "Authorize and dispatch one provider attempt, preserve response binding, prohibit replay after ambiguity, and select only passing evidence.",
@@ -38,7 +38,7 @@
     "support": "current",
     "result": {
       "path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
-      "result_id": "nmlt-benchmark-result-v1:sha256:89bb74ebdae98d716eec4d42fe91a8274af4a145e670e45030acd39ec4a95818"
+      "result_id": "nmlt-benchmark-result-v1:sha256:413a17982d10d4b7c5b665e3b3d079ea22307fb8495ef247598a8fad440e339e"
     },
     "witness_ids": []
   },

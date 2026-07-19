@@ -18,8 +18,19 @@ dependencies = [
 name = "nmlt-cli"
 version = "0.0.1"
 dependencies = [
+ "nmlt-compile",
  "nmlt-core",
  "nmlt-engine",
+ "nmlt-kernel",
+]
+
+[[package]]
+name = "nmlt-compile"
+version = "0.0.1"
+dependencies = [
+ "nmlt-elaborate",
+ "nmlt-hir",
+ "nmlt-kernel",
 ]
 
 [[package]]
@@ -39,7 +50,11 @@ dependencies = [
 name = "nmlt-engine"
 version = "0.0.1"
 dependencies = [
+ "nmlt-compile",
  "nmlt-core",
+ "nmlt-hir",
+ "nmlt-ir",
+ "nmlt-kernel",
 ]
 
 [[package]]

@@ -12,7 +12,8 @@ digest, and kernel-profile identity are owned behind private fields. Stable
 
 This boundary establishes type and formation acceptance for the exact M9-v1
 fragment. It does not establish temporal truth, engine correspondence, or a
-verified source-to-core compiler theorem. Persisted certificate decoding and
-evidence-manifest binding remain M9-008.
+verified source-to-core compiler theorem. M9-008 adds bounded canonical
+certificate decoding and downstream evidence-manifest binding without making
+the decoder an acceptance authority.
 
 The normative contract is [RFC 0013](../../rfcs/0013-source-to-typed-core.md).

@@ -3,8 +3,8 @@
   "fixture": "provider-dispatch-two-engine-v1",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
-    "content_sha256": "sha256:c8f862e719ecb20cd75c02e11cc32ef00a6026650121bad52421e19ecb6a4b82",
-    "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c"
+    "content_sha256": "sha256:2ef7c1f4e718a51869976d677864d4cf84e0e58f9554f4bc6a0952129e1a51f3",
+    "source_id": "nmlt-source-v1:sha256:7bec7cfe10cc7ae28096d880e8ff7cf0bda7e68bda57917a5691a047fe623102"
   },
   "claim": {
     "path": "benchmarks/provider-attempt/properties/dispatch-requires-arm.json",
@@ -20,7 +20,7 @@
     "kind": "manual-observable-projection",
     "compiler_verified": false
   },
-  "vc_digest": "sha256:e7a38452e14a47da9743e6fa795f307e8b0c8ee1ff956f15e7419aaf9365189c",
+  "vc_digest": "sha256:b6b380e0ca951ce03de9903ba17f0cd07e13f3c456e5ca8a4420c6a0d0719e37",
   "engines": [
     {
       "name": "nmlt-explicit-reachability",
@@ -37,7 +37,7 @@
       "certificate_accepted": true,
       "certificate": {
         "format": "nmlt-finite-invariant/1",
-        "vc_digest": "sha256:e7a38452e14a47da9743e6fa795f307e8b0c8ee1ff956f15e7419aaf9365189c",
+        "vc_digest": "sha256:b6b380e0ca951ce03de9903ba17f0cd07e13f3c456e5ca8a4420c6a0d0719e37",
         "invariant_states": [
           0,
           1,
@@ -61,7 +61,7 @@
       "certificate_accepted": true,
       "certificate": {
         "format": "nmlt-finite-invariant/1",
-        "vc_digest": "sha256:e7a38452e14a47da9743e6fa795f307e8b0c8ee1ff956f15e7419aaf9365189c",
+        "vc_digest": "sha256:b6b380e0ca951ce03de9903ba17f0cd07e13f3c456e5ca8a4420c6a0d0719e37",
         "invariant_states": [
           0,
           1,
@@ -101,10 +101,10 @@
     "both engines and the checker execute in one Rust process"
   ],
   "implementation": {
-    "source_set_id": "nmlt-verify-source-set-v1:sha256:f48b9c3d48447bce644ec73cb1e61e3784464b1978961ab8b9be065739070085",
+    "source_set_id": "nmlt-verify-source-set-v1:sha256:c7d6ae630c6fb4886469f45186bc5e19f2c37ca203d66c810c497322f2f49060",
     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
     "target": "x86_64-unknown-linux-gnu",
-    "executable_sha256": "2b3c3f72247f8fb160bc970a5aebae5a5fc35418b119da19c2b289eb89919520"
+    "executable_sha256": "f8ccb805b076731d25db60cf1b9ac1cb112e63c5f3aea217a2e6dd96aa1c0d73"
   },
-  "evidence_id": "nmlt-multi-engine-evidence-v1:sha256:a0a7ce99f85ed7ea997d386c55427519c598d5e6838d9343585d15c99a71847b"
+  "evidence_id": "nmlt-multi-engine-evidence-v1:sha256:e42afe4ba733241544dee43f422110bdd6a2d115754b709761a0805fea2e659f"
 }

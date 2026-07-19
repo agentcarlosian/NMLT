@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "capsule_id": "nmlt-intent-capsule-v1:sha256:767e4828af7aa3058299b2d7a1ea796d7c1723122d3ba0bfc4fb77c435aba5ff",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:6b47571c921477c4abfdfb978d4276a8d7fc35443f0cc37c287efde8028d7a11",
   "case_id": "response-binding",
   "case_class": "semantic_mutant",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/response-binding.nmlt",
-    "source_id": "nmlt-source-v1:sha256:3f491ca3c289a1d5eff7d11519fb4509e60345aa8eb60819baa1ad442460462e"
+    "source_id": "nmlt-source-v1:sha256:f750f47979e30377b2ed04b0f1e233196ca9429a09ceb53f3544158cc13794e6"
   },
   "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
   "intent": "Demonstrate that evaluating without an intact response binding violates evidence integrity.",
@@ -30,10 +30,10 @@
     "support": "current",
     "result": {
       "path": "benchmarks/results/provider-attempt/response-binding.json",
-      "result_id": "nmlt-benchmark-result-v1:sha256:40af22e2b69999d1162e1e2d69c733bb234bfae94a6b21799f54333a1b79721d"
+      "result_id": "nmlt-benchmark-result-v1:sha256:58124ad4424830d7fc3f365fc925b43a9d46845fa4e226a3369f0e505143cfad"
     },
     "witness_ids": [
-      "nmlt-expected-counterexample-v1:sha256:ebae96b362b15cff69eb2e8f8631b1e19d6ffc703494d609fc98b4b1384155b7"
+      "nmlt-expected-counterexample-v1:sha256:18482ff41318611ea9dad3b239680d3026876be6d59bf7cd6380dc7bd9e1bb06"
     ]
   },
   "change_control": {

@@ -1,5 +1,6 @@
 // Oracle: NoBlindReplay is refuted in the initial state because replay is enabled.
 // Current supported result: source-bound bounded refutation.
+enum Phase { proposed, authorized, dispatched_phase, responded, indeterminate, evaluated, selected, reconciled }
 system BlindReplayMutant {
   state phase: Phase = indeterminate
   state dispatch_count: Nat = 1

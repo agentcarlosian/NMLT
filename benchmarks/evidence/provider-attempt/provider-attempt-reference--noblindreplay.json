@@ -1,9 +1,9 @@
 {
   "schema_version": "0.1.0",
-  "manifest_id": "nmlt-evidence-v1:sha256:7cc1256596395cb0cbdab44188568d14d89d3a8fd34b723691ecab9f550f779c",
+  "manifest_id": "nmlt-evidence-v1:sha256:3b05c7f2d942f37918e47c38eefa1de89d1987b5ef33c3d222557304e62f4381",
   "artifact": {
     "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
-    "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c"
+    "source_id": "nmlt-source-v1:sha256:7bec7cfe10cc7ae28096d880e8ff7cf0bda7e68bda57917a5691a047fe623102"
   },
   "claim": {
     "id": "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe",
@@ -14,8 +14,8 @@
     "kind": "deterministic_explicit_state_bfs_v1",
     "engine": "nmlt-explicit-state",
     "engine_version": "0.0.1",
-    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:725f2eb4cb362a908699ff736ac32fb119bf0e4f3fa11840aae08c3bf75a35d0",
-    "engine_executable_sha256": "6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4"
+    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:149d1e10b7011f9392b827ce5d43838832693dded7ec19ccf6c09dc7fa0bb4d2",
+    "engine_executable_sha256": "f6d20d6ac79f082c7560bf8fdba7ef3c43feb40f5699e23a27dd7c5e28890bb1"
   },
   "scope": {
     "configuration_id": "nmlt-config-v1:sha256:43b307c69a73b9457d5cf3838c67e9567a5d99230caeaa839463584a3d196623",
@@ -31,25 +31,25 @@
     ]
   },
   "assumptions": [
-    "The executable provider fragment and i64 arithmetic match the frozen source intent.",
+    "The kernel-checked M9-v1 core projection and i64 runtime arithmetic match the frozen source intent.",
     "A model_checked result requires exhaustion of the reachable frontier within both bounds."
   ],
   "trusted_components": [
     {
       "id": "trusted-component-inventory",
-      "identity": "sha256:ffe99399d56a7789c0e538ee59c7681fb927f5bc91a2a8372b0646bfe56608b7"
+      "identity": "sha256:6675462dc79aa246fed26f7c7a21829bfea724208f37bbaead4f2facbfa84fa8"
     },
     {
       "id": "nmlt-engine-source",
-      "identity": "nmlt-engine-source-set-v1:sha256:725f2eb4cb362a908699ff736ac32fb119bf0e4f3fa11840aae08c3bf75a35d0"
+      "identity": "nmlt-engine-source-set-v1:sha256:149d1e10b7011f9392b827ce5d43838832693dded7ec19ccf6c09dc7fa0bb4d2"
     },
     {
       "id": "nmlt-engine-executable",
-      "identity": "sha256:6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4"
+      "identity": "sha256:f6d20d6ac79f082c7560bf8fdba7ef3c43feb40f5699e23a27dd7c5e28890bb1"
     },
     {
       "id": "benchmark-result",
-      "identity": "nmlt-benchmark-result-v1:sha256:89bb74ebdae98d716eec4d42fe91a8274af4a145e670e45030acd39ec4a95818"
+      "identity": "nmlt-benchmark-result-v1:sha256:413a17982d10d4b7c5b665e3b3d079ea22307fb8495ef247598a8fad440e339e"
     },
     {
       "id": "rust-toolchain-declaration",
@@ -61,15 +61,15 @@
     },
     {
       "id": "evidence-checker",
-      "identity": "sha256:e9e43f6c22cec833bd967d39bddc1a654f46394bdd65b42733c02c47feadf6ea"
+      "identity": "sha256:869a6f66f5741007c184b3e27a8dcde34a3d2a7e33bf77168b9f9affe20e7328"
     },
     {
       "id": "benchmark-integrity-checker",
-      "identity": "sha256:80b1d6394a0bcb129c1c9577e4717c0e721d27c7310942661c6143d071d572d9"
+      "identity": "sha256:3241b986b6d8182ff4a5f7795d566d921510dc87c56f35dfce275c7d7230d8fa"
     }
   ],
   "negative_controls": [
-    "nmlt-benchmark-result-v1:sha256:4077dc46ad1f0785afb827edb358559704da748be99dd6e395580c1b8ded7350"
+    "nmlt-benchmark-result-v1:sha256:a566e01c62df5e92b228bd13ad72ec57a108e07d2f30ee65206508fbf59a159a"
   ],
   "residual_gaps": [
     "Finite explicit-state evidence is not an unbounded proof.",

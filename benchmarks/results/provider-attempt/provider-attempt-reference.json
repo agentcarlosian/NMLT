@@ -1,20 +1,22 @@
 {
   "schema_version": "1.0.0",
-  "result_id": "nmlt-benchmark-result-v1:sha256:89bb74ebdae98d716eec4d42fe91a8274af4a145e670e45030acd39ec4a95818",
+  "result_id": "nmlt-benchmark-result-v1:sha256:413a17982d10d4b7c5b665e3b3d079ea22307fb8495ef247598a8fad440e339e",
   "case_id": "provider-attempt-reference",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
-    "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c"
+    "source_id": "nmlt-source-v1:sha256:7bec7cfe10cc7ae28096d880e8ff7cf0bda7e68bda57917a5691a047fe623102"
   },
   "engine": {
     "name": "nmlt-explicit-state",
     "version": "0.0.1",
-    "source_set_id": "nmlt-engine-source-set-v1:sha256:725f2eb4cb362a908699ff736ac32fb119bf0e4f3fa11840aae08c3bf75a35d0",
-    "executable_sha256": "6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4",
+    "source_set_id": "nmlt-engine-source-set-v1:sha256:149d1e10b7011f9392b827ce5d43838832693dded7ec19ccf6c09dc7fa0bb4d2",
+    "elaborator_source_set_id": "nmlt-elaborator-source-set-v1:sha256:ac12fafbc81ce8c9611310ea13fd5de1b4eebbc4d6e167c6f0bd42d3f0686079",
+    "kernel_source_set_id": "nmlt-kernel-source-set-v1:sha256:80399f96617d312c58a45be3c64b3dd6329943fb37a9ab614a59295877ec09cf",
+    "executable_sha256": "f6d20d6ac79f082c7560bf8fdba7ef3c43feb40f5699e23a27dd7c5e28890bb1",
     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
     "target": "x86_64-unknown-linux-gnu",
     "algorithm": "deterministic-bfs-v1",
-    "report_schema": "model-check-report/1.0.0"
+    "report_schema": "model-check-report/1.1.0"
   },
   "configuration": {
     "max_states": 10000,
@@ -23,12 +25,13 @@
     "terminal_behavior": "identity-stutter"
   },
   "assumptions": [
-    "The executable provider fragment and i64 arithmetic match the frozen source intent.",
+    "The kernel-checked M9-v1 core projection and i64 runtime arithmetic match the frozen source intent.",
     "A model_checked result requires exhaustion of the reachable frontier within both bounds."
   ],
   "trusted_components": [
-    "nmlt-core lossless lexer",
-    "nmlt-engine parser, contextual elaborator, type checker, evaluator, and BFS explorer",
+    "nmlt-core projection and nmlt-hir resolver",
+    "nmlt-elaborate producer plus independently replaying nmlt-kernel",
+    "nmlt-engine checked-core adapter, evaluator, and BFS explorer",
     "Rust standard library ordered collections and integer operations"
   ],
   "negative_controls": [
@@ -38,7 +41,18 @@
     "passing-selection"
   ],
   "report": {
-    "schema_version": "1.0.0",
+    "schema_version": "1.1.0",
+    "semantic_binding": {
+      "source_set_id": "nmlt-source-set-v1:sha256:a67cdf280a82fdfddb14e2cdb9ed52cabd4a59ee8afe483f9d12ebe96eae39fa",
+      "module_map_id": "nmlt-module-map-v1:sha256:ecdef9ee580a12ca9628b298f25e9340c11c2e9ddf919600ec4b7229d45428f5",
+      "surface_program_id": "nmlt-surface-program-v1:sha256:3972e51221acdf364439cdaa81f7e451ef53836d3d120196c6d7101948d2372c",
+      "resolved_hir_id": "nmlt-hir-resolution-v3:sha256:afb48ed9a328e622e1d8345aeb0e1050d7643082d33fcae9782729ea3817a6c5",
+      "core_program_id": "nmlt-core-program-v1:sha256:a4ca2dce5095df32e9be839801cd5028b1ad8b2c2ed16ed704f94997c328f61e",
+      "ruleset_bundle_id": "nmlt-ruleset-bundle-v1:sha256:4d5efdae575aade8e9e6896db2c376425aa578f8f7c385d8a055f1df8741412b",
+      "resource_policy_id": "nmlt-kernel-policy-v1:sha256:361e1ba13505a45cbcc2cdf94cec60df3e8675079ba41efe52c01c35ca6a20c2",
+      "certificate_id": "nmlt-elaboration-certificate-v1:sha256:5145eec22157684e80a19984c2d3ac086185126d63dd4ecb5893f82cb5b2ee7a",
+      "kernel_profile_id": "nmlt-kernel-profile-v1:sha256:f8d30d31838ac877f60425c132a06922d8ffd72e5beb44cf226cda8ed65afab5"
+    },
     "system": "ProviderAttemptReference",
     "result": "model_checked",
     "complete": true,
@@ -49,6 +63,12 @@
       "max_depth": 100
     },
     "properties": [
+      {
+        "property": "SelectionRequiresPass",
+        "result": "model_checked",
+        "reason": "holds on every reachable state and transition",
+        "witness": null
+      },
       {
         "property": "DispatchRequiresArm",
         "result": "model_checked",
@@ -63,12 +83,6 @@
       },
       {
         "property": "EvaluationRequiresIntactResponse",
-        "result": "model_checked",
-        "reason": "holds on every reachable state and transition",
-        "witness": null
-      },
-      {
-        "property": "SelectionRequiresPass",
         "result": "model_checked",
         "reason": "holds on every reachable state and transition",
         "witness": null

@@ -25,6 +25,13 @@ macro_rules! identity_type {
             pub const fn digest(&self) -> &[u8; 32] {
                 &self.0
             }
+
+            /// Wrap an untrusted digest for later semantic and identity
+            /// validation. This constructor confers no acceptance authority.
+            #[must_use]
+            pub const fn from_untrusted_digest(digest: [u8; 32]) -> Self {
+                Self(digest)
+            }
         }
 
         impl fmt::Debug for $name {

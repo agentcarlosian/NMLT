@@ -1,5 +1,6 @@
 // Oracle: all four properties should hold under the future frozen finite bounds.
 // Current supported result: source-bound bounded model_checked evidence.
+enum Phase { proposed, authorized, dispatched_phase, responded, indeterminate, evaluated, selected, reconciled }
 system ProviderAttemptReference {
   state phase: Phase = proposed
   state armed: Bool = false
@@ -15,14 +16,14 @@ system ProviderAttemptReference {
     require armed
     set dispatched = true
     set dispatch_count = dispatch_count + 1
-    set phase = dispatched
+    set phase = dispatched_phase
   }
   action receive_response {
-    require phase == dispatched
+    require phase == dispatched_phase
     set response_intact = true
     set phase = responded
   }
-  action lose_response { require phase == dispatched; set phase = indeterminate }
+  action lose_response { require phase == dispatched_phase; set phase = indeterminate }
   action evaluate_pass {
     require phase == responded
     require response_intact

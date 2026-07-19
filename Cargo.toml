@@ -4,6 +4,7 @@ members = [
     "crates/nmlt-hir",
     "crates/nmlt-ir",
     "crates/nmlt-certificate",
+    "crates/nmlt-compile",
     "crates/nmlt-elaborate",
     "crates/nmlt-kernel",
     "crates/nmlt-engine",

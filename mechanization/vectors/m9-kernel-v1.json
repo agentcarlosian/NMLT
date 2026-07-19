@@ -1,0 +1,36 @@
+{
+  "schema_version": "nmlt-m9-correspondence-v1",
+  "rule": {
+    "action_use_tag": 52,
+    "judgment_tag": 8
+  },
+  "vectors": [
+    {
+      "name": "accepted_action",
+      "state_types": ["Bool", "Bool"],
+      "guard": "true",
+      "updates": [{"target": 1, "value": "true"}],
+      "frames": [0],
+      "certificate_rule_tag": 52,
+      "expected": "accept"
+    },
+    {
+      "name": "missing_frame",
+      "state_types": ["Bool", "Bool"],
+      "guard": "true",
+      "updates": [{"target": 1, "value": "true"}],
+      "frames": [],
+      "certificate_rule_tag": 52,
+      "expected": "reject"
+    },
+    {
+      "name": "bad_action_rule_tag",
+      "state_types": ["Bool", "Bool"],
+      "guard": "true",
+      "updates": [{"target": 1, "value": "true"}],
+      "frames": [0],
+      "certificate_rule_tag": 51,
+      "expected": "reject"
+    }
+  ]
+}

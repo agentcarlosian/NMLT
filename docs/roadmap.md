@@ -77,7 +77,7 @@ tracks remain future work.
   rerun after correction and source-to-graph/VC/compiler correspondences remain
   manual or unverified.
 
-## M9 — Integrated source-to-typed-core contract (active 2026-07-19)
+## M9 — Integrated source-to-typed-core contract (complete 2026-07-19)
 
 M9 replaces the current split frontend/provider parsing paths with one
 identity-bound route from exact source bytes through lossless syntax, resolved
@@ -99,9 +99,11 @@ binders, and an exact-source replayed `ResolutionMap`. M9-004 defines a
 span-free, identity-bound explicit typed core with structural validation and
 resource ceilings. Neither result establishes HIR-to-core correspondence;
 M9-005 emits identity-bound bidirectional derivations and M9-006 independently
-replays them into opaque `CheckedProgram` values. Engine migration is next,
-followed by persisted evidence binding and mechanized correspondence. Resolver
-or elaborator success alone is never a `CheckedProgram`.
+replays them into opaque `CheckedProgram` values. M9-007 removes the second
+engine parser, M9-008 binds and reads back the complete semantic identity
+chain, M9-009 checks the extrinsic Lean correspondence model and shared
+Rust/Lean vectors, and M9-010 freezes the canonical outcomes and reproduction
+gate. Resolver or elaborator success alone is never a `CheckedProgram`.
 Once this semantic spine is trustworthy, work proceeds to deeper temporal,
 refinement, compositional, and quantitative mathematics and to broader
 independently run comparison models without weakening existing evidence

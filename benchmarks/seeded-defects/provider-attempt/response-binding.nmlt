@@ -1,7 +1,8 @@
 // Oracle: EvaluationRequiresIntactResponse is refuted by one unbound evaluation.
 // Current supported result: unknown (the frontend is structural only).
+enum Phase { proposed, authorized, dispatched_phase, responded, indeterminate, evaluated, selected, reconciled }
 system ResponseBindingMutant {
-  state phase: Phase = dispatched
+  state phase: Phase = dispatched_phase
   state response_intact: Bool = false
 
   action evaluate { set phase = evaluated }

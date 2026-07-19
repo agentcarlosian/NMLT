@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use nmlt_engine::{CheckConfig, ResultClass, check_model, compile};
+use nmlt_compile::compile_single;
+use nmlt_engine::{CheckConfig, ResultClass, check_model, from_checked};
 
 fn corpus() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -10,7 +11,9 @@ fn corpus() -> PathBuf {
 
 fn check(path: &Path) -> nmlt_engine::CheckReport {
     let source = fs::read_to_string(path).unwrap();
-    let typed = compile(&source).unwrap_or_else(|errors| panic!("{errors:#?}"));
+    let checked = compile_single("Benchmark", path_for_identity(path), source)
+        .unwrap_or_else(|error| panic!("{error}"));
+    let typed = from_checked(&checked).unwrap_or_else(|errors| panic!("{errors:#?}"));
     check_model(
         &typed,
         CheckConfig {
@@ -19,6 +22,19 @@ fn check(path: &Path) -> nmlt_engine::CheckReport {
         },
     )
     .unwrap_or_else(|errors| panic!("{errors:#?}"))
+}
+
+fn path_for_identity(path: &Path) -> String {
+    let canonical = path.canonicalize().unwrap();
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .unwrap();
+    canonical
+        .strip_prefix(root)
+        .unwrap_or(&canonical)
+        .to_string_lossy()
+        .replace('\\', "/")
 }
 
 #[test]
@@ -111,16 +127,27 @@ fn counterexample_generation_is_deterministic() {
 fn four_type_level_negative_controls_fail_before_exploration() {
     let fixtures = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/type-errors");
     let cases = [
-        ("invalid-update-target.nmlt", "not declared state"),
-        ("invalid-initializer.nmlt", "initializer"),
-        ("duplicated-capability.nmlt", "consumed twice"),
-        ("cross-system-property.nmlt", "unknown action"),
+        (
+            "invalid-update-target.nmlt",
+            "unresolved reference `missing`",
+        ),
+        ("invalid-initializer.nmlt", "checks against Nat"),
+        (
+            "duplicated-capability.nmlt",
+            "affine capability consumed more than once",
+        ),
+        (
+            "cross-system-property.nmlt",
+            "unresolved reference `OtherSystemAction`",
+        ),
     ];
     for (file, expected) in cases {
         let source = fs::read_to_string(fixtures.join(file)).unwrap();
-        let errors = compile(&source).unwrap_err();
+        let errors = compile_single("Negative", path_for_identity(&fixtures.join(file)), source)
+            .unwrap_err()
+            .to_string();
         assert!(
-            errors.iter().any(|error| error.contains(expected)),
+            errors.contains(expected),
             "{file}: expected `{expected}` in {errors:#?}"
         );
     }

@@ -36,6 +36,7 @@ pub enum BinaryOp {
     LessEqual,
     Add,
     Subtract,
+    Multiply,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

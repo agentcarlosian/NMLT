@@ -1,5 +1,6 @@
 // Oracle: SelectionRequiresPass is refuted by one failing selection.
 // Current supported result: unknown (the frontend is structural only).
+enum Phase { proposed, authorized, dispatched_phase, responded, indeterminate, evaluated, selected, reconciled }
 system PassingSelectionMutant {
   state phase: Phase = evaluated
   state passed: Bool = false

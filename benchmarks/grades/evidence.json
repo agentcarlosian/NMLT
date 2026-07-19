@@ -101,15 +101,15 @@
     "trusted_component_source_ids": {
       "evidence_harness": "nmlt-source-v1:sha256:404d81ee410f78b6852dcc78896c9e5afe6c0348e3c6feaa2efea7b5c9441e93",
       "evidence_schema": "nmlt-source-v1:sha256:65e42cd282dff0e5061dcd35313704fb75a10b7685befbd9a21a5f47cb279420",
-      "schema_validator": "nmlt-source-v1:sha256:bcce0420073e3e514e72ed12874aeb1bdffb4040ff522b122b73b54ff40c371e",
-      "trusted_component_inventory": "nmlt-source-v1:sha256:92fc2aa27369f897c643614984494ce0030e46098ad650bf239350e32e3d0355"
+      "schema_validator": "nmlt-source-v1:sha256:6ab727dd8069bfeb903bffdf24704ca7079623b4ef56b44b0fdb294494d3ba15",
+      "trusted_component_inventory": "nmlt-source-v1:sha256:9233f577ada8430ae815c871bc02758e29e53d58aa445f31e06354b680429471"
     }
   },
   "metatheory": {
     "scope": "mathematical_grade_algebra_only",
-    "source_set_id": "nmlt-source-set-v1:sha256:d3acc857ac78e31f1d9575f282db11dbdb1a531a85cf9c54f1a8caf352f0dd26",
-    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:896b90ee143e635ef24bc174460bd49eebb166eea4030ab1347a1cc9620c4d3a",
-    "root_source_id": "nmlt-source-v1:sha256:7c72d948e66c33d423cdeb381fa96104ce4619e61f1d3f988d0ac99a910f67ac",
+    "source_set_id": "nmlt-source-set-v1:sha256:a0c0a58c3fae79a4f34f84d06eb50f22876325f1cd05da152fcd6236b86d7265",
+    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:c2af1e9b9dcd16362ba3ea2da4aa8e1a0971b954d01d565f8780797772ebcee4",
+    "root_source_id": "nmlt-source-v1:sha256:b7857c7c60ef12a111419ad1395b5697733c0c7fc523f6130a7b29ee283b7b46",
     "entrypoint_source_id": "nmlt-source-v1:sha256:c439ff9ed311099540cd7fde4c7d9fb5f0449990a342b2aa526a877c6a61caa6",
     "checker_source_id": "nmlt-source-v1:sha256:91f0d78b78e5755b2b2828c2615bb12c3e73b6d63b33def04139fb9d57fedac6",
     "toolchain": "v4.30.0",
@@ -143,5 +143,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:c85c872878da410a9c9618163a030d98dcf09ec1d08b36d060e0904f9ccfa3d5"
+  "manifest_id": "nmlt-evidence-v1:sha256:149cfafd4b874bd75d7257dfd65628612ed3847dcb95fe76c0c9b4711d5ee5b7"
 }

@@ -65,6 +65,7 @@ pub struct PropertyResult {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CheckReport {
+    pub semantic_binding: crate::SemanticBinding,
     pub system: String,
     pub class: ResultClass,
     pub complete: bool,
@@ -89,7 +90,8 @@ impl CheckReport {
         format!(
             concat!(
                 "{{\n",
-                "  \"schema_version\": \"1.0.0\",\n",
+                "  \"schema_version\": \"1.1.0\",\n",
+                "  \"semantic_binding\": {},\n",
                 "  \"system\": {},\n",
                 "  \"result\": {},\n",
                 "  \"complete\": {},\n",
@@ -99,6 +101,7 @@ impl CheckReport {
                 "  \"properties\": [\n{}\n  ]\n",
                 "}}"
             ),
+            semantic_binding_json(&self.semantic_binding),
             json_string(&self.system),
             json_string(self.class.as_str()),
             self.complete,
@@ -109,6 +112,27 @@ impl CheckReport {
             indent(&properties, 4),
         )
     }
+}
+
+fn semantic_binding_json(binding: &crate::SemanticBinding) -> String {
+    format!(
+        concat!(
+            "{{ \"source_set_id\": {}, \"module_map_id\": {}, ",
+            "\"surface_program_id\": {}, \"resolved_hir_id\": {}, ",
+            "\"core_program_id\": {}, \"ruleset_bundle_id\": {}, ",
+            "\"resource_policy_id\": {}, \"certificate_id\": {}, ",
+            "\"kernel_profile_id\": {} }}"
+        ),
+        json_string(&binding.source_set_id),
+        json_string(&binding.module_map_id),
+        json_string(&binding.surface_program_id),
+        json_string(&binding.resolved_hir_id),
+        json_string(&binding.core_program_id),
+        json_string(&binding.ruleset_bundle_id),
+        json_string(&binding.resource_policy_id),
+        json_string(&binding.certificate_id),
+        json_string(&binding.kernel_profile_id),
+    )
 }
 
 fn property_json(property: &PropertyResult) -> String {
@@ -367,6 +391,7 @@ pub fn check_model(typed: &TypedModel, config: CheckConfig) -> Result<CheckRepor
     };
 
     Ok(CheckReport {
+        semantic_binding: typed.semantic_binding.clone(),
         system: typed.model.system_name.clone(),
         class,
         complete,
@@ -666,7 +691,8 @@ fn evaluate_binary(op: BinaryOp, left: Value, right: Value) -> Result<Value, Str
         | BinaryOp::Less
         | BinaryOp::LessEqual
         | BinaryOp::Add
-        | BinaryOp::Subtract => {
+        | BinaryOp::Subtract
+        | BinaryOp::Multiply => {
             let (Value::Int(left), Value::Int(right)) = (left, right) else {
                 return Err(format!("numeric operator {op:?} requires integers"));
             };
@@ -683,6 +709,10 @@ fn evaluate_binary(op: BinaryOp, left: Value, right: Value) -> Result<Value, Str
                     .checked_sub(right)
                     .map(Value::Int)
                     .ok_or_else(|| "integer subtraction overflow".to_owned()),
+                BinaryOp::Multiply => left
+                    .checked_mul(right)
+                    .map(Value::Int)
+                    .ok_or_else(|| "integer multiplication overflow".to_owned()),
                 _ => unreachable!(),
             }
         }
@@ -786,9 +816,15 @@ fn trace_to(
 
 #[cfg(test)]
 mod tests {
-    use crate::{compile, model::check_model};
+    use crate::{TypedModel, from_checked, model::check_model};
 
     use super::{CheckConfig, ResultClass};
+
+    fn compile(source: &str) -> Result<TypedModel, String> {
+        let checked = nmlt_compile::compile_single("Test", "tests/test.nmlt", source)
+            .map_err(|error| error.to_string())?;
+        from_checked(&checked).map_err(|errors| errors.join("; "))
+    }
 
     #[test]
     fn finds_a_deterministic_safety_counterexample() {
@@ -876,7 +912,7 @@ mod tests {
     #[test]
     fn next_is_evaluated_only_after_the_source_antecedent() {
         let typed = compile(
-            "system S {\n state phase: Phase = dispatched\n action lose { set phase = indeterminate }\n action retry { require phase == indeterminate; set phase = indeterminate }\n temporal NoRetry = always(phase == indeterminate implies next(not enabled(retry)))\n }",
+            "enum Phase { dispatched, indeterminate }\nsystem S {\n state phase: Phase = dispatched\n action lose { set phase = indeterminate }\n action retry { require phase == indeterminate; set phase = indeterminate }\n temporal NoRetry = always(phase == indeterminate implies next(not enabled(retry)))\n }",
         )
         .unwrap();
         let source = super::initialize(&typed).unwrap();
@@ -893,7 +929,7 @@ mod tests {
     #[test]
     fn current_state_enabledness_rejects_a_one_shot_blind_replay() {
         let old = compile(
-            "system OneShotReplay {\n state phase: Phase = indeterminate\n state dispatch_count: Nat = 1\n action dispatch { require phase == indeterminate; set dispatch_count = dispatch_count + 1; set phase = reconciled }\n temporal NoBlindReplay = always(phase == indeterminate implies next(not enabled(dispatch)))\n }",
+            "enum Phase { indeterminate, reconciled }\nsystem OneShotReplay {\n state phase: Phase = indeterminate\n state dispatch_count: Nat = 1\n action dispatch { require phase == indeterminate; set dispatch_count = dispatch_count + 1; set phase = reconciled }\n temporal NoBlindReplay = always(phase == indeterminate implies next(not enabled(dispatch)))\n }",
         )
         .unwrap();
         let old_report = check_model(&old, CheckConfig::default()).unwrap();
@@ -904,7 +940,7 @@ mod tests {
         );
 
         let corrected = compile(
-            "system OneShotReplay {\n state phase: Phase = indeterminate\n state dispatch_count: Nat = 1\n action dispatch { require phase == indeterminate; set dispatch_count = dispatch_count + 1; set phase = reconciled }\n temporal NoBlindReplay = always(phase == indeterminate implies not enabled(dispatch))\n }",
+            "enum Phase { indeterminate, reconciled }\nsystem OneShotReplay {\n state phase: Phase = indeterminate\n state dispatch_count: Nat = 1\n action dispatch { require phase == indeterminate; set dispatch_count = dispatch_count + 1; set phase = reconciled }\n temporal NoBlindReplay = always(phase == indeterminate implies not enabled(dispatch))\n }",
         )
         .unwrap();
         let report = check_model(&corrected, CheckConfig::default()).unwrap();
@@ -923,7 +959,7 @@ mod tests {
         let report = check_model(&typed, CheckConfig::default()).unwrap();
         let json = report.to_json_pretty();
         assert_eq!(json, report.to_json_pretty());
-        assert!(json.contains("\"schema_version\": \"1.0.0\""));
+        assert!(json.contains("\"schema_version\": \"1.1.0\""));
         assert!(json.contains("\"result\": \"model_checked\""));
         assert!(json.contains("\"witness\": null"));
     }

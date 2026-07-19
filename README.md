@@ -27,14 +27,14 @@ The complete bounded gate was reproduced from a fresh clone of commit
 [reproduction record](docs/reproduction-2026-07-18.md). This closes the M8
 reproduction gate, not the remaining research or release-promotion gaps.
 
-These are separate assurance subjects, not a complete flagship-language
-pipeline. M9 now has an accepted integration contract, a complete
+These remain separate assurance subjects, not a complete flagship-language
+pipeline. M9 now has a completed narrow integration contract, a complete
 origin-censused surface projection, a source-fed resolved HIR with replayable
 all-reference coverage, a structurally validated explicit typed core, and an
 identity-bound bidirectional elaborator that emits a complete derivation DAG.
-An independent kernel now replays that DAG against exact HIR and core and is
-the sole constructor of `CheckedProgram`; engine migration is the active next
-boundary. NMLT does not
+An independent kernel replays that DAG against exact HIR and core and is the
+sole constructor of `CheckedProgram`; the bounded provider engine now consumes
+that checked value without a second parser. NMLT does not
 yet provide full surface-language execution, verified source-to-IR
 elaboration, general or infinite-state verification, production runtime
 attestation, general AI-repair evidence, signed evidence, or code generation.

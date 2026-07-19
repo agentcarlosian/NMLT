@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "capsule_id": "nmlt-intent-capsule-v1:sha256:5c4729a04d09c743825e5d3ada76ac46beba95c0d9bbedec4db3e0c44aa2c335",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:6328206136dd91f6fe7e1df0c8f4f61ef32548993b93a7a4c51617e2ea5295b1",
   "case_id": "blind-replay",
   "case_class": "semantic_mutant",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/blind-replay.nmlt",
-    "source_id": "nmlt-source-v1:sha256:1d61387c8998f8e2bda759a2ba05d66201507e522bbedf5bc4483b3ed4afaaac"
+    "source_id": "nmlt-source-v1:sha256:d6bdbf48570b79437cdfbe4e132fed34df59137f5151cb6b3804db573338506d"
   },
   "provenance_id": "nmlt-benchmark-provenance-v1:sha256:957b1a6a5727b50ff19fa0b90cc3ec8413c7e31fad4d849d9498d685080a7105",
   "intent": "Demonstrate that blindly redispatching an indeterminate provider attempt violates the ambiguity boundary.",
@@ -30,7 +30,7 @@
     "support": "current",
     "result": {
       "path": "benchmarks/results/provider-attempt/blind-replay.json",
-      "result_id": "nmlt-benchmark-result-v1:sha256:4077dc46ad1f0785afb827edb358559704da748be99dd6e395580c1b8ded7350"
+      "result_id": "nmlt-benchmark-result-v1:sha256:a566e01c62df5e92b228bd13ad72ec57a108e07d2f30ee65206508fbf59a159a"
     },
     "witness_ids": [
       "nmlt-expected-counterexample-v1:sha256:da4bbd49ff308c67dc37ae24f5f7ed5e6ff11eb1e12312a313a6365a72cacf2e"

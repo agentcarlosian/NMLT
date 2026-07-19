@@ -1,9 +1,10 @@
 # NMLT Execution Plan
 
 - Status: Active pre-alpha research prototype
-- Implementation status: bounded milestones across Phases 0–7 and the M8
-  independent-reproduction gate are complete; broader promotion gates remain
-- Active focus: M9 source-to-typed-core integration, followed by deeper
+- Implementation status: bounded milestones across Phases 0–7, the M8
+  independent-reproduction gate, and the M9 integrated source-to-typed-core
+  vertical slice are complete; broader promotion gates remain
+- Active focus: post-M9 behavior-indexed temporal typing, followed by deeper
   mathematical and verification work
 - Initial planning baseline: `cf4f006` (`chore: establish NMLT research scaffold`)
 - Updated: 2026-07-19
@@ -899,11 +900,25 @@ Substage status (2026-07-19):
   formation rule plus aggregate core records, and alone constructs opaque
   `CheckedProgram`. Controls reject stale, forged, resealed-semantic, cyclic,
   unreachable, duplicate, unknown-tag, noncanonical, and oversized inputs.
-  Persisted byte decoding and evidence-manifest binding remain M9-008.
-- [ ] **M9-007 — Migrate the engine and remove the second parser.**
-- [ ] **M9-008 — Bind semantic evidence identities.**
-- [ ] **M9-009 — Mechanize correspondence.**
-- [ ] **M9-010 — Reproduce and audit the completed vertical slice.**
+  Persisted byte decoding and evidence-manifest binding were completed in
+  M9-008.
+- [x] **M9-007 — Migrate the engine and remove the second parser.** The engine
+  exposes only a sealed `CheckedProgram` adapter; the CLI and provider suite
+  enter through `nmlt-compile`, and the former engine parser is deleted.
+- [x] **M9-008 — Bind semantic evidence identities.** Model reports and
+  benchmark results bind the source set, module map, surface program, resolved
+  HIR, core, ruleset, policy, certificate, kernel, elaborator, and engine;
+  canonical certificate bytes have bounded fail-closed readback.
+- [x] **M9-009 — Mechanize correspondence.** The extrinsic Lean M9 model has an
+  executable checker and soundness theorem plus coverage, resolution,
+  initializer, two-way action, affine, and property-preservation statements.
+  Shared Rust/Lean vectors guard rule/tag drift; hashing, decoding, and exact
+  Rust/Lean correspondence remain explicit TCB entries rather than a verified
+  compiler claim.
+- [x] **M9-010 — Reproduce and audit the completed vertical slice.** The M9
+  audit freezes all ten canonical outcomes (three accepted, seven explicit
+  feature boundaries), exercises the checked-only engine and semantic binding,
+  retains the seeded-mutant/readback controls, and is part of `make ci`.
 
 Required promotion obligations:
 
@@ -924,7 +939,7 @@ updates, implicit frames, `Nat`/`Int` coercion, temporal operators admitted as
 ordinary Boolean calls, duplicated affine capabilities, cross-system property
 use, and source/core identity substitution.
 
-The M9 gate closes only when the canonical provider source reaches the existing
+The M9 gate closed on 2026-07-19 after the canonical provider source reached the existing
 typed engine through this pipeline, all supported canonical examples either
 compile or fail with a declared feature-boundary diagnostic, seeded semantic
 mutants retain their classifications, independent certificate readback rejects

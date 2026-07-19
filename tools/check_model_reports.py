@@ -33,6 +33,10 @@ RESULT_DOMAIN = b"NMLT-BENCHMARK-RESULT\0v1\0"
 RESULT_PREFIX = "nmlt-benchmark-result-v1:sha256:"
 ENGINE_SET_DOMAIN = b"NMLT-ENGINE-SOURCE-SET\0v1\0"
 ENGINE_SET_PREFIX = "nmlt-engine-source-set-v1:sha256:"
+ELABORATOR_SET_DOMAIN = b"NMLT-ELABORATOR-SOURCE-SET\0v1\0"
+ELABORATOR_SET_PREFIX = "nmlt-elaborator-source-set-v1:sha256:"
+KERNEL_SET_DOMAIN = b"NMLT-KERNEL-SOURCE-SET\0v1\0"
+KERNEL_SET_PREFIX = "nmlt-kernel-source-set-v1:sha256:"
 EXPECTED = {
     "provider-attempt-reference": "model_checked",
     "dispatch-before-authorize": "refuted",
@@ -50,20 +54,20 @@ def result_id(value: dict[str, Any]) -> str:
     return RESULT_PREFIX + digest.hexdigest()
 
 
-def engine_source_set_id() -> str:
+def component_source_set_id(domain: bytes, prefix: str, crates: tuple[str, ...]) -> str:
     relative_paths = [
         Path("Cargo.toml"),
         Path("Cargo.lock"),
         Path("rust-toolchain.toml"),
     ]
-    for crate in ("nmlt-core", "nmlt-engine", "nmlt-cli"):
+    for crate in crates:
         crate_root = ROOT / "crates" / crate
         relative_paths.extend(path.relative_to(ROOT) for path in crate_root.rglob("*.rs"))
         relative_paths.append(Path("crates") / crate / "Cargo.toml")
     normalized = sorted(
         {str(path).encode("utf-8"): path for path in relative_paths}.items()
     )
-    encoded = bytearray(ENGINE_SET_DOMAIN)
+    encoded = bytearray(domain)
     encoded.extend(len(normalized).to_bytes(8, "big"))
     for path_bytes, path in normalized:
         data = (ROOT / path).read_bytes()
@@ -71,7 +75,66 @@ def engine_source_set_id() -> str:
         encoded.extend(path_bytes)
         encoded.extend(len(data).to_bytes(8, "big"))
         encoded.extend(hashlib.sha256(data).digest())
-    return ENGINE_SET_PREFIX + hashlib.sha256(encoded).hexdigest()
+    return prefix + hashlib.sha256(encoded).hexdigest()
+
+
+def engine_source_set_id() -> str:
+    return component_source_set_id(
+        ENGINE_SET_DOMAIN,
+        ENGINE_SET_PREFIX,
+        (
+            "nmlt-core",
+            "nmlt-hir",
+            "nmlt-ir",
+            "nmlt-certificate",
+            "nmlt-elaborate",
+            "nmlt-kernel",
+            "nmlt-compile",
+            "nmlt-engine",
+            "nmlt-cli",
+        ),
+    )
+
+
+def elaborator_source_set_id() -> str:
+    return component_source_set_id(
+        ELABORATOR_SET_DOMAIN,
+        ELABORATOR_SET_PREFIX,
+        ("nmlt-core", "nmlt-hir", "nmlt-ir", "nmlt-certificate", "nmlt-elaborate", "nmlt-compile"),
+    )
+
+
+def kernel_source_set_id() -> str:
+    return component_source_set_id(
+        KERNEL_SET_DOMAIN,
+        KERNEL_SET_PREFIX,
+        ("nmlt-hir", "nmlt-ir", "nmlt-certificate", "nmlt-kernel"),
+    )
+
+
+def _u64(value: int) -> bytes:
+    return value.to_bytes(8, "big")
+
+
+def _bytes(value: bytes) -> bytes:
+    return _u64(len(value)) + value
+
+
+def expected_source_set_id(path_text: str, path: Path) -> str:
+    source_digest = bytes.fromhex(source_id(path).rsplit(":", 1)[1])
+    encoded = b"NMLT-SOURCE-SET\0v1\0" + _u64(1) + _bytes(path_text.encode()) + source_digest
+    return "nmlt-source-set-v1:sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def expected_module_map_id(source_set: str, path_text: str) -> str:
+    encoded = (
+        b"NMLT-MODULE-MAP\0v1\0"
+        + bytes.fromhex(source_set.rsplit(":", 1)[1])
+        + _u64(1)
+        + _bytes(b"Main")
+        + _bytes(path_text.encode())
+    )
+    return "nmlt-module-map-v1:sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
 def rust_toolchain() -> str:
@@ -149,6 +212,15 @@ def run_report(source: Path) -> dict[str, Any]:
     return value
 
 
+@cache
+def fresh_semantic_binding(source: Path) -> dict[str, Any]:
+    value = run_report(source)
+    binding = value.get("semantic_binding")
+    if not isinstance(binding, dict):
+        raise ValueError(f"model checker omitted semantic binding for {source}")
+    return binding
+
+
 def build_result(case: dict[str, Any]) -> dict[str, Any]:
     path_text = case["path"]
     path = ROOT / path_text
@@ -172,11 +244,13 @@ def build_result(case: dict[str, Any]) -> dict[str, Any]:
             "name": "nmlt-explicit-state",
             "version": "0.0.1",
             "source_set_id": engine_source_set_id(),
+            "elaborator_source_set_id": elaborator_source_set_id(),
+            "kernel_source_set_id": kernel_source_set_id(),
             "executable_sha256": hashlib.sha256(model_checker_binary().read_bytes()).hexdigest(),
             "toolchain": rust_toolchain(),
             "target": rust_target(),
             "algorithm": "deterministic-bfs-v1",
-            "report_schema": "model-check-report/1.0.0",
+            "report_schema": "model-check-report/1.1.0",
         },
         "configuration": {
             "max_states": bounds["max_states"],
@@ -185,12 +259,13 @@ def build_result(case: dict[str, Any]) -> dict[str, Any]:
             "terminal_behavior": "identity-stutter",
         },
         "assumptions": [
-            "The executable provider fragment and i64 arithmetic match the frozen source intent.",
+            "The kernel-checked M9-v1 core projection and i64 runtime arithmetic match the frozen source intent.",
             "A model_checked result requires exhaustion of the reachable frontier within both bounds.",
         ],
         "trusted_components": [
-            "nmlt-core lossless lexer",
-            "nmlt-engine parser, contextual elaborator, type checker, evaluator, and BFS explorer",
+            "nmlt-core projection and nmlt-hir resolver",
+            "nmlt-elaborate producer plus independently replaying nmlt-kernel",
+            "nmlt-engine checked-core adapter, evaluator, and BFS explorer",
             "Rust standard library ordered collections and integer operations",
         ],
         "negative_controls": [
@@ -271,9 +346,28 @@ def validate_result(
             errors.append("$.source.path: source is not a regular file")
         elif source.get("source_id") != source_id(path):
             errors.append("$.source.source_id: stale exact-source identity")
+        else:
+            binding = value.get("report", {}).get("semantic_binding", {})
+            calculated_source_set = expected_source_set_id(source.get("path"), path)
+            if binding.get("source_set_id") != calculated_source_set:
+                errors.append("$.report.semantic_binding.source_set_id: stale exact source-set identity")
+            calculated_module_map = expected_module_map_id(calculated_source_set, source.get("path"))
+            if binding.get("module_map_id") != calculated_module_map:
+                errors.append("$.report.semantic_binding.module_map_id: stale logical-module binding")
+            try:
+                fresh_binding = fresh_semantic_binding(path)
+            except ValueError as error:
+                errors.append(f"$.report.semantic_binding: cannot replay: {error}")
+            else:
+                if binding != fresh_binding:
+                    errors.append("$.report.semantic_binding: differs from fresh kernel replay")
     engine = value.get("engine", {})
     if engine.get("source_set_id") != engine_source_set_id():
         errors.append("$.engine.source_set_id: stale engine source-set identity")
+    if engine.get("elaborator_source_set_id") != elaborator_source_set_id():
+        errors.append("$.engine.elaborator_source_set_id: stale elaborator source-set identity")
+    if engine.get("kernel_source_set_id") != kernel_source_set_id():
+        errors.append("$.engine.kernel_source_set_id: stale kernel source-set identity")
     if engine.get("executable_sha256") != hashlib.sha256(
         model_checker_binary().read_bytes()
     ).hexdigest():
@@ -338,6 +432,22 @@ def negative_self_tests(
     stale_engine["result_id"] = result_id(stale_engine)
     if not validate_result(stale_engine, None, result_schema, report_schema):
         failures.append("stale engine binding was accepted")
+
+    forged_certificate = copy.deepcopy(reference)
+    forged_certificate["report"]["semantic_binding"]["certificate_id"] = (
+        "nmlt-elaboration-certificate-v1:sha256:" + "0" * 64
+    )
+    forged_certificate["result_id"] = result_id(forged_certificate)
+    if not validate_result(forged_certificate, None, result_schema, report_schema):
+        failures.append("forged certificate identity was accepted by readback")
+
+    stale_kernel = copy.deepcopy(reference)
+    stale_kernel["engine"]["kernel_source_set_id"] = (
+        "nmlt-kernel-source-set-v1:sha256:" + "0" * 64
+    )
+    stale_kernel["result_id"] = result_id(stale_kernel)
+    if not validate_result(stale_kernel, None, result_schema, report_schema):
+        failures.append("stale kernel identity was accepted")
 
     propertyless = copy.deepcopy(reference)
     propertyless["report"]["properties"] = []

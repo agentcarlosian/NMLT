@@ -1,5 +1,6 @@
 // Oracle: DispatchRequiresArm is refuted by one unauthorized dispatch.
 // Current supported result: unknown (the frontend is structural only).
+enum Phase { proposed, authorized, dispatched_phase, responded, indeterminate, evaluated, selected, reconciled }
 system DispatchBeforeAuthorizeMutant {
   state phase: Phase = proposed
   state armed: Bool = false
