@@ -4,9 +4,3 @@ defaultTargets = ["NMLT"]
 
 [[lean_lib]]
 name = "NMLT"
-
-# lean-action v1.5.0's nanoda helper discovers the export root from a
-# [package] table even though Lake's TOML package fields are top-level. Lake
-# 5.0 ignores this compatibility table; nanoda exports the NMLT root module.
-[package]
-name = "NMLT"

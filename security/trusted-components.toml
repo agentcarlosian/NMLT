@@ -1,6 +1,6 @@
-manifest_version = "1.1.0"
+manifest_version = "1.2.0"
 status = "pre-alpha"
-reviewed = "2026-07-18"
+reviewed = "2026-07-19"
 identity_requirement = "Every assurance manifest binds the exact source/source set, engine source set and executable, and each relied-on component by a content address; generic and graded assurance evidence also binds the exact bytes of this inventory, which names roles but is not itself a digest ledger."
 
 outside_tcb = [
@@ -170,12 +170,13 @@ role = "Fetch the repository in CI at the documented v4.2.2 action commit."
 id = "ci.lean_action"
 paths = [".github/workflows/ci.yml"]
 version = "leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9"
-role = "Build and run NanoDA under the documented v1.5.0 action commit."
+role = "Install the declared Lean toolchain and build the Lake package under the documented v1.5.0 action commit; its mutable built-in NanoDA path is disabled."
 
 [[components]]
 id = "lean.kernel_and_nanoda"
-paths = []
-role = "Check the elaborated Lean proof terms; exact installed binary digests are not yet persisted."
+paths = ["tools/check_nanoda.sh"]
+version = "Lean v4.30.0; lean4export@a3e35a584f59b390667db7269cd37fca8575e4bf; nanoda_lib@f58f2f6d535e189a40fcb02ede8eb95f97a92d37; Rust 1.94.0"
+role = "Use the Lean kernel and a separately built NanoDA checker over the exported environment. Exporter, checker, Rust, and configuration sources are pinned; downloaded and locally built binary digests are not yet persisted."
 
 [[components]]
 id = "nmlt_core.frontend"

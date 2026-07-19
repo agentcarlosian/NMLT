@@ -102,12 +102,12 @@
       "evidence_harness": "nmlt-source-v1:sha256:404d81ee410f78b6852dcc78896c9e5afe6c0348e3c6feaa2efea7b5c9441e93",
       "evidence_schema": "nmlt-source-v1:sha256:65e42cd282dff0e5061dcd35313704fb75a10b7685befbd9a21a5f47cb279420",
       "schema_validator": "nmlt-source-v1:sha256:39dd25710b0695f00b90315a1b35f404078092b995ff46a8c9dc5db5080a6337",
-      "trusted_component_inventory": "nmlt-source-v1:sha256:4d1d64680cbad2d84781e3b3bc52d2c55da14caa95ace5f450bc719d18cbb4d7"
+      "trusted_component_inventory": "nmlt-source-v1:sha256:a4799c3680ef8e482b1c8220392cb2fff01e50e99778740a5eaa2edb6a91b114"
     }
   },
   "metatheory": {
     "scope": "mathematical_grade_algebra_only",
-    "source_set_id": "nmlt-source-set-v1:sha256:135cccaf56ae02b46f276b252ad6c22b95acc15bbab0bf4216804eb975fb1e7f",
+    "source_set_id": "nmlt-source-set-v1:sha256:d3acc857ac78e31f1d9575f282db11dbdb1a531a85cf9c54f1a8caf352f0dd26",
     "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:896b90ee143e635ef24bc174460bd49eebb166eea4030ab1347a1cc9620c4d3a",
     "root_source_id": "nmlt-source-v1:sha256:7c72d948e66c33d423cdeb381fa96104ce4619e61f1d3f988d0ac99a910f67ac",
     "entrypoint_source_id": "nmlt-source-v1:sha256:c439ff9ed311099540cd7fde4c7d9fb5f0449990a342b2aa526a877c6a61caa6",
@@ -143,5 +143,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:89721ae359d9f2fa9bdc55de1085af8036ac94841dd78cc228a10d2489d836ac"
+  "manifest_id": "nmlt-evidence-v1:sha256:e748df2684a6fc09b6cf1568663f99b5f27714a63dce213a41c6c4b8bfffc0ae"
 }
