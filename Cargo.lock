@@ -37,6 +37,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "nmlt-ir"
+version = "0.0.1"
+dependencies = [
+ "nmlt-hir",
+]
+
+[[package]]
 name = "nmlt-temporal"
 version = "0.0.1"
 

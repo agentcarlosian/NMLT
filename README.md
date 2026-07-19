@@ -29,10 +29,10 @@ reproduction gate, not the remaining research or release-promotion gaps.
 
 These are separate assurance subjects, not a complete flagship-language
 pipeline. M9 now has an accepted integration contract, a complete
-origin-censused surface projection, and a deterministic source-fed
-module/declaration resolver with typed lookup. Completing the source-derived
-reference map is the active resolver substage before explicit typed core and
-elaboration. NMLT does not yet provide full surface-language
+origin-censused surface projection, a source-fed resolved HIR with replayable
+all-reference coverage, and a structurally validated explicit typed-core
+representation. Bidirectional elaboration and its independently checked
+derivation are the active next boundary. NMLT does not yet provide full surface-language
 execution, verified source-to-IR elaboration, general or infinite-state
 verification, production runtime attestation, general AI-repair evidence,
 signed evidence, or code generation.

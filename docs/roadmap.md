@@ -94,10 +94,11 @@ property-index preservation, and an identity-bound Rust/Lean bridge.
 
 The governing proposal is [RFC 0013](../rfcs/0013-source-to-typed-core.md).
 RFC acceptance and complete surface projection are implemented as M9-001 and
-M9-002. M9-003 now has a deterministic source-fed module/declaration resolver;
-its remaining gate is a canonical map covering every raw-term reference and
-local binder. M9-004 is then the explicit typed-core boundary, followed by
-elaboration, kernel checking, engine migration, evidence binding, and
+M9-002. M9-003 now produces a deterministic all-reference HIR, stable local
+binders, and an exact-source replayed `ResolutionMap`. M9-004 defines a
+span-free, identity-bound explicit typed core with structural validation and
+resource ceilings. Neither result establishes HIR-to-core correspondence;
+M9-005's bidirectional elaboration is next, followed by kernel checking, engine migration, evidence binding, and
 mechanized correspondence. No current resolver result is a `CheckedProgram`.
 Once this semantic spine is trustworthy, work proceeds to deeper temporal,
 refinement, compositional, and quantitative mathematics and to broader

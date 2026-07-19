@@ -16,14 +16,21 @@
 
 #![forbid(unsafe_code)]
 
+mod hir;
 mod identity;
 mod model;
+mod resolve_terms;
 mod resolver;
 mod surface;
+mod term;
 
+pub use hir::{
+    HirBinaryOp, HirNode, HirNodeKind, HirRoot, HirUnaryOp, LocalBinder, ResolutionEntry,
+    ResolutionMap, ResolvedRef, SemanticPath, SemanticPathSegment,
+};
 pub use identity::{
-    DefId, ModuleId, ModuleMapId, NodeId, ResolutionId, SourceId, SourceSetEntry, SourceSetId,
-    SourceSetIdentityError,
+    DefId, LocalId, ModuleId, ModuleMapId, NodeId, ResolutionId, SourceId, SourceSetEntry,
+    SourceSetId, SourceSetIdentityError, sha256_bytes,
 };
 pub(crate) use model::{DeclarationInput, ImportInput, ModuleInput};
 pub use model::{
@@ -31,6 +38,7 @@ pub use model::{
     ProjectionIssue, ProjectionIssueKind, ResolvedDeclaration, ResolvedImport, ResolvedModule,
     ResolvedProgram, SemanticRole, SourceSpan,
 };
+pub use resolve_terms::verify_resolution_readback;
 pub use resolver::{
     DefPathViolation, DefinitionCandidate, LookupError, PathViolation, ResolveError,
     ResourceDimension, SourceEncodingViolation, resolve_modules,

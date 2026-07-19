@@ -10,17 +10,17 @@ crate, so callers cannot edit projected metadata independently of its exact
 bytes or mutate a resolved table while retaining a stale identity.
 
 The crate deliberately fails on recovery-dependent, uncensused, unsupported,
-ambiguous, shadowed, cyclic, or out-of-policy input. Its `ResolvedProgram` is
-currently a module/declaration resolver index, not RFC 0013's final
-all-reference HIR: raw type/expression references and local binders still need
-source-derived resolution-map coverage. It is not a typed term representation,
-a proof certificate, a `CheckedProgram`, or permission to execute source.
-M9-004 adds the explicit typed core after that reference map; M9-005 and M9-006
-add elaboration and independent checking.
+ambiguous, shadowed, cyclic, or out-of-policy input. Its `ResolvedProgram`
+parses every admitted raw type/expression, assigns owner-derived local binders,
+contains a span-preserving HIR node graph, and emits a canonical
+`ResolutionMap` in bijection with textual reference nodes. Construction runs a
+separate candidate-replay/readback pass over exact source spellings and graph
+closure. It is not a typed term representation, a proof certificate, a
+`CheckedProgram`, or permission to execute source. `nmlt-ir` owns M9-004's
+explicit typed core; M9-005 and M9-006 add elaboration and independent checking.
 
-Anonymous observations and action-local binders are retained by the complete
-surface projection but are not global definitions: later substages assign
-owner-derived node/local identities. Named enums, constructors, systems,
+Anonymous observations and action-local binders are not global definitions;
+the resolver assigns stable owner-derived node/local identities. Named enums, constructors, systems,
 states, capabilities, actions, and properties receive full typed `DefPath`s.
 
 The normative contract and accepted encodings are in

@@ -36,9 +36,13 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
   evidence types.
 - `nmlt-hir`: the canonical `nmlt-core`-to-resolver adapter, closed acyclic
   imports, typed declaration namespaces, direct-import lookup, stable semantic
-  identities, opaque source-bound resolver inputs/results, and bounded
-  fail-closed resolution. It is not yet typed expression HIR or a checked core
-  program.
+  identities and locals, source-derived expression/type HIR, a complete
+  `ResolutionMap`, exact-spelling candidate replay, opaque source-bound
+  inputs/results, and bounded fail-closed resolution.
+- `nmlt-ir`: span-free explicit typed terms, system-indexed state/temporal
+  propositions, exact action update/frame partitions, canonical integer and
+  core identities, and structural graph/type/resource validation. It does not
+  establish correspondence to HIR and cannot construct `CheckedProgram`.
 - `nmlt-engine`: typed provider fragment and deterministic explicit-state
   exploration with structured counterexamples.
 - `nmlt-temporal`: canonical finite graphs, `always`/eventuality/lasso checking,
@@ -59,9 +63,8 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
 
 ## Planned boundaries
 
-- Active M9 resolution: `nmlt-hir` module/declaration tables, lookup rules, and
-  stable identities are implemented; a source-derived map for every raw-term
-  reference and local binder remains before typed expression HIR.
+- Active M9 elaboration (M9-005): connect exact resolved-HIR obligations to
+  `nmlt-ir` nodes through a canonical bidirectional derivation artifact.
 - Planned M9 `nmlt-kernel` (M9-006): small checker for typed-core elaboration
   evidence after the explicit core and elaborator boundaries exist.
 - Future separation of `nmlt-engine` into stable transition and model-checking

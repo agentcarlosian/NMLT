@@ -9,7 +9,8 @@ const MODULE_MAP_DOMAIN: &[u8] = b"NMLT-MODULE-MAP\0v1\0";
 const MODULE_DOMAIN: &[u8] = b"NMLT-MODULE\0v1\0";
 const DEFINITION_DOMAIN: &[u8] = b"NMLT-DEF\0v1\0";
 const NODE_DOMAIN: &[u8] = b"NMLT-NODE\0v1\0";
-const RESOLUTION_DOMAIN: &[u8] = b"NMLT-HIR-RESOLUTION\0v1\0";
+const LOCAL_DOMAIN: &[u8] = b"NMLT-LOCAL\0v1\0";
+const RESOLUTION_DOMAIN: &[u8] = b"NMLT-HIR-RESOLUTION\0v2\0";
 
 macro_rules! identity_type {
     ($name:ident, $prefix:literal) => {
@@ -48,7 +49,8 @@ identity_type!(ModuleMapId, "nmlt-module-map-v1:sha256:");
 identity_type!(ModuleId, "nmlt-module-v1:sha256:");
 identity_type!(DefId, "nmlt-def-v1:sha256:");
 identity_type!(NodeId, "nmlt-node-v1:sha256:");
-identity_type!(ResolutionId, "nmlt-hir-resolution-v1:sha256:");
+identity_type!(LocalId, "nmlt-local-v1:sha256:");
+identity_type!(ResolutionId, "nmlt-hir-resolution-v2:sha256:");
 
 /// A path-and-bytes pair used to compute an RFC 0004 source-set identity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -170,57 +172,39 @@ where
     DefId(sha256(&preimage.finish()))
 }
 
-pub(crate) fn node_id(definition_id: DefId, semantic_roles: &[u8]) -> NodeId {
-    let mut encoded_path = Encoder::empty();
-    encoded_path.count(semantic_roles.len());
-    for role in semantic_roles {
-        encoded_path.raw(&[*role]);
-    }
+pub(crate) fn node_id(definition_id: DefId, encoded_semantic_path: &[u8]) -> NodeId {
     let mut preimage = Encoder::with_domain(NODE_DOMAIN);
     preimage.raw(definition_id.digest());
-    preimage.bytes(&encoded_path.finish());
+    preimage.bytes(encoded_semantic_path);
     NodeId(sha256(&preimage.finish()))
 }
 
-pub(crate) struct ResolutionIdentityModule<'a> {
-    pub logical_module: &'a str,
-    pub repository_path: &'a str,
-    pub source_id: SourceId,
-    pub imports: Vec<&'a str>,
-    pub declarations: Vec<ResolutionIdentityDeclaration<'a>>,
-}
-
-pub(crate) struct ResolutionIdentityDeclaration<'a> {
-    pub path: Vec<(u8, &'a str)>,
+pub(crate) fn local_id(binder_node_id: NodeId) -> LocalId {
+    let mut preimage = Encoder::with_domain(LOCAL_DOMAIN);
+    preimage.raw(binder_node_id.digest());
+    LocalId(sha256(&preimage.finish()))
 }
 
 pub(crate) fn resolution_id(
     source_set_id: SourceSetId,
     module_map_id: ModuleMapId,
-    modules: &[ResolutionIdentityModule<'_>],
+    canonical_hir: &[u8],
 ) -> ResolutionId {
     let mut preimage = Encoder::with_domain(RESOLUTION_DOMAIN);
     preimage.raw(source_set_id.digest());
     preimage.raw(module_map_id.digest());
-    preimage.count(modules.len());
-    for module in modules {
-        preimage.text(module.logical_module);
-        preimage.text(module.repository_path);
-        preimage.raw(module.source_id.digest());
-        preimage.count(module.imports.len());
-        for import in &module.imports {
-            preimage.text(import);
-        }
-        preimage.count(module.declarations.len());
-        for declaration in &module.declarations {
-            preimage.count(declaration.path.len());
-            for (kind, name) in &declaration.path {
-                preimage.raw(&[*kind]);
-                preimage.text(name);
-            }
-        }
-    }
+    preimage.bytes(canonical_hir);
     ResolutionId(sha256(&preimage.finish()))
+}
+
+/// Compute a raw SHA-256 digest for another canonical NMLT identity domain.
+///
+/// Identity-owning crates remain responsible for domain separation and
+/// canonical encoding. This function exposes only the audited primitive used
+/// by the M9 identity implementation.
+#[must_use]
+pub fn sha256_bytes(bytes: &[u8]) -> [u8; 32] {
+    sha256(bytes)
 }
 
 struct Encoder {
@@ -354,8 +338,8 @@ mod tests {
     use std::fmt::Write as _;
 
     use super::{
-        ModuleMapEntry, SourceId, SourceSetId, definition_id, module_id, module_map_id, node_id,
-        sha256,
+        ModuleMapEntry, SourceId, SourceSetId, definition_id, local_id, module_id, module_map_id,
+        node_id, resolution_id, sha256,
     };
 
     fn hex(bytes: &[u8]) -> String {
@@ -424,10 +408,38 @@ mod tests {
              bbaa1fdb91efc6617229d4efa1d0451fa4d06802a7e6a33943dea931d1a52aa4"
         );
 
+        let mut initializer_path = 1_u64.to_be_bytes().to_vec();
+        initializer_path.push(0x03);
         assert_eq!(
-            node_id(state_id, &[0x03]).to_string(),
+            node_id(state_id, &initializer_path).to_string(),
             "nmlt-node-v1:sha256:\
              217a2e50a04141495c25eb47000e3ad8fc3ea00b8c75672bd10083226e3863ba"
+        );
+
+        let action_id = definition_id(module_id, [(0x04, "Toggle"), (0x06, "flip")].into_iter());
+        assert_eq!(
+            action_id.to_string(),
+            "nmlt-def-v1:sha256:\
+             028133e3a7fa4b466ce904f9980ca906da9bb9359c2d06b63276ee9c48502e41"
+        );
+        let mut parameter_path = 1_u64.to_be_bytes().to_vec();
+        parameter_path.push(0x02);
+        parameter_path.extend_from_slice(&0_u32.to_be_bytes());
+        let binder_node = node_id(action_id, &parameter_path);
+        assert_eq!(
+            binder_node.to_string(),
+            "nmlt-node-v1:sha256:\
+             1349d7cf67629fc6562d983cd2a41fcddbbcbe429e786c4c06e5542df12e85f1"
+        );
+        assert_eq!(
+            local_id(binder_node).to_string(),
+            "nmlt-local-v1:sha256:\
+             f924d588fe368a051d260746867179550b3053e5aca3cae6fbcbc4611ba290e6"
+        );
+        assert_eq!(
+            resolution_id(source_set_id, module_map_id, b"hir").to_string(),
+            "nmlt-hir-resolution-v2:sha256:\
+             c574d415755875bf086cb7949edf66d6ecc0fee3262188ec740efd7aaedabf4a"
         );
     }
 

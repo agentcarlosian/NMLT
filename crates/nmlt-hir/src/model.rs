@@ -3,8 +3,10 @@
 use std::collections::BTreeMap;
 
 use crate::identity::{
-    DefId, ModuleId, ModuleMapId, NodeId, ResolutionId, SourceId, SourceSetId, node_id,
+    DefId, LocalId, ModuleId, ModuleMapId, NodeId, ResolutionId, SourceId, SourceSetId,
 };
+use crate::term::{LocalBinderInput, RawTermInput};
+use crate::{HirNode, HirRoot, LocalBinder, ResolutionMap, SemanticPath, SemanticPathSegment};
 
 /// Half-open byte range in one module's exact UTF-8 source bytes.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -187,6 +189,8 @@ pub(crate) struct ModuleInput {
     pub exact_bytes: Vec<u8>,
     pub imports: Vec<ImportInput>,
     pub declarations: Vec<DeclarationInput>,
+    pub local_binders: Vec<LocalBinderInput>,
+    pub raw_terms: Vec<RawTermInput>,
     pub projection_issues: Vec<ProjectionIssue>,
 }
 
@@ -203,6 +207,8 @@ impl ModuleInput {
             exact_bytes: exact_bytes.into(),
             imports: Vec::new(),
             declarations: Vec::new(),
+            local_binders: Vec::new(),
+            raw_terms: Vec::new(),
             projection_issues: Vec::new(),
         }
     }
@@ -348,11 +354,10 @@ impl ResolvedDeclaration {
     /// Derives a stable identity for a semantic node below this definition.
     #[must_use]
     pub fn node_id(&self, semantic_path: &[SemanticRole]) -> NodeId {
-        let tags = semantic_path
-            .iter()
-            .map(|role| role.wire_tag())
-            .collect::<Vec<_>>();
-        node_id(self.id, &tags)
+        let path = SemanticPath::new(semantic_path.iter().map(|role| match role {
+            SemanticRole::Initializer => SemanticPathSegment::Initializer,
+        }));
+        path.node_id(self.id)
     }
 }
 
@@ -365,6 +370,9 @@ pub struct ResolvedModule {
     pub(crate) id: ModuleId,
     pub(crate) imports: Vec<ResolvedImport>,
     pub(crate) declarations: BTreeMap<DeclarationKey, ResolvedDeclaration>,
+    pub(crate) local_binders: BTreeMap<LocalId, LocalBinder>,
+    pub(crate) hir_roots: Vec<HirRoot>,
+    pub(crate) hir_nodes: BTreeMap<NodeId, HirNode>,
     pub(crate) exact_bytes: Vec<u8>,
 }
 
@@ -399,6 +407,21 @@ impl ResolvedModule {
         &self.declarations
     }
 
+    #[must_use]
+    pub const fn local_binders(&self) -> &BTreeMap<LocalId, LocalBinder> {
+        &self.local_binders
+    }
+
+    #[must_use]
+    pub fn hir_roots(&self) -> &[HirRoot] {
+        &self.hir_roots
+    }
+
+    #[must_use]
+    pub const fn hir_nodes(&self) -> &BTreeMap<NodeId, HirNode> {
+        &self.hir_nodes
+    }
+
     /// Returns the exact source bytes whose identity is recorded by this module.
     #[must_use]
     pub fn exact_bytes(&self) -> &[u8] {
@@ -406,9 +429,7 @@ impl ResolvedModule {
     }
 }
 
-/// Deterministic index produced by closed-set module and declaration resolution.
-///
-/// This does not yet contain RFC 0013's all-reference `ResolutionMap`.
+/// Deterministic, all-reference HIR produced from the closed source set.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResolvedProgram {
     pub(crate) source_set_id: SourceSetId,
@@ -419,6 +440,7 @@ pub struct ResolvedProgram {
     /// Dependency-first order with UTF-8 lexical tie-breaking.
     pub(crate) dependency_order: Vec<String>,
     pub(crate) modules: BTreeMap<String, ResolvedModule>,
+    pub(crate) resolution_map: ResolutionMap,
 }
 
 impl ResolvedProgram {
@@ -450,6 +472,11 @@ impl ResolvedProgram {
     #[must_use]
     pub fn module(&self, logical_module: &str) -> Option<&ResolvedModule> {
         self.modules.get(logical_module)
+    }
+
+    #[must_use]
+    pub const fn resolution_map(&self) -> &ResolutionMap {
+        &self.resolution_map
     }
 }
 

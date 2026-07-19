@@ -364,6 +364,35 @@ fn untrusted_input_limits_fail_before_resolution_allocation() {
 }
 
 #[test]
+fn independent_readback_rejects_missing_or_relabelled_reference_entries() {
+    let source = b"system S {\n state x: Nat = 0\n safety Safe = always(x >= 0)\n}\n";
+    let projected =
+        crate::project_source_module("Readback", "src/readback.nmlt", source.as_slice());
+    let program = crate::resolver::resolve_modules(vec![projected]).unwrap();
+    crate::verify_resolution_readback(&program).unwrap();
+
+    let origin = *program.resolution_map.entries.keys().next().unwrap();
+    let mut missing = program.clone();
+    missing.resolution_map.entries.remove(&origin);
+    assert!(matches!(
+        crate::verify_resolution_readback(&missing),
+        Err(ResolveError::ResolutionReadback { .. })
+    ));
+
+    let mut relabelled = program;
+    relabelled
+        .resolution_map
+        .entries
+        .get_mut(&origin)
+        .unwrap()
+        .spelling = "forged".to_owned();
+    assert!(matches!(
+        crate::verify_resolution_readback(&relabelled),
+        Err(ResolveError::ResolutionReadback { .. })
+    ));
+}
+
+#[test]
 fn rfc0004_and_module_map_identities_have_separate_responsibilities() {
     let bytes = b"module Placeholder {}\n".to_vec();
     let a = ModuleInput::new("A", "src/shared.nmlt", bytes.clone());

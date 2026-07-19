@@ -876,14 +876,16 @@ Substage status (2026-07-19):
 - [x] **M9-002 — Complete surface projection.** The hierarchical projection is
   ordered, explicit on unsupported/recovered nodes, and checked against an
   independent CST-origin census.
-- [ ] **M9-003 — Resolve modules and names (active).** `nmlt-hir` now consumes
-  the canonical `nmlt-core` projection, rejects incomplete inputs, resolves a
-  closed acyclic direct-import graph with typed declaration namespaces, and
-  derives stable IDs under bounded inputs. Remaining: parse every accepted raw
-  type/expression into reference origins, assign action-local binders, emit the
-  canonical `ResolutionMap`, and verify exact reference-coverage/readback.
-- [ ] **M9-004 — Define explicit core.** Next: typed primitive terms, systems,
-  actions, capabilities, observations, and system-indexed properties.
+- [x] **M9-003 — Resolve modules and names.** `nmlt-hir` consumes the canonical
+  projection, resolves a closed acyclic import graph, parses every admitted raw
+  type/expression into source-derived HIR, assigns owner-derived action locals,
+  emits a canonical all-reference `ResolutionMap`, and replays exact spelling,
+  candidates, graph closure, and reference-map bijection before construction.
+- [x] **M9-004 — Define explicit core.** `nmlt-ir` defines closed typed terms,
+  systems, actions with exact frames, capabilities, observations, dedicated
+  system-indexed property constructors, HIR-origin/core-node identities,
+  canonical program identity, and fail-closed structural/resource validation.
+  This is not yet an elaboration or kernel-accepted `CheckedProgram`.
 - [ ] **M9-005 — Implement bidirectional elaboration.**
 - [ ] **M9-006 — Implement the independent kernel.**
 - [ ] **M9-007 — Migrate the engine and remove the second parser.**

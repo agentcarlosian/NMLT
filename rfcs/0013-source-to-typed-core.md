@@ -227,6 +227,18 @@ siblings use a checked `u32` role index. The canonical segment encoding and its
 golden vectors are maintained with the `nmlt-hir` identity implementation; a
 change requires a new identity version.
 
+M9-003b freezes the v1 segment tags: declared type `01`, action parameter
+`02 || u32be(index)`, initializer `03`, guard `04 || u32be(index)`, update
+target `05 || raw(target DefId)`, update value `06 || raw(target DefId)`, output
+`07 || u32be(index)`, property body `08`, observation item
+`09 || u32be(index)`, operand `0a || u32be(index)`, call argument
+`0b || u32be(index)`, consume `0c || u32be(index)`, and capability protocol
+`0d`. The path begins with `u64be(segment_count)`. `LocalId` hashes the owning
+parameter node under `NMLT-LOCAL\0v1\0`. The all-reference resolved artifact
+uses `nmlt-hir-resolution-v2:sha256:` and hashes source-set identity,
+module-map identity, and length-prefixed canonical HIR containing declarations,
+locals, roots, nodes, and the `ResolutionMap`.
+
 Source spans remain diagnostic metadata and are forbidden as identity inputs.
 Locators may remain readable across some edits, but exact `DefId`/`NodeId`
 values intentionally change after any source-set or module-map identity change.
@@ -265,6 +277,37 @@ resolver. A separate deterministic resolver readback check replays
 `SurfaceProgram -> ResolutionMap`. Until that check is mechanized or moved
 inside an accepted kernel boundary, no claim may remove the resolver from its
 TCB.
+
+### Explicit typed core
+
+M9-004's `CoreProgram` is span-free and string-free. Each `CoreTerm` records a
+`CoreNodeId`, its exact HIR-origin `NodeId`, its owning `DefId`, an explicit
+`CoreType`, and one dedicated constructor. Types are `Bool`, `Nat`, `Int`,
+`Enum(DefId)`, `Once(protocol NodeId)`, `StateProp(system DefId)`, and
+`TemporalProp(system DefId)`. Constructors cover typed literals, locals,
+state, enum constructors, fixed unary/binary operations, `IntFromNat`, Boolean
+to state-predicate formation, `always`, `eventually`, `next`, `until`,
+enabledness, and action occurrence. There is no ordinary call or textual symbol
+constructor.
+
+Core systems contain scalar state with total initializers, capabilities,
+actions, properties, and observations. Every action carries scalar parameters,
+Boolean guards, simultaneous updates, a disjoint exact frame partition over
+all system state, scalar outputs, and a capability-consumption set. Every
+property body has `TemporalProp(B)` for its declared system `B`; state formulas
+enter that world only through explicit `StatePredicate` and temporal
+constructors.
+
+One HIR origin may require inserted type-directed nodes. `CoreNodeId` therefore
+hashes `raw(HIR NodeId) || u64be(path length) || u32be(path segment)*` under
+`NMLT-CORE-NODE\0v1\0`; the path has at most 32 segments and empty means direct
+translation. `CoreProgramId` hashes the exact `ResolutionId` and canonical core
+under `NMLT-CORE-PROGRAM\0v1\0`, with prefix
+`nmlt-core-program-v1:sha256:`. Structural construction checks annotations,
+scope/system indices, integer minimality, graph closure/cycles/reachability,
+action frames, and the frozen resource ceilings. It does not establish
+HIR-to-core correspondence and cannot produce `CheckedProgram`; those remain
+M9-005/M9-006 obligations.
 
 ### Bidirectional elaboration
 

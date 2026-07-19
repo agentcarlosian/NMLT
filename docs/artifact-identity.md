@@ -90,6 +90,54 @@ semantic-path encoding. Spans and arena allocation order are forbidden inputs.
 Golden encodings live beside `nmlt-hir`; changing any accepted encoding or tag
 requires a new identity version.
 
+The completed all-reference HIR additionally assigns local binders and the
+resolved artifact itself:
+
+```text
+local_digest = SHA256("NMLT-LOCAL\0v1\0" || raw(binder_node_id))
+local_id     = "nmlt-local-v1:sha256:" || hex(local_digest)
+
+resolution_digest = SHA256(
+  "NMLT-HIR-RESOLUTION\0v2\0" || raw(source_set_id) ||
+  raw(module_map_id) || lp(canonical_hir_bytes)
+)
+resolution_id = "nmlt-hir-resolution-v2:sha256:" || hex(resolution_digest)
+```
+
+HIR v2 canonically binds imports, declarations, local binders, semantic roots,
+all HIR nodes, and the all-reference `ResolutionMap`; diagnostic spans are
+excluded. The v1 resolution prefix is not accepted as a v2 identity.
+
+## M9 typed-core identity
+
+Core nodes retain an exact HIR origin while allowing deterministic
+type-directed insertion. A canonical insertion path is at most 32 unsigned
+32-bit big-endian segments; an empty path denotes direct translation:
+
+```text
+core_node_digest = SHA256(
+  "NMLT-CORE-NODE\0v1\0" || raw(hir_origin_node_id) ||
+  u64be(segment_count) || concat(u32be(segment))
+)
+core_node_id = "nmlt-core-node-v1:sha256:" || hex(core_node_digest)
+```
+
+`CoreProgram` uses fixed constructor/type/operator tags, `u64be` collection and
+byte lengths, raw identity digests, and raw-digest map/set order. It contains no
+spans or unresolved strings. Its identity binds the exact resolved HIR and the
+complete canonical core encoding:
+
+```text
+core_program_digest = SHA256(
+  "NMLT-CORE-PROGRAM\0v1\0" || raw(resolution_id) || canonical_core
+)
+core_program_id = "nmlt-core-program-v1:sha256:" || hex(core_program_digest)
+```
+
+This identity means “these structurally validated core bytes tied to this HIR
+identity.” It does not mean that elaboration correspondence has been checked;
+that requires M9-005's derivation and M9-006's independent kernel.
+
 ## Canonical-example registry identity
 
 The Phase 0 registry freezes more than source bytes. Each example entry binds
@@ -123,9 +171,10 @@ encoding with explicit tags and lengths. Its identity prefix is
 ```
 
 under domain `NMLT-CLAIM\0v1\0`. Human-readable names such as `C04.NoBlindReplay`
-are provisional handles, not cryptographic claim identities. M9 module/HIR
-identities do not yet assign this core-semantic or claim identity; those remain
-unassigned until the M9-004 typed-core encoding is accepted.
+are provisional handles, not cryptographic claim identities. M9-004 assigns
+`CoreProgramId`, but `nmlt-semantic-v1` and canonical claim identity remain
+unassigned until M9-008 fixes their checked-core, property, and observation
+bindings.
 
 ## Evidence identity
 

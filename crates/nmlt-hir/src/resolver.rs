@@ -4,14 +4,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 use crate::identity::{
-    ModuleMapEntry, ResolutionIdentityDeclaration, ResolutionIdentityModule,
-    SourceSetIdentityError, definition_id, module_id, module_map_id, resolution_id,
+    ModuleMapEntry, SourceSetIdentityError, definition_id, module_id, module_map_id, resolution_id,
 };
 use crate::model::{
     DeclarationInput, DeclarationKey, DefPath, ModuleInput, NameReference, ProjectedModule,
     ProjectionIssue, ResolvedDeclaration, ResolvedImport, ResolvedModule, ResolvedProgram,
     SourceSpan,
 };
+use crate::resolve_terms::{PendingModuleTerms, resolve_program_terms};
 use crate::{SourceId, SourceSetEntry, SourceSetId};
 
 const MAX_MODULES: u64 = 256;
@@ -20,8 +20,11 @@ const MAX_TOTAL_SOURCE_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_HIR_BYTES: u64 = 32 * 1024 * 1024;
 const MAX_HIR_NODES: u64 = 262_144;
 const MAX_DEF_PATH_DEPTH: u64 = 256;
+const MAX_TERM_DEPTH: u64 = 256;
 const MAX_IDENTIFIER_BYTES: u64 = 255;
 const MAX_LOGICAL_OR_PATH_BYTES: u64 = 4_096;
+const MAX_INTEGER_MAGNITUDE_BYTES: u64 = 4_096;
+const MAX_TOTAL_INTEGER_PAYLOAD: u64 = 16 * 1024 * 1024;
 const MAX_CONTEXT_ENTRIES: u64 = 65_536;
 
 /// Version-1 resolver resource dimensions inherited from RFC 0013.
@@ -33,8 +36,11 @@ pub enum ResourceDimension {
     HirBytes,
     HirNodes,
     DefinitionPathDepth,
+    TermDepth,
     IdentifierBytes,
     LogicalModuleOrPathBytes,
+    IntegerMagnitudeBytes,
+    TotalIntegerPayload,
     ContextEntries,
 }
 
@@ -48,8 +54,11 @@ impl ResourceDimension {
             Self::HirBytes => MAX_HIR_BYTES,
             Self::HirNodes => MAX_HIR_NODES,
             Self::DefinitionPathDepth => MAX_DEF_PATH_DEPTH,
+            Self::TermDepth => MAX_TERM_DEPTH,
             Self::IdentifierBytes => MAX_IDENTIFIER_BYTES,
             Self::LogicalModuleOrPathBytes => MAX_LOGICAL_OR_PATH_BYTES,
+            Self::IntegerMagnitudeBytes => MAX_INTEGER_MAGNITUDE_BYTES,
+            Self::TotalIntegerPayload => MAX_TOTAL_INTEGER_PAYLOAD,
             Self::ContextEntries => MAX_CONTEXT_ENTRIES,
         }
     }
@@ -209,6 +218,64 @@ pub enum ResolveError {
         parent: DefPath,
         span: SourceSpan,
     },
+    TermSyntax {
+        logical_module: String,
+        owner: DefPath,
+        span: SourceSpan,
+        message: String,
+    },
+    MissingTermOwner {
+        logical_module: String,
+        owner: DefPath,
+        span: SourceSpan,
+    },
+    DuplicateLocalBinder {
+        logical_module: String,
+        owner: DefPath,
+        name: String,
+        spans: Vec<SourceSpan>,
+    },
+    InvalidLocalBinder {
+        logical_module: String,
+        owner: DefPath,
+        name: String,
+        span: SourceSpan,
+    },
+    UnresolvedReference {
+        logical_module: String,
+        owner: DefPath,
+        spelling: String,
+        span: SourceSpan,
+    },
+    AmbiguousReference {
+        logical_module: String,
+        owner: DefPath,
+        spelling: String,
+        candidates: Vec<crate::DefId>,
+        span: SourceSpan,
+    },
+    LocalShadowing {
+        logical_module: String,
+        owner: DefPath,
+        spelling: String,
+        candidates: Vec<crate::DefId>,
+        span: SourceSpan,
+    },
+    InvalidReferenceForm {
+        logical_module: String,
+        owner: DefPath,
+        context: String,
+        span: SourceSpan,
+    },
+    DuplicateHirOrigin {
+        logical_module: String,
+        origin: crate::NodeId,
+    },
+    ResolutionReadback {
+        logical_module: String,
+        message: String,
+        span: Option<SourceSpan>,
+    },
 }
 
 impl fmt::Display for ResolveError {
@@ -334,6 +401,102 @@ impl fmt::Display for ResolveError {
                 "definition `{}` in module `{logical_module}` has no declared parent `{}`",
                 display_def_path(path),
                 display_def_path(parent)
+            ),
+            Self::TermSyntax {
+                logical_module,
+                owner,
+                message,
+                ..
+            } => write!(
+                formatter,
+                "invalid M9 term owned by `{}` in module `{logical_module}`: {message}",
+                display_def_path(owner)
+            ),
+            Self::MissingTermOwner {
+                logical_module,
+                owner,
+                ..
+            } => write!(
+                formatter,
+                "term owner `{}` is not declared in module `{logical_module}`",
+                display_def_path(owner)
+            ),
+            Self::DuplicateLocalBinder {
+                logical_module,
+                owner,
+                name,
+                ..
+            } => write!(
+                formatter,
+                "duplicate local binder `{name}` under `{}` in module `{logical_module}`",
+                display_def_path(owner)
+            ),
+            Self::InvalidLocalBinder {
+                logical_module,
+                owner,
+                name,
+                ..
+            } => write!(
+                formatter,
+                "invalid local binder `{name}` under `{}` in module `{logical_module}`",
+                display_def_path(owner)
+            ),
+            Self::UnresolvedReference {
+                logical_module,
+                owner,
+                spelling,
+                ..
+            } => write!(
+                formatter,
+                "unresolved reference `{spelling}` under `{}` in module `{logical_module}`",
+                display_def_path(owner)
+            ),
+            Self::AmbiguousReference {
+                logical_module,
+                owner,
+                spelling,
+                candidates,
+                ..
+            } => write!(
+                formatter,
+                "ambiguous reference `{spelling}` under `{}` in module `{logical_module}` ({} candidates)",
+                display_def_path(owner),
+                candidates.len()
+            ),
+            Self::LocalShadowing {
+                logical_module,
+                owner,
+                spelling,
+                ..
+            } => write!(
+                formatter,
+                "local `{spelling}` shadows a visible definition under `{}` in module `{logical_module}`",
+                display_def_path(owner)
+            ),
+            Self::InvalidReferenceForm {
+                logical_module,
+                owner,
+                context,
+                ..
+            } => write!(
+                formatter,
+                "invalid reference form for {context} under `{}` in module `{logical_module}`",
+                display_def_path(owner)
+            ),
+            Self::DuplicateHirOrigin {
+                logical_module,
+                origin,
+            } => write!(
+                formatter,
+                "duplicate HIR origin `{origin}` in module `{logical_module}`"
+            ),
+            Self::ResolutionReadback {
+                logical_module,
+                message,
+                ..
+            } => write!(
+                formatter,
+                "resolution readback failed in module `{logical_module}`: {message}"
             ),
         }
     }
@@ -563,7 +726,15 @@ pub(crate) fn resolve_module_inputs(
         .collect::<BTreeMap<_, _>>();
 
     let mut modules = BTreeMap::new();
+    let mut pending_terms = BTreeMap::new();
     for input in inputs {
+        pending_terms.insert(
+            input.logical_module.clone(),
+            PendingModuleTerms {
+                local_binders: input.local_binders,
+                raw_terms: input.raw_terms,
+            },
+        );
         let id = module_ids[&input.logical_module];
         let mut imports = input.imports;
         imports.sort_by(|left, right| left.logical_module.cmp(&right.logical_module));
@@ -588,46 +759,28 @@ pub(crate) fn resolve_module_inputs(
                 id,
                 imports,
                 declarations,
+                local_binders: BTreeMap::new(),
+                hir_roots: Vec::new(),
+                hir_nodes: BTreeMap::new(),
                 exact_bytes: input.exact_bytes,
             },
         );
     }
 
-    let identity_modules = modules
-        .values()
-        .map(|module| ResolutionIdentityModule {
-            logical_module: &module.logical_module,
-            repository_path: &module.repository_path,
-            source_id: module.source_id,
-            imports: module
-                .imports
-                .iter()
-                .map(|import| import.logical_module.as_str())
-                .collect(),
-            declarations: module
-                .declarations
-                .values()
-                .map(|declaration| ResolutionIdentityDeclaration {
-                    path: declaration
-                        .key
-                        .path
-                        .segments
-                        .iter()
-                        .map(|segment| (segment.namespace.wire_tag(), segment.name.as_str()))
-                        .collect(),
-                })
-                .collect(),
-        })
-        .collect::<Vec<_>>();
-    let resolution_id = resolution_id(source_set_id, module_map_id, &identity_modules);
+    let resolution_map = resolve_program_terms(&pending_terms, &mut modules)?;
+    let canonical_hir = crate::resolve_terms::canonical_hir_bytes(&modules, &resolution_map);
+    let resolution_id = resolution_id(source_set_id, module_map_id, &canonical_hir);
 
-    Ok(ResolvedProgram {
+    let program = ResolvedProgram {
         source_set_id,
         module_map_id,
         resolution_id,
         dependency_order,
         modules,
-    })
+        resolution_map,
+    };
+    crate::verify_resolution_readback(&program)?;
+    Ok(program)
 }
 
 impl ResolvedProgram {
@@ -799,6 +952,19 @@ fn validate_module(input: &ModuleInput) -> Result<(), ResolveError> {
         )?;
     }
 
+    for binder in &input.local_binders {
+        validate_span(
+            &input.logical_module,
+            source,
+            binder.name_span,
+            format!("local binder `{}`", binder.name),
+        )?;
+        validate_raw_term_input(&input.logical_module, source, &binder.declared_type)?;
+    }
+    for term in &input.raw_terms {
+        validate_raw_term_input(&input.logical_module, source, term)?;
+    }
+
     let mut projection_issues = input.projection_issues.iter().collect::<Vec<_>>();
     projection_issues.sort_by(|left, right| {
         left.kind
@@ -830,6 +996,27 @@ fn validate_module(input: &ModuleInput) -> Result<(), ResolveError> {
         });
     }
 
+    Ok(())
+}
+
+fn validate_raw_term_input(
+    logical_module: &str,
+    source: &str,
+    term: &crate::term::RawTermInput,
+) -> Result<(), ResolveError> {
+    validate_span(
+        logical_module,
+        source,
+        term.span,
+        "raw type/expression".to_owned(),
+    )?;
+    if source.get(term.span.start..term.span.end) != Some(term.source.as_str()) {
+        return Err(ResolveError::ResolutionReadback {
+            logical_module: logical_module.to_owned(),
+            message: "raw term bytes do not match their exact-source span".to_owned(),
+            span: Some(term.span),
+        });
+    }
     Ok(())
 }
 
@@ -1047,6 +1234,32 @@ fn enforce_resource_limits(inputs: &[ModuleInput]) -> Result<(), ResolveError> {
                     ResourceDimension::HirBytes,
                 )?;
             }
+        }
+
+        checked_add_limited(
+            &mut context_entries,
+            usize_as_u64(input.local_binders.len()),
+            ResourceDimension::ContextEntries,
+        )?;
+        for binder in &input.local_binders {
+            let name_len = usize_as_u64(binder.name.len());
+            enforce_limit(ResourceDimension::IdentifierBytes, name_len)?;
+            checked_add_limited(&mut hir_nodes, 2, ResourceDimension::HirNodes)?;
+            checked_add_limited(
+                &mut hir_bytes,
+                64_u64
+                    .saturating_add(name_len)
+                    .saturating_add(usize_as_u64(binder.declared_type.source.len())),
+                ResourceDimension::HirBytes,
+            )?;
+        }
+        for term in &input.raw_terms {
+            checked_add_limited(&mut hir_nodes, 1, ResourceDimension::HirNodes)?;
+            checked_add_limited(
+                &mut hir_bytes,
+                48_u64.saturating_add(usize_as_u64(term.source.len())),
+                ResourceDimension::HirBytes,
+            )?;
         }
 
         for issue in &input.projection_issues {

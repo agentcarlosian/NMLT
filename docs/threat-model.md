@@ -3,7 +3,7 @@
 - Scope: repository-wide pre-alpha NMLT frontend, M9 surface/resolution
   boundary, typed/bounded engines, temporal/refinement and resource extensions,
   agentic evaluation, artifacts, and CI
-- Model version: 1.2
+- Model version: 1.3
 - Reviewed: 2026-07-19
 - Security policy: `SECURITY.md`
 - Trusted-component manifest: `security/trusted-components.toml`
@@ -99,14 +99,18 @@ untrusted source/imports
 - **B1:** OS filesystem and UTF-8 decoding enter the Rust frontend. Source,
   paths, comments, strings, and sizes are untrusted. Frontend success means
   only structural acceptance.
-- **B2:** The M9 surface projector and closed module/declaration resolver enter
-  the TCB for projection and resolver-index claims. The current
+- **B2:** The M9 surface projector, all-reference resolver, resolution readback,
+  and typed-core structural validator enter the TCB for projection, resolved
+  HIR, and structurally validated core claims. The current
   executable-fragment parser,
   contextual elaborator, type checker, frame/capability rules,
   simultaneous-update evaluator, and property indexing additionally enter the
   TCB for typed finite results. Unsupported language forms must be rejected,
-  not approximated as success. The M9 resolver remains trusted until an
-  independent resolver readback boundary is implemented and bound.
+  not approximated as success. Candidate replay now detects missing, stale, or
+  relabelled resolution entries, but it shares the Rust crate and lookup model;
+  the resolver therefore remains trusted. The typed-core validator checks
+  closure and annotations, not faithfulness to HIR; only M9-005/M9-006 can
+  shrink that correspondence boundary.
 - **B3:** TLC, Quint, P, SMT solvers, proof search, AI systems, and generated
   code may discover evidence but are untrusted unless a narrower checker
   validates a certificate under the exact obligation.
