@@ -8,7 +8,6 @@ members = [
     "crates/nmlt-agent",
     "crates/nmlt-cli",
 ]
-exclude = ["mechanization/lean/_nanoda_lib"]
 default-members = ["crates/nmlt-cli"]
 resolver = "3"
 

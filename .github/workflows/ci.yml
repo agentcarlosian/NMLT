@@ -32,14 +32,25 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      # lean-action's nanoda check clones a Rust workspace into the Lake
+      # package directory. Stage the package outside NMLT's Rust workspace so
+      # Cargo does not treat that helper checkout as a nested workspace.
+      - name: Stage Lean package outside Rust workspace
+        id: stage_lean
+        run: |
+          lean_package_dir="$(mktemp -d "${RUNNER_TEMP}/nmlt-lean.XXXXXX")"
+          cp -a mechanization/lean/. "${lean_package_dir}/"
+          echo "path=${lean_package_dir}" >> "${GITHUB_OUTPUT}"
+
       - name: Build and independently check Lean artifacts
         uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
         with:
-          lake-package-directory: mechanization/lean
+          lake-package-directory: ${{ steps.stage_lean.outputs.path }}
           build: true
           nanoda: true
           nanoda-allow-sorry: false
           use-mathlib-cache: false
+          use-github-cache: false
 
       - name: Enforce metatheory source policy
         run: ./tools/check_metatheory.sh

@@ -107,7 +107,7 @@
   },
   "metatheory": {
     "scope": "mathematical_grade_algebra_only",
-    "source_set_id": "nmlt-source-set-v1:sha256:d3acc857ac78e31f1d9575f282db11dbdb1a531a85cf9c54f1a8caf352f0dd26",
+    "source_set_id": "nmlt-source-set-v1:sha256:135cccaf56ae02b46f276b252ad6c22b95acc15bbab0bf4216804eb975fb1e7f",
     "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:896b90ee143e635ef24bc174460bd49eebb166eea4030ab1347a1cc9620c4d3a",
     "root_source_id": "nmlt-source-v1:sha256:7c72d948e66c33d423cdeb381fa96104ce4619e61f1d3f988d0ac99a910f67ac",
     "entrypoint_source_id": "nmlt-source-v1:sha256:c439ff9ed311099540cd7fde4c7d9fb5f0449990a342b2aa526a877c6a61caa6",
@@ -143,5 +143,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:75cb22985f35e547ccc2b2faab37071975c366e2f129e644f1b67e99fc45aa2b"
+  "manifest_id": "nmlt-evidence-v1:sha256:89721ae359d9f2fa9bdc55de1085af8036ac94841dd78cc228a10d2489d836ac"
 }
