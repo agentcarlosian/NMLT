@@ -19,6 +19,14 @@ name = "nmlt-core"
 version = "0.0.1"
 
 [[package]]
+name = "nmlt-elaborate"
+version = "0.0.1"
+dependencies = [
+ "nmlt-hir",
+ "nmlt-ir",
+]
+
+[[package]]
 name = "nmlt-engine"
 version = "0.0.1"
 dependencies = [

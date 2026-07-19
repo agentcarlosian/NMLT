@@ -100,8 +100,9 @@ untrusted source/imports
   paths, comments, strings, and sizes are untrusted. Frontend success means
   only structural acceptance.
 - **B2:** The M9 surface projector, all-reference resolver, resolution readback,
-  and typed-core structural validator enter the TCB for projection, resolved
-  HIR, and structurally validated core claims. The current
+  typed-core structural validator, and M9-005 elaboration/certificate producer
+  enter the TCB for projection, resolved HIR, structurally validated core, and
+  elaborator-produced derivation claims. The current
   executable-fragment parser,
   contextual elaborator, type checker, frame/capability rules,
   simultaneous-update evaluator, and property indexing additionally enter the
@@ -109,8 +110,9 @@ untrusted source/imports
   not approximated as success. Candidate replay now detects missing, stale, or
   relabelled resolution entries, but it shares the Rust crate and lookup model;
   the resolver therefore remains trusted. The typed-core validator checks
-  closure and annotations, not faithfulness to HIR; only M9-005/M9-006 can
-  shrink that correspondence boundary.
+  closure and annotations, not faithfulness to HIR. M9-005 makes the claimed
+  translation explicit but remains trusted; only M9-006 independent replay can
+  remove the producer from acceptance of that correspondence.
 - **B3:** TLC, Quint, P, SMT solvers, proof search, AI systems, and generated
   code may discover evidence but are untrusted unless a narrower checker
   validates a certificate under the exact obligation.
@@ -143,15 +145,17 @@ For canonical source IDs produced by the Phase 0 reference tool, Python 3,
 and filesystem bytes are additionally trusted. This reference is not yet a
 proof-producing kernel.
 
-For the current M9 projection/resolver-index boundary, the lossless parser, total
+For the current M9 source-to-elaborated-core boundary, the lossless parser, total
 origin-censused projector, exact source/source-set and module-map identity
 encoders, portable-path policy, import-graph checker, namespace resolver, and
 pinned Rust build are trusted. This profile can establish deterministic closed
 module and named-declaration tables plus lookup behavior for the exact input.
-Raw expression/type references and local binders do not yet have the complete
-source-derived `ResolutionMap` required by RFC 0013. The profile cannot
-establish whole-program resolution, typing, temporal truth, execution safety,
-compiler correspondence, or removal of the resolver from the TCB.
+The resolver now emits and replays the complete source-derived `ResolutionMap`.
+The trusted M9-005 elaborator checks/synthesizes the supported fragment and
+emits a fully reachable, identity-bound derivation DAG, but no independent
+kernel accepts it yet. This profile cannot establish temporal truth, execution
+safety, a verified compiler theorem, or removal of the resolver/elaborator from
+the TCB.
 
 For a typed bounded result, the parser/elaborator/type checker, operational
 semantics, deterministic explorer, report/evidence checkers, Rust build output,

@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "manifest_id": "nmlt-evidence-v1:sha256:4ab2b1d29b2383a7239ef33719638222694dd5bac25ac44d2849c88eefa7c5e8",
+  "manifest_id": "nmlt-evidence-v1:sha256:96522baa245259306769b8b2fe72a5a978dc63325ceeef73be1bb0692dd72aac",
   "artifact": {
     "path": "benchmarks/seeded-defects/provider-attempt/blind-replay.nmlt",
     "source_id": "nmlt-source-v1:sha256:1d61387c8998f8e2bda759a2ba05d66201507e522bbedf5bc4483b3ed4afaaac"
@@ -14,7 +14,7 @@
     "kind": "deterministic_explicit_state_bfs_v1",
     "engine": "nmlt-explicit-state",
     "engine_version": "0.0.1",
-    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:d4a05cc6e5f37915f2fd5f5171d1d341300441ef5471a923c78ff83771dcf013",
+    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:a3eabe3f83605e96138eac6e760c086b0d219a1d9e75c7055d8fc9d43a199d5a",
     "engine_executable_sha256": "6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4"
   },
   "scope": {
@@ -37,11 +37,11 @@
   "trusted_components": [
     {
       "id": "trusted-component-inventory",
-      "identity": "sha256:0f20b3f01b1e6f5264f0de22a149ce89f543ab7cd739b65df0b04c40a499122a"
+      "identity": "sha256:bfe10cfbfdd74fe88fca43348d1a59c3821190128c4d6a893de1e76efb3c9d9a"
     },
     {
       "id": "nmlt-engine-source",
-      "identity": "nmlt-engine-source-set-v1:sha256:d4a05cc6e5f37915f2fd5f5171d1d341300441ef5471a923c78ff83771dcf013"
+      "identity": "nmlt-engine-source-set-v1:sha256:a3eabe3f83605e96138eac6e760c086b0d219a1d9e75c7055d8fc9d43a199d5a"
     },
     {
       "id": "nmlt-engine-executable",
@@ -49,7 +49,7 @@
     },
     {
       "id": "benchmark-result",
-      "identity": "nmlt-benchmark-result-v1:sha256:bf86311eaaea31160ef77fa310b985f95e5bddfb7291627fb230e68dfbbb5282"
+      "identity": "nmlt-benchmark-result-v1:sha256:ff00c850c6a04cfcc1e6bca12ce06db5e50fad35f18a2eed28edd2becf3aec71"
     },
     {
       "id": "rust-toolchain-declaration",
@@ -65,11 +65,11 @@
     },
     {
       "id": "benchmark-integrity-checker",
-      "identity": "sha256:6410f16baed36edea445c330002d7004adc64f2bb4ac2a11a3a497a751128f4f"
+      "identity": "sha256:e9d958aa725dda40eb9e316eed0f250f63dd200c6fbb41c15c7986fd91b2b33f"
     }
   ],
   "negative_controls": [
-    "nmlt-benchmark-result-v1:sha256:bf86311eaaea31160ef77fa310b985f95e5bddfb7291627fb230e68dfbbb5282",
+    "nmlt-benchmark-result-v1:sha256:ff00c850c6a04cfcc1e6bca12ce06db5e50fad35f18a2eed28edd2becf3aec71",
     "nmlt-expected-counterexample-v1:sha256:da4bbd49ff308c67dc37ae24f5f7ed5e6ff11eb1e12312a313a6365a72cacf2e"
   ],
   "residual_gaps": [
@@ -79,6 +79,6 @@
   ],
   "witness": {
     "kind": "model-check-report/1.0.0#counterexample",
-    "reference": "nmlt-benchmark-result-v1:sha256:bf86311eaaea31160ef77fa310b985f95e5bddfb7291627fb230e68dfbbb5282#property=NoBlindReplay"
+    "reference": "nmlt-benchmark-result-v1:sha256:ff00c850c6a04cfcc1e6bca12ce06db5e50fad35f18a2eed28edd2becf3aec71#property=NoBlindReplay"
   }
 }

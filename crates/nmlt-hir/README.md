@@ -17,7 +17,8 @@ contains a span-preserving HIR node graph, and emits a canonical
 separate candidate-replay/readback pass over exact source spellings and graph
 closure. It is not a typed term representation, a proof certificate, a
 `CheckedProgram`, or permission to execute source. `nmlt-ir` owns M9-004's
-explicit typed core; M9-005 and M9-006 add elaboration and independent checking.
+explicit typed core; `nmlt-elaborate` emits M9-005 derivations, and M9-006 adds
+independent checking.
 
 Anonymous observations and action-local binders are not global definitions;
 the resolver assigns stable owner-derived node/local identities. Named enums, constructors, systems,

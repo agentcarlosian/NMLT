@@ -14,4 +14,5 @@ binds the resolved-HIR identity and the canonical span-free core encoding.
 owner and system agreement, integer canonicality, action frames, local scope,
 and resource ceilings. It does **not** certify that the core faithfully
 elaborates its HIR. M9-005 supplies derivations and M9-006 independently checks
-that correspondence before producing `CheckedProgram`.
+that correspondence before producing `CheckedProgram`. The M9-005 producer is
+implemented in `nmlt-elaborate`; its output remains unchecked until M9-006.

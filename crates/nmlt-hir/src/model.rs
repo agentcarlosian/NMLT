@@ -137,12 +137,43 @@ impl DefPath {
 pub(crate) struct DeclarationInput {
     pub path: DefPath,
     pub span: SourceSpan,
+    pub flavor: DeclarationFlavor,
 }
 
 impl DeclarationInput {
     #[must_use]
     pub const fn new(path: DefPath, span: SourceSpan) -> Self {
-        Self { path, span }
+        Self {
+            path,
+            span,
+            flavor: DeclarationFlavor::Ordinary,
+        }
+    }
+
+    #[must_use]
+    pub const fn property(path: DefPath, span: SourceSpan, flavor: DeclarationFlavor) -> Self {
+        Self { path, span, flavor }
+    }
+}
+
+/// Semantic declaration information that cannot be recovered from a typed
+/// definition path alone.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum DeclarationFlavor {
+    #[default]
+    Ordinary,
+    SafetyProperty,
+    TemporalProperty,
+}
+
+impl DeclarationFlavor {
+    #[must_use]
+    pub const fn wire_tag(self) -> u8 {
+        match self {
+            Self::Ordinary => 0x00,
+            Self::SafetyProperty => 0x01,
+            Self::TemporalProperty => 0x02,
+        }
     }
 }
 
@@ -333,6 +364,7 @@ pub struct ResolvedDeclaration {
     pub(crate) key: DeclarationKey,
     pub(crate) id: DefId,
     pub(crate) span: SourceSpan,
+    pub(crate) flavor: DeclarationFlavor,
 }
 
 impl ResolvedDeclaration {
@@ -349,6 +381,11 @@ impl ResolvedDeclaration {
     #[must_use]
     pub const fn span(&self) -> SourceSpan {
         self.span
+    }
+
+    #[must_use]
+    pub const fn flavor(&self) -> DeclarationFlavor {
+        self.flavor
     }
 
     /// Derives a stable identity for a semantic node below this definition.
@@ -435,6 +472,7 @@ pub struct ResolvedProgram {
     pub(crate) source_set_id: SourceSetId,
     /// Binds the bijection from logical module names to source-set paths.
     pub(crate) module_map_id: ModuleMapId,
+    pub(crate) surface_program_id: crate::SurfaceProgramId,
     /// Binds logical-module mapping, imports, and projected declaration keys.
     pub(crate) resolution_id: ResolutionId,
     /// Dependency-first order with UTF-8 lexical tie-breaking.
@@ -452,6 +490,11 @@ impl ResolvedProgram {
     #[must_use]
     pub const fn module_map_id(&self) -> ModuleMapId {
         self.module_map_id
+    }
+
+    #[must_use]
+    pub const fn surface_program_id(&self) -> crate::SurfaceProgramId {
+        self.surface_program_id
     }
 
     #[must_use]

@@ -35,7 +35,7 @@ NMLT currently has three useful but still disconnected accomplishments:
 - `nmlt-engine` reparses a narrow provider fragment, resolves some names
   contextually, and constructs its own typed executable representation.
 
-The remaining split permits semantic omissions. An unsupported declaration can remain
+The split this RFC is closing permits semantic omissions. An unsupported declaration can remain
 in the CST while the engine never sees it; an unknown name can be treated as an
 open symbol; numeric types can be conflated; a temporal-looking call can be
 handled as an ordinary Boolean expression; and the finite graph or VC can be
@@ -234,10 +234,13 @@ target `05 || raw(target DefId)`, update value `06 || raw(target DefId)`, output
 `09 || u32be(index)`, operand `0a || u32be(index)`, call argument
 `0b || u32be(index)`, consume `0c || u32be(index)`, and capability protocol
 `0d`. The path begins with `u64be(segment_count)`. `LocalId` hashes the owning
-parameter node under `NMLT-LOCAL\0v1\0`. The all-reference resolved artifact
-uses `nmlt-hir-resolution-v2:sha256:` and hashes source-set identity,
-module-map identity, and length-prefixed canonical HIR containing declarations,
-locals, roots, nodes, and the `ResolutionMap`.
+parameter node under `NMLT-LOCAL\0v1\0`. The canonical projection uses
+`nmlt-surface-program-v1:sha256:` and binds source-set identity, module-map
+identity, imports, declaration flavors, binders, and raw terms. The
+all-reference resolved artifact uses `nmlt-hir-resolution-v3:sha256:` and
+hashes source-set identity, module-map identity, and length-prefixed canonical
+HIR containing flavored declarations, locals, roots, nodes, and the
+`ResolutionMap`.
 
 Source spans remain diagnostic metadata and are forbidden as identity inputs.
 Locators may remain readable across some edits, but exact `DefId`/`NodeId`
@@ -628,8 +631,10 @@ those boundaries visible.
    independently verify exact reference coverage and readback.
 4. **M9-004 — Define explicit core.** Encode primitive values, systems,
    actions, capabilities, observations, and indexed property ASTs.
-5. **M9-005 — Implement bidirectional elaboration.** Remove open-symbol and
-   numeric/temporal shortcuts and emit canonical derivations.
+5. **M9-005 — Implement bidirectional elaboration.** Complete:
+   `nmlt-elaborate` removes open-symbol and numeric/temporal shortcuts, emits
+   canonical derivations, and checks exact root/origin coverage and DAG
+   reachability before returning. This remains producer-trusted pending M9-006.
 6. **M9-006 — Implement the kernel.** Add an independent `nmlt-kernel` checker,
    private unchecked constructors, resource limits, and forged-certificate
    controls.

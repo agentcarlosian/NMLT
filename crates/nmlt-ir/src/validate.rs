@@ -397,10 +397,27 @@ fn validate_terms(program: &CoreProgram, index: &Index) -> Result<(), CoreValida
                 let operand = child(program, *operand, "unary operand")?;
                 same_owner(term, operand)?;
                 let expected = match operator {
-                    CoreUnaryOp::Not => CoreType::Bool,
+                    CoreUnaryOp::Not
+                        if matches!(
+                            operand.ty,
+                            CoreType::Bool
+                                | CoreType::StateProp { .. }
+                                | CoreType::TemporalProp { .. }
+                        ) =>
+                    {
+                        operand.ty.clone()
+                    }
+                    CoreUnaryOp::Not => {
+                        return Err(CoreValidationError::InvalidTerm {
+                            term: *id,
+                            reason: "not expects Bool or a system-indexed proposition",
+                        });
+                    }
                     CoreUnaryOp::Negate => CoreType::Int,
                 };
-                expect_type(operand, &expected, "unary operand")?;
+                if matches!(operator, CoreUnaryOp::Negate) {
+                    expect_type(operand, &expected, "unary operand")?;
+                }
                 expect_annotation(term, expected, "unary result")?;
             }
             CoreTermKind::Binary {
@@ -480,9 +497,38 @@ fn validate_binary(
     same_owner(term, right)?;
     match operator {
         CoreBinaryOp::Or | CoreBinaryOp::And | CoreBinaryOp::Implies => {
-            expect_type(left, &CoreType::Bool, "logical left operand")?;
-            expect_type(right, &CoreType::Bool, "logical right operand")?;
-            expect_annotation(term, CoreType::Bool, "logical result")
+            if left.ty == CoreType::Bool && right.ty == CoreType::Bool {
+                return expect_annotation(term, CoreType::Bool, "logical result");
+            }
+            let Some((left_system, left_temporal)) = formula_kind(&left.ty) else {
+                return Err(CoreValidationError::InvalidTerm {
+                    term: term.id,
+                    reason: "logical operands must both be Bool or system-indexed propositions",
+                });
+            };
+            let Some((right_system, right_temporal)) = formula_kind(&right.ty) else {
+                return Err(CoreValidationError::InvalidTerm {
+                    term: term.id,
+                    reason: "logical operands must both be Bool or system-indexed propositions",
+                });
+            };
+            if left_system != right_system {
+                return Err(CoreValidationError::SystemMismatch {
+                    context: "logical proposition",
+                    expected: left_system,
+                    actual: right_system,
+                });
+            }
+            let result = if left_temporal || right_temporal {
+                CoreType::TemporalProp {
+                    system: left_system,
+                }
+            } else {
+                CoreType::StateProp {
+                    system: left_system,
+                }
+            };
+            expect_annotation(term, result, "logical result")
         }
         CoreBinaryOp::Equal | CoreBinaryOp::NotEqual => {
             if left.ty != right.ty || !left.ty.is_scalar() {
@@ -519,6 +565,14 @@ fn validate_binary(
             expect_type(right, &CoreType::Int, "subtraction right operand")?;
             expect_annotation(term, CoreType::Int, "subtraction result")
         }
+    }
+}
+
+const fn formula_kind(ty: &CoreType) -> Option<(DefId, bool)> {
+    match ty {
+        CoreType::StateProp { system } => Some((*system, false)),
+        CoreType::TemporalProp { system } => Some((*system, true)),
+        _ => None,
     }
 }
 
@@ -697,13 +751,13 @@ fn validate_magnitude(
         magnitude.len(),
         MAX_INTEGER_MAGNITUDE,
     )?;
-    if magnitude.is_empty() || (magnitude.len() > 1 && magnitude[0] == 0) {
+    if magnitude.first() == Some(&0) {
         return Err(CoreValidationError::InvalidTerm {
             term: id,
             reason: "integer magnitude is not minimal unsigned big-endian",
         });
     }
-    if negative && magnitude == [0] {
+    if negative && magnitude.is_empty() {
         return Err(CoreValidationError::InvalidTerm {
             term: id,
             reason: "negative zero is forbidden",

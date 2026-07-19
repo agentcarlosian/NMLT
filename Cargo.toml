@@ -3,6 +3,7 @@ members = [
     "crates/nmlt-core",
     "crates/nmlt-hir",
     "crates/nmlt-ir",
+    "crates/nmlt-elaborate",
     "crates/nmlt-engine",
     "crates/nmlt-temporal",
     "crates/nmlt-verify",

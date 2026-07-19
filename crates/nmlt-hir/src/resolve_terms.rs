@@ -832,6 +832,7 @@ pub(crate) fn canonical_hir_bytes(
         push_count(&mut output, module.declarations.len());
         for declaration in module.declarations.values() {
             output.extend_from_slice(declaration.id.digest());
+            output.push(declaration.flavor.wire_tag());
             push_count(&mut output, declaration.key.path.segments.len());
             for segment in &declaration.key.path.segments {
                 output.push(segment.namespace.wire_tag());

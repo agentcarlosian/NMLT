@@ -886,7 +886,13 @@ Substage status (2026-07-19):
   system-indexed property constructors, HIR-origin/core-node identities,
   canonical program identity, and fail-closed structural/resource validation.
   This is not yet an elaboration or kernel-accepted `CheckedProgram`.
-- [ ] **M9-005 — Implement bidirectional elaboration.**
+- [x] **M9-005 — Implement bidirectional elaboration.** `nmlt-elaborate`
+  checks and synthesizes the frozen fragment into `nmlt-ir`, makes numeric and
+  state-predicate insertions explicit, constructs complete action/frame and
+  system-indexed property records, and emits an identity-bound canonical
+  derivation DAG. Producer-side invariants require exact HIR-root coverage,
+  exact HIR-origin coverage, and full DAG reachability. The elaborator remains
+  trusted and cannot construct `CheckedProgram`; independent replay is M9-006.
 - [ ] **M9-006 — Implement the independent kernel.**
 - [ ] **M9-007 — Migrate the engine and remove the second parser.**
 - [ ] **M9-008 — Bind semantic evidence identities.**

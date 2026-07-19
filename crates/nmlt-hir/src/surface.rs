@@ -2,16 +2,17 @@
 
 use nmlt_core::{
     BindingKind, M9SurfaceIssue, ProjectionIssue as CoreProjectionIssue,
-    ProjectionIssueKind as CoreProjectionIssueKind, RawTerm, Span, UntypedAction, UntypedBinding,
-    UntypedDeclaration, UntypedEnum, UntypedMember, UntypedObservation, UntypedProjection,
-    UntypedProperty, UntypedStatement, UntypedSystem, UntypedUpdateTarget, parse_cst,
-    project_untyped,
+    ProjectionIssueKind as CoreProjectionIssueKind, PropertyKind, RawTerm, Span, UntypedAction,
+    UntypedBinding, UntypedDeclaration, UntypedEnum, UntypedMember, UntypedObservation,
+    UntypedProjection, UntypedProperty, UntypedStatement, UntypedSystem, UntypedUpdateTarget,
+    parse_cst, project_untyped,
 };
 
 use crate::term::{LocalBinderInput, RawTermInput, RawTermInputKind, TermRootInput};
 use crate::{
-    DeclarationInput, DefPath, DefPathSegment, ImportInput, ModuleInput, Namespace,
-    ProjectedModule, ProjectionIssue, ProjectionIssueKind, ResourceDimension, SourceSpan,
+    DeclarationFlavor, DeclarationInput, DefPath, DefPathSegment, ImportInput, ModuleInput,
+    Namespace, ProjectedModule, ProjectionIssue, ProjectionIssueKind, ResourceDimension,
+    SourceSpan,
 };
 
 /// Parse and completely project one exact source file into the M9 resolver boundary.
@@ -163,13 +164,23 @@ fn collect_system(system: &UntypedSystem, input: &mut ModuleInput) {
         let Some(member_name) = member_name else {
             continue;
         };
-        input.declarations.push(DeclarationInput::new(
-            DefPath::new([
-                DefPathSegment::new(Namespace::System, system_name.clone()),
-                DefPathSegment::new(namespace, member_name.text.clone()),
-            ]),
-            span(member_span),
-        ));
+        let path = DefPath::new([
+            DefPathSegment::new(Namespace::System, system_name.clone()),
+            DefPathSegment::new(namespace, member_name.text.clone()),
+        ]);
+        let declaration = match member {
+            UntypedMember::Property(property) => DeclarationInput::property(
+                path,
+                span(member_span),
+                match property.kind {
+                    PropertyKind::Safety => DeclarationFlavor::SafetyProperty,
+                    PropertyKind::Temporal => DeclarationFlavor::TemporalProperty,
+                    PropertyKind::Resource => DeclarationFlavor::Ordinary,
+                },
+            ),
+            _ => DeclarationInput::new(path, span(member_span)),
+        };
+        input.declarations.push(declaration);
     }
 
     for member in &system.members {

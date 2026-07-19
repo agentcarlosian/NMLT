@@ -90,23 +90,32 @@ semantic-path encoding. Spans and arena allocation order are forbidden inputs.
 Golden encodings live beside `nmlt-hir`; changing any accepted encoding or tag
 requires a new identity version.
 
-The completed all-reference HIR additionally assigns local binders and the
-resolved artifact itself:
+The completed all-reference HIR additionally assigns local binders, a
+canonical projected-surface identity, and the resolved artifact itself:
 
 ```text
 local_digest = SHA256("NMLT-LOCAL\0v1\0" || raw(binder_node_id))
 local_id     = "nmlt-local-v1:sha256:" || hex(local_digest)
 
+surface_program_digest = SHA256(
+  "NMLT-SURFACE-PROGRAM\0v1\0" || raw(source_set_id) ||
+  raw(module_map_id) || lp(canonical_surface_bytes)
+)
+surface_program_id = "nmlt-surface-program-v1:sha256:" ||
+                     hex(surface_program_digest)
+
 resolution_digest = SHA256(
-  "NMLT-HIR-RESOLUTION\0v2\0" || raw(source_set_id) ||
+  "NMLT-HIR-RESOLUTION\0v3\0" || raw(source_set_id) ||
   raw(module_map_id) || lp(canonical_hir_bytes)
 )
-resolution_id = "nmlt-hir-resolution-v2:sha256:" || hex(resolution_digest)
+resolution_id = "nmlt-hir-resolution-v3:sha256:" || hex(resolution_digest)
 ```
 
-HIR v2 canonically binds imports, declarations, local binders, semantic roots,
-all HIR nodes, and the all-reference `ResolutionMap`; diagnostic spans are
-excluded. The v1 resolution prefix is not accepted as a v2 identity.
+Canonical surface bytes bind imports, declaration paths/namespaces/flavors,
+action binders, and raw projected terms while excluding diagnostic spans.
+HIR v3 canonically binds imports, declaration flavors, local binders, semantic
+roots, all HIR nodes, and the all-reference `ResolutionMap`; diagnostic spans
+are excluded. Older resolution prefixes are not accepted as v3 identities.
 
 ## M9 typed-core identity
 
@@ -137,6 +146,40 @@ core_program_id = "nmlt-core-program-v1:sha256:" || hex(core_program_digest)
 This identity means “these structurally validated core bytes tied to this HIR
 identity.” It does not mean that elaboration correspondence has been checked;
 that requires M9-005's derivation and M9-006's independent kernel.
+
+## M9 elaboration identity
+
+M9-005 derivation nodes use fixed numeric judgment/rule tags, canonical
+conclusions and witnesses, and ordered premise identities:
+
+```text
+derivation_node_digest = SHA256(
+  "NMLT-DERIVATION-NODE\0v1\0" || canonical_derivation_fields
+)
+derivation_node_id = "nmlt-derivation-node-v1:sha256:" ||
+                     hex(derivation_node_digest)
+```
+
+The ruleset bundle binds `nmlt-core-typing-v1` and
+`nmlt-temporal-formation-v1` under `NMLT-RULESET-BUNDLE\0v1\0`. The frozen
+resource limits are hashed under `NMLT-KERNEL-POLICY\0v1\0`. The complete
+certificate preimage contains format version 1; raw source-set, module-map,
+surface-program, resolution, core-program, ruleset, and policy digests; the
+ordered required-root map; and the complete derivation map ordered by raw
+digest:
+
+```text
+certificate_digest = SHA256(
+  "NMLT-ELABORATION-CERTIFICATE\0v1\0" || canonical_certificate
+)
+certificate_id = "nmlt-elaboration-certificate-v1:sha256:" ||
+                 hex(certificate_digest)
+```
+
+The M9-005 producer requires every resolved-HIR root exactly once, covers
+exactly the set of HIR node origins, and rejects derivations unreachable from
+the required roots. These identities mean “this producer artifact has these
+exact contents”; only M9-006 independent replay may confer checked status.
 
 ## Canonical-example registry identity
 

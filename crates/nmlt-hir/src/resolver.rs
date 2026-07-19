@@ -5,6 +5,7 @@ use std::fmt;
 
 use crate::identity::{
     ModuleMapEntry, SourceSetIdentityError, definition_id, module_id, module_map_id, resolution_id,
+    surface_program_id,
 };
 use crate::model::{
     DeclarationInput, DeclarationKey, DefPath, ModuleInput, NameReference, ProjectedModule,
@@ -12,6 +13,7 @@ use crate::model::{
     SourceSpan,
 };
 use crate::resolve_terms::{PendingModuleTerms, resolve_program_terms};
+use crate::term::{RawTermInputKind, TermRootInput};
 use crate::{SourceId, SourceSetEntry, SourceSetId};
 
 const MAX_MODULES: u64 = 256;
@@ -714,6 +716,8 @@ pub(crate) fn resolve_module_inputs(
         })
         .collect::<Vec<_>>();
     let module_map_id = module_map_id(source_set_id, &module_map_entries);
+    let canonical_surface = canonical_surface_bytes(&inputs);
+    let surface_program_id = surface_program_id(source_set_id, module_map_id, &canonical_surface);
 
     let module_ids = inputs
         .iter()
@@ -774,6 +778,7 @@ pub(crate) fn resolve_module_inputs(
     let program = ResolvedProgram {
         source_set_id,
         module_map_id,
+        surface_program_id,
         resolution_id,
         dependency_order,
         modules,
@@ -1535,6 +1540,7 @@ fn resolve_declarations(
                 ),
                 key: key.clone(),
                 span: declaration.span,
+                flavor: declaration.flavor,
             },
         );
         cursor = end;
@@ -1554,6 +1560,122 @@ fn resolve_declarations(
         }
     }
     Ok(resolved)
+}
+
+fn canonical_surface_bytes(inputs: &[ModuleInput]) -> Vec<u8> {
+    let mut output = Vec::new();
+    push_count(&mut output, inputs.len());
+    for input in inputs {
+        push_text(&mut output, &input.logical_module);
+        push_text(&mut output, &input.repository_path);
+        push_count(&mut output, input.imports.len());
+        let mut imports = input.imports.iter().collect::<Vec<_>>();
+        imports.sort_by(|left, right| left.logical_module.cmp(&right.logical_module));
+        for import in imports {
+            push_text(&mut output, &import.logical_module);
+        }
+        push_count(&mut output, input.declarations.len());
+        let mut declarations = input.declarations.iter().collect::<Vec<_>>();
+        declarations.sort_by(|left, right| {
+            left.path
+                .cmp(&right.path)
+                .then_with(|| left.flavor.cmp(&right.flavor))
+        });
+        for declaration in declarations {
+            encode_path(&mut output, &declaration.path);
+            output.push(declaration.flavor.wire_tag());
+        }
+        push_count(&mut output, input.local_binders.len());
+        let mut binders = input.local_binders.iter().collect::<Vec<_>>();
+        binders.sort_by(|left, right| {
+            left.owner
+                .cmp(&right.owner)
+                .then_with(|| left.index.cmp(&right.index))
+                .then_with(|| left.name.cmp(&right.name))
+        });
+        for binder in binders {
+            encode_path(&mut output, &binder.owner);
+            output.extend_from_slice(&binder.index.to_be_bytes());
+            push_text(&mut output, &binder.name);
+            encode_raw_term(&mut output, &binder.declared_type);
+        }
+        push_count(&mut output, input.raw_terms.len());
+        let mut terms = input.raw_terms.iter().collect::<Vec<_>>();
+        terms.sort_by(|left, right| {
+            left.owner
+                .cmp(&right.owner)
+                .then_with(|| left.root.cmp(&right.root))
+                .then_with(|| raw_term_kind_tag(left.kind).cmp(&raw_term_kind_tag(right.kind)))
+                .then_with(|| left.source.cmp(&right.source))
+        });
+        for term in terms {
+            encode_raw_term(&mut output, term);
+        }
+    }
+    output
+}
+
+fn encode_path(output: &mut Vec<u8>, path: &DefPath) {
+    push_count(output, path.segments.len());
+    for segment in &path.segments {
+        output.push(segment.namespace.wire_tag());
+        push_text(output, &segment.name);
+    }
+}
+
+fn encode_raw_term(output: &mut Vec<u8>, term: &crate::term::RawTermInput) {
+    encode_path(output, &term.owner);
+    match term.root {
+        TermRootInput::DeclaredType => output.push(1),
+        TermRootInput::Initializer => output.push(2),
+        TermRootInput::ActionParameterType(index) => {
+            output.push(3);
+            output.extend_from_slice(&index.to_be_bytes());
+        }
+        TermRootInput::Guard(index) => {
+            output.push(4);
+            output.extend_from_slice(&index.to_be_bytes());
+        }
+        TermRootInput::UpdateTarget(index) => {
+            output.push(5);
+            output.extend_from_slice(&index.to_be_bytes());
+        }
+        TermRootInput::UpdateValue(index) => {
+            output.push(6);
+            output.extend_from_slice(&index.to_be_bytes());
+        }
+        TermRootInput::Output(index) => {
+            output.push(7);
+            output.extend_from_slice(&index.to_be_bytes());
+        }
+        TermRootInput::Consume(index) => {
+            output.push(8);
+            output.extend_from_slice(&index.to_be_bytes());
+        }
+        TermRootInput::PropertyBody => output.push(9),
+        TermRootInput::ObservationItems => output.push(10),
+    }
+    output.push(raw_term_kind_tag(term.kind));
+    push_text(output, &term.source);
+}
+
+const fn raw_term_kind_tag(kind: RawTermInputKind) -> u8 {
+    match kind {
+        RawTermInputKind::Type => 1,
+        RawTermInputKind::Expression => 2,
+        RawTermInputKind::ExpressionList => 3,
+        RawTermInputKind::UpdateTarget => 4,
+        RawTermInputKind::Consume => 5,
+    }
+}
+
+fn push_count(output: &mut Vec<u8>, count: usize) {
+    output.extend_from_slice(&(count as u64).to_be_bytes());
+}
+
+fn push_text(output: &mut Vec<u8>, text: &str) {
+    push_count(output, text.len());
+    output.extend_from_slice(text.as_bytes());
 }
 
 fn candidate(module: &ResolvedModule, definition: &ResolvedDeclaration) -> DefinitionCandidate {

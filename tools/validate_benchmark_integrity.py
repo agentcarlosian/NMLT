@@ -90,7 +90,7 @@ FROZEN_PROPERTY_IDS = {
 FROZEN_CASE_BINDINGS = {
     "provider-attempt-reference": {
         "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:388e79280db5d2c99db54cb6fdcba0597648928606cf3c8867a71de32671ff55",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:e63b55d76f75f0d79bac1665916f9898d5749ae1130be4048ac46144f3f171af",
         "properties": tuple(FROZEN_PROPERTY_IDS.values()),
         "witness_ids": (),
         "oracle": "holds_within_frozen_future_bounds",
@@ -98,11 +98,11 @@ FROZEN_CASE_BINDINGS = {
         "current": "model_checked",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:977cb7941e8a2e48c976a7dfc07f7234e87739f880f222e6726670c1978beb7b",
+        "result_id": "nmlt-benchmark-result-v1:sha256:1f9e4cd3b51811dea570bf6ee28bf3de0a196076a467e9540229206382be90eb",
     },
     "dispatch-before-authorize": {
         "source_id": "nmlt-source-v1:sha256:5755f61bb3fc209fb06161660cef7cb89b542b2d8e32aed412360146c935da66",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:8a2e2b943d86e5cb32ae8151b880c9e6e18a81218a2e7e14d320ef094b0f929a",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:960da41f601d0953cfe978ee7d17636839a4e20153362c8ad943e39dddf59d48",
         "properties": (FROZEN_PROPERTY_IDS["ProviderAttempt.DispatchRequiresArm"],),
         "witness_ids": (
             "nmlt-expected-counterexample-v1:sha256:ef750d2addd7c3dacb4d0095890c6f96037eb416238c98d5ff60ae1814f03627",
@@ -112,11 +112,11 @@ FROZEN_CASE_BINDINGS = {
         "current": "refuted",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/dispatch-before-authorize.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:14f77c44dea919c74effabaa1b6cef38145cfd5f70e9cf2c7cd57bbda55f4d95",
+        "result_id": "nmlt-benchmark-result-v1:sha256:2c1cd4bd09712b0f5289c092a87c1e11cedefad00c3675975d6e5893de767cd9",
     },
     "blind-replay": {
         "source_id": "nmlt-source-v1:sha256:1d61387c8998f8e2bda759a2ba05d66201507e522bbedf5bc4483b3ed4afaaac",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:a910ee67bd6f9b1b1a23953eae39bba5e7efc3ada386d2745095ee3284440348",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:a10630be4fb8632c0fb48781611d813f13ae10900a8670e97cb987316a529799",
         "properties": (FROZEN_PROPERTY_IDS["ProviderAttempt.NoBlindReplay"],),
         "witness_ids": (
             "nmlt-expected-counterexample-v1:sha256:da4bbd49ff308c67dc37ae24f5f7ed5e6ff11eb1e12312a313a6365a72cacf2e",
@@ -126,11 +126,11 @@ FROZEN_CASE_BINDINGS = {
         "current": "refuted",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/blind-replay.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:bf86311eaaea31160ef77fa310b985f95e5bddfb7291627fb230e68dfbbb5282",
+        "result_id": "nmlt-benchmark-result-v1:sha256:ff00c850c6a04cfcc1e6bca12ce06db5e50fad35f18a2eed28edd2becf3aec71",
     },
     "response-binding": {
         "source_id": "nmlt-source-v1:sha256:3f491ca3c289a1d5eff7d11519fb4509e60345aa8eb60819baa1ad442460462e",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:4b79b58886bbb93f169be165a7bde3eb7561c675fa06ea789928153359ec2b16",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:6d3ad04c45c3a8faf555de46c14132de769216a1c8ef82cbe191e4c88b9260a6",
         "properties": (
             FROZEN_PROPERTY_IDS["ProviderAttempt.EvaluationRequiresIntactResponse"],
         ),
@@ -142,11 +142,11 @@ FROZEN_CASE_BINDINGS = {
         "current": "refuted",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/response-binding.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:676850355c894796c2c1538545db95be552203ba498cb27f82c0f45b2b8c2fdc",
+        "result_id": "nmlt-benchmark-result-v1:sha256:c1bd34a64dde9e4b39e1ed5c28e0857dd53c618ec888f82e2c11ed044321a73a",
     },
     "passing-selection": {
         "source_id": "nmlt-source-v1:sha256:ae395e8f3941be5647d30015e7689332e3bcf00948329e3d8b88960b65e71f37",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:fa04e22e776c30766f822d82a36495eb829dcbbe839771df07866f59b900f4f2",
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:7072ec1def14b78717435da443be4ef639381117acf8603bf0d2e9348592b32c",
         "properties": (FROZEN_PROPERTY_IDS["ProviderAttempt.SelectionRequiresPass"],),
         "witness_ids": (
             "nmlt-expected-counterexample-v1:sha256:45bb21364362c8ab809b4366ac099ee2084fe89380f54df5f85ed1deab3e9c63",
@@ -156,7 +156,7 @@ FROZEN_CASE_BINDINGS = {
         "current": "refuted",
         "support": "current",
         "result_path": "benchmarks/results/provider-attempt/passing-selection.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:cec29a093e57249fff4175cdc7b14dbe500a4ef4834f6458c9e023a3591cd8ad",
+        "result_id": "nmlt-benchmark-result-v1:sha256:a3b47575ffdf4c1e91da3ee12c38f640b16c681c5b29cc7188961229734e3189",
     },
 }
 FROZEN_CONTROL_BINDINGS = {

@@ -30,12 +30,12 @@ reproduction gate, not the remaining research or release-promotion gaps.
 These are separate assurance subjects, not a complete flagship-language
 pipeline. M9 now has an accepted integration contract, a complete
 origin-censused surface projection, a source-fed resolved HIR with replayable
-all-reference coverage, and a structurally validated explicit typed-core
-representation. Bidirectional elaboration and its independently checked
-derivation are the active next boundary. NMLT does not yet provide full surface-language
-execution, verified source-to-IR elaboration, general or infinite-state
-verification, production runtime attestation, general AI-repair evidence,
-signed evidence, or code generation.
+all-reference coverage, a structurally validated explicit typed core, and an
+identity-bound bidirectional elaborator that emits a complete derivation DAG.
+Independent certificate checking is the active next boundary. NMLT does not
+yet provide full surface-language execution, verified source-to-IR
+elaboration, general or infinite-state verification, production runtime
+attestation, general AI-repair evidence, signed evidence, or code generation.
 
 The structural `evidence` command deliberately reports `unknown`. Semantic
 claims require `typecheck` or `model-check`; bounded exploration is reported as
@@ -91,7 +91,7 @@ targets are `model-reports`, `temporal-evidence`, `multi-engine-evidence`,
 ## Repository map
 
 ```text
-crates/       Frontend/HIR, provider engine, temporal/VC checkers, repair and grade prototypes, CLI
+crates/       Frontend, HIR, typed core/elaborator, verification prototypes, and CLI
 comparisons/  Comparable frozen provider models in TLA+, Quint, and P
 docs/         Manifesto, semantics, architecture, method, and roadmap
 rfcs/         Proposed language and evidence decisions

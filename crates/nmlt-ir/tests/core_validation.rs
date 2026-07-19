@@ -108,7 +108,7 @@ fn valid_explicit_core_is_deterministic_and_hir_bound() {
     assert_eq!(
         first.id().to_string(),
         "nmlt-core-program-v1:sha256:\
-         6cfd5de2836d2a21a594765e137bf59bcfc5b994e6c0c1f473de843bf3cae14b"
+         f3f3d5fc506cb71522b4559d0b8acd7ab732202a2304a86406acf68ce1bb0f4b"
     );
     assert_eq!(first.resolved_hir_id(), fixture.resolution);
     assert_eq!(first.terms()[&id].origin(), fixture.initializer_origin);

@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "manifest_id": "nmlt-evidence-v1:sha256:81eddd040bb46cc56596855f37b1d8bd2b3f3f35ba3e8afc3a466b28e041a0d8",
+  "manifest_id": "nmlt-evidence-v1:sha256:e43602e570111b185b7bc5f22ffa828080464e5b8eb78365a6f10570fd57acac",
   "artifact": {
     "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
     "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c"
@@ -14,7 +14,7 @@
     "kind": "deterministic_explicit_state_bfs_v1",
     "engine": "nmlt-explicit-state",
     "engine_version": "0.0.1",
-    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:d4a05cc6e5f37915f2fd5f5171d1d341300441ef5471a923c78ff83771dcf013",
+    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:a3eabe3f83605e96138eac6e760c086b0d219a1d9e75c7055d8fc9d43a199d5a",
     "engine_executable_sha256": "6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4"
   },
   "scope": {
@@ -36,11 +36,11 @@
   "trusted_components": [
     {
       "id": "trusted-component-inventory",
-      "identity": "sha256:0f20b3f01b1e6f5264f0de22a149ce89f543ab7cd739b65df0b04c40a499122a"
+      "identity": "sha256:bfe10cfbfdd74fe88fca43348d1a59c3821190128c4d6a893de1e76efb3c9d9a"
     },
     {
       "id": "nmlt-engine-source",
-      "identity": "nmlt-engine-source-set-v1:sha256:d4a05cc6e5f37915f2fd5f5171d1d341300441ef5471a923c78ff83771dcf013"
+      "identity": "nmlt-engine-source-set-v1:sha256:a3eabe3f83605e96138eac6e760c086b0d219a1d9e75c7055d8fc9d43a199d5a"
     },
     {
       "id": "nmlt-engine-executable",
@@ -48,7 +48,7 @@
     },
     {
       "id": "benchmark-result",
-      "identity": "nmlt-benchmark-result-v1:sha256:977cb7941e8a2e48c976a7dfc07f7234e87739f880f222e6726670c1978beb7b"
+      "identity": "nmlt-benchmark-result-v1:sha256:1f9e4cd3b51811dea570bf6ee28bf3de0a196076a467e9540229206382be90eb"
     },
     {
       "id": "rust-toolchain-declaration",
@@ -64,11 +64,11 @@
     },
     {
       "id": "benchmark-integrity-checker",
-      "identity": "sha256:6410f16baed36edea445c330002d7004adc64f2bb4ac2a11a3a497a751128f4f"
+      "identity": "sha256:e9d958aa725dda40eb9e316eed0f250f63dd200c6fbb41c15c7986fd91b2b33f"
     }
   ],
   "negative_controls": [
-    "nmlt-benchmark-result-v1:sha256:14f77c44dea919c74effabaa1b6cef38145cfd5f70e9cf2c7cd57bbda55f4d95"
+    "nmlt-benchmark-result-v1:sha256:2c1cd4bd09712b0f5289c092a87c1e11cedefad00c3675975d6e5893de767cd9"
   ],
   "residual_gaps": [
     "Finite explicit-state evidence is not an unbounded proof.",

@@ -43,6 +43,10 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
   propositions, exact action update/frame partitions, canonical integer and
   core identities, and structural graph/type/resource validation. It does not
   establish correspondence to HIR and cannot construct `CheckedProgram`.
+- `nmlt-elaborate`: bidirectional resolved-HIR elaboration, exact action/frame
+  reconstruction, system-indexed formula formation, explicit insertions, and
+  a canonical identity-bound derivation DAG with complete root/origin coverage.
+  It is a trusted producer and cannot construct `CheckedProgram`.
 - `nmlt-engine`: typed provider fragment and deterministic explicit-state
   exploration with structured counterexamples.
 - `nmlt-temporal`: canonical finite graphs, `always`/eventuality/lasso checking,
@@ -63,9 +67,9 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
 
 ## Planned boundaries
 
-- Active M9 elaboration (M9-005): connect exact resolved-HIR obligations to
+- Completed M9 elaboration (M9-005): exact resolved-HIR obligations connect to
   `nmlt-ir` nodes through a canonical bidirectional derivation artifact.
-- Planned M9 `nmlt-kernel` (M9-006): small checker for typed-core elaboration
+- Active M9 `nmlt-kernel` (M9-006): small checker for typed-core elaboration
   evidence after the explicit core and elaborator boundaries exist.
 - Future separation of `nmlt-engine` into stable transition and model-checking
   boundaries once the first executable slice has more than one consumer.

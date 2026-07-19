@@ -1,4 +1,4 @@
-manifest_version = "1.4.0"
+manifest_version = "1.5.0"
 status = "pre-alpha"
 reviewed = "2026-07-19"
 identity_requirement = "Every assurance manifest binds the exact source/source set, engine source set and executable, and each relied-on component by a content address; generic and graded assurance evidence also binds the exact bytes of this inventory, which names roles but is not itself a digest ledger."
@@ -67,6 +67,22 @@ trusted = [
   "nmlt_hir.identity",
   "nmlt_hir.resolver",
   "nmlt_ir.structural_core",
+  "build.ci_release",
+]
+
+[[claim_profiles]]
+name = "m9_elaborated_core_producer"
+result_ceiling = "elaborator_produced_typed_core_and_derivation_only_no_kernel_acceptance_or_checked_program_claim"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "crypto.sha256",
+  "nmlt_core.frontend",
+  "nmlt_core.surface_projection",
+  "nmlt_hir.identity",
+  "nmlt_hir.resolver",
+  "nmlt_ir.structural_core",
+  "nmlt_elaborate.producer",
   "build.ci_release",
 ]
 
@@ -219,7 +235,7 @@ paths = [
   "crates/nmlt-hir/src/hir.rs",
   "crates/nmlt-hir/src/model.rs",
 ]
-role = "Construct exact source-set, logical-module-map, module, full typed definition-path, semantic-node, and resolved-program identities."
+role = "Construct exact source-set, logical-module-map, canonical-surface, module, full typed definition-path, semantic-node, and resolved-program identities."
 
 [[components]]
 id = "nmlt_hir.resolver"
@@ -240,6 +256,16 @@ paths = [
   "crates/nmlt-ir/src/validate.rs",
 ]
 role = "Define canonical explicit typed core and reject malformed annotations, indices, scopes, graphs, frames, integers, identities, and resource excess. This component does not check HIR-to-core elaboration correspondence."
+
+[[components]]
+id = "nmlt_elaborate.producer"
+paths = [
+  "crates/nmlt-elaborate/src/elaborate.rs",
+  "crates/nmlt-elaborate/src/identity.rs",
+  "crates/nmlt-elaborate/src/lib.rs",
+  "crates/nmlt-elaborate/src/model.rs",
+]
+role = "Bidirectionally elaborate exact resolved HIR into structurally validated typed core and emit a canonical, identity-bound, fully reachable derivation DAG with exact root and HIR-origin coverage. This producer remains trusted and cannot issue CheckedProgram before independent M9-006 replay."
 
 [[components]]
 id = "nmlt_core.evidence_scaffold"

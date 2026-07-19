@@ -30,14 +30,14 @@ pub use hir::{
 };
 pub use identity::{
     DefId, LocalId, ModuleId, ModuleMapId, NodeId, ResolutionId, SourceId, SourceSetEntry,
-    SourceSetId, SourceSetIdentityError, sha256_bytes,
+    SourceSetId, SourceSetIdentityError, SurfaceProgramId, sha256_bytes,
+};
+pub use model::{
+    DeclarationFlavor, DeclarationKey, DefPath, DefPathSegment, NameReference, Namespace,
+    ProjectedModule, ProjectionIssue, ProjectionIssueKind, ResolvedDeclaration, ResolvedImport,
+    ResolvedModule, ResolvedProgram, SemanticRole, SourceSpan,
 };
 pub(crate) use model::{DeclarationInput, ImportInput, ModuleInput};
-pub use model::{
-    DeclarationKey, DefPath, DefPathSegment, NameReference, Namespace, ProjectedModule,
-    ProjectionIssue, ProjectionIssueKind, ResolvedDeclaration, ResolvedImport, ResolvedModule,
-    ResolvedProgram, SemanticRole, SourceSpan,
-};
 pub use resolve_terms::verify_resolution_readback;
 pub use resolver::{
     DefPathViolation, DefinitionCandidate, LookupError, PathViolation, ResolveError,

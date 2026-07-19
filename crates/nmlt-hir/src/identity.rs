@@ -10,7 +10,8 @@ const MODULE_DOMAIN: &[u8] = b"NMLT-MODULE\0v1\0";
 const DEFINITION_DOMAIN: &[u8] = b"NMLT-DEF\0v1\0";
 const NODE_DOMAIN: &[u8] = b"NMLT-NODE\0v1\0";
 const LOCAL_DOMAIN: &[u8] = b"NMLT-LOCAL\0v1\0";
-const RESOLUTION_DOMAIN: &[u8] = b"NMLT-HIR-RESOLUTION\0v2\0";
+const SURFACE_PROGRAM_DOMAIN: &[u8] = b"NMLT-SURFACE-PROGRAM\0v1\0";
+const RESOLUTION_DOMAIN: &[u8] = b"NMLT-HIR-RESOLUTION\0v3\0";
 
 macro_rules! identity_type {
     ($name:ident, $prefix:literal) => {
@@ -50,7 +51,8 @@ identity_type!(ModuleId, "nmlt-module-v1:sha256:");
 identity_type!(DefId, "nmlt-def-v1:sha256:");
 identity_type!(NodeId, "nmlt-node-v1:sha256:");
 identity_type!(LocalId, "nmlt-local-v1:sha256:");
-identity_type!(ResolutionId, "nmlt-hir-resolution-v2:sha256:");
+identity_type!(SurfaceProgramId, "nmlt-surface-program-v1:sha256:");
+identity_type!(ResolutionId, "nmlt-hir-resolution-v3:sha256:");
 
 /// A path-and-bytes pair used to compute an RFC 0004 source-set identity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -195,6 +197,18 @@ pub(crate) fn resolution_id(
     preimage.raw(module_map_id.digest());
     preimage.bytes(canonical_hir);
     ResolutionId(sha256(&preimage.finish()))
+}
+
+pub(crate) fn surface_program_id(
+    source_set_id: SourceSetId,
+    module_map_id: ModuleMapId,
+    canonical_surface: &[u8],
+) -> SurfaceProgramId {
+    let mut preimage = Encoder::with_domain(SURFACE_PROGRAM_DOMAIN);
+    preimage.raw(source_set_id.digest());
+    preimage.raw(module_map_id.digest());
+    preimage.bytes(canonical_surface);
+    SurfaceProgramId(sha256(&preimage.finish()))
 }
 
 /// Compute a raw SHA-256 digest for another canonical NMLT identity domain.
@@ -438,8 +452,8 @@ mod tests {
         );
         assert_eq!(
             resolution_id(source_set_id, module_map_id, b"hir").to_string(),
-            "nmlt-hir-resolution-v2:sha256:\
-             c574d415755875bf086cb7949edf66d6ecc0fee3262188ec740efd7aaedabf4a"
+            "nmlt-hir-resolution-v3:sha256:\
+             b1d50a706b536b4e65c81b93d47690d7bf88bda9811be34babd1e3aff7be8f65"
         );
     }
 
