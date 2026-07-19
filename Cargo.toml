@@ -7,6 +7,7 @@ members = [
     "crates/nmlt-compile",
     "crates/nmlt-elaborate",
     "crates/nmlt-kernel",
+    "crates/nmlt-certificate-tools",
     "crates/nmlt-engine",
     "crates/nmlt-temporal",
     "crates/nmlt-verify",

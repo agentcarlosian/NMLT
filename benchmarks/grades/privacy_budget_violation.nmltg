@@ -1,7 +1,7 @@
 # Negative control: the declared privacy use exceeds the product budget.
 program privacy_budget_violation
-budget 100 400000 180 60000
+budget 100 400000 180 declared 60000
 plan
   (seq
-    (atom query_a 20 250000 40 10000)
-    (atom query_b 20 250001 40 10000))
+    (atom query_a 20 250000 40 declared 10000)
+    (atom query_b 20 250001 40 declared 10000))

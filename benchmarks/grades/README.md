@@ -8,7 +8,7 @@ annotations and the composition rules in the RFC, its product bound is:
 cost_ticks             66 <= 100
 privacy_micro_epsilon  500000 <= 550000
 energy_microjoules     155 <= 180
-uncertainty_ppm        47000 <= 60000
+uncertainty            declared:47000 <= declared:60000
 ```
 
 It does **not** claim that the annotations match a deployed implementation, that

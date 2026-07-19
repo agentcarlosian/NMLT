@@ -86,7 +86,7 @@ pub fn check_budget(program: &Program) -> BudgetDecision {
                 Dimension::CostTicks,
                 Dimension::PrivacyMicroEpsilon,
                 Dimension::EnergyMicrojoules,
-                Dimension::UncertaintyPpm,
+                Dimension::UncertaintyUpperBoundPpm,
             ] {
                 let actual = usage.coordinate(dimension);
                 let limit = program.budget.coordinate(dimension);
@@ -130,7 +130,10 @@ fn analyze_at(plan: &Plan, path: &str) -> Analysis {
             for (index, child) in children.iter().enumerate() {
                 let child_path = format!("{path}.choice[{index}]");
                 match analyze_at(child, &child_path) {
-                    Analysis::Exact(grade) => exact = exact.choice(grade),
+                    Analysis::Exact(grade) => match exact.choice(grade) {
+                        Ok(combined) => exact = combined,
+                        Err(error) => diagnostics.push(error_diagnostic(error, path)),
+                    },
                     Analysis::Unknown(mut child_diagnostics) => {
                         diagnostics.append(&mut child_diagnostics);
                     }
@@ -216,6 +219,9 @@ fn error_diagnostic(error: GradeError, path: &str) -> Diagnostic {
         code: match error {
             GradeError::InvalidUncertainty { .. } => "NMLT-GRADE-INVALID-UNCERTAINTY",
             GradeError::ArithmeticOverflow { .. } => "NMLT-GRADE-ARITHMETIC-OVERFLOW",
+            GradeError::IncompatibleUncertaintyFamilies { .. } => {
+                "NMLT-GRADE-INCOMPATIBLE-UNCERTAINTY-FAMILIES"
+            }
         },
         path: path.to_owned(),
         message: error.to_string(),
@@ -227,7 +233,17 @@ mod tests {
     use super::*;
 
     fn grade(cost: u64, privacy: u64, energy: u64, uncertainty: u32) -> Grade {
-        Grade::checked(cost, privacy, energy, uncertainty).expect("valid test grade")
+        Grade::checked(
+            cost,
+            privacy,
+            energy,
+            crate::UncertaintyCertificate::checked_upper_bound(
+                crate::UncertaintyFamily::Declared,
+                uncertainty,
+            )
+            .expect("valid uncertainty"),
+        )
+        .expect("valid test grade")
     }
 
     fn atom(name: &str, grade: Grade) -> Plan {
@@ -283,7 +299,7 @@ mod tests {
             [
                 Dimension::CostTicks,
                 Dimension::PrivacyMicroEpsilon,
-                Dimension::UncertaintyPpm
+                Dimension::UncertaintyUpperBoundPpm
             ]
         );
     }

@@ -8,15 +8,18 @@
 ## Summary
 
 Add an independent, explicitly bounded resource-analysis extension whose
-grades are products of four upper-bound coordinates:
+grades have three numeric upper-bound coordinates and one typed uncertainty
+certificate summary:
 
 ```text
-Grade = CostTicks × PrivacyMicroEpsilon × EnergyMicrojoules × UncertaintyPpm
+Grade = CostTicks × PrivacyMicroEpsilon × EnergyMicrojoules × TypedUncertainty
 ```
 
 Sequential work composes by checked componentwise addition, alternatives by
 componentwise maximum, and parallel work by the same conservative addition.
-Uncertainty addition saturates at one million parts per million. Unbounded
+Within one certificate family, uncertainty addition saturates at one million
+parts per million. Mixing `declared`, `hoeffding`, and `conformal` bounds is
+rejected rather than numerically laundering their assumptions. Unbounded
 iteration, arithmetic overflow, malformed grades, or an unknown child makes a
 budget claim `unknown`; it never becomes `within_budget`.
 
@@ -138,28 +141,29 @@ arithmetic fits under a budget.
 The extension is an isolated S-expression pilot:
 
 ```text
-PROGRAM ::= program NAME budget NAT NAT NAT PPM plan PLAN
-PLAN    ::= (atom NAME NAT NAT NAT PPM)
+PROGRAM ::= program NAME budget NAT NAT NAT FAMILY PPM plan PLAN
+PLAN    ::= (atom NAME NAT NAT NAT FAMILY PPM)
           | (seq PLAN*)
           | (choice PLAN+)
           | (par PLAN*)
           | (repeat BOUND PLAN)
 BOUND   ::= NAT | ?
+FAMILY  ::= declared | hoeffding | conformal
 ```
 
-The four numbers always appear in this order: cost ticks, privacy
-micro-epsilon, energy microjoules, and uncertainty ppm. Comments begin with
+The three resource numbers are followed by an uncertainty certificate-family
+tag and its ppm conclusion. Comments begin with
 `#`. `?` is an explicit unknown bound, not an inferred value. An empty
 sequence or parallel group has grade zero; an empty choice is invalid because
 there is no executable alternative whose bound could be selected.
 
 ## Mathematical grade structure
 
-Let `M = 1,000,000`, `U = {0, ..., M}`, and define the mathematical exact
-carrier:
+For each fixed family `F`, let `M = 1,000,000`, `U = {0, ..., M}`, and define
+the family-homogeneous mathematical exact carrier:
 
 ```text
-G = Nat × Nat × Nat × U
+G_F = Nat × Nat × Nat × U
 0 = (0, 0, 0, 0)
 ```
 
@@ -172,8 +176,8 @@ g join h = (max(c,c'), max(p,p'), max(e,e'), max(u,u'))
 g par  h = g then h
 ```
 
-This selected profile has the following mathematical laws over unbounded
-naturals:
+These laws hold over unbounded naturals inside one fixed family. Cross-family
+composition is partial and fails closed in the executable checker:
 
 1. `then` and `par` are commutative monoids with identity `0`;
 2. `join` is a commutative, associative, idempotent operation with identity
@@ -196,7 +200,7 @@ does not include the empty join: `0` is also the sequencing identity, not an
 annihilator.
 
 [`NMLT/Grades/Algebra.lean`](../mechanization/lean/NMLT/Grades/Algebra.lean)
-mechanizes this exact mathematical product in Lean 4.30.0. It proves saturated
+mechanizes one family-homogeneous mathematical product in Lean 4.30.0. It proves saturated
 uncertainty addition and the product identity, associativity, commutativity,
 choice, order, monotonicity, binary/nonempty-finite distributivity, and Boolean
 budget-order theorems. The file is imported by the Lean root and the axiom audit
@@ -246,8 +250,9 @@ There is deliberately no rule from `unknown` to `within_budget`.
 
 ## Composition interpretations
 
-- **Sequence:** cost, energy, and basic privacy loss add. Uncertainty uses a
-  saturated union-bound abstraction.
+- **Sequence:** cost, energy, and basic privacy loss add. Same-family
+  uncertainty certificates use a saturated union-bound abstraction;
+  cross-family composition is `unknown`.
 - **Choice:** at most one alternative executes; the checker selects a
   componentwise worst case. A componentwise join need not correspond to one
   concrete branch, but it is an upper bound for every branch.

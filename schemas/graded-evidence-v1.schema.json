@@ -58,23 +58,39 @@
         "usage": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["cost_ticks", "privacy_micro_epsilon", "energy_microjoules", "uncertainty_ppm"],
+          "required": ["cost_ticks", "privacy_micro_epsilon", "energy_microjoules", "uncertainty"],
           "properties": {
             "cost_ticks": { "const": 66 },
             "privacy_micro_epsilon": { "const": 500000 },
             "energy_microjoules": { "const": 155 },
-            "uncertainty_ppm": { "const": 47000 }
+            "uncertainty": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["family", "upper_bound_ppm"],
+              "properties": {
+                "family": { "const": "declared" },
+                "upper_bound_ppm": { "const": 47000 }
+              }
+            }
           }
         },
         "budget": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["cost_ticks", "privacy_micro_epsilon", "energy_microjoules", "uncertainty_ppm"],
+          "required": ["cost_ticks", "privacy_micro_epsilon", "energy_microjoules", "uncertainty"],
           "properties": {
             "cost_ticks": { "const": 100 },
             "privacy_micro_epsilon": { "const": 550000 },
             "energy_microjoules": { "const": 180 },
-            "uncertainty_ppm": { "const": 60000 }
+            "uncertainty": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["family", "upper_bound_ppm"],
+              "properties": {
+                "family": { "const": "declared" },
+                "upper_bound_ppm": { "const": 60000 }
+              }
+            }
           }
         }
       }
@@ -92,9 +108,9 @@
         "sampled_laws"
       ],
       "properties": {
-        "carrier": { "const": "Nat64 x Nat64 x Nat64 x Ppm" },
+        "carrier": { "const": "Nat64 x Nat64 x Nat64 x TypedUncertaintyCertificate" },
         "sequence": {
-          "const": "componentwise_checked_add_with_saturated_uncertainty"
+          "const": "componentwise_checked_add_with_family_preserving_saturated_union_bound"
         },
         "choice": { "const": "componentwise_max" },
         "parallel": {
@@ -120,12 +136,16 @@
       "required": [
         "integer_representation",
         "uncertainty_scale_ppm",
+        "uncertainty_certificate_families",
         "reference_iteration_bounds",
         "overflow_result"
       ],
       "properties": {
         "integer_representation": { "const": "u64_checked" },
         "uncertainty_scale_ppm": { "const": 1000000 },
+        "uncertainty_certificate_families": {
+          "const": ["declared", "hoeffding", "conformal"]
+        },
         "reference_iteration_bounds": { "const": "finite_explicit" },
         "overflow_result": { "const": "unknown" }
       }

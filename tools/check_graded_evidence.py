@@ -73,7 +73,7 @@ CLAIM_BUDGET = {
     "cost_ticks": 100,
     "privacy_micro_epsilon": 550000,
     "energy_microjoules": 180,
-    "uncertainty_ppm": 60000,
+    "uncertainty": {"family": "declared", "upper_bound_ppm": 60000},
 }
 
 

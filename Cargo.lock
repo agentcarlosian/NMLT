@@ -15,6 +15,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "nmlt-certificate-tools"
+version = "0.0.1"
+dependencies = [
+ "nmlt-elaborate",
+ "nmlt-hir",
+ "nmlt-ir",
+ "nmlt-kernel",
+]
+
+[[package]]
 name = "nmlt-cli"
 version = "0.0.1"
 dependencies = [

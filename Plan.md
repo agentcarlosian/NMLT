@@ -948,3 +948,36 @@ promoted slice. After M9, the next research sequence is behavior-indexed
 temporal typing, proof-relevant refinement, compositional open-system semantics,
 and richer quantitative mathematics—each with its own mechanization and
 comparison gate.
+
+**M10: Behavior-indexed mathematics and proof-certificate research** started
+on 2026-07-19. The first seven research seeds are implemented and documented
+in the [M10 research note](docs/research-notes/m10-behavior-refinement-and-certificates-2026-07-19.md):
+
+- [x] **M10-001 — Behavior-indexed temporal typing.** Lean models indexed
+  behaviors, typed steps, exact identity stutter, and infinite traces.
+- [x] **M10-002 — Constructive evidence boundary.** Classical temporal
+  propositions and positive constructive evidence have separate syntax and
+  an axiom-free erasure-soundness theorem; constructive implication/negation
+  remain an explicit next obligation.
+- [x] **M10-003 — Directed refinement laws.** Lean proves identity,
+  composition, reachability preservation, and contravariant invariant
+  transport for finite-stuttering forward simulations.
+- [x] **M10-004 — Rzk experiment seed.** A v0.10.0-checked, outside-TCB
+  experiment establishes pointwise category laws for one-way refinement maps.
+  Proof-relevant Segal composition remains open.
+- [x] **M10-005 — Untrusted certificate tooling.** A separate crate prunes
+  unreachable raw derivations and reports proof-DAG complexity; only the
+  independent kernel can accept its output.
+- [x] **M10-006 — Typed uncertainty families.** The graded experiment tags
+  bounds as declared, Hoeffding, or conformal and fails closed on mixed-family
+  composition. Artifact-bound family-specific validators remain open.
+- [x] **M10-007 — Coinductive/up-to seed.** Lean mechanizes a one-sided
+  simulation generator and an axiom-free compatible-up-to soundness theorem.
+  Executable coinductive certificates, fairness, divergence, and full
+  bisimulation remain open.
+
+M10 is a started research phase, not a closed promotion gate. Its next gate is
+to bind uncertainty and coinductive witnesses to canonical evidence identity,
+connect behavior/refinement proofs to M9 typed core, replace the Rzk bare-map
+model with proof-relevant simulations, and add executable negative controls
+before any of these results raise the language's assurance ceiling.

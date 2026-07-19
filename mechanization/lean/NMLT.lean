@@ -6,3 +6,6 @@ import NMLT.Core.Provider
 import NMLT.Counterexamples.CompositionCongruence
 import NMLT.Grades.Algebra
 import NMLT.Correspondence.M9Kernel
+import NMLT.Behavior.TemporalTyping
+import NMLT.Behavior.Refinement
+import NMLT.Behavior.Coinductive

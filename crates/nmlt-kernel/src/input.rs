@@ -95,6 +95,13 @@ impl RawCertificate {
             certificate_digest: *artifact.certificate_id().digest(),
         }
     }
+
+    /// Recompute the envelope's claimed content digest after an untrusted
+    /// transformation. This does not validate any derivation or confer
+    /// checked status; callers must still invoke [`crate::check`].
+    pub fn recompute_claimed_certificate_digest(&mut self) {
+        self.certificate_digest = crate::identity::certificate_digest(self).0;
+    }
 }
 
 pub(crate) const fn judgment_tag(value: JudgmentKind) -> u8 {

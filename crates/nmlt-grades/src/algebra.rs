@@ -3,13 +3,136 @@ use std::fmt::{self, Debug, Display};
 /// One whole unit of uncertainty, represented as parts per million.
 pub const UNCERTAINTY_SCALE_PPM: u32 = 1_000_000;
 
+/// The proof obligation represented by an uncertainty upper bound.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum UncertaintyFamily {
+    /// A bound supplied directly as an explicitly trusted annotation.
+    Declared,
+    /// A bound justified by a Hoeffding-style concentration certificate.
+    Hoeffding,
+    /// A bound justified by a conformal-coverage certificate.
+    Conformal,
+}
+
+impl UncertaintyFamily {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Declared => "declared",
+            Self::Hoeffding => "hoeffding",
+            Self::Conformal => "conformal",
+        }
+    }
+}
+
+/// A typed uncertainty certificate summary.
+///
+/// The family tag prevents composition from laundering unlike statistical
+/// claims into one undifferentiated number. The referenced proof artifact is a
+/// future identity-binding extension; this prototype checks the family and its
+/// bounded quantitative conclusion.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UncertaintyCertificate {
+    Certain,
+    UpperBound {
+        family: UncertaintyFamily,
+        upper_bound_ppm: u32,
+    },
+}
+
+impl UncertaintyCertificate {
+    pub fn checked_upper_bound(
+        family: UncertaintyFamily,
+        upper_bound_ppm: u32,
+    ) -> Result<Self, GradeError> {
+        if upper_bound_ppm > UNCERTAINTY_SCALE_PPM {
+            return Err(GradeError::InvalidUncertainty {
+                found: upper_bound_ppm,
+                maximum: UNCERTAINTY_SCALE_PPM,
+            });
+        }
+        if upper_bound_ppm == 0 {
+            Ok(Self::Certain)
+        } else {
+            Ok(Self::UpperBound {
+                family,
+                upper_bound_ppm,
+            })
+        }
+    }
+
+    #[must_use]
+    pub const fn upper_bound_ppm(self) -> u32 {
+        match self {
+            Self::Certain => 0,
+            Self::UpperBound {
+                upper_bound_ppm, ..
+            } => upper_bound_ppm,
+        }
+    }
+
+    #[must_use]
+    pub const fn family(self) -> Option<UncertaintyFamily> {
+        match self {
+            Self::Certain => None,
+            Self::UpperBound { family, .. } => Some(family),
+        }
+    }
+
+    fn combine(self, other: Self, choice: bool) -> Result<Self, GradeError> {
+        match (self, other) {
+            (Self::Certain, value) | (value, Self::Certain) => Ok(value),
+            (
+                Self::UpperBound {
+                    family: left,
+                    upper_bound_ppm: left_bound,
+                },
+                Self::UpperBound {
+                    family: right,
+                    upper_bound_ppm: right_bound,
+                },
+            ) if left == right => Self::checked_upper_bound(
+                left,
+                if choice {
+                    max_u32(left_bound, right_bound)
+                } else {
+                    left_bound
+                        .saturating_add(right_bound)
+                        .min(UNCERTAINTY_SCALE_PPM)
+                },
+            ),
+            (Self::UpperBound { family: left, .. }, Self::UpperBound { family: right, .. }) => {
+                Err(GradeError::IncompatibleUncertaintyFamilies { left, right })
+            }
+        }
+    }
+
+    #[must_use]
+    pub const fn leq(self, other: Self) -> bool {
+        match (self, other) {
+            (Self::Certain, _) => true,
+            (Self::UpperBound { .. }, Self::Certain) => false,
+            (
+                Self::UpperBound {
+                    family: left,
+                    upper_bound_ppm: left_bound,
+                },
+                Self::UpperBound {
+                    family: right,
+                    upper_bound_ppm: right_bound,
+                },
+            ) => same_family(left, right) && left_bound <= right_bound,
+        }
+    }
+}
+
 /// The independent coordinates of the prototype product grade.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Dimension {
     CostTicks,
     PrivacyMicroEpsilon,
     EnergyMicrojoules,
-    UncertaintyPpm,
+    UncertaintyUpperBoundPpm,
 }
 
 impl Dimension {
@@ -19,7 +142,7 @@ impl Dimension {
             Self::CostTicks => "cost_ticks",
             Self::PrivacyMicroEpsilon => "privacy_micro_epsilon",
             Self::EnergyMicrojoules => "energy_microjoules",
-            Self::UncertaintyPpm => "uncertainty_ppm",
+            Self::UncertaintyUpperBoundPpm => "uncertainty_upper_bound_ppm",
         }
     }
 }
@@ -36,6 +159,10 @@ pub enum GradeError {
     InvalidUncertainty {
         found: u32,
         maximum: u32,
+    },
+    IncompatibleUncertaintyFamilies {
+        left: UncertaintyFamily,
+        right: UncertaintyFamily,
     },
     ArithmeticOverflow {
         dimension: Dimension,
@@ -54,6 +181,12 @@ impl Display for GradeError {
                 dimension,
                 operation,
             } => write!(formatter, "{operation} overflows dimension {dimension}"),
+            Self::IncompatibleUncertaintyFamilies { left, right } => write!(
+                formatter,
+                "cannot compose uncertainty certificate families {} and {}",
+                left.as_str(),
+                right.as_str()
+            ),
         }
     }
 }
@@ -62,15 +195,14 @@ impl std::error::Error for GradeError {}
 
 /// A product upper bound over four deliberately integer-valued dimensions.
 ///
-/// `uncertainty_ppm` is an abstract upper bound in `[0, 1]`, encoded without
-/// floating point. It is not automatically a probability: that interpretation
-/// requires a model connecting annotations to events.
+/// The uncertainty coordinate is a typed certificate summary, not a generic
+/// scalar. Its interpretation still requires the family-specific assumptions.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Grade {
     cost_ticks: u64,
     privacy_micro_epsilon: u64,
     energy_microjoules: u64,
-    uncertainty_ppm: u32,
+    uncertainty: UncertaintyCertificate,
 }
 
 impl Grade {
@@ -78,26 +210,20 @@ impl Grade {
         cost_ticks: 0,
         privacy_micro_epsilon: 0,
         energy_microjoules: 0,
-        uncertainty_ppm: 0,
+        uncertainty: UncertaintyCertificate::Certain,
     };
 
     pub fn checked(
         cost_ticks: u64,
         privacy_micro_epsilon: u64,
         energy_microjoules: u64,
-        uncertainty_ppm: u32,
+        uncertainty: UncertaintyCertificate,
     ) -> Result<Self, GradeError> {
-        if uncertainty_ppm > UNCERTAINTY_SCALE_PPM {
-            return Err(GradeError::InvalidUncertainty {
-                found: uncertainty_ppm,
-                maximum: UNCERTAINTY_SCALE_PPM,
-            });
-        }
         Ok(Self {
             cost_ticks,
             privacy_micro_epsilon,
             energy_microjoules,
-            uncertainty_ppm,
+            uncertainty,
         })
     }
 
@@ -117,8 +243,8 @@ impl Grade {
     }
 
     #[must_use]
-    pub const fn uncertainty_ppm(self) -> u32 {
-        self.uncertainty_ppm
+    pub const fn uncertainty(self) -> UncertaintyCertificate {
+        self.uncertainty
     }
 
     /// Conservative sequential composition.
@@ -142,22 +268,18 @@ impl Grade {
                 Dimension::EnergyMicrojoules,
                 "sequential composition",
             )?,
-            uncertainty_ppm: self
-                .uncertainty_ppm
-                .saturating_add(other.uncertainty_ppm)
-                .min(UNCERTAINTY_SCALE_PPM),
+            uncertainty: self.uncertainty.combine(other.uncertainty, false)?,
         })
     }
 
     /// Worst-case alternative: take the componentwise upper envelope.
-    #[must_use]
-    pub const fn choice(self, other: Self) -> Self {
-        Self {
+    pub fn choice(self, other: Self) -> Result<Self, GradeError> {
+        Ok(Self {
             cost_ticks: max_u64(self.cost_ticks, other.cost_ticks),
             privacy_micro_epsilon: max_u64(self.privacy_micro_epsilon, other.privacy_micro_epsilon),
             energy_microjoules: max_u64(self.energy_microjoules, other.energy_microjoules),
-            uncertainty_ppm: max_u32(self.uncertainty_ppm, other.uncertainty_ppm),
-        }
+            uncertainty: self.uncertainty.combine(other.uncertainty, true)?,
+        })
     }
 
     /// Conservative parallel composition.
@@ -174,7 +296,7 @@ impl Grade {
         self.cost_ticks <= other.cost_ticks
             && self.privacy_micro_epsilon <= other.privacy_micro_epsilon
             && self.energy_microjoules <= other.energy_microjoules
-            && self.uncertainty_ppm <= other.uncertainty_ppm
+            && self.uncertainty.leq(other.uncertainty)
     }
 
     #[must_use]
@@ -183,7 +305,7 @@ impl Grade {
             Dimension::CostTicks => self.cost_ticks,
             Dimension::PrivacyMicroEpsilon => self.privacy_micro_epsilon,
             Dimension::EnergyMicrojoules => self.energy_microjoules,
-            Dimension::UncertaintyPpm => self.uncertainty_ppm as u64,
+            Dimension::UncertaintyUpperBoundPpm => self.uncertainty.upper_bound_ppm() as u64,
         }
     }
 }
@@ -194,6 +316,15 @@ const fn max_u64(left: u64, right: u64) -> u64 {
 
 const fn max_u32(left: u32, right: u32) -> u32 {
     if left >= right { left } else { right }
+}
+
+const fn same_family(left: UncertaintyFamily, right: UncertaintyFamily) -> bool {
+    matches!(
+        (left, right),
+        (UncertaintyFamily::Declared, UncertaintyFamily::Declared)
+            | (UncertaintyFamily::Hoeffding, UncertaintyFamily::Hoeffding)
+            | (UncertaintyFamily::Conformal, UncertaintyFamily::Conformal)
+    )
 }
 
 fn checked_add(
@@ -259,7 +390,7 @@ impl GradeAlgebra for ProductGradeAlgebra {
         left: &Self::Element,
         right: &Self::Element,
     ) -> Result<Self::Element, Self::Error> {
-        Ok(left.choice(*right))
+        left.choice(*right)
     }
 
     fn parallel(
@@ -492,7 +623,14 @@ mod tests {
     use super::*;
 
     fn grade(cost: u64, privacy: u64, energy: u64, uncertainty: u32) -> Grade {
-        Grade::checked(cost, privacy, energy, uncertainty).expect("valid test grade")
+        Grade::checked(
+            cost,
+            privacy,
+            energy,
+            UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Declared, uncertainty)
+                .expect("valid uncertainty"),
+        )
+        .expect("valid test grade")
     }
 
     #[test]
@@ -501,19 +639,45 @@ mod tests {
         let right = grade(3, 7, 9, 700_000);
 
         assert_eq!(left.sequential(right), Ok(grade(5, 17, 14, 1_000_000)));
-        assert_eq!(left.choice(right), grade(3, 10, 9, 700_000));
+        assert_eq!(left.choice(right), Ok(grade(3, 10, 9, 700_000)));
         assert_eq!(left.parallel(right), left.sequential(right));
     }
 
     #[test]
     fn invalid_uncertainty_is_rejected() {
         assert_eq!(
-            Grade::checked(0, 0, 0, 1_000_001),
+            UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Declared, 1_000_001),
             Err(GradeError::InvalidUncertainty {
                 found: 1_000_001,
                 maximum: 1_000_000
             })
         );
+    }
+
+    #[test]
+    fn unlike_certificate_families_do_not_compose() {
+        let declared = Grade::checked(
+            0,
+            0,
+            0,
+            UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Declared, 10).unwrap(),
+        )
+        .unwrap();
+        let hoeffding = Grade::checked(
+            0,
+            0,
+            0,
+            UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Hoeffding, 10).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            declared.sequential(hoeffding),
+            Err(GradeError::IncompatibleUncertaintyFamilies {
+                left: UncertaintyFamily::Declared,
+                right: UncertaintyFamily::Hoeffding,
+            })
+        );
+        assert!(!declared.componentwise_le(hoeffding));
     }
 
     #[test]

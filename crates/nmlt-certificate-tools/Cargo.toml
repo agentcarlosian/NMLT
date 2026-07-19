@@ -1,0 +1,19 @@
+[package]
+name = "nmlt-certificate-tools"
+description = "Untrusted certificate simplification and proof-complexity metrics for NMLT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+nmlt-kernel = { path = "../nmlt-kernel" }
+
+[dev-dependencies]
+nmlt-elaborate = { path = "../nmlt-elaborate" }
+nmlt-hir = { path = "../nmlt-hir" }
+nmlt-ir = { path = "../nmlt-ir" }
+
+[lints]
+workspace = true

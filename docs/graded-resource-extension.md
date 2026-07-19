@@ -10,7 +10,8 @@ language-integrated graded type system.
 The implementation lives in `crates/nmlt-grades` and contains:
 
 - a checked product grade for total work ticks, privacy micro-epsilon, energy
-  microjoules, and abstract uncertainty ppm;
+  microjoules, and a typed uncertainty certificate (`declared`, `hoeffding`,
+  or `conformal`) carrying a ppm upper bound;
 - a small S-expression parser and typed plan AST;
 - sequence, exclusive choice, conservative parallel, and finite-repeat rules;
 - a three-valued analyzer (`exact`, `exceeded`, or `unknown` at the budget
@@ -29,7 +30,8 @@ annotations under the RFC's rules.
 
 ## Metatheory capsule
 
-Let exact mathematical grades be `G = Nat³ × {0..M}` for `M = 1,000,000`.
+For each fixed uncertainty family, let exact mathematical grades be
+`G = Nat³ × {0..M}` for `M = 1,000,000`.
 Order and maximum are componentwise. Sequential and conservative parallel
 composition add the first three coordinates and use `min(M,u+v)` for the
 fourth.
@@ -54,7 +56,7 @@ For natural coordinates,
 at `M` to both sides preserves the equality. The result lifts coordinatewise
 to the product.
 
-The Lean capsule proves the binary statement and its extension to every
+The Lean capsule proves the family-homogeneous binary statement and its extension to every
 nonempty finite choice. It does not claim distribution over the empty join:
 zero is the sequencing identity in this profile, not an annihilator.
 
@@ -89,10 +91,11 @@ the Lean definitions.
 | `cost_ticks` | total abstract work | not latency and not inferred from execution |
 | `privacy_micro_epsilon` | declared basic privacy-loss upper bound | no DP mechanism or sensitivity proof; parallel remains additive |
 | `energy_microjoules` | declared total energy upper bound | no hardware or measurement model |
-| `uncertainty_ppm` | abstract bounded risk/uncertainty upper bound | saturated union-bound arithmetic only; not automatically probability |
+| `uncertainty` | family-tagged ppm upper bound (`declared`, `hoeffding`, or `conformal`) | only same-family bounds compose; the tag names an obligation but does not itself prove it |
 
 The product comparison is componentwise. NMLT never adds cost to energy or
-trades privacy against uncertainty.
+trades privacy against uncertainty. Unlike uncertainty families are
+incomparable and their attempted composition produces `unknown`.
 
 ## Evidence and controls
 
@@ -123,7 +126,7 @@ checker must find a commutativity counterexample for word concatenation while
 finding no counterexample in four finite product samples.
 
 Passing finite samples is still only regression evidence. Universal laws for
-the encoded mathematical algebra come from the separately checked Lean
+each fixed-family mathematical slice come from the separately checked Lean
 theorems, while the analyzer and Rust-correspondence claims remain outside
 their scope. The evidence preserves those distinctions.
 

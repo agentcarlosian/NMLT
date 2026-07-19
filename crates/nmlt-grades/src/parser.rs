@@ -1,4 +1,4 @@
-use crate::{Grade, IterationBound, Plan, Program};
+use crate::{Grade, IterationBound, Plan, Program, UncertaintyCertificate, UncertaintyFamily};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ParseDiagnostic {
@@ -28,8 +28,8 @@ struct Token {
 ///
 /// ```text
 /// program NAME
-/// budget COST PRIVACY ENERGY UNCERTAINTY
-/// plan (seq (atom NAME COST PRIVACY ENERGY UNCERTAINTY) ...)
+/// budget COST PRIVACY ENERGY FAMILY UNCERTAINTY
+/// plan (seq (atom NAME COST PRIVACY ENERGY FAMILY UNCERTAINTY) ...)
 /// ```
 pub fn parse_program(source: &str) -> Result<Program, Vec<ParseDiagnostic>> {
     let tokens = tokenize(source);
@@ -125,7 +125,23 @@ impl Parser {
         let cost = self.natural("cost_ticks")?;
         let privacy = self.natural("privacy_micro_epsilon")?;
         let energy = self.natural("energy_microjoules")?;
-        let (uncertainty_text, uncertainty_token) = self.expect_word("uncertainty_ppm")?;
+        let (family_text, family_token) = self.expect_word("an uncertainty certificate family")?;
+        let family = match family_text.as_str() {
+            "declared" => UncertaintyFamily::Declared,
+            "hoeffding" => UncertaintyFamily::Hoeffding,
+            "conformal" => UncertaintyFamily::Conformal,
+            _ => {
+                return Err(ParseDiagnostic {
+                    code: "NMLT-GRADE-PARSE-UNCERTAINTY-FAMILY",
+                    offset: family_token.offset,
+                    line: family_token.line,
+                    column: family_token.column,
+                    message: format!("unknown uncertainty certificate family {family_text:?}"),
+                });
+            }
+        };
+        let (uncertainty_text, uncertainty_token) =
+            self.expect_word("uncertainty_upper_bound_ppm")?;
         let uncertainty = uncertainty_text
             .parse::<u32>()
             .map_err(|_| ParseDiagnostic {
@@ -134,8 +150,16 @@ impl Parser {
                 line: uncertainty_token.line,
                 column: uncertainty_token.column,
                 message: format!(
-                    "uncertainty_ppm {uncertainty_text:?} is not a u32 natural number"
+                    "uncertainty upper bound {uncertainty_text:?} is not a u32 natural number"
                 ),
+            })?;
+        let uncertainty = UncertaintyCertificate::checked_upper_bound(family, uncertainty)
+            .map_err(|error| ParseDiagnostic {
+                code: "NMLT-GRADE-PARSE-GRADE",
+                offset: uncertainty_token.offset,
+                line: uncertainty_token.line,
+                column: uncertainty_token.column,
+                message: error.to_string(),
             })?;
         Grade::checked(cost, privacy, energy, uncertainty).map_err(|error| ParseDiagnostic {
             code: "NMLT-GRADE-PARSE-GRADE",
@@ -326,46 +350,61 @@ mod tests {
         let source = r#"
             # Units are declared by the extension RFC.
             program sample
-            budget 100 600000 180 60000
+            budget 100 600000 180 declared 60000
             plan (seq
-              (atom start 12 100000 30 10000)
+              (atom start 12 100000 30 declared 10000)
               (choice
-                (atom cache 4 0 8 2000)
-                (atom fetch 34 300000 85 30000))
+                (atom cache 4 0 8 declared 2000)
+                (atom fetch 34 300000 85 declared 30000))
               (par
-                (atom audit 8 50000 20 3000)
-                (atom metrics 6 0 12 2000))
-              (repeat 2 (atom retry 3 25000 4 1000)))
+                (atom audit 8 50000 20 declared 3000)
+                (atom metrics 6 0 12 declared 2000))
+              (repeat 2 (atom retry 3 25000 4 declared 1000)))
         "#;
         let program = parse_program(source).expect("valid program");
         assert_eq!(program.name, "sample");
         assert_eq!(
             analyze(&program.plan),
-            Analysis::Exact(Grade::checked(66, 500_000, 155, 47_000).unwrap())
+            Analysis::Exact(
+                Grade::checked(
+                    66,
+                    500_000,
+                    155,
+                    UncertaintyCertificate::checked_upper_bound(
+                        UncertaintyFamily::Declared,
+                        47_000,
+                    )
+                    .unwrap(),
+                )
+                .unwrap()
+            )
         );
     }
 
     #[test]
     fn parses_unknown_iteration_without_approving_it() {
-        let program =
-            parse_program("program u budget 10 10 10 10 plan (repeat ? (atom work 1 1 1 1))")
-                .expect("unknown is syntactically explicit");
+        let program = parse_program(
+            "program u budget 10 10 10 declared 10 plan (repeat ? (atom work 1 1 1 declared 1))",
+        )
+        .expect("unknown is syntactically explicit");
         assert!(matches!(analyze(&program.plan), Analysis::Unknown(_)));
     }
 
     #[test]
     fn rejects_out_of_range_uncertainty() {
-        let diagnostics =
-            parse_program("program bad budget 10 10 10 10 plan (atom bad 1 1 1 1000001)")
-                .expect_err("invalid grade must not parse");
+        let diagnostics = parse_program(
+            "program bad budget 10 10 10 declared 10 plan (atom bad 1 1 1 declared 1000001)",
+        )
+        .expect_err("invalid grade must not parse");
         assert_eq!(diagnostics[0].code, "NMLT-GRADE-PARSE-GRADE");
     }
 
     #[test]
     fn rejects_trailing_tokens() {
-        let diagnostics =
-            parse_program("program bad budget 1 1 1 1 plan (atom ok 0 0 0 0) surprise")
-                .expect_err("trailing text must be rejected");
+        let diagnostics = parse_program(
+            "program bad budget 1 1 1 declared 1 plan (atom ok 0 0 0 declared 0) surprise",
+        )
+        .expect_err("trailing text must be rejected");
         assert_eq!(diagnostics[0].code, "NMLT-GRADE-PARSE-TRAILING");
     }
 }

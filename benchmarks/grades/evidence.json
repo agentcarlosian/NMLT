@@ -2,9 +2,9 @@
   "schema_version": "1.0.0",
   "fixture": "phase7-graded-resources-v1",
   "reference": {
-    "source_id": "nmlt-source-v1:sha256:03507d967aeb8804897bfe5a3bb74b12266c2dcefdf52808e378792c4d983b95",
-    "claim_spec_source_id": "nmlt-source-v1:sha256:5244af992ddf12f4d815570369ce27b7b2b30b8bb5bf274fe0b47bf278356dca",
-    "claim_id": "nmlt-graded-claim-v1:sha256:70e15808e9d245a0ec9304dbd4764a71f5f96cf680c786ad6fe1c7b7a26686aa",
+    "source_id": "nmlt-source-v1:sha256:ef73f2a8367d8323d7a88bd5788ed97700778f8e837a02396e2acc7502f2a1c5",
+    "claim_spec_source_id": "nmlt-source-v1:sha256:7e008bd8206df9d8fe1d492b1fd43e4363d9b7aed870350a92cc5c288e61295b",
+    "claim_id": "nmlt-graded-claim-v1:sha256:aaff4bffad4e1badb346e1d5bca7bf5342440f204dbdf53082b9745a311e7bc8",
     "claim_handle": "Grades.ProviderPipeline.WithinBudget",
     "claim": "Under the declared annotations and bounded composition rules, the provider pipeline is componentwise within its declared product budget.",
     "decision": "within_budget",
@@ -12,18 +12,24 @@
       "cost_ticks": 66,
       "privacy_micro_epsilon": 500000,
       "energy_microjoules": 155,
-      "uncertainty_ppm": 47000
+      "uncertainty": {
+        "family": "declared",
+        "upper_bound_ppm": 47000
+      }
     },
     "budget": {
       "cost_ticks": 100,
       "privacy_micro_epsilon": 550000,
       "energy_microjoules": 180,
-      "uncertainty_ppm": 60000
+      "uncertainty": {
+        "family": "declared",
+        "upper_bound_ppm": 60000
+      }
     }
   },
   "algebra": {
-    "carrier": "Nat64 x Nat64 x Nat64 x Ppm",
-    "sequence": "componentwise_checked_add_with_saturated_uncertainty",
+    "carrier": "Nat64 x Nat64 x Nat64 x TypedUncertaintyCertificate",
+    "sequence": "componentwise_checked_add_with_family_preserving_saturated_union_bound",
     "choice": "componentwise_max",
     "parallel": "componentwise_checked_add_without_disjointness_evidence",
     "sample_count": 4,
@@ -40,6 +46,11 @@
   "bounds": {
     "integer_representation": "u64_checked",
     "uncertainty_scale_ppm": 1000000,
+    "uncertainty_certificate_families": [
+      "declared",
+      "hoeffding",
+      "conformal"
+    ],
     "reference_iteration_bounds": "finite_explicit",
     "overflow_result": "unknown"
   },
@@ -77,7 +88,7 @@
     "Every atom annotation is a trusted upper bound in the declared unit.",
     "Choice executes at most one branch and uses a componentwise worst case.",
     "Parallel work is conservatively additive; no data-disjoint privacy theorem is invoked.",
-    "Uncertainty annotations support only the stated saturated union-bound abstraction."
+    "Uncertainty composition is defined only within one explicit certificate family."
   ],
   "residual_gaps": [
     "No operational semantics connects annotations to measured cost or energy.",
@@ -86,30 +97,30 @@
     "No grade inference, symbolic bounds, or certified compiler is implemented."
   ],
   "implementation": {
-    "source_set_id": "nmlt-source-set-v1:sha256:470d6c6041740e77784dc813780211e66e51de5f494b22eed9c313f906c001f2",
+    "source_set_id": "nmlt-source-set-v1:sha256:d8ebdd589ee984c84d6679973f41ed2ac46b687a17950b29534a99e2b16b8cd2",
     "toolchain": {
       "version": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
       "host": "x86_64-unknown-linux-gnu",
       "rustc_sha256": "103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a"
     },
-    "executable_sha256": "18d0af86a27e05e62d14e54533aa201f8a76b1a3a0144d64fdeff6c3ced2aa29",
+    "executable_sha256": "628f38cf78489f38b32c09220a03e3c0d5e3d730e39f529bfdf21e5be4904443",
     "control_source_ids": {
-      "privacy_budget_violation": "nmlt-source-v1:sha256:2e99639ae5bac6c0a5ce6f4a48aa64b7f6827ed5fb6db8a6e5e0321b7a55ab53",
-      "unknown_iteration": "nmlt-source-v1:sha256:7745c1f913d9419c19feec47859073c506da91c0baaed78c82abc5876b893a6a",
-      "invalid_uncertainty": "nmlt-source-v1:sha256:d98f0afb5ff1d51ac9ed58125016f49f7b676ef2f9d6e244ac5c65e9ca7efdb3"
+      "privacy_budget_violation": "nmlt-source-v1:sha256:74bfbc44172a4d85334688fcb7cec023441cd5653aef7dc91ac04bdf04af13e2",
+      "unknown_iteration": "nmlt-source-v1:sha256:25140c92c517d012902d30a84ce360f4d52111724a8b5aeb32cac785a0795fd0",
+      "invalid_uncertainty": "nmlt-source-v1:sha256:47719cf5106696b448c19ed6d3c8b44de3fd06c03522e14b9ba56dd3ab5d2598"
     },
     "trusted_component_source_ids": {
-      "evidence_harness": "nmlt-source-v1:sha256:404d81ee410f78b6852dcc78896c9e5afe6c0348e3c6feaa2efea7b5c9441e93",
-      "evidence_schema": "nmlt-source-v1:sha256:65e42cd282dff0e5061dcd35313704fb75a10b7685befbd9a21a5f47cb279420",
-      "schema_validator": "nmlt-source-v1:sha256:74617684ae4123e18bdb7bf082c873da8ee2f6b4176124dbedf63dfb55916a43",
-      "trusted_component_inventory": "nmlt-source-v1:sha256:9233f577ada8430ae815c871bc02758e29e53d58aa445f31e06354b680429471"
+      "evidence_harness": "nmlt-source-v1:sha256:c3e4f9a06d035035ed6ffda33a177653119c4a1809adae7ff3d4bd72dbfa6c89",
+      "evidence_schema": "nmlt-source-v1:sha256:34770c7a6467150e10e363b67922e7b9da3ddf024bbe361650dd5ae627bcaaad",
+      "schema_validator": "nmlt-source-v1:sha256:30310e32421ef0b622c7c1ac64b9a0fa3914eb20f97a2a48c3def67135b6dc6d",
+      "trusted_component_inventory": "nmlt-source-v1:sha256:6f2d5f98fd0cff47093a2fdc67bc329b509433de2733e4c638c124f9db8f0e34"
     }
   },
   "metatheory": {
     "scope": "mathematical_grade_algebra_only",
-    "source_set_id": "nmlt-source-set-v1:sha256:a0c0a58c3fae79a4f34f84d06eb50f22876325f1cd05da152fcd6236b86d7265",
-    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:c2af1e9b9dcd16362ba3ea2da4aa8e1a0971b954d01d565f8780797772ebcee4",
-    "root_source_id": "nmlt-source-v1:sha256:b7857c7c60ef12a111419ad1395b5697733c0c7fc523f6130a7b29ee283b7b46",
+    "source_set_id": "nmlt-source-set-v1:sha256:f111a79671d20521e4d9204d1de4871f15ecb159e30377985493cb170ca56bbf",
+    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:4cb922bb0d091f4df8e0bad006b2a7d754ad73ebbcab6d188878c93ba14998b0",
+    "root_source_id": "nmlt-source-v1:sha256:a9a77c8a41b15c3125a52b9d5ee04793086af43bfd3135abfb1f306f36bebbd0",
     "entrypoint_source_id": "nmlt-source-v1:sha256:c439ff9ed311099540cd7fde4c7d9fb5f0449990a342b2aa526a877c6a61caa6",
     "checker_source_id": "nmlt-source-v1:sha256:91f0d78b78e5755b2b2828c2615bb12c3e73b6d63b33def04139fb9d57fedac6",
     "toolchain": "v4.30.0",
@@ -143,5 +154,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:a877fe6ef1b693e775532add46d7904a169f5ed34bd9b9329fd5dd892825b6c8"
+  "manifest_id": "nmlt-evidence-v1:sha256:e074d36c10436d17b703cce733d370b64a7739ee844877220ed2fa9816ed4089"
 }

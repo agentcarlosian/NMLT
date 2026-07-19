@@ -9,6 +9,8 @@ outside_tcb = [
   "fuzzers, mutation generators, proof search, and test counts",
   "TLC, Quint, P, SMT solvers, and proof-assistant stdout unless a narrower trusted checker validates a certificate for the exact obligation",
   "nmlt-verify reachability, induction, SMT, and proof-return producers when a checked certificate or replayed witness is the accepted basis",
+  "nmlt-certificate-tools simplification and metrics; every transformed certificate remains subject to nmlt-kernel replay",
+  "Rzk directed-refinement experiments, including their typechecker output",
   "runtime events and traces before the declared observation/refinement adapter checks them",
 ]
 
@@ -393,12 +395,15 @@ paths = [
   "crates/nmlt-grades/src/parser.rs",
   "crates/nmlt-grades/src/checker.rs",
 ]
-role = "Interpret product grades and check declared finite resource budgets."
+role = "Interpret product grades with explicit uncertainty certificate families, reject mixed-family composition, and check declared finite resource budgets."
 
 [[components]]
 id = "nmlt_lean.statements"
 paths = [
   "mechanization/lean/NMLT.lean",
+  "mechanization/lean/NMLT/Behavior/Coinductive.lean",
+  "mechanization/lean/NMLT/Behavior/Refinement.lean",
+  "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
   "mechanization/lean/NMLT/Core/TypedCore.lean",
   "mechanization/lean/NMLT/Core/Transition.lean",
   "mechanization/lean/NMLT/Core/Provider.lean",

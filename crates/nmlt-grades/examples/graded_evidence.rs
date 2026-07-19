@@ -5,8 +5,8 @@ use std::fs;
 use std::path::Path;
 
 use nmlt_grades::{
-    BudgetDecision, Grade, GradeAlgebra, ProductGradeAlgebra, check_budget, check_laws,
-    parse_program,
+    BudgetDecision, Grade, GradeAlgebra, ProductGradeAlgebra, UncertaintyCertificate,
+    UncertaintyFamily, check_budget, check_laws, parse_program,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -84,8 +84,7 @@ fn run() -> Result<(), String> {
         BudgetDecision::WithinBudget { usage, budget } => (usage, budget),
         outcome => return Err(format!("reference did not pass: {outcome:?}")),
     };
-    let expected_usage =
-        Grade::checked(66, 500_000, 155, 47_000).map_err(|error| error.to_string())?;
+    let expected_usage = declared_grade(66, 500_000, 155, 47_000)?;
     if usage != expected_usage {
         return Err(format!(
             "reference grade changed: expected {expected_usage:?}, found {usage:?}"
@@ -123,9 +122,9 @@ fn run() -> Result<(), String> {
 
     let samples = [
         Grade::ZERO,
-        Grade::checked(1, 2, 3, 4).map_err(|error| error.to_string())?,
-        Grade::checked(7, 5, 3, 900_000).map_err(|error| error.to_string())?,
-        Grade::checked(11, 13, 17, 200_000).map_err(|error| error.to_string())?,
+        declared_grade(1, 2, 3, 4)?,
+        declared_grade(7, 5, 3, 900_000)?,
+        declared_grade(11, 13, 17, 200_000)?,
     ];
     let product_violations = check_laws(&ProductGradeAlgebra, &samples);
     if !product_violations.is_empty() {
@@ -164,8 +163,8 @@ fn run() -> Result<(), String> {
             "\"budget\":{}",
             "}},",
             "\"algebra\":{{",
-            "\"carrier\":\"Nat64 x Nat64 x Nat64 x Ppm\",",
-            "\"sequence\":\"componentwise_checked_add_with_saturated_uncertainty\",",
+            "\"carrier\":\"Nat64 x Nat64 x Nat64 x TypedUncertaintyCertificate\",",
+            "\"sequence\":\"componentwise_checked_add_with_family_preserving_saturated_union_bound\",",
             "\"choice\":\"componentwise_max\",",
             "\"parallel\":\"componentwise_checked_add_without_disjointness_evidence\",",
             "\"sample_count\":4,",
@@ -179,6 +178,7 @@ fn run() -> Result<(), String> {
             "\"bounds\":{{",
             "\"integer_representation\":\"u64_checked\",",
             "\"uncertainty_scale_ppm\":1000000,",
+            "\"uncertainty_certificate_families\":[\"declared\",\"hoeffding\",\"conformal\"],",
             "\"reference_iteration_bounds\":\"finite_explicit\",",
             "\"overflow_result\":\"unknown\"",
             "}},",
@@ -192,7 +192,7 @@ fn run() -> Result<(), String> {
             "\"Every atom annotation is a trusted upper bound in the declared unit.\",",
             "\"Choice executes at most one branch and uses a componentwise worst case.\",",
             "\"Parallel work is conservatively additive; no data-disjoint privacy theorem is invoked.\",",
-            "\"Uncertainty annotations support only the stated saturated union-bound abstraction.\"",
+            "\"Uncertainty composition is defined only within one explicit certificate family.\"",
             "],",
             "\"residual_gaps\":[",
             "\"No operational semantics connects annotations to measured cost or energy.\",",
@@ -229,18 +229,31 @@ fn read(path: &str) -> Result<String, String> {
 }
 
 fn grade_json(grade: Grade) -> String {
+    let uncertainty = grade.uncertainty();
+    let family = uncertainty
+        .family()
+        .map(UncertaintyFamily::as_str)
+        .unwrap_or("certain");
     format!(
         concat!(
             "{{\"cost_ticks\":{},",
             "\"privacy_micro_epsilon\":{},",
             "\"energy_microjoules\":{},",
-            "\"uncertainty_ppm\":{}}}"
+            "\"uncertainty\":{{\"family\":{},\"upper_bound_ppm\":{}}}}}"
         ),
         grade.cost_ticks(),
         grade.privacy_micro_epsilon(),
         grade.energy_microjoules(),
-        grade.uncertainty_ppm(),
+        json_string(family),
+        uncertainty.upper_bound_ppm(),
     )
+}
+
+fn declared_grade(cost: u64, privacy: u64, energy: u64, uncertainty: u32) -> Result<Grade, String> {
+    let uncertainty =
+        UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Declared, uncertainty)
+            .map_err(|error| error.to_string())?;
+    Grade::checked(cost, privacy, energy, uncertainty).map_err(|error| error.to_string())
 }
 
 fn json_string(value: &str) -> String {

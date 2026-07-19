@@ -1,0 +1,58 @@
+#lang rzk-1
+
+-- A deliberately small directed seed. A refinement points from a concrete
+-- state space to an abstract state space; no inverse is required or assumed.
+#define Refinement
+  ( Concrete Abstract : U)
+  : U
+  := Concrete -> Abstract
+
+#define refinement-id
+  ( A : U)
+  : Refinement A A
+  := \ x -> x
+
+#define refinement-compose
+  ( A B C : U)
+  ( f : Refinement A B)
+  ( g : Refinement B C)
+  : Refinement A C
+  := \ x -> g (f x)
+
+-- Category laws stated pointwise, so no function extensionality axiom enters
+-- the experiment.
+#define refinement-left-identity
+  ( A B : U)
+  ( f : Refinement A B)
+  ( x : A)
+  : refinement-compose A A B (refinement-id A) f x = f x
+  := refl
+
+#define refinement-right-identity
+  ( A B : U)
+  ( f : Refinement A B)
+  ( x : A)
+  : refinement-compose A B B f (refinement-id B) x = f x
+  := refl
+
+#define refinement-associativity
+  ( A B C D : U)
+  ( f : Refinement A B)
+  ( g : Refinement B C)
+  ( h : Refinement C D)
+  ( x : A)
+  : refinement-compose A C D (refinement-compose A B C f g) h x
+      = refinement-compose A B D f (refinement-compose B C D g h) x
+  := refl
+
+-- A refinement law transports a concrete observation into an abstract one.
+-- Keeping the witness dependent makes the intended proof-relevant extension
+-- visible without yet asserting a Segal-type result.
+#define ObservationPreserving
+  ( Concrete Abstract Observation : U)
+  ( concrete-observe : Concrete -> Observation)
+  ( abstract-observe : Abstract -> Observation)
+  ( refine : Refinement Concrete Abstract)
+  : U
+  := (state : Concrete) ->
+       abstract-observe (refine state) = concrete-observe state
