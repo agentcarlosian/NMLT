@@ -7,6 +7,14 @@ name = "nmlt-agent"
 version = "0.0.1"
 
 [[package]]
+name = "nmlt-certificate"
+version = "0.0.1"
+dependencies = [
+ "nmlt-hir",
+ "nmlt-ir",
+]
+
+[[package]]
 name = "nmlt-cli"
 version = "0.0.1"
 dependencies = [
@@ -22,6 +30,7 @@ version = "0.0.1"
 name = "nmlt-elaborate"
 version = "0.0.1"
 dependencies = [
+ "nmlt-certificate",
  "nmlt-hir",
  "nmlt-ir",
 ]
@@ -49,6 +58,16 @@ name = "nmlt-ir"
 version = "0.0.1"
 dependencies = [
  "nmlt-hir",
+]
+
+[[package]]
+name = "nmlt-kernel"
+version = "0.0.1"
+dependencies = [
+ "nmlt-certificate",
+ "nmlt-elaborate",
+ "nmlt-hir",
+ "nmlt-ir",
 ]
 
 [[package]]

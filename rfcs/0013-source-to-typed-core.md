@@ -634,10 +634,14 @@ those boundaries visible.
 5. **M9-005 — Implement bidirectional elaboration.** Complete:
    `nmlt-elaborate` removes open-symbol and numeric/temporal shortcuts, emits
    canonical derivations, and checks exact root/origin coverage and DAG
-   reachability before returning. This remains producer-trusted pending M9-006.
-6. **M9-006 — Implement the kernel.** Add an independent `nmlt-kernel` checker,
-   private unchecked constructors, resource limits, and forged-certificate
-   controls.
+   reachability before returning.
+6. **M9-006 — Implement the kernel.** Complete: neutral certificate syntax is
+   separated from the producer; `nmlt-kernel` independently recomputes
+   identities, graph/coverage/resource conditions, every frozen rule, and the
+   aggregate core before its private constructor returns `CheckedProgram`.
+   Forged, canonically resealed semantic, stale, cyclic, unreachable,
+   noncanonical, unknown-tag, duplicate, and oversized controls fail closed.
+   Persisted byte decoding is deliberately assigned to M9-008.
 7. **M9-007 — Migrate the engine.** Delete the second parser after the provider
    benchmark consumes `CheckedProgram` exclusively.
 8. **M9-008 — Bind evidence.** Extend artifact schemas/readback with source,

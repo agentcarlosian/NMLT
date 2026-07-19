@@ -100,9 +100,10 @@ untrusted source/imports
   paths, comments, strings, and sizes are untrusted. Frontend success means
   only structural acceptance.
 - **B2:** The M9 surface projector, all-reference resolver, resolution readback,
-  typed-core structural validator, and M9-005 elaboration/certificate producer
-  enter the TCB for projection, resolved HIR, structurally validated core, and
-  elaborator-produced derivation claims. The current
+  typed-core structural validator, M9-006 certificate syntax and independent
+  checker enter the TCB for projection, resolved HIR, structurally validated
+  core, and kernel-accepted elaboration claims. The M9-005 producer is outside
+  the kernel-accepted claim profile. The current
   executable-fragment parser,
   contextual elaborator, type checker, frame/capability rules,
   simultaneous-update evaluator, and property indexing additionally enter the
@@ -111,8 +112,8 @@ untrusted source/imports
   relabelled resolution entries, but it shares the Rust crate and lookup model;
   the resolver therefore remains trusted. The typed-core validator checks
   closure and annotations, not faithfulness to HIR. M9-005 makes the claimed
-  translation explicit but remains trusted; only M9-006 independent replay can
-  remove the producer from acceptance of that correspondence.
+  translation explicit; M9-006 now independently replays it and removes the
+  producer and its identity encoder from acceptance of that correspondence.
 - **B3:** TLC, Quint, P, SMT solvers, proof search, AI systems, and generated
   code may discover evidence but are untrusted unless a narrower checker
   validates a certificate under the exact obligation.
@@ -151,11 +152,15 @@ encoders, portable-path policy, import-graph checker, namespace resolver, and
 pinned Rust build are trusted. This profile can establish deterministic closed
 module and named-declaration tables plus lookup behavior for the exact input.
 The resolver now emits and replays the complete source-derived `ResolutionMap`.
-The trusted M9-005 elaborator checks/synthesizes the supported fragment and
-emits a fully reachable, identity-bound derivation DAG, but no independent
-kernel accepts it yet. This profile cannot establish temporal truth, execution
-safety, a verified compiler theorem, or removal of the resolver/elaborator from
-the TCB.
+The M9-005 elaborator checks/synthesizes the supported fragment and emits a
+derivation DAG. For the M9 kernel-accepted profile it is an untrusted producer:
+`nmlt-kernel` independently selects the ruleset/policy, recomputes canonical
+identities, rejects malformed graphs, reconstructs all frozen judgments and
+aggregate core records, and alone constructs `CheckedProgram`. The parser,
+projector, resolver, structural core, certificate data model, kernel, Rust
+toolchain, host, and SHA-256 remain trusted. This profile cannot establish
+temporal truth, execution safety, engine correspondence, or a verified
+compiler theorem.
 
 For a typed bounded result, the parser/elaborator/type checker, operational
 semantics, deterministic explorer, report/evidence checkers, Rust build output,

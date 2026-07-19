@@ -13,9 +13,11 @@ system-index mismatches, malformed action targets, duplicate capability use,
 and resource excess. Its IDs are deterministic content identities, not
 authority or provenance signatures.
 
-This crate is still a producer and remains in the M9-005 trusted boundary. Its
-success does **not** create `CheckedProgram`: M9-006 must independently
-reconstruct every judgment from the exact HIR and core and reject forged,
-stale, cyclic, or noncanonical certificates.
+This crate is a producer and remains trusted only for the M9-005 producer
+profile. Its success does **not** create `CheckedProgram`: M9-006 now
+independently reconstructs every judgment from exact HIR and core and rejects
+forged, stale, cyclic, or noncanonical certificates. Certificate syntax lives
+in `nmlt-certificate`; the receiver does not reuse this producer's identity
+calculation.
 
 The normative contract is [RFC 0013](../../rfcs/0013-source-to-typed-core.md).

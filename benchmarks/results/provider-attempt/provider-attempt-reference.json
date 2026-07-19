@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "result_id": "nmlt-benchmark-result-v1:sha256:1f9e4cd3b51811dea570bf6ee28bf3de0a196076a467e9540229206382be90eb",
+  "result_id": "nmlt-benchmark-result-v1:sha256:89bb74ebdae98d716eec4d42fe91a8274af4a145e670e45030acd39ec4a95818",
   "case_id": "provider-attempt-reference",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
@@ -9,7 +9,7 @@
   "engine": {
     "name": "nmlt-explicit-state",
     "version": "0.0.1",
-    "source_set_id": "nmlt-engine-source-set-v1:sha256:a3eabe3f83605e96138eac6e760c086b0d219a1d9e75c7055d8fc9d43a199d5a",
+    "source_set_id": "nmlt-engine-source-set-v1:sha256:725f2eb4cb362a908699ff736ac32fb119bf0e4f3fa11840aae08c3bf75a35d0",
     "executable_sha256": "6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4",
     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
     "target": "x86_64-unknown-linux-gnu",

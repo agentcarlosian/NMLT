@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "manifest_id": "nmlt-evidence-v1:sha256:a37b8531f2e736970f108b407491854cace7b6fc60d8ba9726eabd109e1d9a46",
+  "manifest_id": "nmlt-evidence-v1:sha256:1ad493b67b2590b3fa6ee5341e93a55d3ffa49d7046d5c000792cf5b2fc9e676",
   "artifact": {
     "path": "benchmarks/seeded-defects/provider-attempt/response-binding.nmlt",
     "source_id": "nmlt-source-v1:sha256:3f491ca3c289a1d5eff7d11519fb4509e60345aa8eb60819baa1ad442460462e"
@@ -14,7 +14,7 @@
     "kind": "deterministic_explicit_state_bfs_v1",
     "engine": "nmlt-explicit-state",
     "engine_version": "0.0.1",
-    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:a3eabe3f83605e96138eac6e760c086b0d219a1d9e75c7055d8fc9d43a199d5a",
+    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:725f2eb4cb362a908699ff736ac32fb119bf0e4f3fa11840aae08c3bf75a35d0",
     "engine_executable_sha256": "6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4"
   },
   "scope": {
@@ -36,11 +36,11 @@
   "trusted_components": [
     {
       "id": "trusted-component-inventory",
-      "identity": "sha256:bfe10cfbfdd74fe88fca43348d1a59c3821190128c4d6a893de1e76efb3c9d9a"
+      "identity": "sha256:ffe99399d56a7789c0e538ee59c7681fb927f5bc91a2a8372b0646bfe56608b7"
     },
     {
       "id": "nmlt-engine-source",
-      "identity": "nmlt-engine-source-set-v1:sha256:a3eabe3f83605e96138eac6e760c086b0d219a1d9e75c7055d8fc9d43a199d5a"
+      "identity": "nmlt-engine-source-set-v1:sha256:725f2eb4cb362a908699ff736ac32fb119bf0e4f3fa11840aae08c3bf75a35d0"
     },
     {
       "id": "nmlt-engine-executable",
@@ -48,7 +48,7 @@
     },
     {
       "id": "benchmark-result",
-      "identity": "nmlt-benchmark-result-v1:sha256:c1bd34a64dde9e4b39e1ed5c28e0857dd53c618ec888f82e2c11ed044321a73a"
+      "identity": "nmlt-benchmark-result-v1:sha256:40af22e2b69999d1162e1e2d69c733bb234bfae94a6b21799f54333a1b79721d"
     },
     {
       "id": "rust-toolchain-declaration",
@@ -64,11 +64,11 @@
     },
     {
       "id": "benchmark-integrity-checker",
-      "identity": "sha256:e9d958aa725dda40eb9e316eed0f250f63dd200c6fbb41c15c7986fd91b2b33f"
+      "identity": "sha256:80b1d6394a0bcb129c1c9577e4717c0e721d27c7310942661c6143d071d572d9"
     }
   ],
   "negative_controls": [
-    "nmlt-benchmark-result-v1:sha256:c1bd34a64dde9e4b39e1ed5c28e0857dd53c618ec888f82e2c11ed044321a73a",
+    "nmlt-benchmark-result-v1:sha256:40af22e2b69999d1162e1e2d69c733bb234bfae94a6b21799f54333a1b79721d",
     "nmlt-expected-counterexample-v1:sha256:ebae96b362b15cff69eb2e8f8631b1e19d6ffc703494d609fc98b4b1384155b7"
   ],
   "residual_gaps": [
@@ -78,6 +78,6 @@
   ],
   "witness": {
     "kind": "model-check-report/1.0.0#counterexample",
-    "reference": "nmlt-benchmark-result-v1:sha256:c1bd34a64dde9e4b39e1ed5c28e0857dd53c618ec888f82e2c11ed044321a73a#property=EvaluationRequiresIntactResponse"
+    "reference": "nmlt-benchmark-result-v1:sha256:40af22e2b69999d1162e1e2d69c733bb234bfae94a6b21799f54333a1b79721d#property=EvaluationRequiresIntactResponse"
   }
 }

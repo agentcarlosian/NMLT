@@ -1451,18 +1451,18 @@ pub fn elaborate(hir: &ResolvedProgram) -> Result<ElaborationArtifact, Elaborati
             maximum: MAX_CERTIFICATE_BYTES,
         });
     }
-    Ok(ElaborationArtifact {
-        source_set_id: hir.source_set_id(),
-        module_map_id: hir.module_map_id(),
-        surface_program_id: hir.surface_program_id(),
-        resolved_hir_id: hir.resolution_id(),
+    Ok(ElaborationArtifact::new(
+        hir.source_set_id(),
+        hir.module_map_id(),
+        hir.surface_program_id(),
+        hir.resolution_id(),
         core_program,
         ruleset_bundle_id,
         resource_policy_id,
-        required_roots: builder.required_roots,
-        derivations: builder.derivations,
+        builder.required_roots,
+        builder.derivations,
         certificate_id,
-    })
+    ))
 }
 
 const fn map_binary(operator: HirBinaryOp) -> CoreBinaryOp {

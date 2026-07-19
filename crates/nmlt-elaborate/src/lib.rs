@@ -11,8 +11,8 @@ mod identity;
 mod model;
 
 pub use elaborate::{ElaborationError, elaborate};
-pub use identity::{DerivationNodeId, ElaborationCertificateId, ResourcePolicyId, RulesetBundleId};
-pub use model::{
-    DerivationConclusion, DerivationNode, DerivationWitness, ElaborationArtifact, ElaborationRule,
-    JudgmentKind, ObligationKey,
+pub use nmlt_certificate::{
+    DerivationConclusion, DerivationNode, DerivationNodeId, DerivationWitness, ElaborationArtifact,
+    ElaborationCertificateId, ElaborationRule, JudgmentKind, ObligationKey, ResourcePolicyId,
+    RulesetBundleId,
 };

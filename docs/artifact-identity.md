@@ -181,6 +181,25 @@ exactly the set of HIR node origins, and rejects derivations unreachable from
 the required roots. These identities mean “this producer artifact has these
 exact contents”; only M9-006 independent replay may confer checked status.
 
+M9-006 binds the checker implementation profile to its selected ruleset and
+resource-policy digests:
+
+```text
+kernel_profile_digest = SHA256(
+  "NMLT-KERNEL-PROFILE\0v1\0" ||
+  text("nmlt-kernel-v1") ||
+  raw(ruleset_bundle_digest) || raw(resource_policy_digest)
+)
+kernel_profile_id = "nmlt-kernel-profile-v1:sha256:" ||
+                    hex(kernel_profile_digest)
+```
+
+The v1 golden ID is
+`nmlt-kernel-profile-v1:sha256:f8d30d31838ac877f60425c132a06922d8ffd72e5beb44cf226cda8ed65afab5`.
+`CheckedProgram` binds that profile, the accepted certificate digest, and the
+owned explicit core. This is type/formation acceptance for the exact M9-v1
+fragment, not temporal truth or a source-to-core compiler-correctness theorem.
+
 ## Canonical-example registry identity
 
 The Phase 0 registry freezes more than source bytes. Each example entry binds

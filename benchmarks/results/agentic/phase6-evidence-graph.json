@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "graph_id": "nmlt-phase6-graph-v1:sha256:c2b0baa05a341a2e4fe1eb311ea3a4fbbcac93a2739ebc3e96a4870634465f7c",
+  "graph_id": "nmlt-phase6-graph-v1:sha256:98bd3db916fe3ca90602828716df6d2064abc27d755baf39afebda5efe224e75",
   "fixture": "authority-repair-and-runtime-drift-v1",
   "evaluation_binding": {
     "path": "benchmarks/agentic/evaluation.json",
@@ -12,7 +12,7 @@
   },
   "runtime_binding": {
     "path": "benchmarks/results/temporal/phase4-evidence.json",
-    "content_sha256": "sha256:1f339de3f213f6d39c5ac0768e6d5ae7a86e7068a01a11831991757c165a30c0",
+    "content_sha256": "sha256:a874ddf0f59560424d0b181ead0150a4efcdac75fdd4d996460cc8fa44619778",
     "model_id": "nmlt-temporal-graph-v1:sha256:7cd9a36ee384964f76b4c3f8b9ea0ccad3016c9e178f864629a5ac7ed6dd849f",
     "implementation_id": "nmlt-temporal-source-set-v1:sha256:b5d0f06b74e95f28d4bc02961e75be2cee5fadc226c36e15a3c169aa62988453",
     "runtime_case_id": "nmlt-runtime-case-v1:sha256:0ca55bde00d4edd46c5e9a8a5f451d88f479221bfd618e71fbf3846c8e62ec34",
@@ -395,7 +395,7 @@
     }
   ],
   "implementation": {
-    "source_set_id": "nmlt-agent-source-set-v1:sha256:4165c77c12fed3a4ce4f596e0d9fda76fe93792c33f613ee5ccda21d0e21d8d7",
+    "source_set_id": "nmlt-agent-source-set-v1:sha256:67c3217b0c7c15518d68ee7c70f1d1358bf9869a2e4a675e78df6f4c0b72ce15",
     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
     "target": "x86_64-unknown-linux-gnu",
     "executable_sha256": "bc83b7040f21c1f564cd24b1c95b4666c9d53f5e35df37b8e3f081760d39e8f2",

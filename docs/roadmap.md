@@ -98,8 +98,10 @@ M9-002. M9-003 now produces a deterministic all-reference HIR, stable local
 binders, and an exact-source replayed `ResolutionMap`. M9-004 defines a
 span-free, identity-bound explicit typed core with structural validation and
 resource ceilings. Neither result establishes HIR-to-core correspondence;
-M9-005 now emits identity-bound bidirectional derivations; independent kernel checking is next, followed by engine migration, evidence binding, and
-mechanized correspondence. No current resolver result is a `CheckedProgram`.
+M9-005 emits identity-bound bidirectional derivations and M9-006 independently
+replays them into opaque `CheckedProgram` values. Engine migration is next,
+followed by persisted evidence binding and mechanized correspondence. Resolver
+or elaborator success alone is never a `CheckedProgram`.
 Once this semantic spine is trustworthy, work proceeds to deeper temporal,
 refinement, compositional, and quantitative mathematics and to broader
 independently run comparison models without weakening existing evidence

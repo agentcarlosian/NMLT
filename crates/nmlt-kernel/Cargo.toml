@@ -1,6 +1,6 @@
 [package]
-name = "nmlt-elaborate"
-description = "Bidirectional HIR-to-typed-core elaboration and certificates for NMLT"
+name = "nmlt-kernel"
+description = "Independent elaboration-certificate checker and CheckedProgram authority for NMLT"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,6 +11,9 @@ publish = false
 nmlt-certificate = { path = "../nmlt-certificate" }
 nmlt-hir = { path = "../nmlt-hir" }
 nmlt-ir = { path = "../nmlt-ir" }
+
+[dev-dependencies]
+nmlt-elaborate = { path = "../nmlt-elaborate" }
 
 [lints]
 workspace = true

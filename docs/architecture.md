@@ -46,7 +46,13 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
 - `nmlt-elaborate`: bidirectional resolved-HIR elaboration, exact action/frame
   reconstruction, system-indexed formula formation, explicit insertions, and
   a canonical identity-bound derivation DAG with complete root/origin coverage.
-  It is a trusted producer and cannot construct `CheckedProgram`.
+  It is an untrusted producer for the kernel-accepted profile and cannot
+  construct `CheckedProgram`.
+- `nmlt-certificate`: neutral certificate syntax and producer-side canonical
+  identity construction. Its producer utilities do not decide acceptance.
+- `nmlt-kernel`: independent identity, graph, resource, rule, and aggregate
+  core replay. Its private fields make successful `check` the only route to
+  `CheckedProgram`.
 - `nmlt-engine`: typed provider fragment and deterministic explicit-state
   exploration with structured counterexamples.
 - `nmlt-temporal`: canonical finite graphs, `always`/eventuality/lasso checking,
@@ -65,12 +71,14 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
   Lean without a verified Rust extraction or analyzer correspondence.
 - `nmlt-cli`: workspace command-line entry point.
 
-## Planned boundaries
+## Active and planned boundaries
 
 - Completed M9 elaboration (M9-005): exact resolved-HIR obligations connect to
   `nmlt-ir` nodes through a canonical bidirectional derivation artifact.
-- Active M9 `nmlt-kernel` (M9-006): small checker for typed-core elaboration
-  evidence after the explicit core and elaborator boundaries exist.
+- Completed M9 `nmlt-kernel` (M9-006): independent typed-core elaboration
+  checker with fail-closed diagnostics and a sealed checked-program boundary.
+- Active M9 engine migration (M9-007): replace the provider parser/core route
+  with exclusive consumption of `CheckedProgram`.
 - Future separation of `nmlt-engine` into stable transition and model-checking
   boundaries once the first executable slice has more than one consumer.
 - Future solver integration behind the existing SMT-LIB request protocol, with

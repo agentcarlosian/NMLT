@@ -32,7 +32,9 @@ pipeline. M9 now has an accepted integration contract, a complete
 origin-censused surface projection, a source-fed resolved HIR with replayable
 all-reference coverage, a structurally validated explicit typed core, and an
 identity-bound bidirectional elaborator that emits a complete derivation DAG.
-Independent certificate checking is the active next boundary. NMLT does not
+An independent kernel now replays that DAG against exact HIR and core and is
+the sole constructor of `CheckedProgram`; engine migration is the active next
+boundary. NMLT does not
 yet provide full surface-language execution, verified source-to-IR
 elaboration, general or infinite-state verification, production runtime
 attestation, general AI-repair evidence, signed evidence, or code generation.

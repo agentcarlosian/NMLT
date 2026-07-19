@@ -891,9 +891,15 @@ Substage status (2026-07-19):
   state-predicate insertions explicit, constructs complete action/frame and
   system-indexed property records, and emits an identity-bound canonical
   derivation DAG. Producer-side invariants require exact HIR-root coverage,
-  exact HIR-origin coverage, and full DAG reachability. The elaborator remains
-  trusted and cannot construct `CheckedProgram`; independent replay is M9-006.
-- [ ] **M9-006 — Implement the independent kernel.**
+  exact HIR-origin coverage, and full DAG reachability.
+- [x] **M9-006 — Implement the independent kernel.** `nmlt-certificate`
+  exposes neutral, untrusted certificate syntax while `nmlt-kernel`
+  independently recomputes identities, enforces checker-selected rules and
+  resource policy, validates the complete DAG, reconstructs every typing and
+  formation rule plus aggregate core records, and alone constructs opaque
+  `CheckedProgram`. Controls reject stale, forged, resealed-semantic, cyclic,
+  unreachable, duplicate, unknown-tag, noncanonical, and oversized inputs.
+  Persisted byte decoding and evidence-manifest binding remain M9-008.
 - [ ] **M9-007 — Migrate the engine and remove the second parser.**
 - [ ] **M9-008 — Bind semantic evidence identities.**
 - [ ] **M9-009 — Mechanize correspondence.**
