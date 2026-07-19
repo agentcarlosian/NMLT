@@ -2,10 +2,13 @@
 
 - Status: Active pre-alpha research prototype
 - Implementation status: bounded milestones across Phases 0–7, the M8
-  independent-reproduction gate, and the M9 integrated source-to-typed-core
-  vertical slice are complete; broader promotion gates remain
-- Active focus: post-M9 behavior-indexed temporal typing, followed by deeper
-  mathematical and verification work
+  independent-reproduction gate, M9's integrated source-to-typed-core slice,
+  and M10's behavior/refinement and certificate seed are complete; M11-001a's
+  finite open-composition safety seed is also complete, while broader
+  promotion gates remain
+- Active focus: M11-001b contract-sound label-aware open refinement
+- Latest reboot-safe checkpoint:
+  [2026-07-19 handoff](docs/reboot-handoff-2026-07-19.md)
 - Initial planning baseline: `cf4f006` (`chore: establish NMLT research scaffold`)
 - Updated: 2026-07-19
 

@@ -47,6 +47,24 @@ versioning compatibility promises.
   source/module/definition/node identities, strict ambiguity/shadowing rules,
   bounded fail-closed inputs, and a canonical adapter from exact bytes through
   the existing lossless frontend.
+- Completed M9's bounded exact-source route through resolved HIR,
+  identity-bound bidirectional elaboration, structurally validated explicit
+  typed core, independent derivation replay, opaque `CheckedProgram`, provider
+  execution, semantic identity readback, and a narrow Rust/Lean correspondence
+  model.
+- Completed M10's bounded behavior/refinement and certificate seed, including
+  behavior-indexed temporal typing, constructive/classical property families,
+  directed-refinement laws, finite coinductive/up-to certificates, typed
+  uncertainty profiles, proof-complexity metrics, an Rzk experiment, and a
+  narrow checked-core-to-behavior bridge.
+- Added M11-001a's finite open-system safety profile: executable polarity,
+  receptiveness, strict symbolic discharge, synchronous connection and
+  lifted-refinement checks; conservative construction limits; an axiom-free
+  Lean exact-action product-congruence theorem; negative controls; and
+  claim-specific TCB and evidence readback.
+- Added a dated reboot handoff that records the durable branch baseline,
+  assurance nonclaims, local mathematics-archive identity, exact M11-001b
+  continuation scope, and restart validation commands.
 
 ### Changed
 
@@ -63,3 +81,7 @@ versioning compatibility promises.
   contract and surface-projection substages. The module/declaration resolver is
   implemented; raw-term/local-binder `ResolutionMap` coverage remains open, so
   this does not yet construct `CheckedProgram` or migrate an engine.
+- Advanced the active research focus through completed M9 and M10 bounded gates
+  to M11-001b contract-sound, label-aware open refinement. The parent M11-001
+  remains open, and the M11-001a Rust and Lean representations are explicitly
+  related but non-corresponding.

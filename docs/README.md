@@ -4,6 +4,11 @@ NMLT means **New Mathematics, Languages, and Techniques**. These documents
 distinguish the umbrella research program, its flagship NMLT language, current
 behavior, and research intent.
 
+The latest restart point is the
+[2026-07-19 reboot handoff](reboot-handoff-2026-07-19.md). It records the
+durable baseline, current assurance boundary, exact next milestone, validation
+commands, and local research-archive state; `Plan.md` remains authoritative.
+
 ## Orientation
 
 1. [Manifesto](manifesto.md)
@@ -23,6 +28,7 @@ behavior, and research intent.
 15. [M11 open-system refinement research](research-notes/m11-open-system-refinement-2026-07-19.md)
 16. [Temporal, refinement, and open-system checker](temporal-refinement.md)
 17. [Independent reproduction record](reproduction-2026-07-18.md)
+18. [Reboot handoff and continuation point](reboot-handoff-2026-07-19.md)
 
 Supporting material includes the [competitor matrix](competitor-matrix.md),
 [glossary](glossary.md), [source corpus](source-corpus.md), and

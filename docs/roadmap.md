@@ -108,3 +108,35 @@ Once this semantic spine is trustworthy, work proceeds to deeper temporal,
 refinement, compositional, and quantitative mathematics and to broader
 independently run comparison models without weakening existing evidence
 classes.
+
+## M10 — Behavior refinement and typed certificates (bounded seed complete 2026-07-19)
+
+M10 establishes behavior-indexed temporal typing, constructive and classical
+property families, finite-stuttering refinement laws, a checked Rzk seed,
+untrusted certificate simplification with proof-DAG metrics, typed uncertainty
+families with exact profile identities, finite coinductive/up-to certificates,
+and a narrow checked-core-to-behavior bridge. Each result retains its own
+subject identity and evidence ceiling.
+
+This milestone does not establish fairness-complete liveness, validate
+statistical side conditions, place Rzk in the TCB, admit arbitrary cyclic
+certificates, or prove full source-to-behavior preservation.
+
+## M11 — Open composition and evidence-bearing mathematics (active 2026-07-19)
+
+M11-001a is complete at a finite exact-action safety scope. Rust checks global
+input receptiveness, strict symbolic discharge, explicit one-to-one
+synchronization, boundary/refinement compatibility, and bounded product
+construction. Lean separately proves axiom-free one-sided structural product
+congruence, composability preservation, and product receptiveness under its
+arbitrary exact-wiring model. No Rust/Lean correspondence theorem is claimed.
+
+M11-001b is next: canonical finite assumption/guarantee predicates,
+payload-type identity, contravariant assumptions, covariant guarantees, and
+identity/composition laws for open refinement. Full supported congruence,
+source/behavior preservation, constructive temporal evidence, artifact-bound
+uncertainty, fairness, theorem-bound up-to closures, certificate cost evidence,
+the proof-relevant Segal experiment, and provenance synchronization remain
+later M11 gates. See the
+[reboot handoff](reboot-handoff-2026-07-19.md) for the exact continuation
+state.
