@@ -37,6 +37,16 @@ versioning compatibility promises.
   and uncertainty bounds, including unknown-preserving arithmetic, algebra
   controls, schema-valid evidence, and a Lean-checked mathematical product
   algebra; the plan analyzer and Rust correspondence remain unverified.
+- Accepted RFC 0013's narrow source-to-typed-core contract, including frozen
+  identity domains, namespaces, resource policy, certificate shape, and
+  Rust/Lean responsibility boundary.
+- Complete ordered surface projection with an independent CST-origin census,
+  explicit unsupported/recovery nodes, stable M9 feature-boundary diagnostics,
+  and regression controls against silent drops and borrowed descendant names.
+- `nmlt-hir` deterministic closed-set module and namespace resolution, stable
+  source/module/definition/node identities, strict ambiguity/shadowing rules,
+  bounded fail-closed inputs, and a canonical adapter from exact bytes through
+  the existing lossless frontend.
 
 ### Changed
 
@@ -49,3 +59,7 @@ versioning compatibility promises.
   bounded scopes. The complete gate reproduced from a fresh clone of
   `e3f7ec6ae2d14ade78183ff78d58f7198cb76858`; a `0.1.0` tag is deliberately
   deferred while the documented promotion gaps remain.
+- Moved M9 from contract design into source-fed resolution after completing its
+  contract and surface-projection substages. The module/declaration resolver is
+  implemented; raw-term/local-binder `ResolutionMap` coverage remains open, so
+  this does not yet construct `CheckedProgram` or migrate an engine.

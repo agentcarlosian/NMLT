@@ -120,8 +120,9 @@ fn canonical_corpus_crosses_the_untyped_projection_without_recovery() {
             "{relative_path}: {:?}",
             projection.issues
         );
-        assert_eq!(projection.file.systems.len(), 1, "{relative_path}");
-        let name = projection.file.systems[0]
+        let systems = projection.file.systems();
+        assert_eq!(systems.len(), 1, "{relative_path}");
+        let name = systems[0]
             .name
             .as_ref()
             .expect("a clean canonical system has a name");

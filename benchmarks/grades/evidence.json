@@ -101,8 +101,8 @@
     "trusted_component_source_ids": {
       "evidence_harness": "nmlt-source-v1:sha256:404d81ee410f78b6852dcc78896c9e5afe6c0348e3c6feaa2efea7b5c9441e93",
       "evidence_schema": "nmlt-source-v1:sha256:65e42cd282dff0e5061dcd35313704fb75a10b7685befbd9a21a5f47cb279420",
-      "schema_validator": "nmlt-source-v1:sha256:39dd25710b0695f00b90315a1b35f404078092b995ff46a8c9dc5db5080a6337",
-      "trusted_component_inventory": "nmlt-source-v1:sha256:a4799c3680ef8e482b1c8220392cb2fff01e50e99778740a5eaa2edb6a91b114"
+      "schema_validator": "nmlt-source-v1:sha256:abf8f92692b1128e6050e0d27eba25755ec0a3a8346487fad6c465d40cfd3a0d",
+      "trusted_component_inventory": "nmlt-source-v1:sha256:c306cc3f52e5ca179e7e08b35a5bcb07318f22aff97ab84468fbe014ee5ccb17"
     }
   },
   "metatheory": {
@@ -143,5 +143,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:e748df2684a6fc09b6cf1568663f99b5f27714a63dce213a41c6c4b8bfffc0ae"
+  "manifest_id": "nmlt-evidence-v1:sha256:da3e84850406cea6b4e7a3d8a912f1801ea454b0165996fbd3323277f18febb8"
 }

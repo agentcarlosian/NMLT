@@ -50,8 +50,13 @@ system ProviderAttempt(req: Request) {
 The current lossless frontend recognizes the Phase 1 declaration shells,
 including modules and surface-only data/record/function forms, systems, state,
 actions, `require`, explicit `set` targets, capabilities, properties,
-observations, and hiding. It projects the supported structure into a partial
-untyped core while preserving unsupported or recovered nodes explicitly.
+observations, and hiding. It projects that structure into a complete untyped
+surface artifact while preserving unsupported or recovered nodes explicitly.
+M9 strengthens that boundary into an ordered, origin-censused surface
+projection: modules are not flattened, imports and enums are structured,
+system/action parameters remain distinct, and no semantic CST node may vanish.
+The first M9 feature profile remains intentionally narrower than everything the
+lossless parser recognizes.
 Expression precedence, name resolution, typing, effects, temporal meaning,
 refinement meaning, and general execution remain narrow or deferred; the full
 example above is still an illustrative design fixture rather than an

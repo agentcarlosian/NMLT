@@ -31,8 +31,14 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
 ## Implemented components
 
 - `nmlt-core`: lossless tokens/CST, recovering declaration parser, stable
-  diagnostics, preservation formatter, partial CST-to-untyped-core projection,
-  and structural evidence types.
+  diagnostics, preservation formatter, ordered and origin-censused complete
+  surface projection, explicit M9 surface-feature diagnostics, and structural
+  evidence types.
+- `nmlt-hir`: the canonical `nmlt-core`-to-resolver adapter, closed acyclic
+  imports, typed declaration namespaces, direct-import lookup, stable semantic
+  identities, opaque source-bound resolver inputs/results, and bounded
+  fail-closed resolution. It is not yet typed expression HIR or a checked core
+  program.
 - `nmlt-engine`: typed provider fragment and deterministic explicit-state
   exploration with structured counterexamples.
 - `nmlt-temporal`: canonical finite graphs, `always`/eventuality/lasso checking,
@@ -53,8 +59,11 @@ validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
 
 ## Planned boundaries
 
-- Active M9 `nmlt-hir`: resolved and typed high-level representation.
-- Active M9 `nmlt-kernel`: small checker for typed-core elaboration evidence.
+- Active M9 resolution: `nmlt-hir` module/declaration tables, lookup rules, and
+  stable identities are implemented; a source-derived map for every raw-term
+  reference and local binder remains before typed expression HIR.
+- Planned M9 `nmlt-kernel` (M9-006): small checker for typed-core elaboration
+  evidence after the explicit core and elaborator boundaries exist.
 - Future separation of `nmlt-engine` into stable transition and model-checking
   boundaries once the first executable slice has more than one consumer.
 - Future solver integration behind the existing SMT-LIB request protocol, with

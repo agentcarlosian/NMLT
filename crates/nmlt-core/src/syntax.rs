@@ -5,6 +5,11 @@ use crate::cst::{GreenElement, GreenNode, GreenToken, SyntaxKind};
 use crate::lexer::{Token, TokenKind, lex_source};
 use crate::{Diagnostic, Span};
 
+/// Maximum number of recursively nested module wrappers accepted by the
+/// lossless parser before bounded recovery replaces the next module with one
+/// explicit error node.
+pub const MAX_MODULE_NESTING_DEPTH: usize = 256;
+
 /// A syntactically recognized top-level system declaration.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SystemDecl {
@@ -205,7 +210,8 @@ struct Parser<'source, 'tokens> {
     events: Vec<Event>,
     diagnostics: Vec<Diagnostic>,
     systems: Vec<SystemDecl>,
-    system_names: BTreeSet<String>,
+    system_name_scopes: Vec<BTreeSet<String>>,
+    module_depth: usize,
     last_end: usize,
 }
 
@@ -218,7 +224,8 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
             events: Vec::new(),
             diagnostics: Vec::new(),
             systems: Vec::new(),
-            system_names: BTreeSet::new(),
+            system_name_scopes: vec![BTreeSet::new()],
+            module_depth: 0,
             last_end: 0,
         }
     }
@@ -239,7 +246,7 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
         if self.at_keyword("module") {
             self.parse_module_decl();
         } else if self.at_keyword("import") {
-            self.parse_line_decl(SyntaxKind::ImportDecl);
+            self.parse_import_decl();
         } else if self.at_keyword("data") {
             self.parse_line_decl(SyntaxKind::DataDecl);
         } else if self.at_keyword("type") {
@@ -259,17 +266,34 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
     }
 
     fn parse_module_decl(&mut self) {
+        if self.module_depth >= MAX_MODULE_NESTING_DEPTH {
+            self.error_at_current(
+                "NMLT2014",
+                format!("module nesting exceeds the maximum depth of {MAX_MODULE_NESTING_DEPTH}"),
+            );
+            self.consume_overdepth_module_as_error();
+            return;
+        }
+
+        self.module_depth += 1;
+        self.parse_module_decl_within_limit();
+        self.module_depth -= 1;
+    }
+
+    fn parse_module_decl_within_limit(&mut self) {
         self.start(SyntaxKind::ModuleDecl);
         self.bump();
         self.expect_identifier("NMLT2002", "expected a module name");
         self.bump_trivia();
 
         if !self.eat_kind(TokenKind::LeftBrace) {
+            self.error_at_current("NMLT2003", "expected `{` to start module body");
             self.parse_line_tail();
             self.finish();
             return;
         }
 
+        self.system_name_scopes.push(BTreeSet::new());
         while !self.at_end() && !self.at_significant_kind(TokenKind::RightBrace) {
             if self.at_trivia() {
                 self.bump();
@@ -281,6 +305,38 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
             self.bump_trivia();
             self.bump();
         }
+        self.system_name_scopes
+            .pop()
+            .expect("module parsing always has a nested system-name scope");
+        self.finish();
+    }
+
+    fn consume_overdepth_module_as_error(&mut self) {
+        self.start(SyntaxKind::Error);
+        self.bump();
+        self.expect_identifier("NMLT2002", "expected a module name");
+        self.bump_trivia();
+        if self.at_kind(TokenKind::LeftBrace) {
+            self.consume_balanced_braces();
+        } else {
+            self.parse_line_tail_before_close();
+        }
+        self.finish();
+    }
+
+    fn parse_import_decl(&mut self) {
+        self.start(SyntaxKind::ImportDecl);
+        self.bump();
+        let target = self.expect_identifier("NMLT2002", "expected an imported module name");
+        self.bump_inline_trivia();
+        if target.is_some()
+            && !self.at_end()
+            && !self.is_line_break()
+            && !self.at_kind(TokenKind::RightBrace)
+        {
+            self.error_at_current("NMLT2012", "unexpected tokens after imported module name");
+        }
+        self.parse_line_tail_before_close();
         self.finish();
     }
 
@@ -371,7 +427,11 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
         self.finish();
 
         if let Some((name, name_span)) = name {
-            if self.system_names.insert(name.clone()) {
+            let current_scope = self
+                .system_name_scopes
+                .last_mut()
+                .expect("the source file always has a system-name scope");
+            if current_scope.insert(name.clone()) {
                 self.systems.push(SystemDecl {
                     name,
                     span: Span::new(start, end),
@@ -436,7 +496,7 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
 
         self.start(SyntaxKind::TypeExpr);
         let has_type = if multiline_type {
-            self.consume_expression_tokens(ExpressionEnd::SystemMember, true, false)
+            self.consume_expression_tokens(ExpressionEnd::SystemMember, true)
         } else {
             self.consume_type_until_value_or_line()
         };
@@ -620,32 +680,40 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
 
     fn parse_expression(&mut self, end: ExpressionEnd) -> bool {
         self.start(SyntaxKind::Expr);
-        let has_expression = self.consume_expression_tokens(end, false, true);
+        let has_expression = self.consume_expression_tokens(end, false);
         self.finish();
+        if end == ExpressionEnd::Statement && self.at_statement_terminator() {
+            self.bump();
+        }
         has_expression
     }
 
-    fn consume_expression_tokens(
-        &mut self,
-        end: ExpressionEnd,
-        stop_before_equals: bool,
-        include_statement_terminator: bool,
-    ) -> bool {
+    fn consume_expression_tokens(&mut self, end: ExpressionEnd, stop_before_equals: bool) -> bool {
         let mut delimiters = Vec::new();
         let mut has_significant = false;
 
         while !self.at_end() {
+            if end == ExpressionEnd::Statement && self.at_semicolon_punctuation() {
+                if delimiters.is_empty() && self.at_statement_terminator() {
+                    break;
+                }
+
+                self.error_at_current(
+                    "NMLT2013",
+                    "`;` must be a standalone action statement terminator",
+                );
+                self.bump();
+                if delimiters.is_empty() {
+                    break;
+                }
+                continue;
+            }
+
             if delimiters.is_empty() {
                 if self.at_kind(TokenKind::RightBrace) {
                     break;
                 }
                 if stop_before_equals && self.at_text("=") {
-                    break;
-                }
-                if end == ExpressionEnd::Statement && self.at_statement_terminator() {
-                    if include_statement_terminator {
-                        self.bump();
-                    }
                     break;
                 }
                 if self.is_line_break() {
@@ -755,6 +823,16 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
 
     fn parse_line_tail(&mut self) {
         while !self.at_end() {
+            let is_end = self.is_line_break();
+            self.bump();
+            if is_end {
+                break;
+            }
+        }
+    }
+
+    fn parse_line_tail_before_close(&mut self) {
+        while !self.at_end() && !self.at_kind(TokenKind::RightBrace) {
             let is_end = self.is_line_break();
             self.bump();
             if is_end {
@@ -938,6 +1016,12 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
     fn at_statement_terminator(&self) -> bool {
         !self.at_end()
             && self.current_kind() == TokenKind::Punctuation
+            && self.current_text() == ";"
+    }
+
+    fn at_semicolon_punctuation(&self) -> bool {
+        !self.at_end()
+            && self.current_kind() == TokenKind::Punctuation
             && self.current_text().contains(';')
     }
 
@@ -1109,9 +1193,16 @@ fn compare_diagnostics(left: &Diagnostic, right: &Diagnostic) -> Ordering {
 
 #[cfg(test)]
 mod tests {
-    use crate::SyntaxKind;
+    use crate::{Span, SyntaxKind};
 
-    use super::{parse_cst, parse_source};
+    use super::{MAX_MODULE_NESTING_DEPTH, parse_cst, parse_source};
+
+    fn nested_modules(depth: usize) -> String {
+        let openings = (0..depth)
+            .map(|index| format!("module M{index} {{"))
+            .collect::<String>();
+        format!("{openings}system S {{}}{}", "}".repeat(depth))
+    }
 
     #[test]
     fn parses_a_system_and_nested_blocks() {
@@ -1123,7 +1214,7 @@ mod tests {
     #[test]
     fn ignores_system_text_in_comments_and_strings() {
         let parsed =
-            parse_source("// system Fake {}\nimport \"system AlsoFake {}\"\nsystem Real {}")
+            parse_source("// system Fake {}\ndata Note = \"system AlsoFake {}\"\nsystem Real {}")
                 .unwrap();
         assert_eq!(parsed.systems.len(), 1);
         assert_eq!(parsed.systems[0].name, "Real");
@@ -1195,6 +1286,65 @@ mod tests {
     fn rejects_duplicate_systems() {
         let diagnostics = parse_source("system Same {} system Same {}").unwrap_err();
         assert!(diagnostics.iter().any(|item| item.code == "NMLT0006"));
+    }
+
+    #[test]
+    fn module_nesting_is_bounded_before_recursive_descent() {
+        let at_limit = nested_modules(MAX_MODULE_NESTING_DEPTH);
+        let parsed = parse_cst(&at_limit);
+        assert!(
+            parsed.diagnostics().is_empty(),
+            "{:?}",
+            parsed.diagnostics()
+        );
+        assert_eq!(parsed.reconstruct(), at_limit);
+        assert_eq!(
+            parsed.root().descendants(SyntaxKind::ModuleDecl).len(),
+            MAX_MODULE_NESTING_DEPTH
+        );
+
+        let above_limit = nested_modules(MAX_MODULE_NESTING_DEPTH + 1);
+        let parsed = parse_cst(&above_limit);
+        assert_eq!(parsed.reconstruct(), above_limit);
+        let depth_errors = parsed
+            .diagnostics()
+            .iter()
+            .filter(|diagnostic| diagnostic.code == "NMLT2014")
+            .collect::<Vec<_>>();
+        assert_eq!(depth_errors.len(), 1);
+        let rejected_start = above_limit
+            .find(&format!("module M{MAX_MODULE_NESTING_DEPTH} {{"))
+            .expect("the boundary module is present");
+        assert_eq!(
+            depth_errors[0].span,
+            Some(Span::new(rejected_start, rejected_start + "module".len(),))
+        );
+        assert_eq!(parsed.root().descendants(SyntaxKind::Error).len(), 1);
+        assert_eq!(
+            parsed.root().descendants(SyntaxKind::ModuleDecl).len(),
+            MAX_MODULE_NESTING_DEPTH
+        );
+
+        let openings = (0..MAX_MODULE_NESTING_DEPTH)
+            .map(|index| format!("module M{index} {{"))
+            .collect::<String>();
+        let newline_body = format!(
+            "{openings}module TooDeep\n{{ system Hidden {{}} }}\nsystem Sibling {{}}{}",
+            "}".repeat(MAX_MODULE_NESTING_DEPTH)
+        );
+        let parsed = parse_cst(&newline_body);
+        assert_eq!(parsed.reconstruct(), newline_body);
+        assert_eq!(
+            parsed
+                .diagnostics()
+                .iter()
+                .filter(|diagnostic| diagnostic.code == "NMLT2014")
+                .count(),
+            1
+        );
+        assert_eq!(parsed.root().descendants(SyntaxKind::Error).len(), 1);
+        assert_eq!(parsed.root().descendants(SyntaxKind::SystemDecl).len(), 1);
+        assert_eq!(parsed.systems()[0].name, "Sibling");
     }
 
     #[test]

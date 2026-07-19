@@ -43,8 +43,9 @@ The repository currently contains:
   replay regression that distinguishes the corrected `NoBlindReplay` claim;
 - JSON Schemas and independent readback harnesses for benchmark, model-check,
   temporal, multi-engine, agentic, graded, and general evidence artifacts;
-- a Rust workspace with `nmlt-core`, `nmlt-engine`, `nmlt-temporal`,
-  `nmlt-verify`, `nmlt-agent`, `nmlt-grades`, and `nmlt-cli`;
+- a Rust workspace with `nmlt-core`, `nmlt-hir`, `nmlt-engine`,
+  `nmlt-temporal`, `nmlt-verify`, `nmlt-agent`, `nmlt-grades`, and
+  `nmlt-cli`;
 - an RFC-defined lossless lexer, immutable CST, recovering declaration parser,
   diagnostic snapshots, and preservation formatter;
 - `check`, `inspect`, `tokens`, `typecheck`, `model-check`, and `evidence` CLI
@@ -827,7 +828,7 @@ correspondence is unverified. Work continues as pre-alpha integration without
 weakening the completed bounded milestones.
 
 **M9: Integrated Source-to-Typed-Core Contract** started on 2026-07-19.
-The active contract is specified in draft
+The accepted contract is specified in
 [RFC 0013](rfcs/0013-source-to-typed-core.md), informed by the
 [2026-07-19 archive research note](docs/research-notes/source-to-typed-core-and-project-identity-2026-07-19.md).
 
@@ -866,6 +867,29 @@ Deliverables:
 6. bind source-set, resolver, elaborator, kernel, core, and certificate
    identities in evidence;
 7. mechanize the supported fragment's typing and operational correspondence.
+
+Substage status (2026-07-19):
+
+- [x] **M9-001 — Freeze the contract.** RFC 0013 fixes the supported fragment,
+  identity encodings, numeric policy, certificate DAG, resource limits, and
+  Rust/Lean boundary.
+- [x] **M9-002 — Complete surface projection.** The hierarchical projection is
+  ordered, explicit on unsupported/recovered nodes, and checked against an
+  independent CST-origin census.
+- [ ] **M9-003 — Resolve modules and names (active).** `nmlt-hir` now consumes
+  the canonical `nmlt-core` projection, rejects incomplete inputs, resolves a
+  closed acyclic direct-import graph with typed declaration namespaces, and
+  derives stable IDs under bounded inputs. Remaining: parse every accepted raw
+  type/expression into reference origins, assign action-local binders, emit the
+  canonical `ResolutionMap`, and verify exact reference-coverage/readback.
+- [ ] **M9-004 — Define explicit core.** Next: typed primitive terms, systems,
+  actions, capabilities, observations, and system-indexed properties.
+- [ ] **M9-005 — Implement bidirectional elaboration.**
+- [ ] **M9-006 — Implement the independent kernel.**
+- [ ] **M9-007 — Migrate the engine and remove the second parser.**
+- [ ] **M9-008 — Bind semantic evidence identities.**
+- [ ] **M9-009 — Mechanize correspondence.**
+- [ ] **M9-010 — Reproduce and audit the completed vertical slice.**
 
 Required promotion obligations:
 

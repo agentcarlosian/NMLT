@@ -28,11 +28,14 @@ The complete bounded gate was reproduced from a fresh clone of commit
 reproduction gate, not the remaining research or release-promotion gaps.
 
 These are separate assurance subjects, not a complete flagship-language
-pipeline. The active M9 milestone is integrating source through resolution and
-typed core without weakening those evidence boundaries. NMLT does not yet
-provide full surface-language resolution and execution, verified source-to-IR
-elaboration, general or infinite-state verification, production runtime
-attestation, general AI-repair evidence, signed evidence, or code generation.
+pipeline. M9 now has an accepted integration contract, a complete
+origin-censused surface projection, and a deterministic source-fed
+module/declaration resolver with typed lookup. Completing the source-derived
+reference map is the active resolver substage before explicit typed core and
+elaboration. NMLT does not yet provide full surface-language
+execution, verified source-to-IR elaboration, general or infinite-state
+verification, production runtime attestation, general AI-repair evidence,
+signed evidence, or code generation.
 
 The structural `evidence` command deliberately reports `unknown`. Semantic
 claims require `typecheck` or `model-check`; bounded exploration is reported as
@@ -88,7 +91,7 @@ targets are `model-reports`, `temporal-evidence`, `multi-engine-evidence`,
 ## Repository map
 
 ```text
-crates/       Frontend, provider engine, temporal/VC checkers, repair and grade prototypes, CLI
+crates/       Frontend/HIR, provider engine, temporal/VC checkers, repair and grade prototypes, CLI
 comparisons/  Comparable frozen provider models in TLA+, Quint, and P
 docs/         Manifesto, semantics, architecture, method, and roadmap
 rfcs/         Proposed language and evidence decisions

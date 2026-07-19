@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "result_id": "nmlt-benchmark-result-v1:sha256:66ec3fb205903d3120669022adc4e05f9b983cfd949f96c67e3694bd2a334ab3",
+  "result_id": "nmlt-benchmark-result-v1:sha256:eda13d7bec8b652aa5460ed5c31418ae18c5551a31ac2d0c593cdff0dd82297e",
   "case_id": "dispatch-before-authorize",
   "source": {
     "path": "benchmarks/seeded-defects/provider-attempt/dispatch-before-authorize.nmlt",
@@ -9,8 +9,8 @@
   "engine": {
     "name": "nmlt-explicit-state",
     "version": "0.0.1",
-    "source_set_id": "nmlt-engine-source-set-v1:sha256:7f658612bdef56f2c4e2eee8a17f76dd7877de4f5cc34882ecec822530b45a37",
-    "executable_sha256": "acbb7331173d093a0b60fa00ee312e5a744ce14a3e7c8bbf318a92577f88862b",
+    "source_set_id": "nmlt-engine-source-set-v1:sha256:2885914f87e263da986ba481304ea4b51e932466c5b7a0ce0336a88ca884e610",
+    "executable_sha256": "6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4",
     "toolchain": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
     "target": "x86_64-unknown-linux-gnu",
     "algorithm": "deterministic-bfs-v1",

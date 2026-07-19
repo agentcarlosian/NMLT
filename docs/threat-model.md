@@ -1,10 +1,10 @@
 # NMLT trusted-computing-base threat model
 
-- Scope: repository-wide pre-alpha NMLT frontend, typed/bounded engines,
-  temporal/refinement and resource extensions, agentic evaluation, artifacts,
-  and CI
-- Model version: 1.1
-- Reviewed: 2026-07-18
+- Scope: repository-wide pre-alpha NMLT frontend, M9 surface/resolution
+  boundary, typed/bounded engines, temporal/refinement and resource extensions,
+  agentic evaluation, artifacts, and CI
+- Model version: 1.2
+- Reviewed: 2026-07-19
 - Security policy: `SECURITY.md`
 - Trusted-component manifest: `security/trusted-components.toml`
 
@@ -99,10 +99,14 @@ untrusted source/imports
 - **B1:** OS filesystem and UTF-8 decoding enter the Rust frontend. Source,
   paths, comments, strings, and sizes are untrusted. Frontend success means
   only structural acceptance.
-- **B2:** The current executable-fragment parser, contextual elaborator, type
-  checker, frame/capability rules, simultaneous-update evaluator, and property
-  indexing enter the TCB for typed finite results. Unsupported language forms
-  must be rejected, not approximated as success.
+- **B2:** The M9 surface projector and closed module/declaration resolver enter
+  the TCB for projection and resolver-index claims. The current
+  executable-fragment parser,
+  contextual elaborator, type checker, frame/capability rules,
+  simultaneous-update evaluator, and property indexing additionally enter the
+  TCB for typed finite results. Unsupported language forms must be rejected,
+  not approximated as success. The M9 resolver remains trusted until an
+  independent resolver readback boundary is implemented and bound.
 - **B3:** TLC, Quint, P, SMT solvers, proof search, AI systems, and generated
   code may discover evidence but are untrusted unless a narrower checker
   validates a certificate under the exact obligation.
@@ -134,6 +138,16 @@ For canonical source IDs produced by the Phase 0 reference tool, Python 3,
 `pathlib`, `hashlib` and its SHA-256 implementation, the identity algorithm,
 and filesystem bytes are additionally trusted. This reference is not yet a
 proof-producing kernel.
+
+For the current M9 projection/resolver-index boundary, the lossless parser, total
+origin-censused projector, exact source/source-set and module-map identity
+encoders, portable-path policy, import-graph checker, namespace resolver, and
+pinned Rust build are trusted. This profile can establish deterministic closed
+module and named-declaration tables plus lookup behavior for the exact input.
+Raw expression/type references and local binders do not yet have the complete
+source-derived `ResolutionMap` required by RFC 0013. The profile cannot
+establish whole-program resolution, typing, temporal truth, execution safety,
+compiler correspondence, or removal of the resolver from the TCB.
 
 For a typed bounded result, the parser/elaborator/type checker, operational
 semantics, deterministic explorer, report/evidence checkers, Rust build output,

@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "manifest_id": "nmlt-evidence-v1:sha256:ee4a1cb22b6aed74beb8bef92203f746afb79957b087cda68af154fdb06f2880",
+  "manifest_id": "nmlt-evidence-v1:sha256:2cd2a22efa64b9b1eca722e7c468ba1c52a6c30d4bb749e43d5cb85b417847ba",
   "artifact": {
     "path": "benchmarks/seeded-defects/provider-attempt/dispatch-before-authorize.nmlt",
     "source_id": "nmlt-source-v1:sha256:5755f61bb3fc209fb06161660cef7cb89b542b2d8e32aed412360146c935da66"
@@ -14,8 +14,8 @@
     "kind": "deterministic_explicit_state_bfs_v1",
     "engine": "nmlt-explicit-state",
     "engine_version": "0.0.1",
-    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:7f658612bdef56f2c4e2eee8a17f76dd7877de4f5cc34882ecec822530b45a37",
-    "engine_executable_sha256": "acbb7331173d093a0b60fa00ee312e5a744ce14a3e7c8bbf318a92577f88862b"
+    "engine_source_set_id": "nmlt-engine-source-set-v1:sha256:2885914f87e263da986ba481304ea4b51e932466c5b7a0ce0336a88ca884e610",
+    "engine_executable_sha256": "6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4"
   },
   "scope": {
     "configuration_id": "nmlt-config-v1:sha256:43b307c69a73b9457d5cf3838c67e9567a5d99230caeaa839463584a3d196623",
@@ -36,19 +36,19 @@
   "trusted_components": [
     {
       "id": "trusted-component-inventory",
-      "identity": "sha256:511eb3c330c119eb8744ed56239229c6017d7e526d48951e7aa366248b81ba4c"
+      "identity": "sha256:82cc61c8e694c7c370e1f46b7e7137a8ea9ab504737b2ddb2340163921b4a2df"
     },
     {
       "id": "nmlt-engine-source",
-      "identity": "nmlt-engine-source-set-v1:sha256:7f658612bdef56f2c4e2eee8a17f76dd7877de4f5cc34882ecec822530b45a37"
+      "identity": "nmlt-engine-source-set-v1:sha256:2885914f87e263da986ba481304ea4b51e932466c5b7a0ce0336a88ca884e610"
     },
     {
       "id": "nmlt-engine-executable",
-      "identity": "sha256:acbb7331173d093a0b60fa00ee312e5a744ce14a3e7c8bbf318a92577f88862b"
+      "identity": "sha256:6a6976a5c3ba67d0520594f36344748e8663db8497c57f93d8209a98e095b2b4"
     },
     {
       "id": "benchmark-result",
-      "identity": "nmlt-benchmark-result-v1:sha256:66ec3fb205903d3120669022adc4e05f9b983cfd949f96c67e3694bd2a334ab3"
+      "identity": "nmlt-benchmark-result-v1:sha256:eda13d7bec8b652aa5460ed5c31418ae18c5551a31ac2d0c593cdff0dd82297e"
     },
     {
       "id": "rust-toolchain-declaration",
@@ -64,11 +64,11 @@
     },
     {
       "id": "benchmark-integrity-checker",
-      "identity": "sha256:e3e695e0209670ee0eb5f3936b28d7e1699f2f67b50a90d4bb0849d1b59063ec"
+      "identity": "sha256:0c2275371c14823b3a9eafbbc32b42fd8beaf1319ff56ce2128255c478aa8507"
     }
   ],
   "negative_controls": [
-    "nmlt-benchmark-result-v1:sha256:66ec3fb205903d3120669022adc4e05f9b983cfd949f96c67e3694bd2a334ab3",
+    "nmlt-benchmark-result-v1:sha256:eda13d7bec8b652aa5460ed5c31418ae18c5551a31ac2d0c593cdff0dd82297e",
     "nmlt-expected-counterexample-v1:sha256:ef750d2addd7c3dacb4d0095890c6f96037eb416238c98d5ff60ae1814f03627"
   ],
   "residual_gaps": [
@@ -78,6 +78,6 @@
   ],
   "witness": {
     "kind": "model-check-report/1.0.0#counterexample",
-    "reference": "nmlt-benchmark-result-v1:sha256:66ec3fb205903d3120669022adc4e05f9b983cfd949f96c67e3694bd2a334ab3#property=DispatchRequiresArm"
+    "reference": "nmlt-benchmark-result-v1:sha256:eda13d7bec8b652aa5460ed5c31418ae18c5551a31ac2d0c593cdff0dd82297e#property=DispatchRequiresArm"
   }
 }

@@ -343,14 +343,14 @@
       "case_id": "provider-attempt-reference",
       "result_path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
       "source_id": "nmlt-source-v1:sha256:bd79e2b9928732945b2daaab83021404677a9dbdb506aaff406300e6a9858a3c",
-      "result_id": "nmlt-benchmark-result-v1:sha256:041d2323125aa10f97cd97e5a5970bb9ec40e254b520e3cc0fd1a42aa6be9408",
+      "result_id": "nmlt-benchmark-result-v1:sha256:39913b4e06c1f8512409964c0d618eaaef7f3663d6bece16069e25bf9a8882cd",
       "classification": "model_checked"
     },
     "mutant": {
       "case_id": "blind-replay",
       "result_path": "benchmarks/results/provider-attempt/blind-replay.json",
       "source_id": "nmlt-source-v1:sha256:1d61387c8998f8e2bda759a2ba05d66201507e522bbedf5bc4483b3ed4afaaac",
-      "result_id": "nmlt-benchmark-result-v1:sha256:233d9ffc3ff20115de663aec6ac355492563ccafdd064ec6853bdeee15672d98",
+      "result_id": "nmlt-benchmark-result-v1:sha256:5d88a972fad39cd48a8834a1fe38fec8008854814f13c651489c83c1a951848c",
       "classification": "refuted",
       "witness": {
         "steps": [
@@ -397,5 +397,5 @@
     "contradictory_journal": true,
     "provider_no_blind_replay": true
   },
-  "evidence_id": "nmlt-temporal-evidence-v1:sha256:6e2220c2e40f89c80e71cb92acf2d3168df62446ff17ef03bdde78ae0e8145a5"
+  "evidence_id": "nmlt-temporal-evidence-v1:sha256:995b6fcc3c04ec9430b4787d6d5f96d80c3450001be28c103f20bb0b398b7c8a"
 }

@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/nmlt-core",
+    "crates/nmlt-hir",
     "crates/nmlt-engine",
     "crates/nmlt-temporal",
     "crates/nmlt-verify",

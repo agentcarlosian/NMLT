@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "capsule_id": "nmlt-intent-capsule-v1:sha256:23e7e8aacd8d069f8824252baf88386d4e9afaee8bb509d38bd2f14e62cdc3e5",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:04617a0f8118d10fb88c08aa1008839e9a3244868792b193e58c56603c6d3794",
   "case_id": "response-binding",
   "case_class": "semantic_mutant",
   "source": {
@@ -30,7 +30,7 @@
     "support": "current",
     "result": {
       "path": "benchmarks/results/provider-attempt/response-binding.json",
-      "result_id": "nmlt-benchmark-result-v1:sha256:a2c9e69f88b6f1340cbfbb9bb43fde3cfbd7904db8b46970c38f4f8b4ac0a8e7"
+      "result_id": "nmlt-benchmark-result-v1:sha256:a3c3a58c039b65216897d572c80783a5b9f1da5f7acc860b864e0bdd357740b5"
     },
     "witness_ids": [
       "nmlt-expected-counterexample-v1:sha256:ebae96b362b15cff69eb2e8f8631b1e19d6ffc703494d609fc98b4b1384155b7"

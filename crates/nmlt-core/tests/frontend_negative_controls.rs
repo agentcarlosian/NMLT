@@ -84,7 +84,8 @@ fn update_target_shape_is_checked_but_declaration_is_deferred() {
     let undeclared = "system S { action go { set missing = 1 } }";
     let projected = project_untyped(&parse_cst(undeclared));
     assert!(projected.is_structurally_complete());
-    let UntypedMember::Action(action) = &projected.file.systems[0].members[0] else {
+    let systems = projected.file.systems();
+    let UntypedMember::Action(action) = &systems[0].members[0] else {
         panic!("expected the action shell")
     };
     let UntypedStatement::Update { target, .. } = &action.statements[0] else {
@@ -109,6 +110,50 @@ fn implicit_modification_syntax_cannot_become_an_update() {
     assert_eq!(parsed.root().descendants(SyntaxKind::UpdateStmt).len(), 1);
     assert_eq!(parsed.root().descendants(SyntaxKind::Error).len(), 1);
     assert!(!project_untyped(&parsed).is_structurally_complete());
+}
+
+#[test]
+fn action_statement_terminators_cannot_smuggle_adjacent_punctuation() {
+    for (statement, rejected_run) in [
+        ("require x+;", "+;"),
+        ("require x;;", ";;"),
+        ("require x;+y", ";+"),
+    ] {
+        let source = format!("system S {{ action go {{ {statement} }} }}");
+        let parsed = parse_cst(&source);
+        assert_eq!(parsed, parse_cst(&source), "{statement}");
+        assert_eq!(parsed.reconstruct(), source, "{statement}");
+        let diagnostic = parsed
+            .diagnostics()
+            .iter()
+            .find(|diagnostic| diagnostic.code == "NMLT2013")
+            .unwrap_or_else(|| panic!("{statement} was accepted: {:#?}", parsed.diagnostics()));
+        let span = diagnostic.span.expect("the rejection retains its span");
+        assert_eq!(&source[span.start..span.end], rejected_run, "{statement}");
+        assert_stable_spans(&source, parsed.diagnostics());
+        assert!(!project_untyped(&parsed).is_structurally_complete());
+    }
+}
+
+#[test]
+fn module_and_import_declarations_reject_unparsed_tails() {
+    for (source, code, rejected_tail) in [
+        ("module App garbage", "NMLT2003", "garbage"),
+        ("import Base.garbage", "NMLT2012", "."),
+    ] {
+        let parsed = parse_cst(source);
+        assert_eq!(parsed, parse_cst(source));
+        assert_eq!(parsed.reconstruct(), source);
+        let diagnostic = parsed
+            .diagnostics()
+            .iter()
+            .find(|diagnostic| diagnostic.code == code)
+            .unwrap_or_else(|| panic!("{source:?} was accepted: {:#?}", parsed.diagnostics()));
+        let span = diagnostic.span.expect("the rejection retains its span");
+        assert_eq!(&source[span.start..span.end], rejected_tail);
+        assert_stable_spans(source, parsed.diagnostics());
+        assert!(!project_untyped(&parsed).is_structurally_complete());
+    }
 }
 
 #[test]

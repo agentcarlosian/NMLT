@@ -93,6 +93,12 @@ certificate rejection, two-way action semantic correspondence, affine and
 property-index preservation, and an identity-bound Rust/Lean bridge.
 
 The governing proposal is [RFC 0013](../rfcs/0013-source-to-typed-core.md).
+RFC acceptance and complete surface projection are implemented as M9-001 and
+M9-002. M9-003 now has a deterministic source-fed module/declaration resolver;
+its remaining gate is a canonical map covering every raw-term reference and
+local binder. M9-004 is then the explicit typed-core boundary, followed by
+elaboration, kernel checking, engine migration, evidence binding, and
+mechanized correspondence. No current resolver result is a `CheckedProgram`.
 Once this semantic spine is trustworthy, work proceeds to deeper temporal,
 refinement, compositional, and quantitative mathematics and to broader
 independently run comparison models without weakening existing evidence

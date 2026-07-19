@@ -22,8 +22,10 @@ pub use formatter::{FormatMode, FormatOutput, format_cst, format_source};
 pub use lexer::{LexedFile, Token, TokenKind, lex_source};
 pub use syntax::{ParsedFile, SyntaxParse, SystemDecl, parse_cst, parse_source};
 pub use untyped::{
-    BindingKind, ObservationKind, ProjectionIssue, ProjectionIssueKind, PropertyKind, RawTerm,
-    SpannedText, UntypedAction, UntypedBinding, UntypedErrorNode, UntypedFile, UntypedMember,
-    UntypedObservation, UntypedParameter, UntypedPort, UntypedProjection, UntypedProperty,
+    BindingKind, M9SurfaceIssue, ObservationKind, ProjectionCoverage, ProjectionIssue,
+    ProjectionIssueKind, PropertyKind, RawTerm, SpannedText, SurfaceOrigin, UntypedAction,
+    UntypedBinding, UntypedDeclaration, UntypedEnum, UntypedEnumItem, UntypedEnumVariant,
+    UntypedErrorNode, UntypedFile, UntypedImport, UntypedMember, UntypedModule, UntypedObservation,
+    UntypedParameter, UntypedParameterItem, UntypedPort, UntypedProjection, UntypedProperty,
     UntypedStatement, UntypedSurfaceNode, UntypedSystem, UntypedUpdateTarget, project_untyped,
 };

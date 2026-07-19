@@ -30,6 +30,13 @@ name = "nmlt-grades"
 version = "0.0.1"
 
 [[package]]
+name = "nmlt-hir"
+version = "0.0.1"
+dependencies = [
+ "nmlt-core",
+]
+
+[[package]]
 name = "nmlt-temporal"
 version = "0.0.1"
 

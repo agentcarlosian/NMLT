@@ -1,8 +1,9 @@
 # RFC 0013: Integrated source-to-typed-core contract
 
-- Status: Draft
+- Status: Accepted
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-19
+- Accepted: 2026-07-19
 - Milestone: M9
 
 ## Summary
@@ -21,15 +22,20 @@ a verified compiler merely because the pipeline and certificate formats exist.
 
 ## Motivation
 
-NMLT currently has two useful but disconnected accomplishments:
+NMLT currently has three useful but still disconnected accomplishments:
 
 - `nmlt-core` preserves tokens, trivia, recovery nodes, declarations, and
-  stable spans in a lossless tree, then projects only partial untyped
-  structure;
+  stable spans in a lossless tree, then completely projects semantic CST
+  origins into ordered untyped surface nodes with explicit recovery and
+  unsupported cases;
+- `nmlt-hir` seals that projection to exact source bytes and implements the
+  closed module/import and named-declaration portion of resolution, while raw
+  type/expression references and local binders still await complete map
+  coverage and independent readback;
 - `nmlt-engine` reparses a narrow provider fragment, resolves some names
   contextually, and constructs its own typed executable representation.
 
-That split permits semantic omissions. An unsupported declaration can remain
+The remaining split permits semantic omissions. An unsupported declaration can remain
 in the CST while the engine never sees it; an unknown name can be treated as an
 open symbol; numeric types can be conflated; a temporal-looking call can be
 handled as an ordinary Boolean expression; and the finite graph or VC can be
@@ -42,7 +48,9 @@ source semantics and compilation, compiler trusted-computing-base analysis,
 and receiver-checked proof-carrying code supports a narrow contract with an
 explicit derivation and independent checker. The research basis and its
 archive/current distinction are recorded in the
-[M9 research note](../docs/research-notes/source-to-typed-core-and-project-identity-2026-07-19.md).
+[initial M9 research note](../docs/research-notes/source-to-typed-core-and-project-identity-2026-07-19.md)
+and the focused
+[contract/resolution follow-up](../docs/research-notes/m9-contract-resolution-2026-07-19.md).
 
 ## Goals
 
@@ -120,15 +128,22 @@ It may still be parsed and formatted; it cannot reach `CheckedProgram`.
 
 The first complete vertical slice contains:
 
-- explicit, acyclic imports whose entire closure is present in the source set;
+- simple ASCII logical module names, explicit acyclic imports, and an entire
+  import closure present in the exact source set;
 - closed enumeration declarations;
 - `Bool`, arbitrary-precision `Nat`, and arbitrary-precision `Int`;
-- system declarations with scalar state and total initializers;
+- non-parameterized system declarations with scalar state and total
+  initializers;
 - action inputs and total pure expressions;
-- guards and simultaneous explicit updates;
+- guards and simultaneous whole-state-field explicit updates;
 - the `Once<T>` capability protocol used by provider-attempt;
-- observation declarations;
+- action emits/consumes and observation declarations;
 - safety and temporal property syntax trees with explicit system indices.
+
+The first slice rejects system-level constants/inputs, system parameters,
+data/record/function declarations, ports, action grades, field/index selected
+updates, resource properties, and hiding before resolution. Some of these
+features remain losslessly parseable; that does not make them M9-eligible.
 
 The implementation may land this fragment incrementally, but no partial
 substage may be presented as the completed M9 pipeline.
@@ -137,33 +152,85 @@ substage may be presented as the completed M9 pipeline.
 
 ### Source and module identity
 
-The input is an ordered canonical set of entries:
+RFC 0004 remains authoritative for exact source and source-set identity:
 
 ```text
-SourceEntry = (logical_module, repository_path, exact_bytes, source_id)
-SourceSetId = H(domain, sorted(SourceEntry by logical_module))
+SourceEntry = (portable_repository_path, exact_bytes, SourceId)
+SourceSetId = RFC0004(entries sorted by portable_repository_path UTF-8 bytes)
 ```
 
-The exact algorithm remains governed by RFC 0004. Resolution rejects duplicate
-logical modules, imports outside the closed set, symlink/path-policy
-violations, and cycles. Import order does not affect resolution; import
-membership does affect `SourceSetId`.
+Logical module assignment is additional semantic input and therefore receives
+a separate identity. For v1, a logical module is one ASCII NMLT identifier:
+`[A-Za-z_][A-Za-z0-9_]*`. The module map is a bijection over the M9 source set.
+Let `lp(x) = u64be(len(x)) || x`, and let `raw(ID)` be the 32 digest bytes from
+a validated versioned ID:
+
+```text
+ModuleMapDigest = SHA256(
+  "NMLT-MODULE-MAP\0v1\0" || raw(SourceSetId) || u64be(entry_count) ||
+  concat(entries sorted by logical-module ASCII bytes)
+)
+entry = lp(logical_module) || lp(portable_repository_path)
+ModuleMapId = "nmlt-module-map-v1:sha256:" || hex(ModuleMapDigest)
+```
+
+Resolution rejects duplicate logical modules, duplicate paths, a map that is
+not a bijection over the source set, imports outside the closed map,
+symlink/path-policy violations, and cycles. Import order does not affect
+resolution. Source membership affects `SourceSetId`; changing only a logical
+assignment affects `ModuleMapId` and every downstream semantic identity.
 
 ### Stable semantic IDs
 
-IDs are derived from the source-set identity and canonical declaration path,
-not allocation order:
+IDs are derived from the module-map identity and complete typed declaration
+paths, never allocation order:
 
 ```text
-ModuleId = H("nmlt-module-v1", SourceSetId, logical_module)
-DefId    = H("nmlt-def-v1", ModuleId, namespace, declared_name)
-NodeId   = H("nmlt-node-v1", DefId, semantic_path)
+ModuleDigest = SHA256(
+  "NMLT-MODULE\0v1\0" || raw(ModuleMapId) || lp(logical_module)
+)
+DefDigest = SHA256(
+  "NMLT-DEF\0v1\0" || raw(ModuleId) || lp(DefPathEncoding)
+)
+NodeDigest = SHA256(
+  "NMLT-NODE\0v1\0" || raw(DefId) || lp(SemanticPathEncoding)
+)
 ```
 
-Source spans remain diagnostic metadata and do not alone establish semantic
-identity. Duplicate names in one namespace are rejected before IDs are
-constructed. The exact encoding and namespace separation require test vectors
-before acceptance.
+The text prefixes are `nmlt-module-v1:sha256:`,
+`nmlt-def-v1:sha256:`, and `nmlt-node-v1:sha256:`. A `DefPath` is
+`u64be(segment_count)` followed by `(u8 kind_tag, lp(ASCII name))*`. Accepted
+kind tags are:
+
+| Tag | Definition kind |
+|---:|---|
+| `01` | type |
+| `02` | constructor |
+| `03` | constant/value |
+| `04` | system |
+| `05` | state field |
+| `06` | action |
+| `07` | system input |
+| `08` | capability |
+| `09` | property |
+| `0a` | observation contract |
+
+The full parent path is present, so `Left.x` and `Right.x` cannot collide.
+Action parameters and other local binders receive owner-`NodeId`-derived
+`LocalId`s rather than `DefId`s.
+
+`SemanticPath` is an unhashed, allocation- and span-independent locator within
+one definition. Named roles include initializer, guard, update target/RHS,
+output, property body, observation item, operand, and call argument. Named
+simultaneous updates key their paths by the target `DefPath`; repeated anonymous
+siblings use a checked `u32` role index. The canonical segment encoding and its
+golden vectors are maintained with the `nmlt-hir` identity implementation; a
+change requires a new identity version.
+
+Source spans remain diagnostic metadata and are forbidden as identity inputs.
+Locators may remain readable across some edits, but exact `DefId`/`NodeId`
+values intentionally change after any source-set or module-map identity change.
+The project makes no cross-edit evidence-identity promise.
 
 ### HIR
 
@@ -182,6 +249,23 @@ No generic `Symbol(String)` escape is allowed in a checked program. HIR retains
 source spans and declaration provenance for diagnostics but is otherwise
 independent of CST node allocation.
 
+M9 resolution is closed and intentionally simple. Qualified lookup is exact;
+unqualified lookup considers the local module and explicitly imported modules
+and succeeds only when exactly one declaration exists in the required
+namespace. Globs, implicit prelude entries, shadowing, and import re-export are
+not part of v1. Duplicate names are rejected per namespace.
+
+`ResolvedProgram` also contains a canonical `ResolutionMap` covering every
+textual-reference origin with its namespace, spelling, and selected target.
+The resolver remains a named M9 trusted component because it chooses what a
+source spelling denotes. The elaboration kernel checks HIR closure, target
+existence, namespace/kind/system agreement, local scope, and exact HIR/core
+bindings; it does not parse imports or silently become a second lexical
+resolver. A separate deterministic resolver readback check replays
+`SurfaceProgram -> ResolutionMap`. Until that check is mechanized or moved
+inside an accepted kernel boundary, no claim may remove the resolver from its
+TCB.
+
 ### Bidirectional elaboration
 
 The principal expression judgments are:
@@ -194,7 +278,22 @@ Gamma; Sigma; Delta; B |- e <= A ~> t ; D
 They mean that surface expression `e` synthesizes or checks type `A`, emits
 core term `t`, and produces derivation `D`. `B` is the behavior/system index.
 Conversion is explicit and narrow. There is no implicit `Nat`/`Int`
-compatibility in v1; any admitted injection has a named core node and rule.
+compatibility in v1.
+
+`Nat` and `Int` are disjoint arbitrary-precision semantic domains. A bare
+nonnegative literal checks as either type through distinct expected-type rules;
+without numeric evidence it synthesizes `Nat`. This literal overloading is not
+a coercion. Negative literals are `Int` only; `-0` and nonminimal magnitudes
+are rejected. The only v1 injection is the unshadowable surface operation
+`to_int : Nat -> Int`, elaborated to the dedicated `IntFromNat` core node. No
+`Int -> Nat` conversion exists. Arithmetic/comparison operands are homogeneous;
+subtraction is `Int x Int -> Int` only in this slice. Runtime/model adapters may
+apply explicit finite-domain bounds, but overflow or an out-of-adapter-range
+value yields `unknown/unsupported`, never wrapping arithmetic or a language
+type error.
+
+Canonical core integers use a sign tag and a minimal unsigned big-endian
+magnitude: no leading zero, one encoding for zero, and no negative zero.
 
 Action elaboration extends RFCs 0005 and 0006:
 
@@ -217,41 +316,98 @@ Gamma; Sigma; B |- q : TemporalProp(B) ~> q_core ; D
 `always`, `eventually`, enabledness, and action predicates are dedicated core
 constructors. They cannot resolve through the ordinary function namespace.
 
+The fixed M9 ruleset bundle contains two versioned components:
+`nmlt-core-typing-v1` and mandatory `nmlt-temporal-formation-v1`. The temporal
+component checks formation and behavior indexing of dedicated state/temporal
+constructors, including `always`, `eventually`, `next`, `until`, enabledness,
+and action occurrence. It establishes neither satisfaction nor liveness. The
+RFC 0007 stutter-transport ruleset is separate and rejects formulas containing
+`next`; accepting temporal formation never emits `proved`.
+
 ### Certificate and kernel
 
 The elaborator returns:
 
 ```text
 ElaborationArtifact = {
+  format_version,
   source_set_id,
-  ruleset_id,
+  module_map_id,
+  surface_program_id,
   resolved_hir_id,
   core_program_id,
-  derivation,
-  diagnostics
+  ruleset_bundle_id,
+  resource_policy_id,
+  required_roots,
+  derivation_dag
 }
 ```
 
-The derivation is a canonical tree or DAG whose nodes name a rule, premises,
-input IDs, output type/core IDs, contexts, and source provenance. Sharing is
-allowed only through content-addressed nodes. Cycles, unreachable certificate
-nodes, unknown rules, duplicate map keys, noncanonical ordering, and resource
-limit excess fail closed.
+Successful certificates contain no diagnostics; warnings/errors are separate
+content-addressed diagnostic artifacts. The derivation is a canonical,
+rule-explicit reconstruction DAG. Each node contains a fixed numeric rule tag,
+one kernel-derived obligation key `(judgment_kind, HIR NodeId)`, conclusion
+type/core identities, the minimal rule-local witness, ordered premise digests,
+and its origin `NodeId`. Serialized context blobs are forbidden: the kernel
+reconstructs `Gamma`, `Sigma`, `Delta`, and `B` from the exact HIR and accepted
+premises.
+
+Derivation nodes are hashed, excluding their own ID, under
+`NMLT-DERIVATION-NODE\0v1\0`; the complete certificate is hashed under
+`NMLT-ELABORATION-CERTIFICATE\0v1\0`. Canonical binary encoding uses fixed
+tags, `u64be` lengths/counts, node-map order by raw node digest, and rule-defined
+premise order. The kernel computes the required obligation set from HIR and
+requires a bijection with certificate subjects. Unknown tags, nonminimal
+integers, stale bindings, missing/duplicate coverage, cycles, unreachable
+nodes, duplicate keys, noncanonical order, and resource excess fail closed.
 
 The kernel API is conceptually:
 
 ```text
 check(
-  accepted_ruleset,
+  accepted_ruleset_bundle,
+  accepted_resource_policy,
   exact_resolved_hir,
   exact_core_program,
-  derivation
+  exact_certificate
 ) -> Result<CheckedProgram, KernelDiagnostic>
 ```
 
 `CheckedProgram` has no public unchecked constructor. Engines may deserialize
 core for inspection, but they must obtain a fresh kernel acceptance bound to
 the same bytes before producing a semantic result.
+
+The checker-supplied ruleset and resource policy are authoritative; a
+certificate cannot select weaker values. The accepted
+`nmlt-kernel-policy-v1` profile is content-addressed under
+`NMLT-KERNEL-POLICY\0v1\0` and freezes these maxima:
+
+| Dimension | Maximum |
+|---|---:|
+| modules | 256 |
+| one source | 4 MiB |
+| all source bytes | 16 MiB |
+| canonical HIR bytes | 32 MiB |
+| canonical core bytes | 32 MiB |
+| certificate bytes | 64 MiB |
+| HIR nodes | 262,144 |
+| core nodes | 262,144 |
+| derivation nodes | 524,288 |
+| premise edges | 2,097,152 |
+| premises per node | 32 |
+| nesting/DAG depth | 256 |
+| identifier bytes | 255 |
+| logical-module or portable-path bytes | 4,096 |
+| integer magnitude | 4,096 bytes |
+| total integer payload | 16 MiB |
+| context entries | 65,536 |
+
+All counters are `u64` with checked addition/multiplication; declared lengths
+are checked before allocation, and cycle/depth traversal is iterative. There
+is no wall-clock timeout inside portable kernel acceptance. An outer watchdog
+may return `unknown/resource_exhausted`. Crossing a policy bound returns stable
+`KERNEL_RESOURCE_LIMIT`, constructs no `CheckedProgram`, and never means that
+the source property was refuted.
 
 ## Required semantic correspondence
 
@@ -280,6 +436,28 @@ statements of:
 Testing a shared Rust/Lean vector is an interim bridge, not a substitute for
 the program-level correspondence theorem.
 
+### Rust/Lean boundary
+
+The Rust `nmlt-kernel` is the normative executable M9 acceptance checker. Lean
+is the mathematical specification and metatheory, not a runtime oracle and not
+evidence that the Rust checker corresponds merely because both exist. M9-009
+adds an extrinsic `RawCore`/`RawDerivation` mirroring canonical bytes, a
+declarative `WellTyped`, and a Lean reference checker with a soundness theorem
+of the form:
+
+```text
+check raw certificate = ok checked -> WellTyped raw
+```
+
+The existing intrinsic core may be the checked target, but cannot represent
+malformed serialized input by itself. Rust and Lean consume shared canonical
+decode/judgment vectors. SHA-256 identities remain opaque fixed bytes in Lean;
+hashing, decoding, and Rust/Lean correspondence remain explicit TCB entries
+until independently verified. The existing no-`sorryAx`, no project-axiom,
+no-`native_decide`, no external-solver/FFI, and no generated-overwrite policies
+continue to apply. Accepting this RFC freezes the boundary; it does not claim
+M9-009 is already proved.
+
 ## Evidence consequences
 
 A successful kernel check may support `type_checked` for the exact supported
@@ -290,9 +468,11 @@ itself.
 Every downstream semantic artifact derived from `CheckedProgram` binds:
 
 - exact source-set membership and `SourceSetId`;
+- logical-module assignment and `ModuleMapId`;
+- complete surface-program and resolution-map identities;
 - resolver and elaborator source-set/executable identities;
 - HIR and core identities;
-- ruleset, certificate, and kernel identities;
+- ruleset bundle, resource policy, certificate, and kernel identities;
 - unsupported-feature policy and any compilation bounds;
 - the downstream engine's existing method, configuration, and TCB profile.
 
@@ -307,9 +487,14 @@ claim-specific and must be measured rather than asserted.
 The M9 gate must reject or distinguish at least:
 
 - missing, duplicate, ambiguous, shadowed, and cyclic module/name cases;
+- a changed logical-name/path mapping under unchanged source bytes;
 - an unsupported CST node silently omitted from `SurfaceProgram`;
 - the same source reference rebound by declaration allocation order;
+- a same-typed malicious rebinding that is HIR-internally closed but disagrees
+  with independent resolver readback;
 - `Nat` accepted as `Int` without an explicit injection;
+- mixed numeric arithmetic/comparison, negative `Nat`, `-0`, implicit
+  `Int -> Nat`, M9 `Nat` subtraction, and values above legacy `i64` range;
 - `always` or `enabled` resolved as an ordinary Boolean function;
 - an action input ignored or substituted with ambient state;
 - an update RHS reading a preceding update instead of the frozen pre-state;
@@ -322,6 +507,8 @@ The M9 gate must reject or distinguish at least:
   certificate structures;
 - a parser-recovery node accepted as a typed expression;
 - a supported declaration dropped while all remaining derivations still pass.
+- every resource dimension exactly at its maximum and at maximum plus one,
+  including lying pre-allocation lengths and depth 256/257.
 
 Each control needs both a producer-side diagnostic and an independent
 kernel/readback expectation where applicable.
@@ -363,25 +550,27 @@ This repeats semantics and prevents results from sharing a single subject.
 Backend lowering may remain specialized, but all promoted lowering starts from
 the same `CheckedProgram` and records a separate correspondence obligation.
 
-## Risks and unresolved questions
+## Accepted decisions and remaining risks
 
-- Whether certificates should contain full derivations or a smaller
-  reconstruction trace.
-- Which parts of name resolution can be checked by the kernel without making
-  it a second compiler.
-- Whether arbitrary-precision integers remain executable enough for the first
-  bounded engine or need explicit finite-domain verification projections.
-- How stable semantic paths are assigned under source edits without pretending
-  that changed source has unchanged exact identity.
-- Whether temporal property elaboration belongs in the first kernel ruleset or
-  in a separately versioned extension checked against typed state/action core.
-- What proof-assistant representation gives the smallest honest Rust/Lean
-  correspondence boundary.
-- Certificate denial-of-service limits and canonical DAG encoding.
+M9-001 resolves the questions that previously blocked acceptance:
 
-These questions block RFC acceptance where they affect semantics, but they do
-not block implementing resolver prototypes and negative controls behind an
-experimental API.
+- certificates use a rule-explicit, content-addressed reconstruction DAG;
+- the resolver chooses lexical denotations and remains in the TCB, while the
+  kernel checks internal HIR closure and exact bindings;
+- `Nat`/`Int` remain arbitrary-precision and disjoint, while bounded engines
+  use explicit projections that preserve `unknown`;
+- readable semantic paths and exact evidence identities are distinct;
+- temporal formation is a mandatory separately versioned ruleset component;
+- Rust is the executable checker and Lean supplies an extrinsic reference
+  checker/specification plus soundness work;
+- the canonical DAG and `nmlt-kernel-policy-v1` limits are fixed above.
+
+Remaining risks are implementation and proof obligations, not permission to
+change these semantics silently. They include resolver bugs while it remains a
+trusted component, certificate size near accepted limits, incomplete
+Rust/Lean correspondence, and finite-engine adapters accidentally laundering
+an out-of-range arbitrary integer. Negative controls and evidence must keep
+those boundaries visible.
 
 ## Implementation plan
 
@@ -390,7 +579,10 @@ experimental API.
 2. **M9-002 — Complete surface projection.** Replace omission with explicit
    supported/error nodes and add declaration-coverage tests.
 3. **M9-003 — Resolve modules and names.** Implement closed acyclic imports,
-   namespaces, stable IDs, and adversarial resolution fixtures in `nmlt-hir`.
+   namespaces, stable IDs, and adversarial resolution fixtures in `nmlt-hir`;
+   then parse every accepted raw type/expression into source-derived reference
+   origins, assign local binders, emit the canonical `ResolutionMap`, and
+   independently verify exact reference coverage and readback.
 4. **M9-004 — Define explicit core.** Encode primitive values, systems,
    actions, capabilities, observations, and indexed property ASTs.
 5. **M9-005 — Implement bidirectional elaboration.** Remove open-symbol and

@@ -44,6 +44,52 @@ The textual prefix is `nmlt-source-set-v1:sha256:`. Duplicate paths are an
 error. Symlink traversal and generated/imported sources must be resolved and
 declared before this identity is computed.
 
+## M9 module-map and HIR identity
+
+RFC 0004's path-sorted `SourceSetId` remains unchanged. Logical module naming
+is separate semantic input and is bound by RFC 0013. In the first M9 profile a
+logical module is one ASCII NMLT identifier. The mapping is a bijection over
+the source set, sorted by logical-module ASCII bytes. With
+`lp(x) = u64be(len(x)) || x`:
+
+```text
+module_map_digest = SHA256(
+  "NMLT-MODULE-MAP\0v1\0" || raw(source_set_id) || u64be(entry_count) ||
+  concat(lp(logical_module) || lp(portable_path))
+)
+module_map_id = "nmlt-module-map-v1:sha256:" || hex(module_map_digest)
+```
+
+Changing a logical-name/path assignment changes `module_map_id` even when all
+source bytes remain unchanged. `ModuleId` then binds this exact map:
+
+```text
+module_digest = SHA256(
+  "NMLT-MODULE\0v1\0" || raw(module_map_id) || lp(logical_module)
+)
+module_id = "nmlt-module-v1:sha256:" || hex(module_digest)
+```
+
+Named HIR definitions use a full typed path. Its encoding begins with the
+`u64be` segment count and then repeats `u8 kind_tag || lp(ASCII name)`. Tags
+`01`–`0a` respectively mean type, constructor, constant/value, system, state,
+action, system input, capability, property, and observation contract.
+
+```text
+def_digest = SHA256(
+  "NMLT-DEF\0v1\0" || raw(module_id) || lp(def_path_encoding)
+)
+def_id = "nmlt-def-v1:sha256:" || hex(def_digest)
+```
+
+The full parent path prevents same-named members of different systems from
+colliding. Local binders derive from their owning semantic node rather than
+receiving top-level `DefId`s. Semantic `NodeId` uses
+`NMLT-NODE\0v1\0`, the raw owner `DefId`, and a length-prefixed canonical
+semantic-path encoding. Spans and arena allocation order are forbidden inputs.
+Golden encodings live beside `nmlt-hir`; changing any accepted encoding or tag
+requires a new identity version.
+
 ## Canonical-example registry identity
 
 The Phase 0 registry freezes more than source bytes. Each example entry binds
@@ -77,9 +123,9 @@ encoding with explicit tags and lengths. Its identity prefix is
 ```
 
 under domain `NMLT-CLAIM\0v1\0`. Human-readable names such as `C04.NoBlindReplay`
-are provisional handles, not cryptographic claim identities. Phase 0 therefore
-freezes their exact registry entries and source IDs while leaving semantic
-claim IDs unassigned until the typed core encoding is accepted.
+are provisional handles, not cryptographic claim identities. M9 module/HIR
+identities do not yet assign this core-semantic or claim identity; those remain
+unassigned until the M9-004 typed-core encoding is accepted.
 
 ## Evidence identity
 

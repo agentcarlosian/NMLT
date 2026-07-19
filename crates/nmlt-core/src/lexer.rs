@@ -278,4 +278,18 @@ mod tests {
         assert_eq!(lexed.tokens[0].text(source), "// note");
         assert_eq!(lexed.tokens[1].kind, TokenKind::Whitespace);
     }
+
+    #[test]
+    fn retains_maximal_punctuation_runs_around_semicolons() {
+        let source = "+; ;; ;+ ;";
+        let lexed = lex_source(source);
+        let punctuation = lexed
+            .tokens
+            .iter()
+            .filter(|token| token.kind == TokenKind::Punctuation)
+            .map(|token| token.text(source))
+            .collect::<Vec<_>>();
+        assert_eq!(punctuation, ["+;", ";;", ";+", ";"]);
+        assert_eq!(lexed.reconstruct(source), source);
+    }
 }
