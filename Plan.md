@@ -4,7 +4,7 @@
 - Implementation status: bounded milestones across Phases 0–7 and the M8
   independent-reproduction gate are complete; broader promotion gates remain
 - Active focus: post-M8 source-to-IR integration and broader independent validation
-- Initial planning baseline: `6bd302b` (`chore: establish NMLT research scaffold`)
+- Initial planning baseline: `cf4f006` (`chore: establish NMLT research scaffold`)
 - Updated: 2026-07-18
 
 ## 1. Objective
@@ -102,7 +102,7 @@ The first research alpha succeeds when NMLT can:
 
 Items 1–7 and 9–10 now have local, bounded implementations and checked-in
 evidence for the provider slice. Item 10 was reproduced from a fresh clone of
-`fcf2317b9b92a59d1937d08ced4e9c476b30bebd`; the exact environment, command,
+`e3f7ec6ae2d14ade78183ff78d58f7198cb76858`; the exact environment, command,
 and outcomes are in
 [`docs/reproduction-2026-07-18.md`](docs/reproduction-2026-07-18.md). Item 8 is
 exercised only by synthetic persisted journal fixtures, not observations from
@@ -406,7 +406,7 @@ Exit gate:
 
 Gate result: passed for provider suite v2, including exact source, engine
 source-set, executable, toolchain, configuration, and result identities. A
-fresh clone of `fcf2317b9b92a59d1937d08ced4e9c476b30bebd` reproduced the
+fresh clone of `e3f7ec6ae2d14ade78183ff78d58f7198cb76858` reproduced the
 reference classification and all four deterministic refutations; see the
 [independent reproduction record](docs/reproduction-2026-07-18.md).
 
@@ -781,7 +781,7 @@ project-defined axiom. Full parser-to-Lean compiler correctness is not claimed.
 **M3: Reproducible Provider Model Checking** completed for provider suite v2:
 one bounded reference acceptance, four structured mutant refutations, exact
 identities, independent result readback, and clean-clone reproduction at
-`fcf2317b9b92a59d1937d08ced4e9c476b30bebd`.
+`e3f7ec6ae2d14ade78183ff78d58f7198cb76858`.
 
 **M4: Finite Temporal and Runtime Evidence** has its finite milestone complete
 for generic lasso/fairness, refinement, synthetic journals, and provider

@@ -1,7 +1,7 @@
 # Independent reproduction record — 2026-07-18
 
 - Result: passed at the bounded pre-alpha scope
-- Reproduced revision: `fcf2317b9b92a59d1937d08ced4e9c476b30bebd`
+- Reproduced implementation revision: `e3f7ec6ae2d14ade78183ff78d58f7198cb76858`
 - Checkout method: `git clone --no-local` into a newly created temporary
   directory; no repository `target/`, Lean `.lake/`, or generated evidence was
   copied into the clone

@@ -1,7 +1,7 @@
 # RFC 0001: Behavior types
 
 - Status: Under review
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Candidate rules frozen: 2026-07-18
 

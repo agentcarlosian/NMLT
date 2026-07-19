@@ -5,7 +5,7 @@
 - Phase 1 bounded frontend gate completed: 2026-07-18
 - Exit decision: passed with explicitly recorded research obligations
 - Integrated gate: independently reproduced from clean commit
-  `fcf2317b9b92a59d1937d08ced4e9c476b30bebd`
+  `e3f7ec6ae2d14ade78183ff78d58f7198cb76858`
 
 ## Phase 0 decisions and artifacts
 

@@ -1,7 +1,7 @@
 # RFC 0005: State and action typing v1
 
 - Status: Under review
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-102`
 

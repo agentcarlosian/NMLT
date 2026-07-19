@@ -3,8 +3,8 @@
   "fixture": "phase7-graded-resources-v1",
   "reference": {
     "source_id": "nmlt-source-v1:sha256:03507d967aeb8804897bfe5a3bb74b12266c2dcefdf52808e378792c4d983b95",
-    "claim_spec_source_id": "nmlt-source-v1:sha256:126971caa2d3e969a86a8a926784bb28e6024a5b9d32052e227f20f5ba227ebc",
-    "claim_id": "nmlt-graded-claim-v1:sha256:0aea45dfd102f47988ff6db7bcc86c7736c62b65ac08276380d3516ba85c7317",
+    "claim_spec_source_id": "nmlt-source-v1:sha256:5244af992ddf12f4d815570369ce27b7b2b30b8bb5bf274fe0b47bf278356dca",
+    "claim_id": "nmlt-graded-claim-v1:sha256:70e15808e9d245a0ec9304dbd4764a71f5f96cf680c786ad6fe1c7b7a26686aa",
     "claim_handle": "Grades.ProviderPipeline.WithinBudget",
     "claim": "Under the declared annotations and bounded composition rules, the provider pipeline is componentwise within its declared product budget.",
     "decision": "within_budget",
@@ -143,5 +143,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:fa6682936b3333aa47b86dd79af694bb3caab898b7e934d2a79c0a3267d8d5e5"
+  "manifest_id": "nmlt-evidence-v1:sha256:75cb22985f35e547ccc2b2faab37071975c366e2f129e644f1b67e99fc45aa2b"
 }

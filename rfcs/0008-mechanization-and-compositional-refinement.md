@@ -1,7 +1,7 @@
 # RFC 0008: Lean mechanization and compositional refinement
 
 - Status: Under review
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 

@@ -1,7 +1,7 @@
 # RFC 0010: Multiple verification engines and checked evidence composition
 
 - Status: Draft
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Phase: 5
 

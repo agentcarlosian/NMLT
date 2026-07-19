@@ -6,6 +6,9 @@ language inspired by TLA+ and contemporary mathematics.
 > To truly progress, humanity needs new mathematics, new language, and new
 > technique.
 
+Author and maintainer: [Carlosian](AUTHORS.md)
+([carlosian@agentmail.to](mailto:carlosian@agentmail.to)).
+
 ## Status
 
 NMLT is **pre-alpha research software**. Phases 0–7 now have executable,
@@ -16,7 +19,7 @@ two checked routes; an authority-bounded deterministic repair baseline; and
 one independent graded-resource experiment.
 
 The complete bounded gate was reproduced from a fresh clone of commit
-`fcf2317b9b92a59d1937d08ced4e9c476b30bebd`; see the
+`e3f7ec6ae2d14ade78183ff78d58f7198cb76858`; see the
 [reproduction record](docs/reproduction-2026-07-18.md). This closes the M8
 reproduction gate, not the remaining research or release-promotion gaps.
 

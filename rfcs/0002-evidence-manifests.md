@@ -1,7 +1,7 @@
 # RFC 0002: Evidence manifests
 
 - Status: Draft
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 
 ## Summary

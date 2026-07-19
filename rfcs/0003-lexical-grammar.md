@@ -1,7 +1,7 @@
 # RFC 0003: Lexical grammar v1
 
 - Status: Accepted
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 
 ## Summary

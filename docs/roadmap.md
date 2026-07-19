@@ -30,7 +30,7 @@ Deterministic bounded BFS accepts one frozen reference and refutes four
 semantic mutants with source-bound structured traces. Suite v2 corrects
 `NoBlindReplay` to current-state enabledness and freezes a distinguishing
 one-shot regression. A fresh clone of
-`fcf2317b9b92a59d1937d08ced4e9c476b30bebd` reproduced the complete bounded
+`e3f7ec6ae2d14ade78183ff78d58f7198cb76858` reproduced the complete bounded
 gate; this closes Phase 3 at its stated scope, not as unbounded proof.
 
 ## Phase 4 — Temporal properties and refinement (finite-fixture milestone complete 2026-07-18)

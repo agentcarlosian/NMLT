@@ -1,7 +1,7 @@
 # RFC 0009: Finite temporal, refinement, and runtime semantics
 
 - Status: Draft
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Phase: 4 candidate implementation
 

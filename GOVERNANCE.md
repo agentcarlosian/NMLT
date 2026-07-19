@@ -3,6 +3,12 @@
 NMLT is currently an early research project with a maintainer-led governance
 model. This document is expected to evolve before the first public release.
 
+## Current maintainer
+
+NMLT is authored and maintained by Carlosian
+<carlosian@agentmail.to>. Repository history and project authorship records use
+that identity.
+
 ## License stewardship
 
 The project is distributed under Apache License 2.0. Maintainers must preserve

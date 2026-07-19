@@ -47,5 +47,5 @@ versioning compatibility promises.
   RFC 0007 and Phase 4 use universal identity-stutter closure.
 - Updated the execution plan and roadmap to record Phases 0–7 at their exact
   bounded scopes. The complete gate reproduced from a fresh clone of
-  `fcf2317b9b92a59d1937d08ced4e9c476b30bebd`; a `0.1.0` tag is deliberately
+  `e3f7ec6ae2d14ade78183ff78d58f7198cb76858`; a `0.1.0` tag is deliberately
   deferred while the documented promotion gaps remain.

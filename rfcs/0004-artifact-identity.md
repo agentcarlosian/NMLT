@@ -1,7 +1,7 @@
 # RFC 0004: Canonical artifact identity
 
 - Status: Accepted
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 
 ## Decision

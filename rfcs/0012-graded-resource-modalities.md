@@ -1,7 +1,7 @@
 # RFC 0012: Conservative graded-resource modalities
 
 - Status: Experimental
-- Authors: NMLT project
+- Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Phase: 7 independent research extension
 
