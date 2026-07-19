@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons metatheory ci
+.PHONY: help fmt fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons metatheory ci reproduce
 
 help:
 	@echo "NMLT development targets"
@@ -19,6 +19,7 @@ help:
 	@echo "  comparisons Validate NMLT and Quint; optionally TLC and P"
 	@echo "  metatheory Build the pinned Lean kernel artifacts"
 	@echo "  ci         Run the complete local CI gate"
+	@echo "  reproduce  Run local CI plus the pinned Lean metatheory gate"
 
 fmt:
 	cargo fmt --all
@@ -71,3 +72,5 @@ metatheory:
 	./tools/check_metatheory.sh
 
 ci: fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons
+
+reproduce: ci metatheory

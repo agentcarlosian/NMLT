@@ -13,6 +13,7 @@ These documents distinguish current behavior from research intent.
 7. [Research method](research-method.md)
 8. [Roadmap](roadmap.md)
 9. [Phase 0 closeout and Phase 1 completion record](phase-0-closeout.md)
+10. [Independent reproduction record](reproduction-2026-07-18.md)
 
 Supporting material includes the [competitor matrix](competitor-matrix.md),
 [glossary](glossary.md), [source corpus](source-corpus.md), and

@@ -29,8 +29,9 @@ theorems. Full surface-to-kernel compiler correctness is not claimed.
 Deterministic bounded BFS accepts one frozen reference and refutes four
 semantic mutants with source-bound structured traces. Suite v2 corrects
 `NoBlindReplay` to current-state enabledness and freezes a distinguishing
-one-shot regression. The Phase 3/release gate remains open until independent
-clean-checkout reproduction is recorded.
+one-shot regression. A fresh clone of
+`fcf2317b9b92a59d1937d08ced4e9c476b30bebd` reproduced the complete bounded
+gate; this closes Phase 3 at its stated scope, not as unbounded proof.
 
 ## Phase 4 — Temporal properties and refinement (finite-fixture milestone complete 2026-07-18)
 
@@ -67,11 +68,15 @@ the Rust analyzer and its kernel-checked Lean algebra keep its promotion gate
 closed. Cubical, hybrid, probabilistic, alternative-grade, and open-system
 tracks remain future work.
 
-## Active milestone — M8 integration and release hardening
+## M8 integration and release hardening (complete 2026-07-18)
 
-- reproduce the full gate from an independent clean checkout;
-- review final TCB and evidence identities after implementation freeze;
-- preserve the distinct assurance subject and ceiling of every research slice;
-- decide whether the bounded provider work is ready for a `0.1.0` tag;
-- pursue full frontend resolution/elaboration and verified source-to-IR
-  connections without weakening existing evidence classes.
+- The full bounded gate reproduced from an independent clean clone.
+- The final TCB and evidence identities passed adversarial readback.
+- Every research slice retains a distinct assurance subject and ceiling.
+- The `0.1.0` decision is “not yet”; no tag was created because P has not been
+  rerun after correction and source-to-graph/VC/compiler correspondences remain
+  manual or unverified.
+
+The active post-M8 focus is full frontend resolution/elaboration, verified
+source-to-IR connections, broader independently run comparison models, and
+release infrastructure without weakening existing evidence classes.

@@ -1,9 +1,9 @@
 # NMLT Execution Plan
 
 - Status: Active pre-alpha research prototype
-- Implementation status: bounded milestones exist across Phases 0–7; open
-  exit and promotion gates are recorded below
-- Active milestone: M8 — integration, independent reproduction, and release hardening
+- Implementation status: bounded milestones across Phases 0–7 and the M8
+  independent-reproduction gate are complete; broader promotion gates remain
+- Active focus: post-M8 source-to-IR integration and broader independent validation
 - Initial planning baseline: `6bd302b` (`chore: establish NMLT research scaffold`)
 - Updated: 2026-07-18
 
@@ -100,11 +100,13 @@ The first research alpha succeeds when NMLT can:
 10. reproduce the complete result from a clean checkout using one documented
     command.
 
-Items 1–7 and 9 now have local, bounded implementations and checked-in evidence
-for the provider slice. Item 8 is exercised only by synthetic persisted journal
-fixtures, not observations from a deployed runtime. Item 10 remains a
-release-hardening requirement: this plan does not treat an in-place workspace
-run as independent clean-checkout reproduction.
+Items 1–7 and 9–10 now have local, bounded implementations and checked-in
+evidence for the provider slice. Item 10 was reproduced from a fresh clone of
+`fcf2317b9b92a59d1937d08ced4e9c476b30bebd`; the exact environment, command,
+and outcomes are in
+[`docs/reproduction-2026-07-18.md`](docs/reproduction-2026-07-18.md). Item 8 is
+exercised only by synthetic persisted journal fixtures, not observations from
+a deployed runtime.
 
 The project does not claim a general-purpose verified programming language at
 that point. It claims several identity-bound experimental slices whose
@@ -402,11 +404,11 @@ Exit gate:
 - bounds, assumptions, and engine identity are recorded;
 - rerunning from a clean checkout reproduces the same classifications.
 
-Gate result: the semantic and evidence clauses pass under local deterministic
-readback, including exact source, engine source-set, executable, toolchain,
-configuration, and result identities. Independent clean-checkout reproduction
-has not yet been recorded, so the complete Phase 3/release gate remains open
-under M8.
+Gate result: passed for provider suite v2, including exact source, engine
+source-set, executable, toolchain, configuration, and result identities. A
+fresh clone of `fcf2317b9b92a59d1937d08ced4e9c476b30bebd` reproduced the
+reference classification and all four deterministic refutations; see the
+[independent reproduction record](docs/reproduction-2026-07-18.md).
 
 ### Phase 4 — Temporal properties and refinement
 
@@ -563,9 +565,10 @@ backend, negative controls, and benchmark. None blocks the first alpha.
 
 ## 8. Initial execution backlog
 
-This historical backlog is complete. New integration and release-hardening
-work is tracked under M8 rather than being retroactively folded into these
-Phase 0–2 tasks.
+This historical backlog is complete. Integration and release-hardening work
+was tracked and closed at its bounded scope under M8 rather than being
+retroactively folded into these Phase 0–2 tasks; broader integration now lives
+in the post-M8 focus.
 
 ### P0 — Decisions that unblock implementation
 
@@ -775,11 +778,10 @@ indexing. Lean checks preservation, progress/blockage, frame soundness,
 capability no-duplication/no-fabrication, and indexing without `sorry` or a
 project-defined axiom. Full parser-to-Lean compiler correctness is not claimed.
 
-**M3: Reproducible Provider Model Checking** has its local implementation and
-evidence milestone complete for provider suite v2: one bounded reference
-acceptance, four structured mutant refutations, exact identities, and
-independent result readback. Independent clean-checkout reproduction remains
-open.
+**M3: Reproducible Provider Model Checking** completed for provider suite v2:
+one bounded reference acceptance, four structured mutant refutations, exact
+identities, independent result readback, and clean-clone reproduction at
+`fcf2317b9b92a59d1937d08ced4e9c476b30bebd`.
 
 **M4: Finite Temporal and Runtime Evidence** has its finite milestone complete
 for generic lasso/fairness, refinement, synthetic journals, and provider
@@ -799,8 +801,8 @@ track with a kernel-checked mathematical product algebra. Its promotion gate
 remains closed pending typed-core/analyzer integration, verified Rust
 correspondence, and semantics for the accepted resource annotations.
 
-The active milestone is **M8: Integration, Independent Reproduction, and
-Release Hardening**:
+**M8: Integration, Independent Reproduction, and Release Hardening** completed
+on 2026-07-18 at the bounded research scope:
 
 1. run the complete documented gate from an independent clean checkout and
    record the environment and outcomes;
@@ -809,3 +811,11 @@ Release Hardening**:
 3. keep the frontend, provider core, temporal graph, finite VC, agentic
    protocol, and graded experiment as distinct assurance subjects;
 4. decide whether the bounded provider slice is ready for a `0.1.0` tag.
+
+Gate result: items 1–3 passed and are recorded in
+[`docs/reproduction-2026-07-18.md`](docs/reproduction-2026-07-18.md) and the
+final TCB/evidence audit. Item 4 is decided **not yet**: no `0.1.0` tag is
+created because the corrected P model has not been rerun, source-to-temporal
+graph and source-to-VC mappings remain manual, and the general surface-to-core
+correspondence is unverified. Work continues as pre-alpha integration without
+weakening the completed bounded milestones.

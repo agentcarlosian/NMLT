@@ -15,6 +15,11 @@ temporal, refinement, and runtime-journal checking; a finite Boolean VC with
 two checked routes; an authority-bounded deterministic repair baseline; and
 one independent graded-resource experiment.
 
+The complete bounded gate was reproduced from a fresh clone of commit
+`fcf2317b9b92a59d1937d08ced4e9c476b30bebd`; see the
+[reproduction record](docs/reproduction-2026-07-18.md). This closes the M8
+reproduction gate, not the remaining research or release-promotion gaps.
+
 These are separate assurance subjects, not a complete language pipeline. NMLT
 does not yet provide full surface-language resolution and execution, verified
 source-to-IR elaboration, general or infinite-state verification, production
@@ -47,6 +52,7 @@ when it is absent.
 
 ```bash
 make ci
+make reproduce
 cargo run -p nmlt-cli -- check examples/technicus/provider_attempt.nmlt
 cargo run -p nmlt-cli -- inspect examples/technicus/provider_attempt.nmlt
 cargo run -p nmlt-cli -- tokens examples/technicus/provider_attempt.nmlt
