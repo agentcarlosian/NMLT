@@ -124,3 +124,18 @@ python3 tools/validate_benchmark_integrity.py \
 The self-test and model-report commands form the CI readback pair.
 `--self-test` proves that a `model_checked`-to-`proved` promotion, stale source
 identity, stale result binding, and missing control are all rejected.
+
+## M11 metatheory evidence
+
+[`results/open-composition/m11-001a-evidence.json`](results/open-composition/m11-001a-evidence.json)
+is a claim-specific readback artifact for the finite exact-action
+open-composition slice. It is not a generic provider evidence manifest and it
+does not claim Rust/Lean correspondence. The checker binds the exact Lean
+source set, pinned toolchain, theorem and positive/negative control handles,
+trusted-component inventory, schema, and checker identities, then compares the
+declared axiom sets with actual `#print axioms` output from the pinned build.
+
+```bash
+python3 tools/check_open_composition_evidence.py
+./tools/check_metatheory.sh
+```

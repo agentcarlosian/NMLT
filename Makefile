@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons correspondence m9-audit metatheory ci reproduce
+.PHONY: help fmt fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence open-composition-evidence evidence examples comparisons correspondence m9-audit metatheory ci reproduce
 
 help:
 	@echo "NMLT development targets"
@@ -14,6 +14,7 @@ help:
 	@echo "  multi-engine-evidence Reproduce Phase 5 checked composition evidence"
 	@echo "  agentic-evidence Reproduce Phase 6 authority/runtime artifact graph"
 	@echo "  graded-evidence Reproduce Phase 7 resource-grade evidence"
+	@echo "  open-composition-evidence Check M11 theorem/source/axiom bindings"
 	@echo "  evidence   Reproduce canonical provider evidence manifests"
 	@echo "  examples   Structurally check all canonical NMLT fixtures"
 	@echo "  comparisons Validate NMLT and Quint; optionally TLC and P"
@@ -59,6 +60,9 @@ agentic-evidence:
 graded-evidence:
 	python3 tools/check_graded_evidence.py
 
+open-composition-evidence:
+	python3 tools/check_open_composition_evidence.py
+
 evidence:
 	python3 tools/check_evidence.py
 
@@ -79,6 +83,6 @@ m9-audit:
 metatheory:
 	./tools/check_metatheory.sh
 
-ci: fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence evidence examples comparisons correspondence m9-audit
+ci: fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence open-composition-evidence evidence examples comparisons correspondence m9-audit
 
 reproduce: ci metatheory

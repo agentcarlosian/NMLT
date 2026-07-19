@@ -1,7 +1,7 @@
-manifest_version = "1.7.0"
+manifest_version = "1.9.0"
 status = "pre-alpha"
 reviewed = "2026-07-19"
-identity_requirement = "Every assurance manifest binds the exact source/source set, engine source set and executable, and each relied-on component by a content address; generic and graded assurance evidence also binds the exact bytes of this inventory, which names roles but is not itself a digest ledger."
+identity_requirement = "Every assurance manifest binds the exact source/source set, engine source set and executable, and each relied-on component by a content address; generic, graded, and M11 metatheory evidence also bind the exact bytes of this inventory, which names roles but is not itself a digest ledger."
 
 outside_tcb = [
   "examples, intent prose, benchmark expectations, dashboards, and visual renderers",
@@ -186,6 +186,21 @@ trusted = [
   "tools.metatheory_policy_checker",
 ]
 
+[[claim_profiles]]
+name = "m11_open_composition_metatheory"
+result_ceiling = "proved_for_m11_001a_exact_action_open_composition_statements_only"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.lean",
+  "toolchain.python3",
+  "crypto.sha256",
+  "ci.lean_action",
+  "nmlt_lean.open_composition_statements",
+  "lean.kernel_and_nanoda",
+  "tools.metatheory_policy_checker",
+  "tools.open_composition_evidence_checker",
+]
+
 [[components]]
 id = "host.hardware_os_filesystem"
 paths = []
@@ -350,10 +365,11 @@ paths = [
   "crates/nmlt-temporal/src/graph.rs",
   "crates/nmlt-temporal/src/temporal.rs",
   "crates/nmlt-temporal/src/observation.rs",
+  "crates/nmlt-temporal/src/open.rs",
   "crates/nmlt-temporal/src/refinement.rs",
   "crates/nmlt-temporal/src/runtime.rs",
 ]
-role = "Construct finite graphs/lassos, interpret explicit fairness and hiding, check finite simulation, and classify supplied traces."
+role = "Construct finite graphs/lassos, interpret explicit fairness and hiding, check finite simulation and state/transition/work-bounded strict open-system composition instances, and classify supplied traces. Work items bound explicit module loops, not wall-clock or byte costs. Open composition remains safety-only and has no Rust/Lean correspondence theorem."
 
 [[components]]
 id = "nmlt_verify.vc_kernel"
@@ -403,6 +419,7 @@ id = "nmlt_lean.statements"
 paths = [
   "mechanization/lean/NMLT.lean",
   "mechanization/lean/NMLT/Behavior/Coinductive.lean",
+  "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
   "mechanization/lean/NMLT/Behavior/Refinement.lean",
   "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
   "mechanization/lean/NMLT/Core/TypedCore.lean",
@@ -416,6 +433,18 @@ paths = [
   "mechanization/lean/NMLT/Metatheory/Soundness.lean",
 ]
 role = "Definitions and theorem statements whose exact compiled proof terms are accepted; scope does not extend to Rust correspondence."
+
+[[components]]
+id = "nmlt_lean.open_composition_statements"
+paths = [
+  "mechanization/lean/NMLT.lean",
+  "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
+  "mechanization/lean/NMLT/Behavior/Refinement.lean",
+  "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
+  "mechanization/lean/NMLT/Core/Transition.lean",
+  "mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean",
+]
+role = "Exact M11 open-composition definitions, dependency closure, positive controls, and retained weak-congruence counterexample; no Rust correspondence is claimed."
 
 [[components]]
 id = "tools.canonical_examples"
@@ -477,7 +506,16 @@ role = "Rebuild/read back graded-resource results, adversarial controls, and exa
 [[components]]
 id = "tools.metatheory_policy_checker"
 paths = ["tools/check_metatheory.sh"]
-role = "Reject forbidden proof placeholders and invoke the pinned Lean build; the shell and host tools remain trusted."
+role = "Reject forbidden proof placeholders, invoke the pinned Lean build, and pass its axiom audit to the claim-specific evidence checker; the shell and host tools remain trusted."
+
+[[components]]
+id = "tools.open_composition_evidence_checker"
+paths = [
+  "tools/check_open_composition_evidence.py",
+  "schemas/open-composition-evidence-v1.schema.json",
+  "tools/validate_benchmark_integrity.py",
+]
+role = "Recompute the exact M11 open-composition source and manifest identities, require the frozen theorem/control handles and limitations, and match their declared axiom sets against pinned Lean build output."
 
 [[components]]
 id = "build.ci_release"

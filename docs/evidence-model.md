@@ -56,6 +56,13 @@ membership resolver exists. Self-test mode uses current provider inputs but
 does not trust or read the checked-in evidence manifests; it exercises stale,
 missing, syntactically valid-but-unresolvable, and trust-me forgeries.
 
+The M11 metatheory has a separate claim-specific readback artifact at
+`benchmarks/results/open-composition/m11-001a-evidence.json`. Its checker binds
+the exact Lean sources, theorem and control handles, pinned toolchain, schema,
+checkers, trusted-component inventory, and audited `#print axioms` output. It
+is not an `evidence-manifest.schema.json` provider result and explicitly records
+that no Rust/Lean correspondence has been verified.
+
 ## Promotion
 
 Promotion is a vector of required evidence dimensions, not an average score.

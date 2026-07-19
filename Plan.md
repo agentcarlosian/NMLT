@@ -1003,6 +1003,33 @@ research phase, ordered by the eight-loop gap analysis:
 - [ ] **M11-001 — Open-system refinement.** Add environment actions,
   assumptions/guarantees, compatibility and receptiveness, then prove
   refinement is a congruence for supported composition.
+  - [x] **M11-001a — Finite exact-action safety seed.** Classify environment,
+    system, and internal actions. Rust checks global input receptiveness,
+    noncircular symbolic assumption/guarantee discharge, explicit one-to-one
+    synchronous connections, injective visible-boundary maps,
+    hidden-boundary exclusion, whole-connection reflection, and product
+    construction with checked state, transition, and conservative work-item
+    limits. Lean independently proves structural exact-action,
+    state-surjective one-sided product congruence from whole-wiring
+    equivalence, plus separate composability preservation and product
+    receptiveness results from its predicate contracts and global
+    receptiveness premises, without added axioms. Lean wiring is an arbitrary
+    relation required to agree exactly across refinement, not the executable
+    profile's one-to-one connection representation. The claim-specific
+    [M11 evidence manifest](benchmarks/results/open-composition/m11-001a-evidence.json)
+    binds the exact theorem, controls, sources, checker, toolchain, and axiom
+    sets. The
+    [M11 research note](docs/research-notes/m11-open-system-refinement-2026-07-19.md)
+    records the archive gap, repaired sources, semantics, and limits.
+  - [ ] **M11-001b — Contract-sound label-aware refinement.** Replace symbolic
+    claim-name equality with canonical finite assumption and guarantee
+    predicates, add payload-type identity, contravariant assumption and
+    covariant guarantee preservation, and prove identity/composition for the
+    resulting open refinement relation.
+  - [ ] **M11-001c — Full supported congruence.** Prove two-sided lifting,
+    composite contract soundness, invariant transport, and correspondence
+    between the executable checker and Lean statement; then add capabilities,
+    grades, rely conditions, and only later fairness/divergence obligations.
 - [ ] **M11-002 — Full source/behavior preservation.** Generalize the M10
   bridge from selected core actions to the entire supported M9 source fragment.
 - [ ] **M11-003 — Constructive temporal evidence.** Add implication,

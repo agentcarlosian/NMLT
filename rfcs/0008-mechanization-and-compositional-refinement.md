@@ -17,8 +17,10 @@ change the peer's observable state. The concrete sender refines the abstract
 sender in isolation, while the composed systems admit no observation-
 preserving refinement.
 
-This RFC therefore replaces the unconditional target with an interface-aware
-congruence conjecture whose proof requires connection preservation,
+This RFC therefore replaces the unconditional target with interface-aware
+conditional results. M11 now proves one deliberately restricted, exact-action
+safety theorem with global input receptiveness and exact wiring coverage. The
+broader weak-refinement target still requires connection preservation,
 noninterference of hidden steps, capability partitioning, grade compatibility,
 and separate fairness/rely-guarantee obligations.
 
@@ -32,7 +34,15 @@ and separate fairness/rely-guarantee obligations.
    metatheory.
 4. **Congruence result:** the candidate rule as stated is **refuted**, not
    proved. The kernel-checked counterexample is the deliverable for
-   `NMLT-P1-106`; a repaired conditional theorem remains open.
+   `NMLT-P1-106`.
+5. **M11 bounded repair:**
+   `OpenComposition.StrongRefinement.compositionCongruence` bundles two
+   results. Its structural exact-action product refinement uses a
+   state-surjective refinement map, a fixed peer, and bidirectionally
+   equivalent whole wiring. Separately, common interface contracts plus
+   compatibility and globally receptive inputs preserve composability and
+   yield product receptiveness. Weak hiding, label maps, resources, fairness,
+   and liveness remain open.
 
 ## Motivation
 
@@ -206,13 +216,21 @@ I-LABEL
   same direction, payload type, and mapped event
 
 I-CONNECT
-  K_C(l,d) iff K_A(labelMap(l),d) for every nonhidden l
+  every concrete connection maps to an abstract connection, every abstract
+  connection is reflected by a concrete connection, and connection endpoint
+  domains agree on both sides
 
 I-NO-HIDDEN-BOUNDARY
   hidden(l) implies there is no d with K_C(l,d)
 ```
 
 `I-NO-HIDDEN-BOUNDARY` directly excludes the checked counterexample.
+
+Pointwise equivalence only for labels in `labelMap`'s concrete image is not
+enough. An additional abstract connection outside that image can block a peer
+step that is independent in the concrete product. The repaired rule therefore
+requires whole-wiring coverage (or an equivalent boundary bijection/pullback
+condition), not merely mapped-edge preservation.
 
 ### Transition and observation preservation
 
@@ -264,7 +282,35 @@ lift(R,id_D) : (C ||_(K_C) D) refines (A ||_(K_A) D)
 
 No liveness conclusion follows without `I-FAIR` and divergence obligations.
 
-## 6. Proof plan for the repaired theorem
+## 6. Checked bounded theorem and broader proof plan
+
+`mechanization/lean/NMLT/Behavior/OpenComposition.lean` now checks the first
+bounded theorem on Lean 4.30.0. It defines input/output/internal actions,
+assumption and guarantee predicates over port messages, global input
+receptiveness, bidirectional wiring, synchronous composition, and an
+exact-action `StrongRefinement`. `WiringEquivalent` requires equality of the
+complete concrete and abstract wiring relations; its isolation lemmas cover
+both left-only and peer-only interleavings. “Bounded” here means bounded in
+supported semantic features; the Lean statement itself is polymorphic over
+state types and does not assume finite cardinality. The file proves:
+
+```text
+parallelInputReceptive
+  Composable C D K -> InputReceptive (C ||_K D)
+
+compositionCongruence
+  StrongRefinement C A -> WiringEquivalent K_C K_A -> Composable C D K_C
+  -> Composable A D K_A /\ Nonempty (StrongRefinement (C || D) (A || D))
+```
+
+The second conjunct is structural: `liftParallel` and
+`parallelStepCongruence` require only `StrongRefinement` and
+`WiringEquivalent`. `Composable` is used separately to prove the first
+conjunct and `parallelInputReceptive`. The exact-action model makes locally
+internal actions ineligible for synchronization by construction. Its wiring is
+an arbitrary relation required to agree completely across refinement; it does
+not establish Rust's one-to-one executable connection restriction. It also
+does not prove the following broader weak refinement plan.
 
 Use `H(c,d) = (R.h(c),d)`.
 
@@ -282,8 +328,9 @@ Use `H(c,d) = (R.h(c),d)`.
 7. **Capability and grade side facts:** `I-CAP` proves disjointness/transfer;
    `I-GRADE` proves the composite grade inequality.
 
-This case split is a proof outline, not a proof. The current Lean artifact
-mechanizes the false conjecture's counterexample only.
+This case split remains a proof outline for weak hiding, label mapping,
+capabilities, and grades. It must not be inferred from the checked bounded
+exact-action theorem.
 
 ## 7. Mechanization gates
 
@@ -300,17 +347,29 @@ An NMLT theorem is reportable as `proved` only when:
 
 ## Evidence consequences
 
-The current artifact supports a checked **refutation** of unconditional
-congruence for the encoded candidate. It does not support:
+The current artifacts support both a checked **refutation** of unconditional
+congruence and a checked bounded exact-action safety theorem. They do not
+support:
 
-- congruence of the repaired rule;
+- congruence of the full weak/refinement-and-resource rule;
 - soundness of RFC 0001 as a whole;
 - correspondence with the Rust compiler;
 - liveness or fairness transport;
 - novelty of the counterexample or repair conditions.
 
 Evidence should name Lean 4.30.0, the exact source digest, foundational axiom
-set, theorem name, and the fact that the result is a counterexample.
+set, theorem name, and whether the result is the counterexample or the bounded
+positive theorem. The Rust finite instance checker uses related but nonidentical
+interfaces and contracts; passing it is not a Lean/Rust correspondence proof.
+The machine-readable
+[`m11-001a-evidence.json`](../benchmarks/results/open-composition/m11-001a-evidence.json)
+and `tools/check_open_composition_evidence.py` bind the exact source set,
+theorem/control handles, toolchain, checkers, TCB inventory, and observed axiom
+output. Its positive controls include a nonidentity state map and a real
+synchronization; exact negative controls show that an extra abstract wire
+blocks a peer-only step and violates whole-wiring equivalence. RFC 0008's
+original weak hidden-synchronization counterexample remains checked as a
+separate control.
 
 ## Negative controls
 
@@ -354,7 +413,9 @@ dependent proof artifacts even if theorem names remain unchanged.
   dependency must be justified against TCB and maintenance cost.
 - Forward simulation remains incomplete for refinements needing prophecy,
   history, or multiple abstract steps.
-- Input receptiveness and assume/guarantee discharge are not yet formalized.
+- Input receptiveness and port/message assume/guarantee discharge are
+  formalized only for the bounded exact-action profile; temporal and circular
+  contracts remain open.
 - The sufficient conditions above may be stronger than necessary; weakening
   them is future research after the theorem is proved.
 

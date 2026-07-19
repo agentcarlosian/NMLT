@@ -9,4 +9,5 @@ import NMLT.Correspondence.M9Kernel
 import NMLT.Behavior.TemporalTyping
 import NMLT.Behavior.Refinement
 import NMLT.Behavior.Coinductive
+import NMLT.Behavior.OpenComposition
 import NMLT.Correspondence.M10Behavior

@@ -1,0 +1,131 @@
+{
+  "claim_scope": "finite_exact_action_open_composition",
+  "evidence_id": "nmlt-open-composition-evidence-v1:sha256:2709d1686729570b37f856a3343330ef0969ce3c103c44b5d6d61579e4caa0f3",
+  "executable_correspondence": {
+    "rust_checker": "related_nonidentical_finite_instance_checker",
+    "verified": false
+  },
+  "limitations": [
+    "No weak hiding or label-map congruence theorem.",
+    "No payload-type, capability, grade, fairness, divergence, or liveness preservation.",
+    "No temporal or circular assume/guarantee contract semantics.",
+    "No Rust/Lean correspondence or compiler-correctness theorem.",
+    "Lean permits arbitrary whole wiring relations; Rust requires one-to-one connections.",
+    "The positive theorem is one-sided and requires state-surjective exact-action refinement."
+  ],
+  "schema_version": "1.0.0",
+  "sources": {
+    "checker_source_id": "nmlt-source-v1:sha256:18b82433317754f2a3665ae729d925e7d8c025fbc2401ee94cbe95611fa36e0c",
+    "ci_workflow_source_id": "nmlt-source-v1:sha256:071a011e8c01e78a3b612d79e6928298fe5e51a95890a8031ff28ec52b987b66",
+    "entries": [
+      {
+        "path": "mechanization/lean/NMLT.lean",
+        "sha256": "f930f00004e02503de388ce49b971d5b1a947ff3393e7126ded71d244d98f3c2"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
+        "sha256": "4485f125478f7aae4a1facf0d16924b3e74d3275046b6b7963f4236e950c4737"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/Refinement.lean",
+        "sha256": "f94f78bc4a4844abd6cf691c4ace7e8df5009646d68f81b57fbeae62157baa58"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
+        "sha256": "a76ea31e5c707e881a8bada7e06ce17a96a365b8e87594216ec8cb5f2ea5371d"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Core/Transition.lean",
+        "sha256": "02e2feb7933151e4b0357c9d9f9c33ab7ce7f703482ef2d172346bc9b9a4ecef"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean",
+        "sha256": "9bd13fd92511336eb1d1217fca0f291225c0bd9adf8f22f034967f2bfdaaf0f6"
+      },
+      {
+        "path": "mechanization/lean/lake-manifest.json",
+        "sha256": "df151dea3882728992ab78008f68e5a64042df308da3ddfae80be6e650076850"
+      },
+      {
+        "path": "mechanization/lean/lakefile.toml",
+        "sha256": "087eee37473b91dbfa2627f651b2785ed166ac7db12ab611499eec47c2eb5a01"
+      },
+      {
+        "path": "mechanization/lean/lean-toolchain",
+        "sha256": "d98505f0e331ec8d3670abfe7b3e7f179f56a9ee827cd38b0c113a6e69c4b3fb"
+      }
+    ],
+    "evidence_checker_source_id": "nmlt-source-v1:sha256:b2399838f88b75c115d7f7b11d1e51b80d6be3054f883eab4d12a3810a2b8a95",
+    "nanoda_checker_source_id": "nmlt-source-v1:sha256:fc0891182effa2f881be151b4519975c044965793a2aded2207f1ebceefd75ce",
+    "root_source_id": "nmlt-source-v1:sha256:9f566c9ef3b20e5be6609ce80c7e5dae75f76279dcaf74a489ee72b247a90d9a",
+    "schema_source_id": "nmlt-source-v1:sha256:f9d91ecd72beced1e29eb5a2b7290d3fd4d2293f22be269942fa43c71bdf16c6",
+    "schema_validator_source_id": "nmlt-source-v1:sha256:30310e32421ef0b622c7c1ac64b9a0fa3914eb20f97a2a48c3def67135b6dc6d",
+    "source_set_id": "nmlt-open-composition-source-set-v1:sha256:7eaa79938de22d5480bf24520407d6ad33f2fb3db8ae975e660188975e6d371b",
+    "trusted_component_inventory_source_id": "nmlt-source-v1:sha256:fbace700e76ec3eba3e0ab4bfc4e828eaf0f49caf2e05ec1fcece28edab8f7c9"
+  },
+  "statement": "Kernel-checked structural exact-action safety congruence plus separate composability preservation for globally input-receptive open systems under whole-wiring equivalence.",
+  "theorem_audits": [
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.StrongRefinement.compositionCongruence",
+      "role": "congruence"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.StrongRefinement.parallelStepCongruence",
+      "role": "congruence"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.parallelInputReceptive",
+      "role": "receptiveness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.StrongRefinement.outputCanSynchronize",
+      "role": "synchronization"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.StrongRefinement.rightOutputCanSynchronize",
+      "role": "synchronization"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.Examples.positiveCompositionCongruence",
+      "role": "positive_control"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.Examples.positiveConcreteSynchronization",
+      "role": "positive_control"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.Examples.peerOnlyWithEmptyWiring",
+      "role": "positive_control"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.Examples.brokenWiringBlocksPeerOnly",
+      "role": "negative_control"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.Examples.brokenWiringNotEquivalent",
+      "role": "negative_control"
+    },
+    {
+      "declared_axioms": [
+        "propext"
+      ],
+      "handle": "NMLT.Counterexamples.CompositionCongruence.noCompositeRefinement",
+      "role": "negative_control"
+    }
+  ],
+  "toolchain": {
+    "lean": "v4.30.0",
+    "standard_library_only": true
+  },
+  "validation_gate": "./tools/check_metatheory.sh"
+}

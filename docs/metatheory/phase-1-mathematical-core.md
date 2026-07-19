@@ -22,6 +22,11 @@ the encoded candidate. P1-102 through P1-104 are precise conjectural rules,
 not checked soundness results. P1-105 is a tooling/layout decision, not a
 semantic theorem.
 
+Post-Phase-1 update (2026-07-19): M11 retains P1-106 and additionally proves a
+restricted exact-action open-composition theorem. That later positive result
+does not retroactively validate the unconditional rule or the full weak,
+resource-aware conjecture.
+
 ## Cross-RFC kernel
 
 The candidate behavior signature is:
@@ -81,17 +86,19 @@ The repaired conjecture requires at minimum:
 
 ```text
 hidden(l) => l is not connected at the composition boundary
-connected_C(l,d) <=> connected_A(labelMap(l),d) for visible l
+every concrete wire is preserved, every abstract wire is reflected, and both
+connection endpoint domains agree
 ```
 
 plus input/rely compatibility, event-map commutation, capability partition,
 grade homomorphism, and separate fairness/divergence conditions for liveness.
-RFC 0008 states the exact case-split proof plan. It does not claim that plan is
-complete or already checked.
+Pointwise preservation only over mapped concrete labels is insufficient when
+an extra abstract wire can block a peer-only step. RFC 0008 records both the
+checked exact-action theorem and the remaining broader case-split proof plan.
 
 ## Mechanization boundary
 
-The current Lean project checks only:
+The original Phase-1 slice checks:
 
 - the minimal labelled-transition and one-step simulation definitions;
 - synchronized product semantics for the counterexample;
@@ -99,9 +106,14 @@ The current Lean project checks only:
 - existence of the concrete synchronization;
 - nonexistence of an observation-preserving composite refinement.
 
-It does not yet encode RFC 0005 typing, RFC 0006 capabilities, RFC 0007
-infinite traces, the repaired congruence theorem, fairness, or a correspondence
-with Rust. Evidence and public claims must retain those gaps.
+Later slices now encode typed actions and capabilities, infinite traces,
+directed refinement laws, a coinductive safety seed, grades, and M11's
+exact-action open-system theorem. M11 proves structural one-sided product
+congruence for state-surjective strong refinement with equivalent whole wiring,
+and separately proves composability preservation and product input
+receptiveness. It still does not prove the full weak rule, fairness, divergence,
+resource preservation through composition, or correspondence with Rust.
+Evidence and public claims must retain those gaps.
 
 ## Next proof obligations
 

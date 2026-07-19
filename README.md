@@ -34,7 +34,13 @@ all-reference coverage, a structurally validated explicit typed core, and an
 identity-bound bidirectional elaborator that emits a complete derivation DAG.
 An independent kernel replays that DAG against exact HIR and core and is the
 sole constructor of `CheckedProgram`; the bounded provider engine now consumes
-that checked value without a second parser. NMLT does not
+that checked value without a second parser. M10 has closed its bounded
+behavior-indexed mathematics and certificate seed. M11 has started with a
+finite safety-only open-system slice: global input receptiveness, explicit
+synchronous connections, executable lifted-refinement checks, and an
+axiom-free exact-action Lean congruence theorem. The full open refinement,
+contract, resource, fairness, and source-correspondence goals remain open.
+NMLT does not
 yet provide full surface-language execution, verified source-to-IR
 elaboration, general or infinite-state verification, production runtime
 attestation, general AI-repair evidence, signed evidence, or code generation.
@@ -88,7 +94,7 @@ The `evidence` command emits a structural scaffold with result `unknown`; it
 does not claim verification. Persisted, source-bound results live under
 `benchmarks/results/` and `benchmarks/grades/`. The corresponding reproduction
 targets are `model-reports`, `temporal-evidence`, `multi-engine-evidence`,
-`agentic-evidence`, and `graded-evidence`.
+`agentic-evidence`, `graded-evidence`, and `open-composition-evidence`.
 
 ## Repository map
 
@@ -127,7 +133,14 @@ The durable provider-attempt protocol anchors the current slices:
    links a synthetic drift event into one artifact graph;
 5. a separate annotated-plan experiment checks one product grade over cost,
    privacy, energy, and uncertainty, with a kernel-checked mathematical algebra
-   but no annotation-soundness or Rust/Lean compiler-correspondence claim.
+   but no annotation-soundness or Rust/Lean compiler-correspondence claim;
+6. the first M11 open-system seed checks finite input/output/internal
+   interfaces, strict noncircular symbolic contract discharge, global
+   receptiveness, injective boundary mappings, whole-connection reflection,
+   and product construction with state, transition, and work-item limits. Lean
+   separately proves structural exact-action congruence plus composability and
+   product-receptiveness results;
+   the claim-specific evidence explicitly denies Rust/Lean correspondence.
 
 See [Plan.md](Plan.md) for the exact gates, evidence boundaries, and residual
 gaps. Passing any one slice does not verify arbitrary NMLT source.

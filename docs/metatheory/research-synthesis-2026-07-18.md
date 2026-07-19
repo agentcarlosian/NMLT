@@ -1,5 +1,12 @@
 # Research synthesis: Phase 1 mathematical core
 
+Historical scope note: this synthesis records the 2026-07-18 Phase-1 state.
+M11 added a bounded exact-action open-composition theorem on 2026-07-19; see
+[RFC 0008](../../rfcs/0008-mechanization-and-compositional-refinement.md) and
+the [M11 research note](../research-notes/m11-open-system-refinement-2026-07-19.md).
+Its older “current artifact” limitations below remain the audit record for the
+earlier research pass, not the repository's latest inventory.
+
 - Search date: 2026-07-18 (America/Chicago; collector timestamps crossed into
   2026-07-19 UTC)
 - Focus: substructural action typing, observation/stuttering, compositional

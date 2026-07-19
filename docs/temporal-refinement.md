@@ -86,6 +86,58 @@ For finite snapshot words, `stutter_project` removes adjacent duplicate
 observations, and `stutter_equivalent` compares the results. Keep the original
 intensional action/event/resource trace alongside any projection.
 
+## Finite open-system composition
+
+The `open` module adds the first M11 safety-only profile. An `OpenSystem`
+bundles a finite graph with a total action interface and exact symbolic safety
+claims. `ActionSignature` classifies every graph action as input, output, or
+internal; boundary actions also name an opaque channel identity.
+
+`CompatibilityChecker` requires every declared input to be enabled at every
+model state. Each explicit connection must pair complementary input/output
+actions on the same channel and must be one-to-one. The current strict contract
+profile also requires every local assumption identifier to be discharged
+exactly once by the other component's identically named guarantee, whose
+provider must have no assumptions of its own. Mutual or otherwise conditional
+symbolic discharge is rejected. Identifier equality is only a declared link,
+not a proof of logical implication.
+
+`compose_open_systems` constructs the cartesian finite product. Connected
+actions synchronize and become internal; they cannot also interleave.
+Unconnected actions and state fields receive deterministic `left::` or
+`right::` namespaces. The construction preserves remaining external actions
+but the strict executable profile closes all symbolic assumptions. Checked
+arithmetic and default caps of 100,000 states and 1,000,000 generated
+transition candidates make oversized products fail explicitly. A conservative
+50,000,000 work-item preflight bounds the module's own compatibility and
+product-enumeration loops; it is not a wall-clock, byte, allocator, or
+standard-library comparison/sort budget.
+`compose_open_systems_with_limits` accepts smaller caller-selected bounds.
+
+`OpenRefinementCongruenceChecker` first checks the local finite refinement,
+both compositions, polarity/channel preservation, the no-hidden-boundary
+condition, injectivity of visible boundary mappings, and exact connection
+preservation in both directions. Bidirectional coverage is essential: an extra
+abstract connection could otherwise block a peer-only action that remains
+independent in the concrete product. Only after those checks pass does it build
+and check the lifted product refinement.
+
+Lean separately proves structural product congruence for an abstract
+exact-action, state-surjective profile from `StrongRefinement` and equality of
+the complete wiring relations. Predicate-contract compatibility and global
+input receptiveness establish a separate composability result and product
+receptiveness; they are not premises needed by the structural step-lifting
+half. Lean wiring may be an arbitrary relation, whereas the Rust profile is
+one-to-one. The Rust and Lean representations are not yet connected by a
+correspondence theorem. Neither artifact covers temporal contract satisfaction,
+payload subtyping, affine capabilities, grades, fairness, hidden divergence, or
+liveness transport. The claim-specific
+[M11 evidence manifest](../benchmarks/results/open-composition/m11-001a-evidence.json)
+binds the frozen theorem handles, exact positive and negative controls, source
+set, Lean toolchain, checkers, and audited axiom sets. See the
+[M11 research note](research-notes/m11-open-system-refinement-2026-07-19.md)
+and [RFC 0008](../rfcs/0008-mechanization-and-compositional-refinement.md).
+
 ## Runtime journals
 
 ```rust

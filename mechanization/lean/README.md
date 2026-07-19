@@ -1,7 +1,7 @@
 # NMLT Lean mechanization
 
 This directory is the pinned Lean 4.30.0 home for NMLT metatheory. It now
-contains three independent checked slices:
+contains five independent checked families:
 
 1. the Phase-1 counterexample to unconditional refinement congruence under
    synchronized composition;
@@ -10,7 +10,12 @@ contains three independent checked slices:
    and system-indexed safety properties;
 3. the Phase-7 mathematical cost/privacy/energy/uncertainty product algebra,
    conservative composition operations, product order, and Boolean budget
-   predicate.
+   predicate;
+4. M10 behavior-indexed traces, constructive positive evidence, directed
+   refinement laws, coinductive/up-to safety, and the selected typed-core bridge;
+5. M11 input/output/internal interfaces, assume/guarantee message predicates,
+   global input receptiveness, exact wiring coverage, and bounded exact-action
+   composition congruence.
 
 The artifact intentionally depends only on Lean's standard library. It contains
 no `sorry`, project-defined axiom, `native_decide`, native-code proof, or
@@ -105,6 +110,33 @@ manual. The capsule does not encode the `.nmltg` parser, plan analyzer,
 annotations, differential-privacy sensitivity, physical energy, uncertainty
 calibration, extraction, or compiler correctness.
 
+## Checked M11 open-composition slice
+
+`NMLT/Behavior/OpenComposition.lean` defines open actions, port/message
+assumption and guarantee predicates, global input receptiveness, bidirectional
+wiring, and synchronous products in which connected boundary actions cannot
+interleave independently. `WiringEquivalent` compares the complete concrete
+and abstract wiring relations, including the peer endpoint domain; this blocks
+the extra-abstract-connection defect missed by pointwise mapped-edge checks.
+
+For exact-action, state-surjective `StrongRefinement`, Lean proves structural
+step and product congruence from equality of the whole wiring relation.
+Separately, predicate-contract compatibility and global receptiveness prove
+component receptiveness transport, both connected-output synchronization
+enabledness directions, composability preservation, and product
+receptiveness. Lean wiring is an arbitrary relation, not the Rust executable
+profile's one-to-one representation. These theorems use no axioms. A
+nonidentity positive refinement performs a real synchronization, and an exact
+negative control shows that an extra abstract wire blocks a peer-only step and
+violates wiring equivalence. The claim-specific
+[M11 evidence manifest](../../benchmarks/results/open-composition/m11-001a-evidence.json)
+binds those theorem handles and controls to the exact sources, toolchain,
+checkers, TCB inventory, and axiom output. The profile deliberately omits weak
+hiding, label maps, payload type identities, capabilities, grades,
+temporal/circular contracts, fairness, divergence, liveness, and Rust
+correspondence. The original unconditional counterexample remains imported as
+a permanent negative control.
+
 ## Axiom audit
 
 On the pinned toolchain, `lake build` reports:
@@ -117,6 +149,8 @@ On the pinned toolchain, `lake build` reports:
 - `propext` for the pre-existing negative composition-congruence result;
 - `propext` and `Quot.sound` for the grade associativity, distribution, order,
   and monotonicity audit, and `propext` alone for Boolean budget soundness.
+- no axioms for the audited M11 input-receptiveness, synchronization,
+  wiring-isolation, step-congruence, and composition-congruence theorems.
 
 These are Lean foundational dependencies, not NMLT assumptions. The audit
 rejects `sorryAx` and any project-defined axiom.
@@ -152,6 +186,7 @@ NMLT/
   Core/             semantic objects and operational relations
   Typing/           value, state, action, and capability judgments
   Temporal/         traces, observations, stuttering, and fairness
+  Behavior/         indexed traces, refinements, coinduction, open composition
   Refinement/       simulations, hiding, and property transport
   Composition/      ports, synchronization, grades, and authority
   Grades/           conservative quantitative algebra and budget order
