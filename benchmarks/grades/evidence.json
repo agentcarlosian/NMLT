@@ -2,9 +2,9 @@
   "schema_version": "1.0.0",
   "fixture": "phase7-graded-resources-v1",
   "reference": {
-    "source_id": "nmlt-source-v1:sha256:ef73f2a8367d8323d7a88bd5788ed97700778f8e837a02396e2acc7502f2a1c5",
-    "claim_spec_source_id": "nmlt-source-v1:sha256:7e008bd8206df9d8fe1d492b1fd43e4363d9b7aed870350a92cc5c288e61295b",
-    "claim_id": "nmlt-graded-claim-v1:sha256:aaff4bffad4e1badb346e1d5bca7bf5342440f204dbdf53082b9745a311e7bc8",
+    "source_id": "nmlt-source-v1:sha256:0fc03d2ce6ba534ca0b8e51900fc61162c1176b85184f3ad69570c7cb49977ca",
+    "claim_spec_source_id": "nmlt-source-v1:sha256:f7fda5658ac2c4bf62fec797824292ffd548828bd23df6f695c4f453643aa47d",
+    "claim_id": "nmlt-graded-claim-v1:sha256:db7b51e0ff3b1deeb313940cfe6dddc4304b88604546cc228c69892aed639169",
     "claim_handle": "Grades.ProviderPipeline.WithinBudget",
     "claim": "Under the declared annotations and bounded composition rules, the provider pipeline is componentwise within its declared product budget.",
     "decision": "within_budget",
@@ -14,6 +14,7 @@
       "energy_microjoules": 155,
       "uncertainty": {
         "family": "declared",
+        "profile_id": "b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9",
         "upper_bound_ppm": 47000
       }
     },
@@ -23,6 +24,7 @@
       "energy_microjoules": 180,
       "uncertainty": {
         "family": "declared",
+        "profile_id": "b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9",
         "upper_bound_ppm": 60000
       }
     }
@@ -51,6 +53,11 @@
       "hoeffding",
       "conformal"
     ],
+    "uncertainty_profile_ids": {
+      "declared": "b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9",
+      "hoeffding": "c45933a7b27242cbefb83d6bf0278bcd385076328ad32078fc4cbcb5e58f4449",
+      "conformal": "5eba8865b2f7f78f1eb91fbfd8af61840084652ef948b02715b9e65f41c25434"
+    },
     "reference_iteration_bounds": "finite_explicit",
     "overflow_result": "unknown"
   },
@@ -97,30 +104,30 @@
     "No grade inference, symbolic bounds, or certified compiler is implemented."
   ],
   "implementation": {
-    "source_set_id": "nmlt-source-set-v1:sha256:d8ebdd589ee984c84d6679973f41ed2ac46b687a17950b29534a99e2b16b8cd2",
+    "source_set_id": "nmlt-source-set-v1:sha256:a582e802462b811a754fb22d4253c292e9a21cdd5fb044f0294a799b1da449c1",
     "toolchain": {
       "version": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
       "host": "x86_64-unknown-linux-gnu",
       "rustc_sha256": "103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a"
     },
-    "executable_sha256": "628f38cf78489f38b32c09220a03e3c0d5e3d730e39f529bfdf21e5be4904443",
+    "executable_sha256": "cf6d5a9549b30273446825ec7337e315ededbce4a3042c8c309ea7b90229f82d",
     "control_source_ids": {
-      "privacy_budget_violation": "nmlt-source-v1:sha256:74bfbc44172a4d85334688fcb7cec023441cd5653aef7dc91ac04bdf04af13e2",
-      "unknown_iteration": "nmlt-source-v1:sha256:25140c92c517d012902d30a84ce360f4d52111724a8b5aeb32cac785a0795fd0",
-      "invalid_uncertainty": "nmlt-source-v1:sha256:47719cf5106696b448c19ed6d3c8b44de3fd06c03522e14b9ba56dd3ab5d2598"
+      "privacy_budget_violation": "nmlt-source-v1:sha256:8d42b4fdde5ec9997ca09ced5c1a89ad8670f9595273d0112013822c56e534e3",
+      "unknown_iteration": "nmlt-source-v1:sha256:b19ed39db5158da533947083927080f6567c287e8769b08cbc717ccc24f954ed",
+      "invalid_uncertainty": "nmlt-source-v1:sha256:44ee2383394b359fe303caf7ec36f2d98bbf6de6ad162348b5a66591a9c161ad"
     },
     "trusted_component_source_ids": {
       "evidence_harness": "nmlt-source-v1:sha256:c3e4f9a06d035035ed6ffda33a177653119c4a1809adae7ff3d4bd72dbfa6c89",
-      "evidence_schema": "nmlt-source-v1:sha256:34770c7a6467150e10e363b67922e7b9da3ddf024bbe361650dd5ae627bcaaad",
+      "evidence_schema": "nmlt-source-v1:sha256:d2cea4f30bafaa88c080a6e28a4d6c3341d60fdde66b564db99b087f1f89e059",
       "schema_validator": "nmlt-source-v1:sha256:30310e32421ef0b622c7c1ac64b9a0fa3914eb20f97a2a48c3def67135b6dc6d",
-      "trusted_component_inventory": "nmlt-source-v1:sha256:6f2d5f98fd0cff47093a2fdc67bc329b509433de2733e4c638c124f9db8f0e34"
+      "trusted_component_inventory": "nmlt-source-v1:sha256:b1d1c8af14b147a7287dd358ba72d0aa6d3d9a107d1a26e261719b5710cd17fc"
     }
   },
   "metatheory": {
     "scope": "mathematical_grade_algebra_only",
-    "source_set_id": "nmlt-source-set-v1:sha256:f111a79671d20521e4d9204d1de4871f15ecb159e30377985493cb170ca56bbf",
-    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:4cb922bb0d091f4df8e0bad006b2a7d754ad73ebbcab6d188878c93ba14998b0",
-    "root_source_id": "nmlt-source-v1:sha256:a9a77c8a41b15c3125a52b9d5ee04793086af43bfd3135abfb1f306f36bebbd0",
+    "source_set_id": "nmlt-source-set-v1:sha256:0c2234d5ad6e9bdb2e1255096517325cb35739e7bc0bfbeec4b080eb85073f1f",
+    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:6b62ebdd25dcc90fac44e15f9b130bc6a195f1451084f4074c0d9302cd6520e5",
+    "root_source_id": "nmlt-source-v1:sha256:f64d67732b6df67e2d929208db8acab7cef34ed6b59727b213a93e604656bb8a",
     "entrypoint_source_id": "nmlt-source-v1:sha256:c439ff9ed311099540cd7fde4c7d9fb5f0449990a342b2aa526a877c6a61caa6",
     "checker_source_id": "nmlt-source-v1:sha256:91f0d78b78e5755b2b2828c2615bb12c3e73b6d63b33def04139fb9d57fedac6",
     "toolchain": "v4.30.0",
@@ -154,5 +161,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:e074d36c10436d17b703cce733d370b64a7739ee844877220ed2fa9816ed4089"
+  "manifest_id": "nmlt-evidence-v1:sha256:f78b61c41b7e1010284d08d8b2fa347f3bfcd184454145095943d8979fac1c3a"
 }

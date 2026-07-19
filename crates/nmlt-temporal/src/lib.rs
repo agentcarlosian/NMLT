@@ -6,12 +6,17 @@
 
 #![forbid(unsafe_code)]
 
+pub mod certificate;
 pub mod graph;
 pub mod observation;
 pub mod refinement;
 pub mod runtime;
 pub mod temporal;
 
+pub use certificate::{
+    CertificateIssue, CertificateReport, CoinductiveCertificate, CoinductiveCertificateChecker,
+    StatePair,
+};
 pub use graph::{
     FiniteGraph, GraphError, ModelState, StateId, Transition, TransitionId, TransitionKind, Value,
 };

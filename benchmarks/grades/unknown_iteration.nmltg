@@ -1,6 +1,6 @@
 # Negative control: no finite iteration bound, so the checker must say unknown.
 program unknown_iteration
-budget 100 550000 180 declared 60000
+budget 100 550000 180 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 60000
 plan
   (repeat ?
-    (atom query 1 1000 1 declared 100))
+    (atom query 1 1000 1 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 100))

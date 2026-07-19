@@ -66,9 +66,10 @@
             "uncertainty": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["family", "upper_bound_ppm"],
+              "required": ["family", "profile_id", "upper_bound_ppm"],
               "properties": {
                 "family": { "const": "declared" },
+                "profile_id": { "const": "b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9" },
                 "upper_bound_ppm": { "const": 47000 }
               }
             }
@@ -85,9 +86,10 @@
             "uncertainty": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["family", "upper_bound_ppm"],
+              "required": ["family", "profile_id", "upper_bound_ppm"],
               "properties": {
                 "family": { "const": "declared" },
+                "profile_id": { "const": "b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9" },
                 "upper_bound_ppm": { "const": 60000 }
               }
             }
@@ -137,6 +139,7 @@
         "integer_representation",
         "uncertainty_scale_ppm",
         "uncertainty_certificate_families",
+        "uncertainty_profile_ids",
         "reference_iteration_bounds",
         "overflow_result"
       ],
@@ -145,6 +148,16 @@
         "uncertainty_scale_ppm": { "const": 1000000 },
         "uncertainty_certificate_families": {
           "const": ["declared", "hoeffding", "conformal"]
+        },
+        "uncertainty_profile_ids": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["declared", "hoeffding", "conformal"],
+          "properties": {
+            "declared": { "const": "b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9" },
+            "hoeffding": { "const": "c45933a7b27242cbefb83d6bf0278bcd385076328ad32078fc4cbcb5e58f4449" },
+            "conformal": { "const": "5eba8865b2f7f78f1eb91fbfd8af61840084652ef948b02715b9e65f41c25434" }
+          }
         },
         "reference_iteration_bounds": { "const": "finite_explicit" },
         "overflow_result": { "const": "unknown" }

@@ -1,16 +1,16 @@
 # Phase 7 reference: all quantities are declared upper-bound annotations.
 program provider_pipeline
-budget 100 550000 180 declared 60000
+budget 100 550000 180 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 60000
 plan
   (seq
-    (atom ingest 12 100000 30 declared 10000)
+    (atom ingest 12 100000 30 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 10000)
     (choice
-      (atom cache_hit 4 0 8 declared 2000)
+      (atom cache_hit 4 0 8 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 2000)
       (seq
-        (atom remote_fetch 25 300000 70 declared 25000)
-        (atom validate 9 0 15 declared 5000)))
+        (atom remote_fetch 25 300000 70 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 25000)
+        (atom validate 9 0 15 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 5000)))
     (par
-      (atom audit 8 50000 20 declared 3000)
-      (atom metrics 6 0 12 declared 2000))
+      (atom audit 8 50000 20 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 3000)
+      (atom metrics 6 0 12 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 2000))
     (repeat 2
-      (atom retry_guard 3 25000 4 declared 1000)))
+      (atom retry_guard 3 25000 4 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 1000)))

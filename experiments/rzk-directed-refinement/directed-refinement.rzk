@@ -56,3 +56,68 @@
   : U
   := (state : Concrete) ->
        abstract-observe (refine state) = concrete-observe state
+
+-- Path composition is reproduced locally so this experiment has no imported
+-- axiom for composing observation witnesses.
+#define path-concat
+  ( A : U)
+  ( x y z : A)
+  : ( x = y) -> (y = z) -> (x = z)
+  := \ p -> idJ(
+      A,
+      x,
+      ( \ y' _ -> ((y' = z) -> (x = z))),
+      ( \ r -> r),
+      y,
+      p)
+
+-- A refinement is now proof-relevant: it packages the directed map together
+-- with its observation-preservation witness.
+#define RefinementWitness
+  ( Concrete Abstract Observation : U)
+  ( concrete-observe : Concrete -> Observation)
+  ( abstract-observe : Abstract -> Observation)
+  : U
+  := Sigma (refine : Refinement Concrete Abstract),
+       ObservationPreserving Concrete Abstract Observation
+         concrete-observe abstract-observe refine
+
+#define refinement-witness-id
+  ( State Observation : U)
+  ( observe : State -> Observation)
+  : RefinementWitness State State Observation observe observe
+  := ( refinement-id State , \ _ -> refl)
+
+#define refinement-witness-compose
+  ( Concrete Middle Abstract Observation : U)
+  ( concrete-observe : Concrete -> Observation)
+  ( middle-observe : Middle -> Observation)
+  ( abstract-observe : Abstract -> Observation)
+  ( left : RefinementWitness Concrete Middle Observation
+      concrete-observe middle-observe)
+  ( right : RefinementWitness Middle Abstract Observation
+      middle-observe abstract-observe)
+  : RefinementWitness Concrete Abstract Observation
+      concrete-observe abstract-observe
+  := ( refinement-compose Concrete Middle Abstract (first left) (first right) ,
+       \ state -> path-concat Observation
+         (abstract-observe (first right (first left state)))
+         (middle-observe (first left state))
+         (concrete-observe state)
+         (second right (first left state))
+         (second left state))
+
+#define refinement-witness-compose-map
+  ( Concrete Middle Abstract Observation : U)
+  ( concrete-observe : Concrete -> Observation)
+  ( middle-observe : Middle -> Observation)
+  ( abstract-observe : Abstract -> Observation)
+  ( left : RefinementWitness Concrete Middle Observation
+      concrete-observe middle-observe)
+  ( right : RefinementWitness Middle Abstract Observation
+      middle-observe abstract-observe)
+  ( state : Concrete)
+  : first (refinement-witness-compose Concrete Middle Abstract Observation
+      concrete-observe middle-observe abstract-observe left right) state
+      = first right (first left state)
+  := refl

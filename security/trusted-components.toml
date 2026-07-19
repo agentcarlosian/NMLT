@@ -346,6 +346,7 @@ role = "Evaluate simultaneous updates and classify deterministic finite explorat
 [[components]]
 id = "nmlt_temporal.kernel"
 paths = [
+  "crates/nmlt-temporal/src/certificate.rs",
   "crates/nmlt-temporal/src/graph.rs",
   "crates/nmlt-temporal/src/temporal.rs",
   "crates/nmlt-temporal/src/observation.rs",
@@ -409,6 +410,7 @@ paths = [
   "mechanization/lean/NMLT/Core/Provider.lean",
   "mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean",
   "mechanization/lean/NMLT/Correspondence/M9Kernel.lean",
+  "mechanization/lean/NMLT/Correspondence/M10Behavior.lean",
   "mechanization/lean/NMLT/Grades/Algebra.lean",
   "mechanization/lean/NMLT/Typing/Judgments.lean",
   "mechanization/lean/NMLT/Metatheory/Soundness.lean",

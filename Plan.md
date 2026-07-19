@@ -949,8 +949,8 @@ temporal typing, proof-relevant refinement, compositional open-system semantics,
 and richer quantitative mathematics—each with its own mechanization and
 comparison gate.
 
-**M10: Behavior-indexed mathematics and proof-certificate research** started
-on 2026-07-19. The first seven research seeds are implemented and documented
+**M10: Behavior-indexed mathematics and proof-certificate research** closed
+its bounded promotion gate on 2026-07-19. The research and implementation are documented
 in the [M10 research note](docs/research-notes/m10-behavior-refinement-and-certificates-2026-07-19.md):
 
 - [x] **M10-001 — Behavior-indexed temporal typing.** Lean models indexed
@@ -973,11 +973,55 @@ in the [M10 research note](docs/research-notes/m10-behavior-refinement-and-certi
   composition. Artifact-bound family-specific validators remain open.
 - [x] **M10-007 — Coinductive/up-to seed.** Lean mechanizes a one-sided
   simulation generator and an axiom-free compatible-up-to soundness theorem.
-  Executable coinductive certificates, fairness, divergence, and full
-  bisimulation remain open.
+  Fairness, divergence, and full bisimulation remain open.
+- [x] **M10-008 — Typed-core/behavior bridge.** Lean embeds checked M9 core
+  actions into behavior-indexed steps and proves that the selected core action
+  preserves its indexed state property.
+- [x] **M10-009 — Uncertainty profile identity.** Every nonzero uncertainty
+  summary carries the exact fixed profile identity for its family; parsing,
+  comparison, and composition reject profile substitution or mismatch.
+- [x] **M10-010 — Executable finite coinductive certificates.** The temporal
+  crate checks canonical subject-bound post-fixed relations and rejects stale,
+  forged, noncanonical, out-of-range, observation-invalid, unmapped, and open
+  witnesses. Acceptance proves only the implemented finite safety simulation.
+- [x] **M10-011 — Proof-relevant Rzk witness.** The outside-TCB Rzk experiment
+  packages a directed map with its observation proof and checks identity and
+  composition. It still does not encode step simulation or Segal
+  contractibility.
 
-M10 is a started research phase, not a closed promotion gate. Its next gate is
-to bind uncertainty and coinductive witnesses to canonical evidence identity,
-connect behavior/refinement proofs to M9 typed core, replace the Rzk bare-map
-model with proof-relevant simulations, and add executable negative controls
-before any of these results raise the language's assurance ceiling.
+M10 closes only this bounded seed gate. It does **not** raise NMLT's assurance
+ceiling to fairness-complete liveness, validate statistical side conditions,
+place Rzk in the TCB, or establish a full source-to-behavior preservation
+theorem. M11 owns open-system composition, constructive implication/negation
+and temporal evidence, artifact-bound uncertainty payloads, fairness and
+hidden-divergence transport, kernel-theorem-bound up-to closures, and a full
+proof-relevant Segal experiment.
+
+**M11: Open composition and evidence-bearing mathematics** is the next
+research phase, ordered by the eight-loop gap analysis:
+
+- [ ] **M11-001 — Open-system refinement.** Add environment actions,
+  assumptions/guarantees, compatibility and receptiveness, then prove
+  refinement is a congruence for supported composition.
+- [ ] **M11-002 — Full source/behavior preservation.** Generalize the M10
+  bridge from selected core actions to the entire supported M9 source fragment.
+- [ ] **M11-003 — Constructive temporal evidence.** Add implication,
+  negation, until, and productivity rules without manufacturing witnesses from
+  classical truth.
+- [ ] **M11-004 — Artifact-bound uncertainty profiles.** Define canonical
+  Hoeffding and conformal payloads, bind all premise/data identities, and check
+  family-specific side conditions against mechanized mathematics.
+- [ ] **M11-005 — Fair refinement.** State and mechanize fairness transport and
+  hidden-divergence obligations before promoting liveness through refinement.
+- [ ] **M11-006 — Kernel-bound up-to closures.** Admit no compressed cyclic
+  witness unless its exact closure identity names a checked compatibility
+  theorem.
+- [ ] **M11-007 — Certificate cost evidence.** Add before/after checker time,
+  peak-memory, compression, and kernel-acceptance-equivalence measurements to
+  the untrusted simplifier corpus.
+- [ ] **M11-008 — Proof-relevant Segal experiment.** Encode transition
+  simulation witnesses and investigate contractible composition in Rzk while
+  retaining a Lean-checked counterpart and outside-TCB status.
+- [ ] **M11-009 — Evidence-provenance synchronization.** Export canonical
+  work/version/artifact identities and typed update relations from the research
+  catalog into evidence manifests without treating metadata as proof.

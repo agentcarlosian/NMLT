@@ -179,6 +179,11 @@ fn run() -> Result<(), String> {
             "\"integer_representation\":\"u64_checked\",",
             "\"uncertainty_scale_ppm\":1000000,",
             "\"uncertainty_certificate_families\":[\"declared\",\"hoeffding\",\"conformal\"],",
+            "\"uncertainty_profile_ids\":{{",
+            "\"declared\":\"b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9\",",
+            "\"hoeffding\":\"c45933a7b27242cbefb83d6bf0278bcd385076328ad32078fc4cbcb5e58f4449\",",
+            "\"conformal\":\"5eba8865b2f7f78f1eb91fbfd8af61840084652ef948b02715b9e65f41c25434\"",
+            "}},",
             "\"reference_iteration_bounds\":\"finite_explicit\",",
             "\"overflow_result\":\"unknown\"",
             "}},",
@@ -234,25 +239,33 @@ fn grade_json(grade: Grade) -> String {
         .family()
         .map(UncertaintyFamily::as_str)
         .unwrap_or("certain");
+    let profile = uncertainty
+        .profile_id()
+        .map(|identity| identity.to_string())
+        .unwrap_or_else(|| "none".to_owned());
     format!(
         concat!(
             "{{\"cost_ticks\":{},",
             "\"privacy_micro_epsilon\":{},",
             "\"energy_microjoules\":{},",
-            "\"uncertainty\":{{\"family\":{},\"upper_bound_ppm\":{}}}}}"
+            "\"uncertainty\":{{\"family\":{},\"profile_id\":{},\"upper_bound_ppm\":{}}}}}"
         ),
         grade.cost_ticks(),
         grade.privacy_micro_epsilon(),
         grade.energy_microjoules(),
         json_string(family),
+        json_string(&profile),
         uncertainty.upper_bound_ppm(),
     )
 }
 
 fn declared_grade(cost: u64, privacy: u64, energy: u64, uncertainty: u32) -> Result<Grade, String> {
-    let uncertainty =
-        UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Declared, uncertainty)
-            .map_err(|error| error.to_string())?;
+    let uncertainty = UncertaintyCertificate::checked_upper_bound(
+        UncertaintyFamily::Declared,
+        UncertaintyFamily::Declared.profile_id(),
+        uncertainty,
+    )
+    .map_err(|error| error.to_string())?;
     Grade::checked(cost, privacy, energy, uncertainty).map_err(|error| error.to_string())
 }
 

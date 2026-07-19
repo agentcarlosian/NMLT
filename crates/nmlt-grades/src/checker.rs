@@ -222,6 +222,12 @@ fn error_diagnostic(error: GradeError, path: &str) -> Diagnostic {
             GradeError::IncompatibleUncertaintyFamilies { .. } => {
                 "NMLT-GRADE-INCOMPATIBLE-UNCERTAINTY-FAMILIES"
             }
+            GradeError::InvalidUncertaintyProfile { .. } => {
+                "NMLT-GRADE-INVALID-UNCERTAINTY-PROFILE"
+            }
+            GradeError::IncompatibleUncertaintyProfiles { .. } => {
+                "NMLT-GRADE-INCOMPATIBLE-UNCERTAINTY-PROFILES"
+            }
         },
         path: path.to_owned(),
         message: error.to_string(),
@@ -239,6 +245,7 @@ mod tests {
             energy,
             crate::UncertaintyCertificate::checked_upper_bound(
                 crate::UncertaintyFamily::Declared,
+                crate::UncertaintyFamily::Declared.profile_id(),
                 uncertainty,
             )
             .expect("valid uncertainty"),

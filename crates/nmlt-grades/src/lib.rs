@@ -9,8 +9,9 @@ mod checker;
 mod parser;
 
 pub use algebra::{
-    Dimension, Grade, GradeAlgebra, GradeError, LawViolation, ProductGradeAlgebra,
-    UNCERTAINTY_SCALE_PPM, UncertaintyCertificate, UncertaintyFamily, check_laws,
+    CertificateProfileId, Dimension, Grade, GradeAlgebra, GradeError, LawViolation,
+    ProductGradeAlgebra, UNCERTAINTY_SCALE_PPM, UncertaintyCertificate, UncertaintyFamily,
+    check_laws,
 };
 pub use checker::{
     Analysis, BudgetDecision, Diagnostic, IterationBound, Plan, Program, Violation, analyze,

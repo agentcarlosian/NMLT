@@ -1,5 +1,5 @@
 # Negative control: uncertainty is a ppm upper bound and cannot exceed 1,000,000.
 program invalid_uncertainty
-budget 100 550000 180 declared 60000
+budget 100 550000 180 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 60000
 plan
-  (atom impossible 1 1 1 declared 1000001)
+  (atom impossible 1 1 1 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 1000001)

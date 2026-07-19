@@ -11,7 +11,7 @@ The implementation lives in `crates/nmlt-grades` and contains:
 
 - a checked product grade for total work ticks, privacy micro-epsilon, energy
   microjoules, and a typed uncertainty certificate (`declared`, `hoeffding`,
-  or `conformal`) carrying a ppm upper bound;
+  or `conformal`) carrying an exact profile identity and ppm upper bound;
 - a small S-expression parser and typed plan AST;
 - sequence, exclusive choice, conservative parallel, and finite-repeat rules;
 - a three-valued analyzer (`exact`, `exceeded`, or `unknown` at the budget
@@ -91,11 +91,14 @@ the Lean definitions.
 | `cost_ticks` | total abstract work | not latency and not inferred from execution |
 | `privacy_micro_epsilon` | declared basic privacy-loss upper bound | no DP mechanism or sensitivity proof; parallel remains additive |
 | `energy_microjoules` | declared total energy upper bound | no hardware or measurement model |
-| `uncertainty` | family-tagged ppm upper bound (`declared`, `hoeffding`, or `conformal`) | only same-family bounds compose; the tag names an obligation but does not itself prove it |
+| `uncertainty` | family/profile-tagged ppm upper bound (`declared`, `hoeffding`, or `conformal`) | only identical profiles compose; the profile names an obligation but does not itself prove its side conditions |
 
 The product comparison is componentwise. NMLT never adds cost to energy or
-trades privacy against uncertainty. Unlike uncertainty families are
-incomparable and their attempted composition produces `unknown`.
+trades privacy against uncertainty. Unlike uncertainty families or profiles
+are incomparable and their attempted composition produces `unknown`. The
+fixed v1 identities prevent a Hoeffding or conformal summary from being
+relabeled as another profile, but do not yet bind a concrete sample, dataset
+split, alpha, independence proof, or exchangeability argument.
 
 ## Evidence and controls
 

@@ -1,4 +1,6 @@
-use crate::{Grade, IterationBound, Plan, Program, UncertaintyCertificate, UncertaintyFamily};
+use crate::{
+    Grade, GradeError, IterationBound, Plan, Program, UncertaintyCertificate, UncertaintyFamily,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ParseDiagnostic {
@@ -28,8 +30,8 @@ struct Token {
 ///
 /// ```text
 /// program NAME
-/// budget COST PRIVACY ENERGY FAMILY UNCERTAINTY
-/// plan (seq (atom NAME COST PRIVACY ENERGY FAMILY UNCERTAINTY) ...)
+/// budget COST PRIVACY ENERGY FAMILY PROFILE_ID UNCERTAINTY
+/// plan (seq (atom NAME COST PRIVACY ENERGY FAMILY PROFILE_ID UNCERTAINTY) ...)
 /// ```
 pub fn parse_program(source: &str) -> Result<Program, Vec<ParseDiagnostic>> {
     let tokens = tokenize(source);
@@ -140,6 +142,19 @@ impl Parser {
                 });
             }
         };
+        let (profile_text, profile_token) =
+            self.expect_word("a 64-digit uncertainty certificate profile identity")?;
+        let profile_id = crate::CertificateProfileId::from_hex(&profile_text).ok_or_else(|| {
+            ParseDiagnostic {
+                code: "NMLT-GRADE-PARSE-UNCERTAINTY-PROFILE",
+                offset: profile_token.offset,
+                line: profile_token.line,
+                column: profile_token.column,
+                message: format!(
+                    "uncertainty certificate profile {profile_text:?} is not 32 canonical bytes"
+                ),
+            }
+        })?;
         let (uncertainty_text, uncertainty_token) =
             self.expect_word("uncertainty_upper_bound_ppm")?;
         let uncertainty = uncertainty_text
@@ -153,14 +168,36 @@ impl Parser {
                     "uncertainty upper bound {uncertainty_text:?} is not a u32 natural number"
                 ),
             })?;
-        let uncertainty = UncertaintyCertificate::checked_upper_bound(family, uncertainty)
-            .map_err(|error| ParseDiagnostic {
-                code: "NMLT-GRADE-PARSE-GRADE",
-                offset: uncertainty_token.offset,
-                line: uncertainty_token.line,
-                column: uncertainty_token.column,
-                message: error.to_string(),
-            })?;
+        let uncertainty =
+            UncertaintyCertificate::checked_upper_bound(family, profile_id, uncertainty).map_err(
+                |error| {
+                    let profile_error =
+                        matches!(error, GradeError::InvalidUncertaintyProfile { .. });
+                    ParseDiagnostic {
+                        code: if profile_error {
+                            "NMLT-GRADE-PARSE-UNCERTAINTY-PROFILE"
+                        } else {
+                            "NMLT-GRADE-PARSE-GRADE"
+                        },
+                        offset: if profile_error {
+                            profile_token.offset
+                        } else {
+                            uncertainty_token.offset
+                        },
+                        line: if profile_error {
+                            profile_token.line
+                        } else {
+                            uncertainty_token.line
+                        },
+                        column: if profile_error {
+                            profile_token.column
+                        } else {
+                            uncertainty_token.column
+                        },
+                        message: error.to_string(),
+                    }
+                },
+            )?;
         Grade::checked(cost, privacy, energy, uncertainty).map_err(|error| ParseDiagnostic {
             code: "NMLT-GRADE-PARSE-GRADE",
             offset: uncertainty_token.offset,
@@ -350,16 +387,16 @@ mod tests {
         let source = r#"
             # Units are declared by the extension RFC.
             program sample
-            budget 100 600000 180 declared 60000
+            budget 100 600000 180 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 60000
             plan (seq
-              (atom start 12 100000 30 declared 10000)
+              (atom start 12 100000 30 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 10000)
               (choice
-                (atom cache 4 0 8 declared 2000)
-                (atom fetch 34 300000 85 declared 30000))
+                (atom cache 4 0 8 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 2000)
+                (atom fetch 34 300000 85 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 30000))
               (par
-                (atom audit 8 50000 20 declared 3000)
-                (atom metrics 6 0 12 declared 2000))
-              (repeat 2 (atom retry 3 25000 4 declared 1000)))
+                (atom audit 8 50000 20 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 3000)
+                (atom metrics 6 0 12 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 2000))
+              (repeat 2 (atom retry 3 25000 4 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 1000)))
         "#;
         let program = parse_program(source).expect("valid program");
         assert_eq!(program.name, "sample");
@@ -372,6 +409,7 @@ mod tests {
                     155,
                     UncertaintyCertificate::checked_upper_bound(
                         UncertaintyFamily::Declared,
+                        UncertaintyFamily::Declared.profile_id(),
                         47_000,
                     )
                     .unwrap(),
@@ -384,7 +422,7 @@ mod tests {
     #[test]
     fn parses_unknown_iteration_without_approving_it() {
         let program = parse_program(
-            "program u budget 10 10 10 declared 10 plan (repeat ? (atom work 1 1 1 declared 1))",
+            "program u budget 10 10 10 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 10 plan (repeat ? (atom work 1 1 1 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 1))",
         )
         .expect("unknown is syntactically explicit");
         assert!(matches!(analyze(&program.plan), Analysis::Unknown(_)));
@@ -393,16 +431,25 @@ mod tests {
     #[test]
     fn rejects_out_of_range_uncertainty() {
         let diagnostics = parse_program(
-            "program bad budget 10 10 10 declared 10 plan (atom bad 1 1 1 declared 1000001)",
+            "program bad budget 10 10 10 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 10 plan (atom bad 1 1 1 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 1000001)",
         )
         .expect_err("invalid grade must not parse");
         assert_eq!(diagnostics[0].code, "NMLT-GRADE-PARSE-GRADE");
     }
 
     #[test]
+    fn rejects_a_profile_identity_from_another_family() {
+        let diagnostics = parse_program(
+            "program bad budget 10 10 10 declared c45933a7b27242cbefb83d6bf0278bcd385076328ad32078fc4cbcb5e58f4449 10 plan (atom bad 1 1 1 declared c45933a7b27242cbefb83d6bf0278bcd385076328ad32078fc4cbcb5e58f4449 1)",
+        )
+        .expect_err("cross-family profile substitution must not parse");
+        assert_eq!(diagnostics[0].code, "NMLT-GRADE-PARSE-UNCERTAINTY-PROFILE");
+    }
+
+    #[test]
     fn rejects_trailing_tokens() {
         let diagnostics = parse_program(
-            "program bad budget 1 1 1 declared 1 plan (atom ok 0 0 0 declared 0) surprise",
+            "program bad budget 1 1 1 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 1 plan (atom ok 0 0 0 declared b35a82f6b93ef49d598e4a29bdd31d01c05699fc8d516265bf24df62f43c63b9 0) surprise",
         )
         .expect_err("trailing text must be rejected");
         assert_eq!(diagnostics[0].code, "NMLT-GRADE-PARSE-TRAILING");

@@ -3,6 +3,53 @@ use std::fmt::{self, Debug, Display};
 /// One whole unit of uncertainty, represented as parts per million.
 pub const UNCERTAINTY_SCALE_PPM: u32 = 1_000_000;
 
+/// Canonical identity of the family-specific evidence contract.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct CertificateProfileId([u8; 32]);
+
+impl CertificateProfileId {
+    pub const DECLARED_V1: Self = Self([
+        0xb3, 0x5a, 0x82, 0xf6, 0xb9, 0x3e, 0xf4, 0x9d, 0x59, 0x8e, 0x4a, 0x29, 0xbd, 0xd3, 0x1d,
+        0x01, 0xc0, 0x56, 0x99, 0xfc, 0x8d, 0x51, 0x62, 0x65, 0xbf, 0x24, 0xdf, 0x62, 0xf4, 0x3c,
+        0x63, 0xb9,
+    ]);
+    pub const HOEFFDING_V1: Self = Self([
+        0xc4, 0x59, 0x33, 0xa7, 0xb2, 0x72, 0x42, 0xcb, 0xef, 0xb8, 0x3d, 0x6b, 0xf0, 0x27, 0x8b,
+        0xcd, 0x38, 0x50, 0x76, 0x32, 0x8a, 0xd3, 0x20, 0x78, 0xfc, 0x4c, 0xbc, 0xb5, 0xe5, 0x8f,
+        0x44, 0x49,
+    ]);
+    pub const CONFORMAL_V1: Self = Self([
+        0x5e, 0xba, 0x88, 0x65, 0xb2, 0xf7, 0xf7, 0x8f, 0x1e, 0xb9, 0x1f, 0xbf, 0xd8, 0xaf, 0x61,
+        0x84, 0x00, 0x84, 0x65, 0x2e, 0xf9, 0x48, 0xb0, 0x27, 0x15, 0xb9, 0xe6, 0x5f, 0x41, 0xc2,
+        0x54, 0x34,
+    ]);
+
+    pub fn from_hex(value: &str) -> Option<Self> {
+        if value.len() != 64 {
+            return None;
+        }
+        let mut digest = [0_u8; 32];
+        for (index, slot) in digest.iter_mut().enumerate() {
+            *slot = u8::from_str_radix(&value[index * 2..index * 2 + 2], 16).ok()?;
+        }
+        Some(Self(digest))
+    }
+
+    #[must_use]
+    pub const fn digest(self) -> [u8; 32] {
+        self.0
+    }
+}
+
+impl Display for CertificateProfileId {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for byte in self.0 {
+            write!(formatter, "{byte:02x}")?;
+        }
+        Ok(())
+    }
+}
+
 /// The proof obligation represented by an uncertainty upper bound.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum UncertaintyFamily {
@@ -23,19 +70,29 @@ impl UncertaintyFamily {
             Self::Conformal => "conformal",
         }
     }
+
+    #[must_use]
+    pub const fn profile_id(self) -> CertificateProfileId {
+        match self {
+            Self::Declared => CertificateProfileId::DECLARED_V1,
+            Self::Hoeffding => CertificateProfileId::HOEFFDING_V1,
+            Self::Conformal => CertificateProfileId::CONFORMAL_V1,
+        }
+    }
 }
 
 /// A typed uncertainty certificate summary.
 ///
 /// The family tag prevents composition from laundering unlike statistical
-/// claims into one undifferentiated number. The referenced proof artifact is a
-/// future identity-binding extension; this prototype checks the family and its
-/// bounded quantitative conclusion.
+/// claims into one undifferentiated number. The profile identity binds the
+/// summary to one exact family contract. Binding and checking a concrete
+/// dataset or proof artifact remains a later profile-payload extension.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UncertaintyCertificate {
     Certain,
     UpperBound {
         family: UncertaintyFamily,
+        profile_id: CertificateProfileId,
         upper_bound_ppm: u32,
     },
 }
@@ -43,8 +100,16 @@ pub enum UncertaintyCertificate {
 impl UncertaintyCertificate {
     pub fn checked_upper_bound(
         family: UncertaintyFamily,
+        profile_id: CertificateProfileId,
         upper_bound_ppm: u32,
     ) -> Result<Self, GradeError> {
+        if profile_id != family.profile_id() {
+            return Err(GradeError::InvalidUncertaintyProfile {
+                family,
+                expected: family.profile_id(),
+                found: profile_id,
+            });
+        }
         if upper_bound_ppm > UNCERTAINTY_SCALE_PPM {
             return Err(GradeError::InvalidUncertainty {
                 found: upper_bound_ppm,
@@ -56,6 +121,7 @@ impl UncertaintyCertificate {
         } else {
             Ok(Self::UpperBound {
                 family,
+                profile_id,
                 upper_bound_ppm,
             })
         }
@@ -79,20 +145,31 @@ impl UncertaintyCertificate {
         }
     }
 
+    #[must_use]
+    pub const fn profile_id(self) -> Option<CertificateProfileId> {
+        match self {
+            Self::Certain => None,
+            Self::UpperBound { profile_id, .. } => Some(profile_id),
+        }
+    }
+
     fn combine(self, other: Self, choice: bool) -> Result<Self, GradeError> {
         match (self, other) {
             (Self::Certain, value) | (value, Self::Certain) => Ok(value),
             (
                 Self::UpperBound {
                     family: left,
+                    profile_id: left_profile,
                     upper_bound_ppm: left_bound,
                 },
                 Self::UpperBound {
                     family: right,
+                    profile_id: right_profile,
                     upper_bound_ppm: right_bound,
                 },
-            ) if left == right => Self::checked_upper_bound(
+            ) if left == right && left_profile == right_profile => Self::checked_upper_bound(
                 left,
+                left_profile,
                 if choice {
                     max_u32(left_bound, right_bound)
                 } else {
@@ -101,6 +178,21 @@ impl UncertaintyCertificate {
                         .min(UNCERTAINTY_SCALE_PPM)
                 },
             ),
+            (
+                Self::UpperBound {
+                    family: left,
+                    profile_id: left_profile,
+                    ..
+                },
+                Self::UpperBound {
+                    family: right,
+                    profile_id: right_profile,
+                    ..
+                },
+            ) if left == right => Err(GradeError::IncompatibleUncertaintyProfiles {
+                left: left_profile,
+                right: right_profile,
+            }),
             (Self::UpperBound { family: left, .. }, Self::UpperBound { family: right, .. }) => {
                 Err(GradeError::IncompatibleUncertaintyFamilies { left, right })
             }
@@ -108,20 +200,26 @@ impl UncertaintyCertificate {
     }
 
     #[must_use]
-    pub const fn leq(self, other: Self) -> bool {
+    pub fn leq(self, other: Self) -> bool {
         match (self, other) {
             (Self::Certain, _) => true,
             (Self::UpperBound { .. }, Self::Certain) => false,
             (
                 Self::UpperBound {
                     family: left,
+                    profile_id: left_profile,
                     upper_bound_ppm: left_bound,
                 },
                 Self::UpperBound {
                     family: right,
+                    profile_id: right_profile,
                     upper_bound_ppm: right_bound,
                 },
-            ) => same_family(left, right) && left_bound <= right_bound,
+            ) => {
+                same_family(left, right)
+                    && left_profile == right_profile
+                    && left_bound <= right_bound
+            }
         }
     }
 }
@@ -164,6 +262,15 @@ pub enum GradeError {
         left: UncertaintyFamily,
         right: UncertaintyFamily,
     },
+    InvalidUncertaintyProfile {
+        family: UncertaintyFamily,
+        expected: CertificateProfileId,
+        found: CertificateProfileId,
+    },
+    IncompatibleUncertaintyProfiles {
+        left: CertificateProfileId,
+        right: CertificateProfileId,
+    },
     ArithmeticOverflow {
         dimension: Dimension,
         operation: &'static str,
@@ -186,6 +293,19 @@ impl Display for GradeError {
                 "cannot compose uncertainty certificate families {} and {}",
                 left.as_str(),
                 right.as_str()
+            ),
+            Self::InvalidUncertaintyProfile {
+                family,
+                expected,
+                found,
+            } => write!(
+                formatter,
+                "uncertainty family {} requires profile {expected}, found {found}",
+                family.as_str()
+            ),
+            Self::IncompatibleUncertaintyProfiles { left, right } => write!(
+                formatter,
+                "cannot compose uncertainty certificate profiles {left} and {right}"
             ),
         }
     }
@@ -292,7 +412,7 @@ impl Grade {
     }
 
     #[must_use]
-    pub const fn componentwise_le(self, other: Self) -> bool {
+    pub fn componentwise_le(self, other: Self) -> bool {
         self.cost_ticks <= other.cost_ticks
             && self.privacy_micro_epsilon <= other.privacy_micro_epsilon
             && self.energy_microjoules <= other.energy_microjoules
@@ -627,8 +747,12 @@ mod tests {
             cost,
             privacy,
             energy,
-            UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Declared, uncertainty)
-                .expect("valid uncertainty"),
+            UncertaintyCertificate::checked_upper_bound(
+                UncertaintyFamily::Declared,
+                UncertaintyFamily::Declared.profile_id(),
+                uncertainty,
+            )
+            .expect("valid uncertainty"),
         )
         .expect("valid test grade")
     }
@@ -646,7 +770,11 @@ mod tests {
     #[test]
     fn invalid_uncertainty_is_rejected() {
         assert_eq!(
-            UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Declared, 1_000_001),
+            UncertaintyCertificate::checked_upper_bound(
+                UncertaintyFamily::Declared,
+                UncertaintyFamily::Declared.profile_id(),
+                1_000_001,
+            ),
             Err(GradeError::InvalidUncertainty {
                 found: 1_000_001,
                 maximum: 1_000_000
@@ -660,14 +788,24 @@ mod tests {
             0,
             0,
             0,
-            UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Declared, 10).unwrap(),
+            UncertaintyCertificate::checked_upper_bound(
+                UncertaintyFamily::Declared,
+                UncertaintyFamily::Declared.profile_id(),
+                10,
+            )
+            .unwrap(),
         )
         .unwrap();
         let hoeffding = Grade::checked(
             0,
             0,
             0,
-            UncertaintyCertificate::checked_upper_bound(UncertaintyFamily::Hoeffding, 10).unwrap(),
+            UncertaintyCertificate::checked_upper_bound(
+                UncertaintyFamily::Hoeffding,
+                UncertaintyFamily::Hoeffding.profile_id(),
+                10,
+            )
+            .unwrap(),
         )
         .unwrap();
         assert_eq!(
@@ -678,6 +816,18 @@ mod tests {
             })
         );
         assert!(!declared.componentwise_le(hoeffding));
+    }
+
+    #[test]
+    fn family_profile_substitution_is_rejected() {
+        assert!(matches!(
+            UncertaintyCertificate::checked_upper_bound(
+                UncertaintyFamily::Declared,
+                UncertaintyFamily::Hoeffding.profile_id(),
+                10,
+            ),
+            Err(GradeError::InvalidUncertaintyProfile { .. })
+        ));
     }
 
     #[test]

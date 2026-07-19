@@ -4,15 +4,14 @@ This experiment asks whether NMLT refinements can be organized as directed
 arrows before attempting a synthetic infinity-categorical semantics. It is
 pinned to **Rzk v0.10.0** and is outside the NMLT trusted computing base.
 
-The checked seed model treats a behavior only through its state type and a
-refinement as a one-way state map. It establishes pointwise left identity,
-right identity, and associativity by computation. Pointwise laws are used
-deliberately: equality of functions would require an extensionality principle.
+The checked model treats a behavior through its state and observation types.
+A refinement witness packages a one-way state map with a dependent proof that
+observations are preserved. Identity and composition construct both maps and
+witnesses; pointwise category laws avoid assuming function extensionality.
 
 This is not yet a claim that arbitrary NMLT refinement witnesses form a Segal
-type. The next experiment must replace the bare function model with the
-proof-relevant forward simulations from the Lean development and ask whether
-their composable chains have contractible composites.
+type. Step-simulation witnesses and contractible composition spaces remain the
+next directed-type-theory experiment.
 
 ## Check
 

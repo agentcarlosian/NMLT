@@ -141,18 +141,23 @@ arithmetic fits under a budget.
 The extension is an isolated S-expression pilot:
 
 ```text
-PROGRAM ::= program NAME budget NAT NAT NAT FAMILY PPM plan PLAN
-PLAN    ::= (atom NAME NAT NAT NAT FAMILY PPM)
+PROGRAM ::= program NAME budget NAT NAT NAT FAMILY PROFILE_ID PPM plan PLAN
+PLAN    ::= (atom NAME NAT NAT NAT FAMILY PROFILE_ID PPM)
           | (seq PLAN*)
           | (choice PLAN+)
           | (par PLAN*)
           | (repeat BOUND PLAN)
 BOUND   ::= NAT | ?
 FAMILY  ::= declared | hoeffding | conformal
+PROFILE_ID ::= 64 lowercase hexadecimal digits
 ```
 
 The three resource numbers are followed by an uncertainty certificate-family
-tag and its ppm conclusion. Comments begin with
+tag, the exact v1 profile identity for that family, and its ppm conclusion.
+The parser rejects malformed identities and valid identities belonging to a
+different family. Profile identity names the rules under which the summary is
+interpreted; it is not yet the identity of a concrete proof, dataset, or
+calibration artifact. Comments begin with
 `#`. `?` is an explicit unknown bound, not an inferred value. An empty
 sequence or parallel group has grade zero; an empty choice is invalid because
 there is no executable alternative whose bound could be selected.
