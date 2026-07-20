@@ -93,6 +93,12 @@
       "lean_handle": "OpenKernelExecution.ExecutionContract.payloadWithinCapacity"
     },
     {
+      "id": "verified-kernel-bound-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "verified_kernel_bound_rejects_certificate_substitution",
+      "lean_handle": "OpenKernelExecution.check_bound_accepts_implies_exact_contract"
+    },
+    {
       "id": "source-action-substitution-negative",
       "expected": "rejected",
       "rust_control": "source_readback_rejects_action_name_substitution",

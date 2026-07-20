@@ -107,6 +107,15 @@ resources, and wiring. `OpenSourceReadback.lean` proves that exact readback
 transports an accepted canonical implementation contract to the source and
 that exact readback is functional.
 
+The authoritative bounded kernel now exposes `check_bound(expected, raw)`,
+which executes structural equality before the validation decision. The
+temporal validator supplies a separately reconstructed expected numeric
+certificate, and a substitution control mutates the executed certificate.
+Pinned Charon/Aeneas translate this path; Lean proves successful bound
+execution exposes both the structural-readback decision and the complete
+execution contract. Construction of the expected numeric certificate remains
+ordinary Rust and is therefore still inside the residual correspondence gap.
+
 ## Remaining M11-001c gate
 
 M11-001c is not promoted complete. The structural resource theorem, general

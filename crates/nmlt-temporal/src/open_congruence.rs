@@ -882,6 +882,28 @@ mod tests {
     }
 
     #[test]
+    fn verified_kernel_bound_rejects_certificate_substitution() {
+        let (concrete_left, abstract_left, concrete_right, abstract_right, spec) = fixture();
+        let report = TwoSidedCongruenceChecker::check(
+            &concrete_left,
+            &abstract_left,
+            &concrete_right,
+            &abstract_right,
+            &spec,
+        );
+        let encoding = report.encoding_correspondence.encoding.unwrap();
+        let mut certificate = crate::open_encoding::encode_execution_kernel(&encoding).unwrap();
+        certificate.input.concrete_left.actions[0].channel =
+            certificate.input.concrete_left.actions[0]
+                .channel
+                .wrapping_add(1);
+        assert!(!crate::open_encoding::execution_kernel_bound_accepts(
+            &encoding,
+            &certificate
+        ));
+    }
+
+    #[test]
     fn canonical_validator_rejects_kernel_capacity_overflow() {
         let (concrete_left, abstract_left, concrete_right, abstract_right, spec) = fixture();
         let report = TwoSidedCongruenceChecker::check(
@@ -1200,6 +1222,7 @@ mod tests {
             "kernel_readback_rejects_dictionary_substitution",
             "kernel_readback_rejects_numeric_atom_substitution",
             "kernel_readback_rejects_active_action_omission",
+            "verified_kernel_bound_rejects_certificate_substitution",
             "canonical_validator_rejects_kernel_capacity_overflow",
             "source_readback_rejects_action_name_substitution",
             "source_readback_rejects_resource_substitution",

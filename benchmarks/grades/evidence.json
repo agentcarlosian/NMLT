@@ -126,7 +126,7 @@
   "metatheory": {
     "scope": "mathematical_grade_algebra_only",
     "source_set_id": "nmlt-source-set-v1:sha256:9e461bda2286ed921a3bd176ea39dfc474f608577b6e778f7821f4bc0df5d9af",
-    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:aba7d82768c44933b0fc663809c60d54c0ddc712d4b4f03e5ddfc3b6a61547b4",
+    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:c11d3949198916d57652f6ee38af032283896d41e26616feb573e56beab346d7",
     "root_source_id": "nmlt-source-v1:sha256:b5784f43212b31194abd9043172c86d181da404635c7b54f5d713ce83946adc1",
     "entrypoint_source_id": "nmlt-source-v1:sha256:c439ff9ed311099540cd7fde4c7d9fb5f0449990a342b2aa526a877c6a61caa6",
     "checker_source_id": "nmlt-source-v1:sha256:24bf341fe61c1dd1258cb420b7c57222f8b9cb212e0fc45085d2f59276f69fca",
@@ -161,5 +161,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:0965d7f9d22efcf537970ec99d819469c36f4a87dae37d590fad12e5499e5099"
+  "manifest_id": "nmlt-evidence-v1:sha256:d9ba5754466b2989bddc5034ff8fea42edb7f32b0d4bcf5660347f2f010386bd"
 }

@@ -66,6 +66,47 @@ def IndexTable.Insts.CoreMarkerCopy : core.marker.Copy IndexTable := {
   cloneInst := IndexTable.Insts.CoreCloneClone
 }
 
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::IndexTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 18:22-18:31 -/
+@[reducible]
+def IndexTable.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq IndexTable := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::IndexTable> for nmlt_open_kernel::IndexTable}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 18:22-18:31
+    Visibility: public -/
+def IndexTable.Insts.CoreCmpPartialEqIndexTable.eq
+  (self : IndexTable) (other : IndexTable) : Result Bool := do
+  if self.len = other.len
+  then
+    core.array.equality.PartialEqArray.eq core.cmp.PartialEqUsize self.values
+      other.values
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::IndexTable> for nmlt_open_kernel::IndexTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 18:22-18:31 -/
+@[reducible]
+def IndexTable.Insts.CoreCmpPartialEqIndexTable : core.cmp.PartialEq IndexTable
+  IndexTable := {
+  eq := IndexTable.Insts.CoreCmpPartialEqIndexTable.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::IndexTable}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 18:33-18:35
+    Visibility: public -/
+def IndexTable.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : IndexTable) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::IndexTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 18:33-18:35 -/
+@[reducible]
+def IndexTable.Insts.CoreCmpEq : core.cmp.Eq IndexTable := {
+  partialEqInst := IndexTable.Insts.CoreCmpPartialEqIndexTable
+  assert_fields_are_eq := IndexTable.Insts.CoreCmpEq.assert_fields_are_eq
+}
+
 /-- [nmlt_open_kernel::{nmlt_open_kernel::IndexTable}::empty]:
     Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 25:4-30:5
     Visibility: public -/
@@ -92,6 +133,47 @@ def StateMap.Insts.CoreCloneClone : core.clone.Clone StateMap := {
 @[reducible]
 def StateMap.Insts.CoreMarkerCopy : core.marker.Copy StateMap := {
   cloneInst := StateMap.Insts.CoreCloneClone
+}
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::StateMap}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 33:22-33:31 -/
+@[reducible]
+def StateMap.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq StateMap := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::StateMap> for nmlt_open_kernel::StateMap}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 33:22-33:31
+    Visibility: public -/
+def StateMap.Insts.CoreCmpPartialEqStateMap.eq
+  (self : StateMap) (other : StateMap) : Result Bool := do
+  if self.len = other.len
+  then
+    core.array.equality.PartialEqArray.eq core.cmp.PartialEqUsize self.values
+      other.values
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::StateMap> for nmlt_open_kernel::StateMap}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 33:22-33:31 -/
+@[reducible]
+def StateMap.Insts.CoreCmpPartialEqStateMap : core.cmp.PartialEq StateMap
+  StateMap := {
+  eq := StateMap.Insts.CoreCmpPartialEqStateMap.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::StateMap}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 33:33-33:35
+    Visibility: public -/
+def StateMap.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : StateMap) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::StateMap}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 33:33-33:35 -/
+@[reducible]
+def StateMap.Insts.CoreCmpEq : core.cmp.Eq StateMap := {
+  partialEqInst := StateMap.Insts.CoreCmpPartialEqStateMap
+  assert_fields_are_eq := StateMap.Insts.CoreCmpEq.assert_fields_are_eq
 }
 
 /-- [nmlt_open_kernel::{nmlt_open_kernel::StateMap}::empty]:
@@ -122,6 +204,47 @@ def AtomTable.Insts.CoreMarkerCopy : core.marker.Copy AtomTable := {
   cloneInst := AtomTable.Insts.CoreCloneClone
 }
 
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::AtomTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 48:22-48:31 -/
+@[reducible]
+def AtomTable.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq AtomTable := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::AtomTable> for nmlt_open_kernel::AtomTable}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 48:22-48:31
+    Visibility: public -/
+def AtomTable.Insts.CoreCmpPartialEqAtomTable.eq
+  (self : AtomTable) (other : AtomTable) : Result Bool := do
+  if self.len = other.len
+  then
+    core.array.equality.PartialEqArray.eq core.cmp.PartialEqU32 self.values
+      other.values
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::AtomTable> for nmlt_open_kernel::AtomTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 48:22-48:31 -/
+@[reducible]
+def AtomTable.Insts.CoreCmpPartialEqAtomTable : core.cmp.PartialEq AtomTable
+  AtomTable := {
+  eq := AtomTable.Insts.CoreCmpPartialEqAtomTable.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::AtomTable}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 48:33-48:35
+    Visibility: public -/
+def AtomTable.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : AtomTable) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::AtomTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 48:33-48:35 -/
+@[reducible]
+def AtomTable.Insts.CoreCmpEq : core.cmp.Eq AtomTable := {
+  partialEqInst := AtomTable.Insts.CoreCmpPartialEqAtomTable
+  assert_fields_are_eq := AtomTable.Insts.CoreCmpEq.assert_fields_are_eq
+}
+
 /-- [nmlt_open_kernel::{nmlt_open_kernel::AtomTable}::empty]:
     Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 55:4-60:5
     Visibility: public -/
@@ -148,6 +271,47 @@ def PredicateTable.Insts.CoreCloneClone : core.clone.Clone PredicateTable := {
 @[reducible]
 def PredicateTable.Insts.CoreMarkerCopy : core.marker.Copy PredicateTable := {
   cloneInst := PredicateTable.Insts.CoreCloneClone
+}
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::PredicateTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 63:22-63:31 -/
+@[reducible]
+def PredicateTable.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq PredicateTable := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::PredicateTable> for nmlt_open_kernel::PredicateTable}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 63:22-63:31
+    Visibility: public -/
+def PredicateTable.Insts.CoreCmpPartialEqPredicateTable.eq
+  (self : PredicateTable) (other : PredicateTable) : Result Bool := do
+  if self.len = other.len
+  then
+    core.array.equality.PartialEqArray.eq core.cmp.PartialEqBool self.values
+      other.values
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::PredicateTable> for nmlt_open_kernel::PredicateTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 63:22-63:31 -/
+@[reducible]
+def PredicateTable.Insts.CoreCmpPartialEqPredicateTable : core.cmp.PartialEq
+  PredicateTable PredicateTable := {
+  eq := PredicateTable.Insts.CoreCmpPartialEqPredicateTable.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::PredicateTable}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 63:33-63:35
+    Visibility: public -/
+def PredicateTable.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : PredicateTable) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::PredicateTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 63:33-63:35 -/
+@[reducible]
+def PredicateTable.Insts.CoreCmpEq : core.cmp.Eq PredicateTable := {
+  partialEqInst := PredicateTable.Insts.CoreCmpPartialEqPredicateTable
+  assert_fields_are_eq := PredicateTable.Insts.CoreCmpEq.assert_fields_are_eq
 }
 
 /-- [nmlt_open_kernel::{nmlt_open_kernel::PredicateTable}::empty]:
@@ -177,6 +341,50 @@ def Grade.Insts.CoreMarkerCopy : core.marker.Copy Grade := {
   cloneInst := Grade.Insts.CoreCloneClone
 }
 
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::Grade}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 78:22-78:31 -/
+@[reducible]
+def Grade.Insts.CoreMarkerStructuralPartialEq : core.marker.StructuralPartialEq
+  Grade := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Grade> for nmlt_open_kernel::Grade}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 78:22-78:31
+    Visibility: public -/
+def Grade.Insts.CoreCmpPartialEqGrade.eq
+  (self : Grade) (other : Grade) : Result Bool := do
+  if self.cost = other.cost
+  then
+    if self.privacy = other.privacy
+    then
+      if self.energy = other.energy
+      then ok (self.uncertainty = other.uncertainty)
+      else ok false
+    else ok false
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Grade> for nmlt_open_kernel::Grade}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 78:22-78:31 -/
+@[reducible]
+def Grade.Insts.CoreCmpPartialEqGrade : core.cmp.PartialEq Grade Grade := {
+  eq := Grade.Insts.CoreCmpPartialEqGrade.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Grade}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 78:33-78:35
+    Visibility: public -/
+def Grade.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : Grade) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Grade}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 78:33-78:35 -/
+@[reducible]
+def Grade.Insts.CoreCmpEq : core.cmp.Eq Grade := {
+  partialEqInst := Grade.Insts.CoreCmpPartialEqGrade
+  assert_fields_are_eq := Grade.Insts.CoreCmpEq.assert_fields_are_eq
+}
+
 /-- [nmlt_open_kernel::{impl core::clone::Clone for nmlt_open_kernel::Resources}::clone]:
     Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 86:9-86:14
     Visibility: public -/
@@ -196,6 +404,76 @@ def Resources.Insts.CoreCloneClone : core.clone.Clone Resources := {
 @[reducible]
 def Resources.Insts.CoreMarkerCopy : core.marker.Copy Resources := {
   cloneInst := Resources.Insts.CoreCloneClone
+}
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::Resources}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 86:22-86:31 -/
+@[reducible]
+def Resources.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq Resources := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Resources> for nmlt_open_kernel::Resources}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 86:22-86:31
+    Visibility: public -/
+def Resources.Insts.CoreCmpPartialEqResources.eq
+  (self : Resources) (other : Resources) : Result Bool := do
+  let b ←
+    AtomTable.Insts.CoreCmpPartialEqAtomTable.eq self.required other.required
+  if b
+  then
+    let b1 ←
+      AtomTable.Insts.CoreCmpPartialEqAtomTable.eq self.consumed other.consumed
+    if b1
+    then
+      let b2 ←
+        AtomTable.Insts.CoreCmpPartialEqAtomTable.eq self.transferred
+          other.transferred
+      if b2
+      then
+        let b3 ←
+          AtomTable.Insts.CoreCmpPartialEqAtomTable.eq self.received
+            other.received
+        if b3
+        then
+          let b4 ←
+            Grade.Insts.CoreCmpPartialEqGrade.eq self.grade other.grade
+          if b4
+          then
+            let b5 ←
+              AtomTable.Insts.CoreCmpPartialEqAtomTable.eq self.rely other.rely
+            if b5
+            then
+              AtomTable.Insts.CoreCmpPartialEqAtomTable.eq self.guarantees
+                other.guarantees
+            else ok false
+          else ok false
+        else ok false
+      else ok false
+    else ok false
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Resources> for nmlt_open_kernel::Resources}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 86:22-86:31 -/
+@[reducible]
+def Resources.Insts.CoreCmpPartialEqResources : core.cmp.PartialEq Resources
+  Resources := {
+  eq := Resources.Insts.CoreCmpPartialEqResources.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Resources}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 86:33-86:35
+    Visibility: public -/
+def Resources.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : Resources) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Resources}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 86:33-86:35 -/
+@[reducible]
+def Resources.Insts.CoreCmpEq : core.cmp.Eq Resources := {
+  partialEqInst := Resources.Insts.CoreCmpPartialEqResources
+  assert_fields_are_eq := Resources.Insts.CoreCmpEq.assert_fields_are_eq
 }
 
 /-- [nmlt_open_kernel::{nmlt_open_kernel::Resources}::empty]:
@@ -240,6 +518,61 @@ def Action.Insts.CoreMarkerCopy : core.marker.Copy Action := {
   cloneInst := Action.Insts.CoreCloneClone
 }
 
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::Action}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 116:22-116:31 -/
+@[reducible]
+def Action.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq Action := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Action> for nmlt_open_kernel::Action}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 116:22-116:31
+    Visibility: public -/
+def Action.Insts.CoreCmpPartialEqAction.eq
+  (self : Action) (other : Action) : Result Bool := do
+  if self.polarity = other.polarity
+  then
+    if self.channel = other.channel
+    then
+      let b ←
+        PredicateTable.Insts.CoreCmpPartialEqPredicateTable.eq self.assumption
+          other.assumption
+      if b
+      then
+        let b1 ←
+          PredicateTable.Insts.CoreCmpPartialEqPredicateTable.eq self.guarantee
+            other.guarantee
+        if b1
+        then
+          Resources.Insts.CoreCmpPartialEqResources.eq self.resources
+            other.resources
+        else ok false
+      else ok false
+    else ok false
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Action> for nmlt_open_kernel::Action}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 116:22-116:31 -/
+@[reducible]
+def Action.Insts.CoreCmpPartialEqAction : core.cmp.PartialEq Action Action := {
+  eq := Action.Insts.CoreCmpPartialEqAction.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Action}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 116:33-116:35
+    Visibility: public -/
+def Action.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : Action) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Action}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 116:33-116:35 -/
+@[reducible]
+def Action.Insts.CoreCmpEq : core.cmp.Eq Action := {
+  partialEqInst := Action.Insts.CoreCmpPartialEqAction
+  assert_fields_are_eq := Action.Insts.CoreCmpEq.assert_fields_are_eq
+}
+
 /-- [nmlt_open_kernel::{nmlt_open_kernel::Action}::empty]:
     Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 127:4-135:5
     Visibility: public -/
@@ -273,6 +606,53 @@ def System.Insts.CoreCloneClone : core.clone.Clone System := {
 @[reducible]
 def System.Insts.CoreMarkerCopy : core.marker.Copy System := {
   cloneInst := System.Insts.CoreCloneClone
+}
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::System}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 138:22-138:31 -/
+@[reducible]
+def System.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq System := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::System> for nmlt_open_kernel::System}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 138:22-138:31
+    Visibility: public -/
+def System.Insts.CoreCmpPartialEqSystem.eq
+  (self : System) (other : System) : Result Bool := do
+  if self.state_count = other.state_count
+  then
+    if self.action_count = other.action_count
+    then
+      let b ←
+        core.array.equality.PartialEqArray.eq
+          Action.Insts.CoreCmpPartialEqAction self.actions other.actions
+      if b
+      then AtomTable.Insts.CoreCmpPartialEqAtomTable.eq self.owned other.owned
+      else ok false
+    else ok false
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::System> for nmlt_open_kernel::System}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 138:22-138:31 -/
+@[reducible]
+def System.Insts.CoreCmpPartialEqSystem : core.cmp.PartialEq System System := {
+  eq := System.Insts.CoreCmpPartialEqSystem.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::System}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 138:33-138:35
+    Visibility: public -/
+def System.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : System) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::System}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 138:33-138:35 -/
+@[reducible]
+def System.Insts.CoreCmpEq : core.cmp.Eq System := {
+  partialEqInst := System.Insts.CoreCmpPartialEqSystem
+  assert_fields_are_eq := System.Insts.CoreCmpEq.assert_fields_are_eq
 }
 
 /-- [nmlt_open_kernel::{nmlt_open_kernel::System}::empty]:
@@ -311,6 +691,49 @@ def Refinement.Insts.CoreMarkerCopy : core.marker.Copy Refinement := {
   cloneInst := Refinement.Insts.CoreCloneClone
 }
 
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::Refinement}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 157:22-157:31 -/
+@[reducible]
+def Refinement.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq Refinement := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Refinement> for nmlt_open_kernel::Refinement}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 157:22-157:31
+    Visibility: public -/
+def Refinement.Insts.CoreCmpPartialEqRefinement.eq
+  (self : Refinement) (other : Refinement) : Result Bool := do
+  let b ←
+    StateMap.Insts.CoreCmpPartialEqStateMap.eq self.state_map other.state_map
+  if b
+  then
+    IndexTable.Insts.CoreCmpPartialEqIndexTable.eq self.action_map
+      other.action_map
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Refinement> for nmlt_open_kernel::Refinement}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 157:22-157:31 -/
+@[reducible]
+def Refinement.Insts.CoreCmpPartialEqRefinement : core.cmp.PartialEq Refinement
+  Refinement := {
+  eq := Refinement.Insts.CoreCmpPartialEqRefinement.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Refinement}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 157:33-157:35
+    Visibility: public -/
+def Refinement.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : Refinement) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Refinement}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 157:33-157:35 -/
+@[reducible]
+def Refinement.Insts.CoreCmpEq : core.cmp.Eq Refinement := {
+  partialEqInst := Refinement.Insts.CoreCmpPartialEqRefinement
+  assert_fields_are_eq := Refinement.Insts.CoreCmpEq.assert_fields_are_eq
+}
+
 /-- [nmlt_open_kernel::{impl core::clone::Clone for nmlt_open_kernel::ConnectionTable}::clone]:
     Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 163:9-163:14
     Visibility: public -/
@@ -332,6 +755,53 @@ def ConnectionTable.Insts.CoreCloneClone : core.clone.Clone ConnectionTable
 def ConnectionTable.Insts.CoreMarkerCopy : core.marker.Copy ConnectionTable
   := {
   cloneInst := ConnectionTable.Insts.CoreCloneClone
+}
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::ConnectionTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 163:22-163:31 -/
+@[reducible]
+def ConnectionTable.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq ConnectionTable := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::ConnectionTable> for nmlt_open_kernel::ConnectionTable}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 163:22-163:31
+    Visibility: public -/
+def ConnectionTable.Insts.CoreCmpPartialEqConnectionTable.eq
+  (self : ConnectionTable) (other : ConnectionTable) : Result Bool := do
+  if self.len = other.len
+  then
+    let b ←
+      core.array.equality.PartialEqArray.eq core.cmp.PartialEqUsize self.left
+        other.left
+    if b
+    then
+      core.array.equality.PartialEqArray.eq core.cmp.PartialEqUsize self.right
+        other.right
+    else ok false
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::ConnectionTable> for nmlt_open_kernel::ConnectionTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 163:22-163:31 -/
+@[reducible]
+def ConnectionTable.Insts.CoreCmpPartialEqConnectionTable : core.cmp.PartialEq
+  ConnectionTable ConnectionTable := {
+  eq := ConnectionTable.Insts.CoreCmpPartialEqConnectionTable.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::ConnectionTable}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 163:33-163:35
+    Visibility: public -/
+def ConnectionTable.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : ConnectionTable) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::ConnectionTable}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 163:33-163:35 -/
+@[reducible]
+def ConnectionTable.Insts.CoreCmpEq : core.cmp.Eq ConnectionTable := {
+  partialEqInst := ConnectionTable.Insts.CoreCmpPartialEqConnectionTable
+  assert_fields_are_eq := ConnectionTable.Insts.CoreCmpEq.assert_fields_are_eq
 }
 
 /-- [nmlt_open_kernel::{nmlt_open_kernel::ConnectionTable}::empty]:
@@ -361,6 +831,95 @@ def Congruence.Insts.CoreCloneClone : core.clone.Clone Congruence := {
 @[reducible]
 def Congruence.Insts.CoreMarkerCopy : core.marker.Copy Congruence := {
   cloneInst := Congruence.Insts.CoreCloneClone
+}
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::marker::StructuralPartialEq for nmlt_open_kernel::Congruence}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 180:22-180:31 -/
+@[reducible]
+def Congruence.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq Congruence := {
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Congruence> for nmlt_open_kernel::Congruence}::eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 180:22-180:31
+    Visibility: public -/
+def Congruence.Insts.CoreCmpPartialEqCongruence.eq
+  (self : Congruence) (other : Congruence) : Result Bool := do
+  if self.payload_identity_present = other.payload_identity_present
+  then
+    if self.payload_variants_unique = other.payload_variants_unique
+    then
+      if self.payload_cardinality = other.payload_cardinality
+      then
+        let b ←
+          System.Insts.CoreCmpPartialEqSystem.eq self.concrete_left
+            other.concrete_left
+        if b
+        then
+          let b1 ←
+            System.Insts.CoreCmpPartialEqSystem.eq self.abstract_left
+              other.abstract_left
+          if b1
+          then
+            let b2 ←
+              System.Insts.CoreCmpPartialEqSystem.eq self.concrete_right
+                other.concrete_right
+            if b2
+            then
+              let b3 ←
+                System.Insts.CoreCmpPartialEqSystem.eq self.abstract_right
+                  other.abstract_right
+              if b3
+              then
+                let b4 ←
+                  Refinement.Insts.CoreCmpPartialEqRefinement.eq
+                    self.left_refinement other.left_refinement
+                if b4
+                then
+                  let b5 ←
+                    Refinement.Insts.CoreCmpPartialEqRefinement.eq
+                      self.right_refinement other.right_refinement
+                  if b5
+                  then
+                    let b6 ←
+                      ConnectionTable.Insts.CoreCmpPartialEqConnectionTable.eq
+                        self.concrete_wiring other.concrete_wiring
+                    if b6
+                    then
+                      ConnectionTable.Insts.CoreCmpPartialEqConnectionTable.eq
+                        self.abstract_wiring other.abstract_wiring
+                    else ok false
+                  else ok false
+                else ok false
+              else ok false
+            else ok false
+          else ok false
+        else ok false
+      else ok false
+    else ok false
+  else ok false
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::PartialEq<nmlt_open_kernel::Congruence> for nmlt_open_kernel::Congruence}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 180:22-180:31 -/
+@[reducible]
+def Congruence.Insts.CoreCmpPartialEqCongruence : core.cmp.PartialEq Congruence
+  Congruence := {
+  eq := Congruence.Insts.CoreCmpPartialEqCongruence.eq
+}
+
+/-- [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Congruence}::assert_fields_are_eq]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 180:33-180:35
+    Visibility: public -/
+def Congruence.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : Congruence) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [nmlt_open_kernel::{impl core::cmp::Eq for nmlt_open_kernel::Congruence}]
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 180:33-180:35 -/
+@[reducible]
+def Congruence.Insts.CoreCmpEq : core.cmp.Eq Congruence := {
+  partialEqInst := Congruence.Insts.CoreCmpPartialEqCongruence
+  assert_fields_are_eq := Congruence.Insts.CoreCmpEq.assert_fields_are_eq
 }
 
 /-- [nmlt_open_kernel::active8]:
@@ -3523,6 +4082,15 @@ def check (raw1 : Congruence) : Result Bool := do
         else ok false
       else ok false
     else ok false
+  else ok false
+
+/-- [nmlt_open_kernel::check_bound]:
+    Source: 'crates/nmlt-open-kernel/src/lib.rs', lines 544:0-546:1
+    Visibility: public -/
+def check_bound (expected : Congruence) (raw1 : Congruence) : Result Bool := do
+  let b ← Congruence.Insts.CoreCmpPartialEqCongruence.eq expected raw1
+  if b
+  then check raw1
   else ok false
 
 end NMLT.OpenKernel

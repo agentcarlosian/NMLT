@@ -180,7 +180,7 @@ impl CanonicalEncodingValidator {
             Some(certificate) if !execution_kernel_readback_matches(encoding, &certificate) => {
                 issues.push(CanonicalValidationIssue::ExecutionKernelReadbackMismatch);
             }
-            Some(certificate) if execution_kernel::check(certificate.input) => {}
+            Some(certificate) if execution_kernel_bound_accepts(encoding, &certificate) => {}
             Some(_) => issues.push(CanonicalValidationIssue::ExecutionKernelRejected),
             None => issues.push(CanonicalValidationIssue::ExecutionKernelCapacityExceeded),
         }
@@ -282,6 +282,17 @@ pub(crate) fn execution_kernel_readback_matches(
             &encoding.abstract_wiring,
             &certificate.input.abstract_wiring,
         )
+}
+
+pub(crate) fn execution_kernel_bound_accepts(
+    encoding: &CanonicalCongruenceEncoding,
+    certificate: &ExecutionKernelCertificate,
+) -> bool {
+    let Some(expected) = encode_execution_kernel(encoding) else {
+        return false;
+    };
+    expected.atom_dictionary == certificate.atom_dictionary
+        && execution_kernel::check_bound(expected.input, certificate.input)
 }
 
 fn canonical_atom_dictionary(encoding: &CanonicalCongruenceEncoding) -> Vec<String> {

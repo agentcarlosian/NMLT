@@ -15,7 +15,7 @@ pub const MAX_ATOMS: usize = 8;
 pub const MAX_CONNECTIONS: usize = 4;
 pub const NO_CHANNEL: u32 = u32::MAX;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct IndexTable {
     pub len: usize,
     pub values: [usize; MAX_ACTIONS],
@@ -30,7 +30,7 @@ impl IndexTable {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct StateMap {
     pub len: usize,
     pub values: [usize; MAX_STATES],
@@ -45,7 +45,7 @@ impl StateMap {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct AtomTable {
     pub len: usize,
     pub values: [u32; MAX_ATOMS],
@@ -60,7 +60,7 @@ impl AtomTable {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PredicateTable {
     pub len: usize,
     pub values: [bool; MAX_PAYLOAD_VARIANTS],
@@ -75,7 +75,7 @@ impl PredicateTable {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Grade {
     pub cost: u64,
     pub privacy: u64,
@@ -83,7 +83,7 @@ pub struct Grade {
     pub uncertainty: u32,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Resources {
     pub required: AtomTable,
     pub consumed: AtomTable,
@@ -113,7 +113,7 @@ impl Resources {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Action {
     /// `0 = internal`, `1 = input`, and `2 = output`.
     pub polarity: u8,
@@ -135,7 +135,7 @@ impl Action {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct System {
     pub state_count: usize,
     pub action_count: usize,
@@ -154,13 +154,13 @@ impl System {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Refinement {
     pub state_map: StateMap,
     pub action_map: IndexTable,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ConnectionTable {
     pub len: usize,
     pub left: [usize; MAX_CONNECTIONS],
@@ -177,7 +177,7 @@ impl ConnectionTable {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Congruence {
     pub payload_identity_present: bool,
     pub payload_variants_unique: bool,
@@ -537,6 +537,14 @@ pub fn check(raw: Congruence) -> bool {
         && wiring_valid(raw)
 }
 
+/// Accept only when the executed certificate is exactly the bounded source
+/// snapshot supplied by the caller and that certificate satisfies the kernel.
+/// This keeps the equality/readback decision inside the translated kernel.
+#[must_use]
+pub fn check_bound(expected: Congruence, raw: Congruence) -> bool {
+    expected == raw && check(raw)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -631,5 +639,19 @@ mod tests {
         raw.abstract_wiring.left[1] = 0;
         raw.abstract_wiring.right[1] = 0;
         assert!(!check(raw));
+    }
+
+    #[test]
+    fn bound_check_rejects_structural_substitution() {
+        let expected = positive();
+        let mut substituted = expected;
+        substituted.concrete_left.actions[0].channel = 1;
+        assert!(!check_bound(expected, substituted));
+    }
+
+    #[test]
+    fn bound_check_accepts_exact_valid_certificate() {
+        let expected = positive();
+        assert!(check_bound(expected, expected));
     }
 }
