@@ -48,14 +48,21 @@ enforces affine capability partition/transfer, componentwise grade improvement,
 and rely/guarantee discharge, with matching Lean resource rules and a checked
 finite-table/typed-map boundary. Lean now bundles operational, contract, and
 resource refinement across all eight structural product-action constructors.
-Rust revalidates the isolated canonical certificate through a bounded
-dependency-free kernel. Pinned Charon/Aeneas translate that executed kernel to
+Rust revalidates the isolated canonical certificate through a bounded,
+dependency-free kernel. Pinned Charon/Aeneas translate the executed kernel to
 Lean, where acceptance is proved to imply its refinement and wiring contract.
 The numeric certificate carries its canonical atom dictionary and is read back
 field-by-field before execution; Lean proves unique decoding and referenced-ID
-coverage for that boundary. The full gate remains open because the rich
-system-to-certificate encoder and the Rust readback implementation are not
-verified extraction; fairness and source correspondence also remain open.
+coverage for that boundary. The kernel now also executes structural equality
+between a reconstructed expected certificate and the actual certificate before
+validation. The translated Lean theorem exposes that equality decision and the
+complete execution contract, with 19 shared Rust/Lean correspondence controls.
+A bottom-up proof connecting generated equality to native Lean equality is in
+progress; its scalar-only `Grade` layer is complete and axiom-audited. The full
+gate remains open because the remaining equality layers, rich
+system-to-certificate encoder, expected-certificate reconstruction, and Rust
+readback implementations are not verified extraction; fairness and broader
+source correspondence also remain open.
 NMLT does not
 yet provide full surface-language execution, verified source-to-IR
 elaboration, general or infinite-state verification, production runtime
@@ -158,9 +165,18 @@ The durable provider-attempt protocol anchors the current slices:
    separately proves structural exact-action congruence plus composability and
    product-receptiveness results;
    the claim-specific evidence explicitly denies Rust/Lean correspondence.
+7. M11-001b and the current M11-001c core add nominal finite payload contracts,
+   label-aware two-sided refinement, contract variance, exact wiring-edge
+   reflection, invariant transport, affine authority, grades, rely/guarantee
+   discharge, canonical certificates, and a translated bounded execution
+   kernel. Dictionary, numeric-field, rich-source, and kernel-bound
+   substitution controls fail closed. The remaining correspondence boundary
+   is recorded explicitly rather than promoted to a completed proof.
 
 See [Plan.md](Plan.md) for the exact gates, evidence boundaries, and residual
-gaps. Passing any one slice does not verify arbitrary NMLT source.
+gaps. The current reboot-safe continuation is in the
+[2026-07-20 M11 handoff](docs/reboot-handoff-2026-07-20.md). Passing any one
+slice does not verify arbitrary NMLT source.
 
 ## Contribution and governance
 
