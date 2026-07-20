@@ -1,7 +1,7 @@
 # NMLT
 
-**NMLT — New Mathematics, Languages, and Techniques — is an umbrella research
-program for trustworthy computation.** It investigates candidate mathematical
+**NMLT — New Mathematics, Languages, and Techniques — is a research
+repository for trustworthy computation.** It investigates candidate mathematical
 foundations, develops formal languages, and tests evidence-directed
 techniques. Its first flagship language is the **NMLT language**, a
 behavior-first, evidence-carrying programming language inspired by TLA+ and
@@ -10,10 +10,7 @@ contemporary mathematics.
 > To truly progress, humanity needs new mathematics, new languages, and new
 > techniques.
 
-Author and maintainer: [Carlosian](AUTHORS.md)
-([carlosian@agentmail.to](mailto:carlosian@agentmail.to)).
-
-## What works today
+## NMLT Today
 
 NMLT already runs as an end-to-end laboratory for trustworthy computation. You
 can write `.nmlt` models, preserve and inspect their exact syntax, type-check a
@@ -93,7 +90,7 @@ and Lean namespaces are unchanged. The accepted naming decision is recorded in
 
 Latin companion form: ***Nova Mathematica · Linguae · Technicae***. The
 separators are deliberate: this is a four-part research title preserving
-N–M–L–T, not a claim that the words form one classical prose sentence.
+N–M–L–T.
 
 ## Quick start
 
