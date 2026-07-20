@@ -1,6 +1,6 @@
 {
   "claim_scope": "finite_exact_action_open_composition",
-  "evidence_id": "nmlt-open-composition-evidence-v1:sha256:fa835bd6d9d9a8ebfb38355f3a2648fca97a0d4f2c35ec7bd777a105246eb952",
+  "evidence_id": "nmlt-open-composition-evidence-v1:sha256:1494b57bc228fef71a04803cf3dd14fc8a4e5a9210b5a3f055973be7fd686d60",
   "executable_correspondence": {
     "rust_checker": "related_nonidentical_finite_instance_checker",
     "verified": false
@@ -20,7 +20,7 @@
     "entries": [
       {
         "path": "mechanization/lean/NMLT.lean",
-        "sha256": "4661e4aa143a399f3ba80a7faf46cb00ea376f385c8241bf9f919fa8f9538bb9"
+        "sha256": "5d390d388c3ac0ce2475b70b8e4762ac32556665d8defc565a1754a0d3123f6e"
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
@@ -57,11 +57,11 @@
     ],
     "evidence_checker_source_id": "nmlt-source-v1:sha256:b2399838f88b75c115d7f7b11d1e51b80d6be3054f883eab4d12a3810a2b8a95",
     "nanoda_checker_source_id": "nmlt-source-v1:sha256:fc0891182effa2f881be151b4519975c044965793a2aded2207f1ebceefd75ce",
-    "root_source_id": "nmlt-source-v1:sha256:bb0cc867b525d1e2101829ecdc84bbfe3bbfee3e04f7fb400a0f0600751063e8",
+    "root_source_id": "nmlt-source-v1:sha256:b5784f43212b31194abd9043172c86d181da404635c7b54f5d713ce83946adc1",
     "schema_source_id": "nmlt-source-v1:sha256:f9d91ecd72beced1e29eb5a2b7290d3fd4d2293f22be269942fa43c71bdf16c6",
     "schema_validator_source_id": "nmlt-source-v1:sha256:5721b737dd25c929c544a27a52543aa777965356fe24fa0f3c0c337209ad974a",
-    "source_set_id": "nmlt-open-composition-source-set-v1:sha256:0b93f9aaf99e62b8a44cbec7f0585e8d0f6e684c05a4f788d829369e0a8102f8",
-    "trusted_component_inventory_source_id": "nmlt-source-v1:sha256:a81a0ae59ae2692e6979cd08f31c974671c995c8266831aa57420b121cae0179"
+    "source_set_id": "nmlt-open-composition-source-set-v1:sha256:bd6b7dcb3e1fee7a453743a78fd5c8b2bdd16d4475ff42e6fc84f5b9cebb07a6",
+    "trusted_component_inventory_source_id": "nmlt-source-v1:sha256:29794c1eb78f28e9354417d1676c62b8109bd69ea20e4670b58bf9cee9f911d9"
   },
   "statement": "Kernel-checked structural exact-action safety congruence plus separate composability preservation for globally input-receptive open systems under whole-wiring equivalence.",
   "theorem_audits": [

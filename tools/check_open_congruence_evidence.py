@@ -23,6 +23,7 @@ RESOURCE_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenResourceCongruence.
 ENCODING_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenEncodingCorrespondence.lean"
 KERNEL_EXECUTION_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean"
 KERNEL_READBACK_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenKernelReadback.lean"
+SOURCE_READBACK_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenSourceReadback.lean"
 VECTOR = ROOT / "mechanization/vectors/m11-open-congruence-v1.json"
 SCHEMA = ROOT / "schemas/open-congruence-evidence-v1.schema.json"
 EVIDENCE = ROOT / "benchmarks/results/open-congruence/m11-001c-evidence.json"
@@ -44,6 +45,7 @@ SOURCE_PATHS = (
     ENCODING_LEAN,
     KERNEL_EXECUTION_LEAN,
     KERNEL_READBACK_LEAN,
+    SOURCE_READBACK_LEAN,
     ROOT / "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Types.lean",
     ROOT / "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
     ROOT / "mechanization/lean/NMLT/Behavior/OpenRefinement.lean",
@@ -123,6 +125,8 @@ THEOREMS = (
     ("NMLT.Behavior.OpenKernelReadback.decode_injective", "execution_correspondence", ("propext", "Quot.sound")),
     ("NMLT.Behavior.OpenKernelReadback.check_accepts_with_readback", "execution_correspondence", ("propext", "Classical.choice", "Quot.sound")),
     ("NMLT.Behavior.OpenKernelReadback.referenced_id_in_dictionary", "execution_correspondence", ("propext", "Classical.choice", "Quot.sound")),
+    ("NMLT.Behavior.OpenSourceReadback.accepted_exact_readback_contract", "encoding_correspondence", ("propext", "Quot.sound")),
+    ("NMLT.Behavior.OpenSourceReadback.exact_readback_functional", "encoding_correspondence", ()),
 )
 
 AXIOMS = re.compile(
@@ -200,6 +204,9 @@ def expected_evidence() -> dict[str, Any]:
             "kernel_readback_rejects_numeric_atom_substitution",
             "kernel_readback_rejects_active_action_omission",
             "canonical_validator_rejects_kernel_capacity_overflow",
+            "source_readback_rejects_action_name_substitution",
+            "source_readback_rejects_resource_substitution",
+            "source_readback_rejects_wiring_substitution",
             "shared_m11_congruence_vectors_bind_the_rust_controls",
         ],
         "correspondence": {
@@ -208,13 +215,14 @@ def expected_evidence() -> dict[str, Any]:
             "verified_implementation_theorem": False,
             "verified_execution_kernel_theorem": True,
             "dictionary_readback_enforced": True,
+            "source_readback_enforced": True,
             "adapter_verified": False,
         },
         "validation_gate": "./tools/check_metatheory.sh",
         "limitations": [
             "Safety-only finite exact-action profile; no liveness or fairness transport.",
             "No liveness, fairness, hidden-divergence, payload-subtyping, or circular-discharge result.",
-            "The bounded Rust kernel is translated by pinned Charon/Aeneas; its numeric envelope carries a canonical atom dictionary and Rust independently reads every active field back, while Lean specifies unique decoding and referenced-ID coverage. The rich system-to-canonical encoder and Rust readback implementation remain outside verified extraction.",
+            "The bounded Rust kernel is translated by pinned Charon/Aeneas; its numeric envelope carries a canonical atom dictionary and Rust independently reads every active field back. Rust also independently reads the canonical representation back against every rich source field, while Lean specifies exact source-readback transport plus unique dictionary decoding and referenced-ID coverage. The rich encoder and both Rust readback implementations remain outside verified extraction.",
             "The correspondence profile deliberately requires one exact nominal payload universe across all four components and total visible action maps.",
             "The proved canonical projection retains the uncertainty upper-bound coordinate but not Rust uncertainty family/profile identity; the stronger family checks remain in nmlt-grades.",
         ],

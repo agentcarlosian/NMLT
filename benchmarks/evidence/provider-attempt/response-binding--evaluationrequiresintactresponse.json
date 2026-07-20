@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "manifest_id": "nmlt-evidence-v1:sha256:d84d53a938b590109cd59d817ff01a591a1580652bd6bd9c5cf7bbf6376de36d",
+  "manifest_id": "nmlt-evidence-v1:sha256:e309a1ebc4e18e1546354c5cf2f9ee6ea9dd7bea3c85b1a61bd559141e796a45",
   "artifact": {
     "path": "benchmarks/seeded-defects/provider-attempt/response-binding.nmlt",
     "source_id": "nmlt-source-v1:sha256:f750f47979e30377b2ed04b0f1e233196ca9429a09ceb53f3544158cc13794e6"
@@ -36,7 +36,7 @@
   "trusted_components": [
     {
       "id": "trusted-component-inventory",
-      "identity": "sha256:7f8a66be250d66d49e9704f86b67cc92c7e08d97d564d57dd0c0795734300f81"
+      "identity": "sha256:c65f009e074f74181702c5c470a9cbe5fa15f0a2b900dc07749ce42af5a90f8e"
     },
     {
       "id": "nmlt-engine-source",

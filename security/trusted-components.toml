@@ -465,6 +465,7 @@ paths = [
   "mechanization/lean/NMLT/Behavior/OpenEncodingCorrespondence.lean",
   "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean",
   "mechanization/lean/NMLT/Behavior/OpenKernelReadback.lean",
+  "mechanization/lean/NMLT/Behavior/OpenSourceReadback.lean",
   "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
   "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Types.lean",
   "mechanization/lean/NMLT/Behavior/OpenRefinement.lean",

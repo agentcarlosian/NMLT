@@ -93,6 +93,24 @@
       "lean_handle": "OpenKernelExecution.ExecutionContract.payloadWithinCapacity"
     },
     {
+      "id": "source-action-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "source_readback_rejects_action_name_substitution",
+      "lean_handle": "OpenSourceReadback.accepted_exact_readback_contract"
+    },
+    {
+      "id": "source-resource-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "source_readback_rejects_resource_substitution",
+      "lean_handle": "OpenSourceReadback.accepted_exact_readback_contract"
+    },
+    {
+      "id": "source-wiring-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "source_readback_rejects_wiring_substitution",
+      "lean_handle": "OpenSourceReadback.accepted_exact_readback_contract"
+    },
+    {
       "id": "all-structural-resource-actions-positive",
       "expected": "accepted",
       "rust_control": "accepts_two_sided_contract_sound_congruence_and_invariant_transport",

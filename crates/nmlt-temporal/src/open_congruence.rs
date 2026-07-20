@@ -902,6 +902,111 @@ mod tests {
         ));
     }
 
+    fn source_readback_matches_fixture(
+        encoding: &crate::open_encoding::CanonicalCongruenceEncoding,
+        concrete_left: &OpenSystem,
+        abstract_left: &OpenSystem,
+        concrete_right: &OpenSystem,
+        abstract_right: &OpenSystem,
+        spec: &TwoSidedCongruenceSpec,
+    ) -> bool {
+        let payload = concrete_left
+            .interface()
+            .actions()
+            .values()
+            .find_map(|signature| signature.payload_type.as_ref())
+            .unwrap();
+        crate::open_encoding::canonical_source_readback_matches(
+            encoding,
+            payload,
+            concrete_left,
+            abstract_left,
+            concrete_right,
+            abstract_right,
+            &spec.left_refinement,
+            &spec.right_refinement,
+            &spec.concrete_composition,
+            &spec.abstract_composition,
+            &spec.resources.concrete_left,
+            &spec.resources.abstract_left,
+            &spec.resources.concrete_right,
+            &spec.resources.abstract_right,
+        )
+    }
+
+    #[test]
+    fn source_readback_rejects_action_name_substitution() {
+        let (concrete_left, abstract_left, concrete_right, abstract_right, spec) = fixture();
+        let report = TwoSidedCongruenceChecker::check(
+            &concrete_left,
+            &abstract_left,
+            &concrete_right,
+            &abstract_right,
+            &spec,
+        );
+        let mut encoding = report.encoding_correspondence.encoding.unwrap();
+        encoding.concrete_left.actions[0]
+            .name
+            .push_str("-substituted");
+        assert!(!source_readback_matches_fixture(
+            &encoding,
+            &concrete_left,
+            &abstract_left,
+            &concrete_right,
+            &abstract_right,
+            &spec,
+        ));
+    }
+
+    #[test]
+    fn source_readback_rejects_resource_substitution() {
+        let (concrete_left, abstract_left, concrete_right, abstract_right, spec) = fixture();
+        let report = TwoSidedCongruenceChecker::check(
+            &concrete_left,
+            &abstract_left,
+            &concrete_right,
+            &abstract_right,
+            &spec,
+        );
+        let mut encoding = report.encoding_correspondence.encoding.unwrap();
+        encoding.concrete_left.actions[0]
+            .resources
+            .guarantees
+            .push("forged-fact".to_owned());
+        assert!(!source_readback_matches_fixture(
+            &encoding,
+            &concrete_left,
+            &abstract_left,
+            &concrete_right,
+            &abstract_right,
+            &spec,
+        ));
+    }
+
+    #[test]
+    fn source_readback_rejects_wiring_substitution() {
+        let (concrete_left, abstract_left, concrete_right, abstract_right, spec) = fixture();
+        let report = TwoSidedCongruenceChecker::check(
+            &concrete_left,
+            &abstract_left,
+            &concrete_right,
+            &abstract_right,
+            &spec,
+        );
+        let mut encoding = report.encoding_correspondence.encoding.unwrap();
+        encoding.concrete_wiring[0]
+            .composite_action
+            .push_str("-substituted");
+        assert!(!source_readback_matches_fixture(
+            &encoding,
+            &concrete_left,
+            &abstract_left,
+            &concrete_right,
+            &abstract_right,
+            &spec,
+        ));
+    }
+
     #[test]
     fn rejects_nonmonotone_composite_grade() {
         let (concrete_left, abstract_left, concrete_right, abstract_right, mut spec) = fixture();
@@ -1096,6 +1201,9 @@ mod tests {
             "kernel_readback_rejects_numeric_atom_substitution",
             "kernel_readback_rejects_active_action_omission",
             "canonical_validator_rejects_kernel_capacity_overflow",
+            "source_readback_rejects_action_name_substitution",
+            "source_readback_rejects_resource_substitution",
+            "source_readback_rejects_wiring_substitution",
         ] {
             assert!(
                 M11_CONGRUENCE_VECTORS.contains(control),

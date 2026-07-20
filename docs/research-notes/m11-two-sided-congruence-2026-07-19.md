@@ -99,12 +99,20 @@ numeric atom substitution, active-action omission, and capacity overflow.
 complete coverage of referenced numeric IDs, and composition of that readback
 condition with translated kernel acceptance.
 
+The rich-to-canonical boundary now has a second independent readback. Rust
+compares payload identity and variants, every system and ordered action,
+predicates, resources and grades, refinement maps, and both wiring tables back
+to the original rich source. Substitution controls cover action names,
+resources, and wiring. `OpenSourceReadback.lean` proves that exact readback
+transports an accepted canonical implementation contract to the source and
+that exact readback is functional.
+
 ## Remaining M11-001c gate
 
 M11-001c is not promoted complete. The structural resource theorem, general
 accepted-certificate semantic contract, and normalized-kernel execution proof
 are now present. Promotion still requires verified extraction, or an equivalent
-execution proof, for the rich `OpenSystem`-to-canonical encoder and the Rust
-readback implementation itself. Fairness and
+execution proof, for the rich `OpenSystem`-to-canonical encoder and the two
+Rust readback implementations themselves. Fairness and
 hidden-divergence transport remain M11-005 rather than being inferred from this
 safety result.

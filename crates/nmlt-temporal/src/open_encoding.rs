@@ -574,6 +574,7 @@ pub enum EncodingCorrespondenceIssue {
     StateMapNotSurjective { abstract_state: usize },
     MissingResourceAction(String),
     ConnectionEndpointMissing { action: String },
+    CanonicalSourceReadbackMismatch,
     CanonicalValidationFailed(CanonicalValidationIssue),
 }
 
@@ -716,6 +717,24 @@ impl EncodingCorrespondenceChecker {
             abstract_wiring,
         });
         if let Some(candidate) = &candidate {
+            if !canonical_source_readback_matches(
+                candidate,
+                &common_payload,
+                concrete_left,
+                abstract_left,
+                concrete_right,
+                abstract_right,
+                left_refinement,
+                right_refinement,
+                concrete_composition,
+                abstract_composition,
+                concrete_left_resources,
+                abstract_left_resources,
+                concrete_right_resources,
+                abstract_right_resources,
+            ) {
+                issues.push(EncodingCorrespondenceIssue::CanonicalSourceReadbackMismatch);
+            }
             let validation = CanonicalEncodingValidator::check(candidate);
             issues.extend(
                 validation
@@ -731,6 +750,185 @@ impl EncodingCorrespondenceChecker {
             issues,
         }
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn canonical_source_readback_matches(
+    encoding: &CanonicalCongruenceEncoding,
+    payload: &PayloadType,
+    concrete_left: &OpenSystem,
+    abstract_left: &OpenSystem,
+    concrete_right: &OpenSystem,
+    abstract_right: &OpenSystem,
+    left_refinement: &RefinementSpec,
+    right_refinement: &RefinementSpec,
+    concrete_composition: &CompositionSpec,
+    abstract_composition: &CompositionSpec,
+    concrete_left_resources: &SystemResourceProfile,
+    abstract_left_resources: &SystemResourceProfile,
+    concrete_right_resources: &SystemResourceProfile,
+    abstract_right_resources: &SystemResourceProfile,
+) -> bool {
+    encoding.payload_name == payload.name()
+        && encoding.payload_variants == payload.variants().iter().cloned().collect::<Vec<_>>()
+        && canonical_system_readback_matches(
+            &encoding.concrete_left,
+            concrete_left,
+            concrete_left_resources,
+            payload,
+        )
+        && canonical_system_readback_matches(
+            &encoding.abstract_left,
+            abstract_left,
+            abstract_left_resources,
+            payload,
+        )
+        && canonical_system_readback_matches(
+            &encoding.concrete_right,
+            concrete_right,
+            concrete_right_resources,
+            payload,
+        )
+        && canonical_system_readback_matches(
+            &encoding.abstract_right,
+            abstract_right,
+            abstract_right_resources,
+            payload,
+        )
+        && canonical_refinement_readback_matches(
+            &encoding.left_refinement,
+            &encoding.concrete_left,
+            &encoding.abstract_left,
+            left_refinement,
+        )
+        && canonical_refinement_readback_matches(
+            &encoding.right_refinement,
+            &encoding.concrete_right,
+            &encoding.abstract_right,
+            right_refinement,
+        )
+        && canonical_wiring_readback_matches(
+            &encoding.concrete_wiring,
+            &encoding.concrete_left,
+            &encoding.concrete_right,
+            concrete_composition,
+        )
+        && canonical_wiring_readback_matches(
+            &encoding.abstract_wiring,
+            &encoding.abstract_left,
+            &encoding.abstract_right,
+            abstract_composition,
+        )
+}
+
+fn canonical_system_readback_matches(
+    encoding: &CanonicalSystemEncoding,
+    system: &OpenSystem,
+    resources: &SystemResourceProfile,
+    payload: &PayloadType,
+) -> bool {
+    let variants = payload.variants().iter().cloned().collect::<Vec<_>>();
+    encoding.state_count == system.graph().states().len()
+        && encoding.owned_capabilities == resources.owned().iter().cloned().collect::<Vec<_>>()
+        && encoding.actions.len() == system.interface().actions().len()
+        && encoding
+            .actions
+            .iter()
+            .zip(system.interface().actions())
+            .all(|(encoded, (name, signature))| {
+                let Some(resource) = resources.actions().get(name) else {
+                    return false;
+                };
+                encoded.name == *name
+                    && encoded.polarity == signature.polarity
+                    && encoded.channel == signature.channel
+                    && encoded.assumption
+                        == predicate_bits(
+                            system.contract().assumptions().get(name),
+                            payload,
+                            &variants,
+                        )
+                    && encoded.guarantee
+                        == predicate_bits(
+                            system.contract().guarantees().get(name),
+                            payload,
+                            &variants,
+                        )
+                    && canonical_resource_readback_matches(&encoded.resources, resource)
+            })
+}
+
+fn canonical_resource_readback_matches(
+    encoding: &CanonicalResourceEncoding,
+    profile: &ActionResourceProfile,
+) -> bool {
+    let uncertainty = profile.grade().uncertainty();
+    let (family, certificate_profile) = match uncertainty {
+        UncertaintyCertificate::Certain => (None, None),
+        UncertaintyCertificate::UpperBound {
+            family, profile_id, ..
+        } => (
+            Some(family.as_str().to_owned()),
+            Some(profile_id.to_string()),
+        ),
+    };
+    encoding.required == profile.required().iter().cloned().collect::<Vec<_>>()
+        && encoding.consumed == profile.consumed().iter().cloned().collect::<Vec<_>>()
+        && encoding.transferred == profile.transferred().iter().cloned().collect::<Vec<_>>()
+        && encoding.received == profile.received().iter().cloned().collect::<Vec<_>>()
+        && encoding.grade.cost_ticks == profile.grade().cost_ticks()
+        && encoding.grade.privacy_micro_epsilon == profile.grade().privacy_micro_epsilon()
+        && encoding.grade.energy_microjoules == profile.grade().energy_microjoules()
+        && encoding.grade.uncertainty_family == family
+        && encoding.grade.uncertainty_profile == certificate_profile
+        && encoding.grade.uncertainty_upper_bound_ppm == uncertainty.upper_bound_ppm()
+        && encoding.rely == profile.rely().iter().cloned().collect::<Vec<_>>()
+        && encoding.guarantees == profile.guarantees().iter().cloned().collect::<Vec<_>>()
+}
+
+fn canonical_refinement_readback_matches(
+    encoding: &CanonicalRefinementEncoding,
+    concrete: &CanonicalSystemEncoding,
+    abstract_system: &CanonicalSystemEncoding,
+    refinement: &RefinementSpec,
+) -> bool {
+    encoding.state_map == refinement.state_map
+        && encoding.action_map.len() == concrete.actions.len()
+        && concrete
+            .actions
+            .iter()
+            .zip(&encoding.action_map)
+            .all(|(action, &target_index)| {
+                let Some(Some(target_name)) = refinement.actions.get(&action.name) else {
+                    return false;
+                };
+                abstract_system
+                    .actions
+                    .get(target_index)
+                    .is_some_and(|target| target.name == target_name)
+            })
+}
+
+fn canonical_wiring_readback_matches(
+    encoding: &[CanonicalConnectionEncoding],
+    left: &CanonicalSystemEncoding,
+    right: &CanonicalSystemEncoding,
+    composition: &CompositionSpec,
+) -> bool {
+    encoding.len() == composition.connections.len()
+        && encoding
+            .iter()
+            .zip(&composition.connections)
+            .all(|(encoded, source)| {
+                left.actions
+                    .get(encoded.left_action)
+                    .is_some_and(|action| action.name == source.left_action)
+                    && right
+                        .actions
+                        .get(encoded.right_action)
+                        .is_some_and(|action| action.name == source.right_action)
+                    && encoded.composite_action == source.composite_action
+            })
 }
 
 fn validate_refinement(

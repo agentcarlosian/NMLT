@@ -1,6 +1,6 @@
 {
   "claim_scope": "finite_contract_sound_open_refinement",
-  "evidence_id": "nmlt-open-refinement-evidence-v1:sha256:2b3c98912398f417f044d2bb66bbe5ddddb3a1a400472f026df0ad8bb2198662",
+  "evidence_id": "nmlt-open-refinement-evidence-v1:sha256:c9151862cc20ea9164fe81bfad831ef30c84526cd15abe73f08aa6f552f2c54d",
   "executable_correspondence": {
     "rust_checker": "finite_open_refinement_instance_checker",
     "verified": false
@@ -47,7 +47,7 @@
       },
       {
         "path": "mechanization/lean/NMLT.lean",
-        "sha256": "4661e4aa143a399f3ba80a7faf46cb00ea376f385c8241bf9f919fa8f9538bb9"
+        "sha256": "5d390d388c3ac0ce2475b70b8e4762ac32556665d8defc565a1754a0d3123f6e"
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
@@ -84,11 +84,11 @@
     ],
     "evidence_checker_source_id": "nmlt-source-v1:sha256:3ba7dff23f62770daa84c8b09f9f484885f3dab768b3327db32776d51a72627f",
     "nanoda_checker_source_id": "nmlt-source-v1:sha256:fc0891182effa2f881be151b4519975c044965793a2aded2207f1ebceefd75ce",
-    "root_source_id": "nmlt-source-v1:sha256:bb0cc867b525d1e2101829ecdc84bbfe3bbfee3e04f7fb400a0f0600751063e8",
+    "root_source_id": "nmlt-source-v1:sha256:b5784f43212b31194abd9043172c86d181da404635c7b54f5d713ce83946adc1",
     "schema_source_id": "nmlt-source-v1:sha256:f5869a1ee209bcec216ec21b6c1c8c01a181ae72951624d1d521f42508ea5e74",
     "schema_validator_source_id": "nmlt-source-v1:sha256:5721b737dd25c929c544a27a52543aa777965356fe24fa0f3c0c337209ad974a",
-    "source_set_id": "nmlt-open-refinement-source-set-v1:sha256:b5e253e31f1f3ad6f158361491b0d1cddfaa791a5eebc149cdb0e3fea1135aae",
-    "trusted_component_inventory_source_id": "nmlt-source-v1:sha256:a81a0ae59ae2692e6979cd08f31c974671c995c8266831aa57420b121cae0179"
+    "source_set_id": "nmlt-open-refinement-source-set-v1:sha256:acbfc9bbcad683b659aadc9ca829dd044eedb2da308ec37d0c10b1d4b7c24b3e",
+    "trusted_component_inventory_source_id": "nmlt-source-v1:sha256:29794c1eb78f28e9354417d1676c62b8109bd69ea20e4670b58bf9cee9f911d9"
   },
   "statement": "Finite truth-table assumptions and guarantees refine under exact nominal payload identity, contravariant assumptions, covariant guarantees, and a complete injective label renaming; identity and composition are kernel checked.",
   "theorem_audits": [

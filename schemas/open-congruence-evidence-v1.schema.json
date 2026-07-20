@@ -74,13 +74,14 @@
     },
     "correspondence": {
       "type": "object", "additionalProperties": false,
-      "required": ["kind", "vector_schema", "verified_implementation_theorem", "verified_execution_kernel_theorem", "dictionary_readback_enforced", "adapter_verified"],
+      "required": ["kind", "vector_schema", "verified_implementation_theorem", "verified_execution_kernel_theorem", "dictionary_readback_enforced", "source_readback_enforced", "adapter_verified"],
       "properties": {
         "kind": { "const": "proof_carrying_canonical_certificate" },
         "vector_schema": { "const": "nmlt-m11-open-congruence-v1" },
         "verified_implementation_theorem": { "const": false },
         "verified_execution_kernel_theorem": { "const": true },
         "dictionary_readback_enforced": { "const": true },
+        "source_readback_enforced": { "const": true },
         "adapter_verified": { "const": false }
       }
     },

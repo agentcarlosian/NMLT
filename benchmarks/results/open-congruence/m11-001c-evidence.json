@@ -4,15 +4,16 @@
     "adapter_verified": false,
     "dictionary_readback_enforced": true,
     "kind": "proof_carrying_canonical_certificate",
+    "source_readback_enforced": true,
     "vector_schema": "nmlt-m11-open-congruence-v1",
     "verified_execution_kernel_theorem": true,
     "verified_implementation_theorem": false
   },
-  "evidence_id": "nmlt-open-congruence-evidence-v1:sha256:1c1c7248ae78728701694036f1d02922e4f753fd1fd1dc7ecd2f7a58aa78f878",
+  "evidence_id": "nmlt-open-congruence-evidence-v1:sha256:f1679c242672f943e73d2b535e6d4d3f68218da5d06442089cf70c864aadb8db",
   "limitations": [
     "Safety-only finite exact-action profile; no liveness or fairness transport.",
     "No liveness, fairness, hidden-divergence, payload-subtyping, or circular-discharge result.",
-    "The bounded Rust kernel is translated by pinned Charon/Aeneas; its numeric envelope carries a canonical atom dictionary and Rust independently reads every active field back, while Lean specifies unique decoding and referenced-ID coverage. The rich system-to-canonical encoder and Rust readback implementation remain outside verified extraction.",
+    "The bounded Rust kernel is translated by pinned Charon/Aeneas; its numeric envelope carries a canonical atom dictionary and Rust independently reads every active field back. Rust also independently reads the canonical representation back against every rich source field, while Lean specifies exact source-readback transport plus unique dictionary decoding and referenced-ID coverage. The rich encoder and both Rust readback implementations remain outside verified extraction.",
     "The correspondence profile deliberately requires one exact nominal payload universe across all four components and total visible action maps.",
     "The proved canonical projection retains the uncertainty upper-bound coordinate but not Rust uncertainty family/profile identity; the stronger family checks remain in nmlt-grades."
   ],
@@ -31,6 +32,9 @@
     "kernel_readback_rejects_numeric_atom_substitution",
     "kernel_readback_rejects_active_action_omission",
     "canonical_validator_rejects_kernel_capacity_overflow",
+    "source_readback_rejects_action_name_substitution",
+    "source_readback_rejects_resource_substitution",
+    "source_readback_rejects_wiring_substitution",
     "shared_m11_congruence_vectors_bind_the_rust_controls"
   ],
   "schema_version": "1.0.0",
@@ -54,7 +58,7 @@
       },
       {
         "path": "crates/nmlt-temporal/src/open_congruence.rs",
-        "sha256": "e7849124d8dd3330a4dc5cfbbb9edfd23809629bafbe98f0cbd5762fc212aa32"
+        "sha256": "44a1cc8bee70b607e9a040a704eb19451fe37394dd2d5884ec91073610ea27e7"
       },
       {
         "path": "crates/nmlt-temporal/src/open_contract.rs",
@@ -62,7 +66,7 @@
       },
       {
         "path": "crates/nmlt-temporal/src/open_encoding.rs",
-        "sha256": "a0e5dc729deea1cd482718781d8ae85f7e91754bf91c93b72fc59793efca28d3"
+        "sha256": "10c67f40a9a6959b18c07dcb9e9708ef14a6d3884252e16b2ede76ab276621f8"
       },
       {
         "path": "crates/nmlt-temporal/src/open_refinement.rs",
@@ -74,7 +78,7 @@
       },
       {
         "path": "mechanization/lean/NMLT.lean",
-        "sha256": "4661e4aa143a399f3ba80a7faf46cb00ea376f385c8241bf9f919fa8f9538bb9"
+        "sha256": "5d390d388c3ac0ce2475b70b8e4762ac32556665d8defc565a1754a0d3123f6e"
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
@@ -113,6 +117,10 @@
         "sha256": "e422430035e4324cfd0db0fccbee50d8430b099f8ad15d8c5034d887dd95def7"
       },
       {
+        "path": "mechanization/lean/NMLT/Behavior/OpenSourceReadback.lean",
+        "sha256": "05deade4eb8121c70894b39fe1d323e76acfa8e1369847c27ca1191b076effc2"
+      },
+      {
         "path": "mechanization/lean/lakefile.toml",
         "sha256": "7220c1d89a71ab7a46568bfbaaef88037581edb650e228882c2397717638a33f"
       },
@@ -122,7 +130,7 @@
       },
       {
         "path": "mechanization/vectors/m11-open-congruence-v1.json",
-        "sha256": "731ef57a5393b932ac74187e9df51ed7e1f9afe93d3e0edc655fbd567ce978a4"
+        "sha256": "a4525c16e208a958e961a5f284ed518164490a24d3d48d98e51c9a39c195f98d"
       },
       {
         "path": "rust-toolchain.toml",
@@ -130,19 +138,19 @@
       },
       {
         "path": "schemas/open-congruence-evidence-v1.schema.json",
-        "sha256": "468b10b93574f89fcecbf38c29fa545f6afeb0fb91f694d60a5fc2cbe7017c7c"
+        "sha256": "144f41b48cf647cf9e61f9430d7ebaaa39f019b99fa87d3cea9159667da4a2c4"
       },
       {
         "path": "tools/check_m11_congruence_correspondence.py",
-        "sha256": "c902712085b691f4405d1c25f188d84386f3ae79b3a93b86244deaa6cb5d3f29"
+        "sha256": "e6fdeac2d75861997196ae5e99e10ef6344278523ee3f3988f85e72e9e856239"
       },
       {
         "path": "tools/check_open_congruence_evidence.py",
-        "sha256": "942f98f8f97c1ae3d8cb07294dfc01409f5ad73a606317a9303d51a4e16fa2bf"
+        "sha256": "6172845328b8417c86b1eb2911f0f497ab5efb58ea7fca1c8d50c32efcdf2678"
       }
     ],
-    "source_set_id": "nmlt-open-congruence-source-set-v1:sha256:03aa798e9a0d0bcf00d1a3b49614a795cfc99d86ec3080cbfb6ccea319b8cc37",
-    "vector_sha256": "731ef57a5393b932ac74187e9df51ed7e1f9afe93d3e0edc655fbd567ce978a4"
+    "source_set_id": "nmlt-open-congruence-source-set-v1:sha256:f7e2a1a7f2dce13e0c1d79d7bf6aefd125cd5fe35fd74a822fd6cb0a2c96cfca",
+    "vector_sha256": "a4525c16e208a958e961a5f284ed518164490a24d3d48d98e51c9a39c195f98d"
   },
   "statement": "Two independently checked finite open refinements lift through exact bijective wiring to a contract-checked product refinement, with finite reachable-state invariant transport, affine capability partitioning, monotone grades and rely discharge across every structural product-action case, plus a dictionary-readback-bound executable kernel contract.",
   "theorem_audits": [
@@ -312,6 +320,19 @@
       ],
       "handle": "NMLT.Behavior.OpenKernelReadback.referenced_id_in_dictionary",
       "role": "execution_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenSourceReadback.accepted_exact_readback_contract",
+      "role": "encoding_correspondence"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenSourceReadback.exact_readback_functional",
+      "role": "encoding_correspondence"
     }
   ],
   "toolchain": {

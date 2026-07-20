@@ -16,13 +16,14 @@ RESOURCE_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenResourceCongruence.
 ENCODING_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenEncodingCorrespondence.lean"
 EXECUTION_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean"
 READBACK_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenKernelReadback.lean"
+SOURCE_READBACK_LEAN = ROOT / "mechanization/lean/NMLT/Behavior/OpenSourceReadback.lean"
 
 
 def main() -> None:
     vectors = json.loads(VECTORS.read_text(encoding="utf-8"))
     assert vectors["schema_version"] == "nmlt-m11-open-congruence-v1"
     assert vectors["claim_class"] == "shared-vector-drift-control"
-    assert len(vectors["cases"]) == 15
+    assert len(vectors["cases"]) == 18
     rust = RUST.read_text(encoding="utf-8")
     lean = "".join(
         path.read_text(encoding="utf-8")
@@ -33,6 +34,7 @@ def main() -> None:
             ENCODING_LEAN,
             EXECUTION_LEAN,
             READBACK_LEAN,
+            SOURCE_READBACK_LEAN,
         )
     )
     seen: set[str] = set()
