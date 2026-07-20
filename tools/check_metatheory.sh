@@ -24,3 +24,6 @@ trap 'rm -f "$build_log"' EXIT
 ) 2>&1 | tee "$build_log"
 
 python3 "$repo_root/tools/check_open_composition_evidence.py" --lean-output "$build_log"
+python3 "$repo_root/tools/check_open_refinement_evidence.py" --lean-output "$build_log"
+python3 "$repo_root/tools/check_m11_congruence_correspondence.py"
+python3 "$repo_root/tools/check_open_congruence_evidence.py" --lean-output "$build_log"

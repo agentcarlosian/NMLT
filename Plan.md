@@ -6,7 +6,7 @@
   and M10's behavior/refinement and certificate seed are complete; M11-001a's
   finite open-composition safety seed is also complete, while broader
   promotion gates remain
-- Active focus: M11-001b contract-sound label-aware open refinement
+- Active focus: M11-001c full supported open-refinement congruence
 - Latest reboot-safe checkpoint:
   [2026-07-19 handoff](docs/reboot-handoff-2026-07-19.md)
 - Initial planning baseline: `cf4f006` (`chore: establish NMLT research scaffold`)
@@ -1024,15 +1024,51 @@ research phase, ordered by the eight-loop gap analysis:
     sets. The
     [M11 research note](docs/research-notes/m11-open-system-refinement-2026-07-19.md)
     records the archive gap, repaired sources, semantics, and limits.
-  - [ ] **M11-001b — Contract-sound label-aware refinement.** Replace symbolic
-    claim-name equality with canonical finite assumption and guarantee
-    predicates, add payload-type identity, contravariant assumption and
-    covariant guarantee preservation, and prove identity/composition for the
-    resulting open refinement relation.
+  - [x] **M11-001b — Contract-sound label-aware refinement.** Rust now uses
+    canonical finite nominal payload types and finite-set assumption/guarantee
+    predicates, exact payload identity, connected noncircular discharge,
+    complete injective visible label maps, contravariant assumptions, and
+    covariant guarantees. Lean independently models predicates as finite truth
+    tables and proves identity/composition for the resulting open refinement
+    relation without added axioms. Positive nonidentity, identity/composition,
+    variance, payload-substitution, and circular-discharge controls are bound
+    by the
+    [M11-001b evidence manifest](benchmarks/results/open-refinement/m11-001b-evidence.json).
+    No Rust/Lean correspondence or product congruence is claimed.
   - [ ] **M11-001c — Full supported congruence.** Prove two-sided lifting,
     composite contract soundness, invariant transport, and correspondence
     between the executable checker and Lean statement; then add capabilities,
     grades, rely conditions, and only later fairness/divergence obligations.
+    The finite safety core is implemented: Rust checks two local M11-001b
+    relations, both compatible products, a bijection of complete wiring edges,
+    the lifted product relation including remaining contracts, and optional
+    reachable-state invariant transport. Lean proves axiom-free label-mapped
+    two-sided lifting with complete port bijections, mapped wiring, direction
+    preservation, composite assumption/guarantee variance, and invariant
+    transport. A positive theorem uses different concrete and abstract port
+    types on both sides and performs a real synchronization.
+    The executable checker now additionally requires disjoint affine authority,
+    exact synchronized transfer, componentwise-improving grades, contravariant
+    rely facts, and peer-guarantee discharge. It emits a canonical finite-table
+    representation only for one exact nominal payload universe, total visible
+    maps, and surjective state maps. Lean proves the matching resource variance,
+    partition, transfer, grade, and rely rules. A bundled theorem now carries
+    operational, contract, and resource refinement through all eight structural
+    product-action constructors. Rust revalidates the isolated canonical
+    certificate with a normalized predicate; Lean's executable checker validates
+    the same finite profile against supplied typed `Fin` maps and proves a
+    general semantic contract for every accepted certificate. Exact evidence
+    and eleven positive/negative bindings are checked in `make ci`. The substage
+    now also executes an authoritative bounded, dependency-free Rust validation
+    kernel. Pinned Charon/Aeneas translate that kernel to Lean, where
+    `check_accepts_implies_contract` proves successful execution exposes the
+    refinement and whole-wiring obligations. The numeric certificate now carries
+    its sorted, duplicate-free atom dictionary; an independent Rust readback
+    checks every active atom, predicate, resource, map, and wiring field before
+    execution, while Lean specifies unique decoding and complete referenced-ID
+    coverage. The substage remains open because the rich `OpenSystem`-to-canonical
+    encoder and the Rust readback implementation are not verified extraction.
+    Fairness/divergence remains later work.
 - [ ] **M11-002 — Full source/behavior preservation.** Generalize the M10
   bridge from selected core actions to the entire supported M9 source fragment.
 - [ ] **M11-003 — Constructive temporal evidence.** Add implication,

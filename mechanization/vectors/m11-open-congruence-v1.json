@@ -1,0 +1,120 @@
+{
+  "schema_version": "nmlt-m11-open-congruence-v1",
+  "claim_class": "shared-vector-drift-control",
+  "limitations": [
+    "The vectors bind named Rust controls to Lean theorem, executable reference-checker, or counterexample handles.",
+    "Rust carries a canonical atom dictionary beside the bounded numeric certificate and independently reads the active kernel fields back before execution; the rich object-to-canonical-certificate encoder remains outside verified extraction.",
+    "The supported correspondence profile uses one exact nominal payload universe across all four components and rejects hidden action mappings."
+  ],
+  "cases": [
+    {
+      "id": "two-sided-positive",
+      "expected": "accepted",
+      "rust_control": "accepts_two_sided_contract_sound_congruence_and_invariant_transport",
+      "lean_handle": "OpenMappedCongruence.Examples.positiveMappedProduct"
+    },
+    {
+      "id": "connection-image-negative",
+      "expected": "rejected",
+      "rust_control": "rejects_connection_not_preserved_on_both_mapped_endpoints",
+      "lean_handle": "brokenWiringNotEquivalent"
+    },
+    {
+      "id": "abstract-extra-edge-negative",
+      "expected": "rejected",
+      "rust_control": "rejects_abstract_connection_outside_concrete_image",
+      "lean_handle": "brokenWiringBlocksPeerOnly"
+    },
+    {
+      "id": "incomplete-boundary-map-negative",
+      "expected": "rejected",
+      "rust_control": "rejects_incomplete_component_boundary_mapping",
+      "lean_handle": "OpenMappedCongruence.MappedRefinement.abstractPortCovered"
+    },
+    {
+      "id": "stale-invariant-domain-negative",
+      "expected": "rejected",
+      "rust_control": "rejects_stale_invariant_domain",
+      "lean_handle": "OpenMappedCongruence.MappedRefinement.transportInvariant",
+      "note": "Rust uses the stale-domain rejection to guard the invariant subject before transport."
+    },
+    {
+      "id": "grade-monotonicity-negative",
+      "expected": "rejected",
+      "rust_control": "rejects_nonmonotone_composite_grade",
+      "lean_handle": "OpenResourceCongruence.concreteGradeIncluded"
+    },
+    {
+      "id": "rely-discharge-negative",
+      "expected": "rejected",
+      "rust_control": "rejects_undischarged_rely_condition",
+      "lean_handle": "OpenResourceCongruence.synchronized_rely_discharged"
+    },
+    {
+      "id": "capability-partition-negative",
+      "expected": "rejected",
+      "rust_control": "rejects_shared_affine_capability_between_components",
+      "lean_handle": "OpenResourceCongruence.partition_preserved"
+    },
+    {
+      "id": "payload-universe-negative",
+      "expected": "rejected",
+      "rust_control": "rejects_nonuniform_payload_universe_at_correspondence_boundary",
+      "lean_handle": "OpenEncodingCorrespondence.brokenPayloadIdentity"
+    },
+    {
+      "id": "canonical-certificate-mutation-negative",
+      "expected": "rejected",
+      "rust_control": "canonical_certificate_validator_fails_closed_after_mutation",
+      "lean_handle": "OpenEncodingCorrespondence.duplicateActionMap"
+    },
+    {
+      "id": "kernel-dictionary-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "kernel_readback_rejects_dictionary_substitution",
+      "lean_handle": "OpenKernelExecution.check_accepts_implies_contract"
+    },
+    {
+      "id": "kernel-atom-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "kernel_readback_rejects_numeric_atom_substitution",
+      "lean_handle": "OpenKernelExecution.check_accepts_implies_contract"
+    },
+    {
+      "id": "kernel-action-omission-negative",
+      "expected": "rejected",
+      "rust_control": "kernel_readback_rejects_active_action_omission",
+      "lean_handle": "OpenKernelExecution.check_accepts_implies_contract"
+    },
+    {
+      "id": "kernel-capacity-negative",
+      "expected": "rejected",
+      "rust_control": "canonical_validator_rejects_kernel_capacity_overflow",
+      "lean_handle": "OpenKernelExecution.ExecutionContract.payloadWithinCapacity"
+    },
+    {
+      "id": "source-action-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "source_readback_rejects_action_name_substitution",
+      "lean_handle": "OpenSourceReadback.accepted_exact_readback_contract"
+    },
+    {
+      "id": "source-resource-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "source_readback_rejects_resource_substitution",
+      "lean_handle": "OpenSourceReadback.accepted_exact_readback_contract"
+    },
+    {
+      "id": "source-wiring-substitution-negative",
+      "expected": "rejected",
+      "rust_control": "source_readback_rejects_wiring_substitution",
+      "lean_handle": "OpenSourceReadback.accepted_exact_readback_contract"
+    },
+    {
+      "id": "all-structural-resource-actions-positive",
+      "expected": "accepted",
+      "rust_control": "accepts_two_sided_contract_sound_congruence_and_invariant_transport",
+      "lean_handle": "OpenResourceCongruence.liftResourceAwareParallel"
+    }
+  ]
+}

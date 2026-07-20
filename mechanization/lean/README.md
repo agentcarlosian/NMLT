@@ -1,7 +1,7 @@
 # NMLT Lean mechanization
 
 This directory is the pinned Lean 4.30.0 home for NMLT metatheory. It now
-contains five independent checked families:
+contains eight independent checked families:
 
 1. the Phase-1 counterexample to unconditional refinement congruence under
    synchronized composition;
@@ -15,7 +15,13 @@ contains five independent checked families:
    refinement laws, coinductive/up-to safety, and the selected typed-core bridge;
 5. M11 input/output/internal interfaces, assume/guarantee message predicates,
    global input receptiveness, exact wiring coverage, and bounded exact-action
-   composition congruence.
+   composition congruence;
+6. M11 finite truth-table contracts with exact payload identity,
+   assumption/guarantee variance, and open-refinement identity/composition;
+7. M11 affine-authority partition/transfer, product-grade, and rely/guarantee
+   resource-refinement rules; and
+8. an executable M11 canonical finite-table checker whose certificates carry
+   typed `Fin` state/action maps.
 
 The artifact intentionally depends only on Lean's standard library. It contains
 no `sorry`, project-defined axiom, `native_decide`, native-code proof, or
@@ -137,6 +143,31 @@ temporal/circular contracts, fairness, divergence, liveness, and Rust
 correspondence. The original unconditional counterexample remains imported as
 a permanent negative control.
 
+`NMLT/Behavior/OpenRefinement.lean` adds the M11-001b relation. Its contract
+predicates are Boolean truth tables over a finite index type; boundary label
+maps are complete and injective, payload identities must be equal, abstract
+assumptions are included in concrete assumptions, and concrete guarantees are
+included in abstract guarantees. Identity and composition are proved without
+added axioms. The executable Rust checker uses separately named finite enum
+types and finite accepted-value sets; correspondence between those
+representations and Lean is not proved. The
+[M11-001b evidence manifest](../../benchmarks/results/open-refinement/m11-001b-evidence.json)
+binds the theorem handles and Rust controls. Product congruence for this new
+relation is supplied at the abstract label-mapped level by
+`NMLT/Behavior/OpenMappedCongruence.lean`. That file combines operational
+simulation with complete typed port bijections, direction preservation,
+assumption contravariance, guarantee covariance, mapped whole wiring, and
+invariant transport. Its positive control uses distinct concrete and abstract
+port types on both sides and a real synchronization. Rust's string labels,
+payload hashes, and finite table encodings remain outside that theorem.
+`NMLT/Behavior/OpenResourceCongruence.lean` now defines one bundled
+`ResourceAwareMappedRefinement` and lifts it through all eight structural
+product-action constructors. `NMLT/Behavior/OpenEncodingCorrespondence.lean`
+checks the normalized finite certificate and proves a general semantic contract
+for every accepted certificate: common payload identity, surjective typed maps,
+pointwise contract/resource variance, authority narrowing, and whole wiring.
+The Rust encoder and normalized validator are not verified extraction.
+
 ## Axiom audit
 
 On the pinned toolchain, `lake build` reports:
@@ -151,6 +182,13 @@ On the pinned toolchain, `lake build` reports:
   and monotonicity audit, and `propext` alone for Boolean budget soundness.
 - no axioms for the audited M11 input-receptiveness, synchronization,
   wiring-isolation, step-congruence, and composition-congruence theorems.
+- no axioms for the audited M11-001b predicate inclusion, open-refinement
+  identity/composition, exact-payload, and variance declarations.
+- no axioms for the audited M11-001c mapped-wiring isolation, label-aware
+  product lifting, composite contract variance, and invariant transport
+  declarations.
+- `propext` and `Quot.sound` for the all-case resource lift and accepted
+  canonical-certificate semantic contract.
 
 These are Lean foundational dependencies, not NMLT assumptions. The audit
 rejects `sorryAx` and any project-defined axiom.

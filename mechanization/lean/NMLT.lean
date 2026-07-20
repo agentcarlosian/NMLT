@@ -10,4 +10,11 @@ import NMLT.Behavior.TemporalTyping
 import NMLT.Behavior.Refinement
 import NMLT.Behavior.Coinductive
 import NMLT.Behavior.OpenComposition
+import NMLT.Behavior.OpenRefinement
+import NMLT.Behavior.OpenMappedCongruence
+import NMLT.Behavior.OpenResourceCongruence
+import NMLT.Behavior.OpenEncodingCorrespondence
+import NMLT.Behavior.OpenKernelExecution
+import NMLT.Behavior.OpenKernelReadback
+import NMLT.Behavior.OpenSourceReadback
 import NMLT.Correspondence.M10Behavior

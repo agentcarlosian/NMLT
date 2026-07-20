@@ -88,25 +88,29 @@ intensional action/event/resource trace alongside any projection.
 
 ## Finite open-system composition
 
-The `open` module adds the first M11 safety-only profile. An `OpenSystem`
-bundles a finite graph with a total action interface and exact symbolic safety
-claims. `ActionSignature` classifies every graph action as input, output, or
-internal; boundary actions also name an opaque channel identity.
+The `open`, `open_contract`, and `open_refinement` modules implement the first
+two M11 safety-only profiles. An `OpenSystem` bundles a finite graph with a
+total action interface and finite contract. `ActionSignature` classifies every
+graph action as input, output, or internal; each boundary action also names an
+opaque channel and an exact nominal finite-enum payload type. Type identities
+use canonical, domain-separated SHA-256 encodings; changing the nominal name
+changes the identity even when variants are equal.
 
 `CompatibilityChecker` requires every declared input to be enabled at every
 model state. Each explicit connection must pair complementary input/output
-actions on the same channel and must be one-to-one. The current strict contract
-profile also requires every local assumption identifier to be discharged
-exactly once by the other component's identically named guarantee, whose
-provider must have no assumptions of its own. Mutual or otherwise conditional
-symbolic discharge is rejected. Identifier equality is only a declared link,
-not a proof of logical implication.
+actions on the same channel and exact payload type and must be one-to-one.
+Every input has one canonical accepted-value-set assumption and every output
+has one guarantee. An explicit link must name a connected consumer input and
+provider output; the guarantee discharges the assumption only when its finite
+set is included in the assumption set. Each assumption is discharged exactly
+once and its provider must have no assumptions, so mutual or otherwise
+conditional discharge is rejected.
 
 `compose_open_systems` constructs the cartesian finite product. Connected
 actions synchronize and become internal; they cannot also interleave.
 Unconnected actions and state fields receive deterministic `left::` or
 `right::` namespaces. The construction preserves remaining external actions
-but the strict executable profile closes all symbolic assumptions. Checked
+but the strict executable profile closes all assumptions. Checked
 arithmetic and default caps of 100,000 states and 1,000,000 generated
 transition candidates make oversized products fail explicitly. A conservative
 50,000,000 work-item preflight bounds the module's own compatibility and
@@ -122,20 +126,78 @@ abstract connection could otherwise block a peer-only action that remains
 independent in the concrete product. Only after those checks pass does it build
 and check the lifted product refinement.
 
+`OpenRefinementChecker` is the M11-001b relation. It combines the existing
+finite forward simulation with a total visible-boundary map. Boundary actions
+cannot be hidden, their map is injective and covers every abstract boundary,
+and polarity, channel, and exact payload identity are preserved. For mapped
+inputs it checks `A_abstract ⊆ A_concrete`; for mapped outputs it checks
+`G_concrete ⊆ G_abstract`. `identity_refinement_spec` and
+`compose_refinement_specs` construct identity and transitive witnesses. This
+is finite set inclusion, not payload subtyping or representation conversion.
+
+`TwoSidedCongruenceChecker` is the finite M11-001c core. It independently
+checks both component refinements and both composition specifications, requires
+the concrete and abstract wiring edges to correspond bijectively after applying
+both label maps, constructs the two products, and checks the lifted product with
+`OpenRefinementChecker`. This final check covers every boundary contract that
+remains exposed after synchronization. An optional Boolean truth table over the
+abstract product states checks an abstract reachable-state invariant and its
+pullback along the lifted state map; a stale table length is rejected before
+indexing. The same acceptance path now checks a required resource profile:
+component authority cannot widen, component stores are disjoint, synchronized
+transfers match exactly without fan-out, concrete action grades are no greater
+than their abstract bounds, concrete rely sets do not strengthen, and every
+connected input rely is discharged by the peer output's guaranteed facts.
+
 Lean separately proves structural product congruence for an abstract
 exact-action, state-surjective profile from `StrongRefinement` and equality of
 the complete wiring relations. Predicate-contract compatibility and global
 input receptiveness establish a separate composability result and product
 receptiveness; they are not premises needed by the structural step-lifting
 half. Lean wiring may be an arbitrary relation, whereas the Rust profile is
-one-to-one. The Rust and Lean representations are not yet connected by a
-correspondence theorem. Neither artifact covers temporal contract satisfaction,
-payload subtyping, affine capabilities, grades, fairness, hidden divergence, or
-liveness transport. The claim-specific
+one-to-one. Lean's separate M11-001b relation represents a finite predicate as
+a truth table and proves exact-payload, variance, identity, and composition
+properties without added axioms. `OpenMappedCongruence.lean` now combines the
+operational and contract sides: it proves two-sided product lifting through
+complete typed boundary bijections and mapped wiring, transports direction,
+contravariant assumptions, covariant guarantees, and invariants, and has a
+positive synchronized instance whose concrete and abstract port types differ
+on both sides. These declarations use no axioms. `OpenResourceCongruence.lean`
+adds authority partition, exact transfer, grade, and rely/guarantee variance,
+then bundles those obligations with operational/contract refinement over all
+eight structural product-action constructors. `OpenEncodingCorrespondence.lean`
+is an executable certificate checker: raw natural/Boolean tables are accepted
+only when they decode to supplied typed `Fin` maps, cover the abstract domains,
+preserve whole wiring, and satisfy contract/resource variance. Its general
+implementation-contract theorem exports surjective typed maps, pointwise
+action/resource compatibility, authority narrowing, common payload identity,
+and whole-wiring equivalence; the standard `propext` and `Quot.sound`
+dependencies remain explicit. Rust separately enforces one exact nominal
+payload universe, emits the same profile, and revalidates the isolated
+certificate before accepting. The normalized bounded kernel is translated by
+pinned Charon/Aeneas, and Lean proves that a successful execution implies the
+two refinement checks and whole-wiring check. This is stronger than drift-only
+vectors. The numeric certificate now carries the sorted atom dictionary, and an
+independent readback rejects dictionary/ID substitution, active-action omission,
+and capacity overflow before kernel execution. Lean specifies unique dictionary
+decoding and complete coverage of every referenced numeric atom. The rich
+system-to-canonical encoder and Rust readback implementation are not verified
+extraction. The proved grade
+projection retains the numeric uncertainty upper bound; Rust uncertainty
+family/profile identity remains enforced separately by `nmlt-grades`. Neither
+artifact covers temporal contract
+satisfaction, payload subtyping, fairness, hidden divergence, or liveness
+transport. The claim-specific
 [M11 evidence manifest](../benchmarks/results/open-composition/m11-001a-evidence.json)
 binds the frozen theorem handles, exact positive and negative controls, source
-set, Lean toolchain, checkers, and audited axiom sets. See the
+set, Lean toolchain, checkers, and audited axiom sets. The separate
+[M11-001b manifest](../benchmarks/results/open-refinement/m11-001b-evidence.json)
+binds the finite-contract refinement sources and controls. The
+[M11-001c manifest](../benchmarks/results/open-congruence/m11-001c-evidence.json)
+binds the finite two-sided core. See the
 [M11 research note](research-notes/m11-open-system-refinement-2026-07-19.md)
+plus the [M11-001b profile note](research-notes/m11-contract-refinement-2026-07-19.md)
+and [M11-001c implementation note](research-notes/m11-two-sided-congruence-2026-07-19.md)
 and [RFC 0008](../rfcs/0008-mechanization-and-compositional-refinement.md).
 
 ## Runtime journals

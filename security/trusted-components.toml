@@ -1,4 +1,4 @@
-manifest_version = "1.9.0"
+manifest_version = "1.14.0"
 status = "pre-alpha"
 reviewed = "2026-07-19"
 identity_requirement = "Every assurance manifest binds the exact source/source set, engine source set and executable, and each relied-on component by a content address; generic, graded, and M11 metatheory evidence also bind the exact bytes of this inventory, which names roles but is not itself a digest ledger."
@@ -201,6 +201,41 @@ trusted = [
   "tools.open_composition_evidence_checker",
 ]
 
+[[claim_profiles]]
+name = "m11_open_refinement_metatheory"
+result_ceiling = "proved_for_m11_001b_finite_contract_open_refinement_statements_only"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "toolchain.lean",
+  "toolchain.python3",
+  "crypto.sha256",
+  "ci.lean_action",
+  "nmlt_temporal.kernel",
+  "nmlt_lean.open_refinement_statements",
+  "lean.kernel_and_nanoda",
+  "tools.metatheory_policy_checker",
+  "tools.open_refinement_evidence_checker",
+]
+
+[[claim_profiles]]
+name = "m11_two_sided_open_congruence"
+result_ceiling = "finite_resource_aware_two_sided_instance_and_table_reference_checked_no_verified_rust_extraction_theorem"
+trusted = [
+  "host.hardware_os_filesystem",
+  "toolchain.rust",
+  "toolchain.lean",
+  "toolchain.python3",
+  "crypto.sha256",
+  "ci.lean_action",
+  "nmlt_temporal.kernel",
+  "nmlt_grades.kernel",
+  "nmlt_lean.open_composition_statements",
+  "lean.kernel_and_nanoda",
+  "tools.metatheory_policy_checker",
+  "tools.open_congruence_evidence_checker",
+]
+
 [[components]]
 id = "host.hardware_os_filesystem"
 paths = []
@@ -366,10 +401,15 @@ paths = [
   "crates/nmlt-temporal/src/temporal.rs",
   "crates/nmlt-temporal/src/observation.rs",
   "crates/nmlt-temporal/src/open.rs",
+  "crates/nmlt-temporal/src/open_contract.rs",
+  "crates/nmlt-temporal/src/open_refinement.rs",
+  "crates/nmlt-temporal/src/open_congruence.rs",
+  "crates/nmlt-temporal/src/open_encoding.rs",
+  "crates/nmlt-temporal/src/open_resources.rs",
   "crates/nmlt-temporal/src/refinement.rs",
   "crates/nmlt-temporal/src/runtime.rs",
 ]
-role = "Construct finite graphs/lassos, interpret explicit fairness and hiding, check finite simulation and state/transition/work-bounded strict open-system composition instances, and classify supplied traces. Work items bound explicit module loops, not wall-clock or byte costs. Open composition remains safety-only and has no Rust/Lean correspondence theorem."
+role = "Construct finite graphs/lassos, interpret explicit fairness and hiding, check finite simulation and state/transition/work-bounded strict open-system composition plus resource-aware two-sided congruence instances, emit canonical finite-table encodings, and classify supplied traces. Work items bound explicit module loops, not wall-clock or byte costs. Open composition remains safety-only; the Lean table checker is a reference checker, not verified Rust extraction."
 
 [[components]]
 id = "nmlt_verify.vc_kernel"
@@ -420,6 +460,15 @@ paths = [
   "mechanization/lean/NMLT.lean",
   "mechanization/lean/NMLT/Behavior/Coinductive.lean",
   "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
+  "mechanization/lean/NMLT/Behavior/OpenMappedCongruence.lean",
+  "mechanization/lean/NMLT/Behavior/OpenResourceCongruence.lean",
+  "mechanization/lean/NMLT/Behavior/OpenEncodingCorrespondence.lean",
+  "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean",
+  "mechanization/lean/NMLT/Behavior/OpenKernelReadback.lean",
+  "mechanization/lean/NMLT/Behavior/OpenSourceReadback.lean",
+  "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
+  "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Types.lean",
+  "mechanization/lean/NMLT/Behavior/OpenRefinement.lean",
   "mechanization/lean/NMLT/Behavior/Refinement.lean",
   "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
   "mechanization/lean/NMLT/Core/TypedCore.lean",
@@ -439,12 +488,27 @@ id = "nmlt_lean.open_composition_statements"
 paths = [
   "mechanization/lean/NMLT.lean",
   "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
+  "mechanization/lean/NMLT/Behavior/OpenMappedCongruence.lean",
+  "mechanization/lean/NMLT/Behavior/OpenResourceCongruence.lean",
+  "mechanization/lean/NMLT/Behavior/OpenEncodingCorrespondence.lean",
+  "mechanization/lean/NMLT/Grades/Algebra.lean",
   "mechanization/lean/NMLT/Behavior/Refinement.lean",
   "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
   "mechanization/lean/NMLT/Core/Transition.lean",
   "mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean",
 ]
-role = "Exact M11 open-composition definitions, dependency closure, positive controls, and retained weak-congruence counterexample; no Rust correspondence is claimed."
+role = "Exact M11 open-composition and mapped/resource congruence definitions, including all structural product-action cases and the proof-carrying canonical-certificate contract; no verified Rust extraction theorem is claimed."
+
+[[components]]
+id = "nmlt_lean.open_refinement_statements"
+paths = [
+  "mechanization/lean/NMLT.lean",
+  "mechanization/lean/NMLT/Behavior/OpenRefinement.lean",
+  "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
+  "mechanization/lean/NMLT/Behavior/Refinement.lean",
+  "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
+]
+role = "Exact M11-001b finite-predicate, payload-identity, variance, identity, and composition statements; product congruence and Rust correspondence are excluded."
 
 [[components]]
 id = "tools.canonical_examples"
@@ -516,6 +580,30 @@ paths = [
   "tools/validate_benchmark_integrity.py",
 ]
 role = "Recompute the exact M11 open-composition source and manifest identities, require the frozen theorem/control handles and limitations, and match their declared axiom sets against pinned Lean build output."
+
+[[components]]
+id = "tools.open_refinement_evidence_checker"
+paths = [
+  "tools/check_open_refinement_evidence.py",
+  "schemas/open-refinement-evidence-v1.schema.json",
+  "tools/validate_benchmark_integrity.py",
+]
+role = "Recompute exact M11-001b Rust/Lean source and manifest identities, require finite-contract theorem and executable control handles, and reject nonempty or missing axiom audits."
+
+[[components]]
+id = "tools.open_congruence_evidence_checker"
+paths = [
+  "tools/check_open_congruence_evidence.py",
+  "tools/check_m11_congruence_correspondence.py",
+  "schemas/open-congruence-evidence-v1.schema.json",
+  "mechanization/vectors/m11-open-congruence-v1.json",
+  "crates/nmlt-open-kernel/src/lib.rs",
+  "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Types.lean",
+  "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
+  "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean",
+  "tools/validate_benchmark_integrity.py",
+]
+role = "Recompute exact M11-001c congruence source, all-case resource theorem, canonical-certificate contract, pinned Aeneas-generated execution theorem, dictionary-readback specification, controls, vector, and limitations; the rich encoder and Rust readback implementation remain outside verified extraction."
 
 [[components]]
 id = "build.ci_release"

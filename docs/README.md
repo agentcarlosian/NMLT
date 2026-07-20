@@ -26,9 +26,11 @@ commands, and local research-archive state; `Plan.md` remains authoritative.
 13. [M9 bidirectional elaboration research note](research-notes/m9-bidirectional-elaboration-2026-07-19.md)
 14. [M10 behavior, refinement, and certificate research](research-notes/m10-behavior-refinement-and-certificates-2026-07-19.md)
 15. [M11 open-system refinement research](research-notes/m11-open-system-refinement-2026-07-19.md)
-16. [Temporal, refinement, and open-system checker](temporal-refinement.md)
-17. [Independent reproduction record](reproduction-2026-07-18.md)
-18. [Reboot handoff and continuation point](reboot-handoff-2026-07-19.md)
+16. [M11 contract-refinement research](research-notes/m11-contract-refinement-2026-07-19.md)
+17. [M11 two-sided congruence implementation note](research-notes/m11-two-sided-congruence-2026-07-19.md)
+18. [Temporal, refinement, and open-system checker](temporal-refinement.md)
+19. [Independent reproduction record](reproduction-2026-07-18.md)
+20. [Reboot handoff and continuation point](reboot-handoff-2026-07-19.md)
 
 Supporting material includes the [competitor matrix](competitor-matrix.md),
 [glossary](glossary.md), [source corpus](source-corpus.md), and

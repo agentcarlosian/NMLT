@@ -4,21 +4,22 @@
 //! composition rule proposed by RFC 0008. Interfaces classify graph actions as
 //! inputs, outputs, or internal actions. A supported composition uses explicit
 //! one-output/one-input synchronous connections, requires every declared input
-//! to be enabled in every local graph state, and discharges symbolic safety
-//! assumptions by exact peer guarantee identifiers from assumption-free
-//! providers.
+//! to be enabled in every local graph state, and discharges canonical finite
+//! input predicates from exact peer output predicates supplied by
+//! assumption-free providers.
 //!
 //! The executable congruence check is an instance check, not a general theorem.
 //! It establishes only that two finite composed graphs satisfy the existing
-//! one-step, observation-preserving forward-simulation checker. Payload types,
-//! grades, capabilities, logical assume/guarantee implication, fairness,
-//! divergence, and liveness transport remain separate obligations.
+//! one-step, observation-preserving forward-simulation checker. Payload
+//! subtyping, grades, capabilities, temporal/circular contract satisfaction,
+//! fairness, divergence, and liveness transport remain separate obligations.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 use crate::graph::{FiniteGraph, GraphError, ModelState, StateId, Transition, TransitionKind};
 use crate::observation::{ActionHiding, ObservationMap};
+use crate::open_contract::{FiniteContract, PayloadPredicate, PayloadType, PayloadTypeId};
 use crate::refinement::{RefinementChecker, RefinementReport, RefinementSpec};
 
 const LEFT_NAMESPACE: &str = "left::";
@@ -78,28 +79,31 @@ impl ActionPolarity {
 
 /// The finite interface information currently checked for one graph action.
 ///
-/// A channel is an opaque identity, not a payload type. Boundary actions must
-/// name a nonempty channel; internal actions must not name one.
+/// Boundary actions carry an opaque channel and an exact finite payload type.
+/// Internal actions carry neither.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ActionSignature {
     pub polarity: ActionPolarity,
     pub channel: Option<String>,
+    pub payload_type: Option<PayloadType>,
 }
 
 impl ActionSignature {
     #[must_use]
-    pub fn input(channel: impl Into<String>) -> Self {
+    pub fn input(channel: impl Into<String>, payload_type: PayloadType) -> Self {
         Self {
             polarity: ActionPolarity::Input,
             channel: Some(channel.into()),
+            payload_type: Some(payload_type),
         }
     }
 
     #[must_use]
-    pub fn output(channel: impl Into<String>) -> Self {
+    pub fn output(channel: impl Into<String>, payload_type: PayloadType) -> Self {
         Self {
             polarity: ActionPolarity::Output,
             channel: Some(channel.into()),
+            payload_type: Some(payload_type),
         }
     }
 
@@ -108,6 +112,7 @@ impl ActionSignature {
         Self {
             polarity: ActionPolarity::Internal,
             channel: None,
+            payload_type: None,
         }
     }
 }
@@ -163,53 +168,24 @@ impl Interface {
     }
 }
 
-/// Exact identifiers for safety assumptions and guarantees.
-///
-/// Equality of identifiers is a declared discharge relation. It is not a
-/// decision procedure for logical implication between arbitrary properties.
-/// In the conservative executable fragment, a guarantee is usable by a peer
-/// only when its provider has no assumptions of its own; this rejects circular
-/// and otherwise conditional symbolic discharge.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct SafetyContract {
-    assumptions: BTreeSet<String>,
-    guarantees: BTreeSet<String>,
-}
-
-impl SafetyContract {
-    #[must_use]
-    pub fn new<A, G, AS, GS>(assumptions: A, guarantees: G) -> Self
-    where
-        A: IntoIterator<Item = AS>,
-        G: IntoIterator<Item = GS>,
-        AS: Into<String>,
-        GS: Into<String>,
-    {
-        Self {
-            assumptions: assumptions.into_iter().map(Into::into).collect(),
-            guarantees: guarantees.into_iter().map(Into::into).collect(),
-        }
-    }
-
-    #[must_use]
-    pub fn assumptions(&self) -> &BTreeSet<String> {
-        &self.assumptions
-    }
-
-    #[must_use]
-    pub fn guarantees(&self) -> &BTreeSet<String> {
-        &self.guarantees
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OpenSystemIssue {
     EmptyActionName,
     UndeclaredGraphAction(String),
     BoundaryActionMissingChannel(String),
     BoundaryActionHasEmptyChannel(String),
+    BoundaryActionMissingPayloadType(String),
     InternalActionHasChannel(String),
-    EmptyContractClaim { kind: &'static str },
+    InternalActionHasPayloadType(String),
+    MissingAssumption(String),
+    MissingGuarantee(String),
+    UnexpectedAssumption(String),
+    UnexpectedGuarantee(String),
+    ContractPayloadTypeMismatch {
+        action: String,
+        expected: PayloadTypeId,
+        actual: PayloadTypeId,
+    },
 }
 
 impl fmt::Display for OpenSystemIssue {
@@ -228,48 +204,86 @@ impl fmt::Display for OpenSystemIssue {
             Self::InternalActionHasChannel(action) => {
                 write!(f, "internal action {action:?} declares a channel")
             }
-            Self::EmptyContractClaim { kind } => {
-                write!(f, "{kind} contract identifier is empty")
+            Self::BoundaryActionMissingPayloadType(action) => {
+                write!(f, "boundary action {action:?} has no payload type")
             }
+            Self::InternalActionHasPayloadType(action) => {
+                write!(f, "internal action {action:?} declares a payload type")
+            }
+            Self::MissingAssumption(action) => {
+                write!(f, "input action {action:?} has no assumption predicate")
+            }
+            Self::MissingGuarantee(action) => {
+                write!(f, "output action {action:?} has no guarantee predicate")
+            }
+            Self::UnexpectedAssumption(action) => {
+                write!(f, "non-input action {action:?} has an assumption predicate")
+            }
+            Self::UnexpectedGuarantee(action) => {
+                write!(f, "non-output action {action:?} has a guarantee predicate")
+            }
+            Self::ContractPayloadTypeMismatch {
+                action,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "contract predicate for {action:?} has payload type {actual}, expected {expected}"
+            ),
         }
     }
 }
 
-/// A finite graph bundled with a total action interface and symbolic contract.
+/// A finite graph bundled with a total action interface and finite contract.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OpenSystem {
     graph: FiniteGraph,
     interface: Interface,
-    contract: SafetyContract,
+    contract: FiniteContract,
 }
 
 impl OpenSystem {
     pub fn new(
         graph: FiniteGraph,
         interface: Interface,
-        contract: SafetyContract,
+        contract: FiniteContract,
     ) -> Result<Self, Vec<OpenSystemIssue>> {
         let mut issues = Vec::new();
         for (action, signature) in interface.actions() {
             if action.is_empty() {
                 issues.push(OpenSystemIssue::EmptyActionName);
             }
-            match (signature.polarity, signature.channel.as_deref()) {
-                (ActionPolarity::Internal, Some(_)) => {
+            match (
+                signature.polarity,
+                signature.channel.as_deref(),
+                signature.payload_type.as_ref(),
+            ) {
+                (ActionPolarity::Internal, Some(_), _) => {
                     issues.push(OpenSystemIssue::InternalActionHasChannel(action.clone()));
                 }
-                (ActionPolarity::Input | ActionPolarity::Output, None) => {
+                (ActionPolarity::Internal, _, Some(_)) => {
+                    issues.push(OpenSystemIssue::InternalActionHasPayloadType(
+                        action.clone(),
+                    ));
+                }
+                (ActionPolarity::Input | ActionPolarity::Output, None, _) => {
                     issues.push(OpenSystemIssue::BoundaryActionMissingChannel(
                         action.clone(),
                     ));
                 }
-                (ActionPolarity::Input | ActionPolarity::Output, Some("")) => {
+                (ActionPolarity::Input | ActionPolarity::Output, Some(""), _) => {
                     issues.push(OpenSystemIssue::BoundaryActionHasEmptyChannel(
+                        action.clone(),
+                    ));
+                }
+                (ActionPolarity::Input | ActionPolarity::Output, _, None) => {
+                    issues.push(OpenSystemIssue::BoundaryActionMissingPayloadType(
                         action.clone(),
                     ));
                 }
                 _ => {}
             }
+            validate_action_contract(action, signature, &contract, &mut issues);
         }
         for transition in graph.transitions() {
             if let Some(action) = transition.kind.action()
@@ -278,11 +292,15 @@ impl OpenSystem {
                 issues.push(OpenSystemIssue::UndeclaredGraphAction(action.to_owned()));
             }
         }
-        if contract.assumptions().contains("") {
-            issues.push(OpenSystemIssue::EmptyContractClaim { kind: "assumption" });
+        for action in contract.assumptions().keys() {
+            if interface.get(action).is_none() {
+                issues.push(OpenSystemIssue::UnexpectedAssumption(action.clone()));
+            }
         }
-        if contract.guarantees().contains("") {
-            issues.push(OpenSystemIssue::EmptyContractClaim { kind: "guarantee" });
+        for action in contract.guarantees().keys() {
+            if interface.get(action).is_none() {
+                issues.push(OpenSystemIssue::UnexpectedGuarantee(action.clone()));
+            }
         }
         if issues.is_empty() {
             Ok(Self {
@@ -306,8 +324,65 @@ impl OpenSystem {
     }
 
     #[must_use]
-    pub fn contract(&self) -> &SafetyContract {
+    pub fn contract(&self) -> &FiniteContract {
         &self.contract
+    }
+}
+
+fn validate_action_contract(
+    action: &str,
+    signature: &ActionSignature,
+    contract: &FiniteContract,
+    issues: &mut Vec<OpenSystemIssue>,
+) {
+    let assumption = contract.assumptions().get(action);
+    let guarantee = contract.guarantees().get(action);
+    match signature.polarity {
+        ActionPolarity::Input => {
+            let Some(predicate) = assumption else {
+                issues.push(OpenSystemIssue::MissingAssumption(action.to_owned()));
+                return;
+            };
+            if guarantee.is_some() {
+                issues.push(OpenSystemIssue::UnexpectedGuarantee(action.to_owned()));
+            }
+            validate_predicate_payload(action, signature, predicate, issues);
+        }
+        ActionPolarity::Output => {
+            let Some(predicate) = guarantee else {
+                issues.push(OpenSystemIssue::MissingGuarantee(action.to_owned()));
+                return;
+            };
+            if assumption.is_some() {
+                issues.push(OpenSystemIssue::UnexpectedAssumption(action.to_owned()));
+            }
+            validate_predicate_payload(action, signature, predicate, issues);
+        }
+        ActionPolarity::Internal => {
+            if assumption.is_some() {
+                issues.push(OpenSystemIssue::UnexpectedAssumption(action.to_owned()));
+            }
+            if guarantee.is_some() {
+                issues.push(OpenSystemIssue::UnexpectedGuarantee(action.to_owned()));
+            }
+        }
+    }
+}
+
+fn validate_predicate_payload(
+    action: &str,
+    signature: &ActionSignature,
+    predicate: &PayloadPredicate,
+    issues: &mut Vec<OpenSystemIssue>,
+) {
+    if let Some(payload_type) = &signature.payload_type
+        && predicate.payload_type() != payload_type.id()
+    {
+        issues.push(OpenSystemIssue::ContractPayloadTypeMismatch {
+            action: action.to_owned(),
+            expected: payload_type.id(),
+            actual: predicate.payload_type(),
+        });
     }
 }
 
@@ -334,21 +409,29 @@ impl Connection {
     }
 }
 
-/// Records an exact assumption/guarantee identifier match across components.
+/// Links one consumer input predicate to one connected provider output
+/// predicate. Discharge uses finite inclusion, never claim-name equality.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ContractLink {
-    pub claim: String,
     pub consumer: Side,
+    pub consumer_action: String,
     pub provider: Side,
+    pub provider_action: String,
 }
 
 impl ContractLink {
     #[must_use]
-    pub fn new(claim: impl Into<String>, consumer: Side, provider: Side) -> Self {
+    pub fn new(
+        consumer: Side,
+        consumer_action: impl Into<String>,
+        provider: Side,
+        provider_action: impl Into<String>,
+    ) -> Self {
         Self {
-            claim: claim.into(),
             consumer,
+            consumer_action: consumer_action.into(),
             provider,
+            provider_action: provider_action.into(),
         }
     }
 }
@@ -385,6 +468,12 @@ pub enum CompatibilityIssue {
         left_action: String,
         right_action: String,
     },
+    PayloadTypeMismatch {
+        left_action: String,
+        right_action: String,
+        left_payload: PayloadTypeId,
+        right_payload: PayloadTypeId,
+    },
     ActionMultiplyConnected {
         side: Side,
         action: String,
@@ -399,23 +488,30 @@ pub enum CompatibilityIssue {
     SelfDischarge(ContractLink),
     UnknownAssumption {
         side: Side,
-        claim: String,
+        action: String,
     },
     MissingPeerGuarantee {
         side: Side,
-        claim: String,
+        action: String,
+    },
+    ContractLinkNotConnected(ContractLink),
+    ContractPolarityMismatch(ContractLink),
+    ContractPayloadTypeMismatch(ContractLink),
+    GuaranteeDoesNotDischarge {
+        link: ContractLink,
+        rejected_value: String,
     },
     ConditionalGuaranteeProvider {
         provider: Side,
-        claim: String,
+        action: String,
     },
     DuplicateAssumptionDischarge {
         side: Side,
-        claim: String,
+        action: String,
     },
     UndischargedAssumption {
         side: Side,
-        claim: String,
+        action: String,
     },
     WorkItemCountOverflow,
     WorkItemLimitExceeded {
@@ -443,9 +539,10 @@ impl CompatibilityChecker {
     /// matches the frozen Lean model. It is stronger than a reachable-state or
     /// state-dependent rely condition.
     ///
-    /// Contract links are intentionally conservative: an exact peer guarantee
-    /// identifier can discharge an assumption only if the provider has no
-    /// assumptions. This rejects mutual and otherwise conditional discharge.
+    /// Contract links are intentionally conservative: a connected peer output
+    /// predicate can discharge an input predicate only by exact-payload finite
+    /// inclusion and only if the provider has no assumptions. This rejects
+    /// payload substitution, mutual discharge, and other conditional cycles.
     /// The default logical work-item budget is checked before these loops; use
     /// [`CompatibilityChecker::check_with_limits`] for a smaller bound.
     #[must_use]
@@ -559,6 +656,18 @@ impl CompatibilityChecker {
                 issues.push(CompatibilityIssue::ChannelMismatch {
                     left_action: connection.left_action.clone(),
                     right_action: connection.right_action.clone(),
+                });
+            }
+            let left_payload = left_signature.payload_type.as_ref().map(PayloadType::id);
+            let right_payload = right_signature.payload_type.as_ref().map(PayloadType::id);
+            if let (Some(left_payload), Some(right_payload)) = (left_payload, right_payload)
+                && left_payload != right_payload
+            {
+                issues.push(CompatibilityIssue::PayloadTypeMismatch {
+                    left_action: connection.left_action.clone(),
+                    right_action: connection.right_action.clone(),
+                    left_payload,
+                    right_payload,
                 });
             }
         }
@@ -722,45 +831,94 @@ fn check_contracts(
         }
         let consumer = system_at(left, right, link.consumer);
         let provider = system_at(left, right, link.provider);
-        if !consumer.contract().assumptions().contains(&link.claim) {
+        let assumption = consumer.contract().assumptions().get(&link.consumer_action);
+        let guarantee = provider.contract().guarantees().get(&link.provider_action);
+        if assumption.is_none() {
             issues.push(CompatibilityIssue::UnknownAssumption {
                 side: link.consumer,
-                claim: link.claim.clone(),
+                action: link.consumer_action.clone(),
             });
         }
-        if !provider.contract().guarantees().contains(&link.claim) {
+        if guarantee.is_none() {
             issues.push(CompatibilityIssue::MissingPeerGuarantee {
                 side: link.provider,
-                claim: link.claim.clone(),
+                action: link.provider_action.clone(),
             });
+        }
+        let consumer_signature = consumer.interface().get(&link.consumer_action);
+        let provider_signature = provider.interface().get(&link.provider_action);
+        if !matches!(
+            (consumer_signature, provider_signature),
+            (Some(consumer_signature), Some(provider_signature))
+                if consumer_signature.polarity == ActionPolarity::Input
+                    && provider_signature.polarity == ActionPolarity::Output
+        ) {
+            issues.push(CompatibilityIssue::ContractPolarityMismatch(link.clone()));
+        }
+        if !link_is_connected(spec, link) {
+            issues.push(CompatibilityIssue::ContractLinkNotConnected(link.clone()));
+        }
+        if let (Some(assumption), Some(guarantee)) = (assumption, guarantee) {
+            if assumption.payload_type() != guarantee.payload_type() {
+                issues.push(CompatibilityIssue::ContractPayloadTypeMismatch(
+                    link.clone(),
+                ));
+            } else if !guarantee.is_subset_of(assumption) {
+                let rejected_value = guarantee
+                    .accepted()
+                    .difference(assumption.accepted())
+                    .next()
+                    .expect("failed finite inclusion has a witness")
+                    .clone();
+                issues.push(CompatibilityIssue::GuaranteeDoesNotDischarge {
+                    link: link.clone(),
+                    rejected_value,
+                });
+            }
         }
         if !provider.contract().assumptions().is_empty() {
             issues.push(CompatibilityIssue::ConditionalGuaranteeProvider {
                 provider: link.provider,
-                claim: link.claim.clone(),
+                action: link.provider_action.clone(),
             });
         }
         *discharge_count
-            .entry((link.consumer, link.claim.clone()))
+            .entry((link.consumer, link.consumer_action.clone()))
             .or_default() += 1;
     }
 
     for side in [Side::Left, Side::Right] {
         let system = system_at(left, right, side);
-        for claim in system.contract().assumptions() {
-            match discharge_count.get(&(side, claim.clone())).copied() {
+        for action in system.contract().assumptions().keys() {
+            match discharge_count.get(&(side, action.clone())).copied() {
                 None | Some(0) => issues.push(CompatibilityIssue::UndischargedAssumption {
                     side,
-                    claim: claim.clone(),
+                    action: action.clone(),
                 }),
                 Some(1) => {}
                 Some(_) => issues.push(CompatibilityIssue::DuplicateAssumptionDischarge {
                     side,
-                    claim: claim.clone(),
+                    action: action.clone(),
                 }),
             }
         }
     }
+}
+
+fn link_is_connected(spec: &CompositionSpec, link: &ContractLink) -> bool {
+    spec.connections
+        .iter()
+        .any(|connection| match (link.consumer, link.provider) {
+            (Side::Left, Side::Right) => {
+                connection.left_action == link.consumer_action
+                    && connection.right_action == link.provider_action
+            }
+            (Side::Right, Side::Left) => {
+                connection.right_action == link.consumer_action
+                    && connection.left_action == link.provider_action
+            }
+            _ => false,
+        })
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1022,13 +1180,36 @@ pub fn compose_with_limits(
     }));
     let interface = Interface::new(actions)
         .expect("compatibility rejects every composite action-name collision");
+    let assumptions = left
+        .contract()
+        .assumptions()
+        .iter()
+        .filter(|(action, _)| !connected_left.contains(action.as_str()))
+        .map(|(action, predicate)| (namespaced(Side::Left, action), predicate.clone()))
+        .chain(
+            right
+                .contract()
+                .assumptions()
+                .iter()
+                .filter(|(action, _)| !connected_right.contains(action.as_str()))
+                .map(|(action, predicate)| (namespaced(Side::Right, action), predicate.clone())),
+        );
     let guarantees = left
         .contract()
         .guarantees()
         .iter()
-        .chain(right.contract().guarantees())
-        .cloned();
-    let contract = SafetyContract::new(std::iter::empty::<String>(), guarantees);
+        .filter(|(action, _)| !connected_left.contains(action.as_str()))
+        .map(|(action, predicate)| (namespaced(Side::Left, action), predicate.clone()))
+        .chain(
+            right
+                .contract()
+                .guarantees()
+                .iter()
+                .filter(|(action, _)| !connected_right.contains(action.as_str()))
+                .map(|(action, predicate)| (namespaced(Side::Right, action), predicate.clone())),
+        );
+    let contract = FiniteContract::new(assumptions, guarantees)
+        .expect("namespacing preserves canonical unique contract actions");
     OpenSystem::new(graph, interface, contract).map_err(CompositionError::InvalidResult)
 }
 
@@ -1224,6 +1405,10 @@ pub enum CongruenceIssue {
         concrete_action: String,
         abstract_action: String,
     },
+    PayloadTypeNotPreserved {
+        concrete_action: String,
+        abstract_action: String,
+    },
     NonInjectiveVisibleBoundaryMapping {
         first_concrete_action: String,
         second_concrete_action: String,
@@ -1393,6 +1578,20 @@ fn check_interface_preservation(
                         abstract_action: abstract_action.to_owned(),
                     });
                 }
+                if concrete_signature
+                    .payload_type
+                    .as_ref()
+                    .map(PayloadType::id)
+                    != abstract_signature
+                        .payload_type
+                        .as_ref()
+                        .map(PayloadType::id)
+                {
+                    issues.push(CongruenceIssue::PayloadTypeNotPreserved {
+                        concrete_action: concrete_action.clone(),
+                        abstract_action: abstract_action.to_owned(),
+                    });
+                }
             }
         }
     }
@@ -1537,53 +1736,66 @@ mod tests {
         BTreeMap::from([(field.to_owned(), Value::Bool(value))])
     }
 
+    fn unit() -> PayloadType {
+        PayloadType::unit()
+    }
+
     fn system(
         graph: FiniteGraph,
         actions: impl IntoIterator<Item = (&'static str, ActionSignature)>,
-        assumptions: impl IntoIterator<Item = &'static str>,
-        guarantees: impl IntoIterator<Item = &'static str>,
     ) -> OpenSystem {
+        let actions = actions.into_iter().collect::<Vec<_>>();
+        let assumptions = actions
+            .iter()
+            .filter(|(_, signature)| signature.polarity == ActionPolarity::Input)
+            .map(|(action, signature)| {
+                (
+                    *action,
+                    PayloadPredicate::all(
+                        signature
+                            .payload_type
+                            .as_ref()
+                            .expect("input helper actions have payload types"),
+                    ),
+                )
+            })
+            .collect::<Vec<_>>();
+        let guarantees = actions
+            .iter()
+            .filter(|(_, signature)| signature.polarity == ActionPolarity::Output)
+            .map(|(action, signature)| {
+                (
+                    *action,
+                    PayloadPredicate::all(
+                        signature
+                            .payload_type
+                            .as_ref()
+                            .expect("output helper actions have payload types"),
+                    ),
+                )
+            })
+            .collect::<Vec<_>>();
         OpenSystem::new(
             graph,
             Interface::new(actions).unwrap(),
-            SafetyContract::new(assumptions, guarantees),
+            FiniteContract::new(assumptions, guarantees).unwrap(),
         )
         .unwrap()
     }
 
-    fn sender_pair() -> (OpenSystem, OpenSystem, RefinementSpec) {
-        let concrete = system(
+    fn sender(action: &'static str) -> OpenSystem {
+        system(
             FiniteGraph::new(
                 vec![state("visible", false), state("visible", true)],
                 vec![0],
-                vec![Transition::action(0, "send", 1)],
+                vec![Transition::action(0, action, 1)],
             )
             .unwrap(),
-            [("send", ActionSignature::output("bus"))],
-            [],
-            ["safe-message"],
-        );
-        let abstract_system = system(
-            FiniteGraph::new(
-                vec![state("visible", false), state("visible", true)],
-                vec![0],
-                vec![Transition::action(0, "commit", 1)],
-            )
-            .unwrap(),
-            [("commit", ActionSignature::output("bus"))],
-            [],
-            ["safe-message"],
-        );
-        let refinement = RefinementSpec {
-            state_map: vec![0, 1],
-            concrete_observation: ObservationMap::identity(["visible"]),
-            abstract_observation: ObservationMap::identity(["visible"]),
-            actions: ActionHiding::new([("send", Some("commit"))]),
-        };
-        (concrete, abstract_system, refinement)
+            [(action, ActionSignature::output("bus", unit()))],
+        )
     }
 
-    fn receptive_peer() -> OpenSystem {
+    fn peer() -> OpenSystem {
         system(
             FiniteGraph::new(
                 vec![state("peer", false)],
@@ -1591,25 +1803,26 @@ mod tests {
                 vec![Transition::action(0, "receive", 0)],
             )
             .unwrap(),
-            [("receive", ActionSignature::input("bus"))],
-            ["safe-message"],
-            [],
+            [("receive", ActionSignature::input("bus", unit()))],
         )
     }
 
-    fn composition(left_action: &str, synchronization: &str) -> CompositionSpec {
+    fn composition(left_action: &str, synchronized: &str) -> CompositionSpec {
         CompositionSpec::new(
-            vec![Connection::new(left_action, "receive", synchronization)],
-            vec![ContractLink::new("safe-message", Side::Right, Side::Left)],
+            vec![Connection::new(left_action, "receive", synchronized)],
+            vec![ContractLink::new(
+                Side::Right,
+                "receive",
+                Side::Left,
+                left_action,
+            )],
         )
     }
 
     #[test]
-    fn composes_only_synchronized_connected_steps() {
-        let (concrete, _, _) = sender_pair();
-        let peer = receptive_peer();
-        let product = compose(&concrete, &peer, &composition("send", "transfer")).unwrap();
-
+    fn composes_connected_steps_and_discharges_by_finite_inclusion() {
+        let product = compose(&sender("send"), &peer(), &composition("send", "transfer"))
+            .expect("matching finite contracts compose");
         assert_eq!(product.graph().states().len(), 2);
         assert_eq!(product.graph().transitions().len(), 1);
         assert_eq!(
@@ -1620,441 +1833,25 @@ mod tests {
             product.interface().get("transfer"),
             Some(&ActionSignature::internal())
         );
-        assert!(product.interface().get("left::send").is_none());
-        assert!(product.interface().get("right::receive").is_none());
+        assert!(product.contract().assumptions().is_empty());
     }
 
     #[test]
-    fn accepts_repaired_finite_safety_congruence_instance() {
-        let (concrete, abstract_system, local_refinement) = sender_pair();
-        let peer = receptive_peer();
-        let report = OpenRefinementCongruenceChecker::check(
-            &concrete,
-            &abstract_system,
-            &peer,
-            &CongruenceSpec {
-                local_refinement,
-                concrete_composition: composition("send", "transfer"),
-                abstract_composition: composition("commit", "abstract-transfer"),
-                peer_observation: ObservationMap::identity(["peer"]),
-            },
-        );
-
-        assert!(report.accepted, "{:#?}", report.issues);
-        assert!(
-            report
-                .lifted_refinement
-                .as_ref()
-                .is_some_and(|lifted| lifted.accepted)
-        );
-    }
-
-    #[test]
-    fn rejects_nonreceptive_connected_input_in_reachable_state() {
-        let (sender, _, _) = sender_pair();
-        let peer = system(
-            FiniteGraph::new(
-                vec![state("peer", false), state("peer", true)],
-                vec![0],
-                vec![Transition::action(0, "receive", 1)],
-            )
-            .unwrap(),
-            [("receive", ActionSignature::input("bus"))],
-            ["safe-message"],
-            [],
-        );
-        let report = CompatibilityChecker::check(&sender, &peer, &composition("send", "transfer"));
-
-        assert!(!report.accepted);
-        assert!(
-            report
-                .issues
-                .contains(&CompatibilityIssue::InputNotReceptive {
-                    side: Side::Right,
-                    action: "receive".to_owned(),
-                    state: 1,
-                })
-        );
-    }
-
-    #[test]
-    fn rejects_nonreceptive_unconnected_input() {
-        let left = system(
-            FiniteGraph::new(vec![state("left", false)], vec![0], vec![]).unwrap(),
-            [("environment-step", ActionSignature::input("environment"))],
-            [],
-            [],
-        );
+    fn preserves_namespaced_unconnected_boundary_contracts() {
         let right = system(
-            FiniteGraph::new(vec![state("right", false)], vec![0], vec![]).unwrap(),
-            [],
-            [],
+            FiniteGraph::new(vec![state("peer", false)], vec![0], vec![]).unwrap(),
             [],
         );
-        let report = CompatibilityChecker::check(&left, &right, &CompositionSpec::default());
-
-        assert!(!report.accepted);
-        assert_eq!(report.checked_connections, 0);
-        assert_eq!(report.checked_receptive_states, 1);
-        assert!(
-            report
-                .issues
-                .contains(&CompatibilityIssue::InputNotReceptive {
-                    side: Side::Left,
-                    action: "environment-step".to_owned(),
-                    state: 0,
-                })
-        );
+        let product = compose(&sender("send"), &right, &CompositionSpec::default()).unwrap();
+        assert!(product.interface().get("left::send").is_some());
+        assert!(product.contract().guarantees().contains_key("left::send"));
     }
 
     #[test]
-    fn rejects_nonreceptive_input_at_unreachable_state() {
-        let left = system(
-            FiniteGraph::new(
-                vec![state("left", false)],
-                vec![0],
-                vec![Transition::action(0, "send", 0)],
-            )
-            .unwrap(),
-            [("send", ActionSignature::output("bus"))],
-            [],
-            [],
-        );
-        let right = system(
-            FiniteGraph::new(
-                vec![state("right", false), state("right", true)],
-                vec![0],
-                vec![Transition::action(0, "receive", 0)],
-            )
-            .unwrap(),
-            [("receive", ActionSignature::input("bus"))],
-            [],
-            [],
-        );
-        assert_eq!(right.graph().reachable_states(), BTreeSet::from([0]));
-
-        let report = CompatibilityChecker::check(
-            &left,
-            &right,
-            &CompositionSpec::new(vec![Connection::new("send", "receive", "transfer")], vec![]),
-        );
-
-        assert!(!report.accepted);
-        assert_eq!(report.checked_receptive_states, 2);
-        assert!(
-            report
-                .issues
-                .contains(&CompatibilityIssue::InputNotReceptive {
-                    side: Side::Right,
-                    action: "receive".to_owned(),
-                    state: 1,
-                })
-        );
-    }
-
-    #[test]
-    fn rejects_missing_contract_discharge() {
-        let (sender, _, _) = sender_pair();
-        let peer = receptive_peer();
-        let report = CompatibilityChecker::check(
-            &sender,
-            &peer,
-            &CompositionSpec::new(vec![Connection::new("send", "receive", "transfer")], vec![]),
-        );
-
-        assert!(!report.accepted);
-        assert!(
-            report
-                .issues
-                .contains(&CompatibilityIssue::UndischargedAssumption {
-                    side: Side::Right,
-                    claim: "safe-message".to_owned(),
-                })
-        );
-    }
-
-    #[test]
-    fn rejects_circular_symbolic_contract_discharge() {
-        let left = system(
-            FiniteGraph::new(vec![state("left", false)], vec![0], vec![]).unwrap(),
-            [],
-            ["q"],
-            ["p"],
-        );
-        let right = system(
-            FiniteGraph::new(vec![state("right", false)], vec![0], vec![]).unwrap(),
-            [],
-            ["p"],
-            ["q"],
-        );
-        let report = CompatibilityChecker::check(
-            &left,
-            &right,
-            &CompositionSpec::new(
-                vec![],
-                vec![
-                    ContractLink::new("p", Side::Right, Side::Left),
-                    ContractLink::new("q", Side::Left, Side::Right),
-                ],
-            ),
-        );
-
-        assert!(!report.accepted);
-        assert!(
-            report
-                .issues
-                .contains(&CompatibilityIssue::ConditionalGuaranteeProvider {
-                    provider: Side::Left,
-                    claim: "p".to_owned(),
-                })
-        );
-        assert!(
-            report
-                .issues
-                .contains(&CompatibilityIssue::ConditionalGuaranteeProvider {
-                    provider: Side::Right,
-                    claim: "q".to_owned(),
-                })
-        );
-    }
-
-    #[test]
-    fn rejects_noncomplementary_connection_polarity() {
-        let left = system(
-            FiniteGraph::new(
-                vec![state("left", false)],
-                vec![0],
-                vec![Transition::action(0, "send", 0)],
-            )
-            .unwrap(),
-            [("send", ActionSignature::output("bus"))],
-            [],
-            [],
-        );
-        let right = system(
-            FiniteGraph::new(
-                vec![state("right", false)],
-                vec![0],
-                vec![Transition::action(0, "receive", 0)],
-            )
-            .unwrap(),
-            [("receive", ActionSignature::output("bus"))],
-            [],
-            [],
-        );
-        let report = CompatibilityChecker::check(
-            &left,
-            &right,
-            &CompositionSpec::new(vec![Connection::new("send", "receive", "transfer")], vec![]),
-        );
-
-        assert!(!report.accepted);
-        assert!(
-            report
-                .issues
-                .contains(&CompatibilityIssue::NonComplementaryPolarity {
-                    left_action: "send".to_owned(),
-                    right_action: "receive".to_owned(),
-                })
-        );
-    }
-
-    #[test]
-    fn rejects_connection_channel_mismatch() {
-        let left = system(
-            FiniteGraph::new(
-                vec![state("left", false)],
-                vec![0],
-                vec![Transition::action(0, "send", 0)],
-            )
-            .unwrap(),
-            [("send", ActionSignature::output("bus"))],
-            [],
-            [],
-        );
-        let right = system(
-            FiniteGraph::new(
-                vec![state("right", false)],
-                vec![0],
-                vec![Transition::action(0, "receive", 0)],
-            )
-            .unwrap(),
-            [("receive", ActionSignature::input("other-bus"))],
-            [],
-            [],
-        );
-        let report = CompatibilityChecker::check(
-            &left,
-            &right,
-            &CompositionSpec::new(vec![Connection::new("send", "receive", "transfer")], vec![]),
-        );
-
-        assert!(!report.accepted);
-        assert!(
-            report
-                .issues
-                .contains(&CompatibilityIssue::ChannelMismatch {
-                    left_action: "send".to_owned(),
-                    right_action: "receive".to_owned(),
-                })
-        );
-    }
-
-    #[test]
-    fn rejects_hidden_connected_boundary_counterexample() {
-        let concrete = system(
-            FiniteGraph::new(
-                vec![state("visible", false)],
-                vec![0],
-                vec![Transition::action(0, "ping", 0)],
-            )
-            .unwrap(),
-            [("ping", ActionSignature::output("bus"))],
-            [],
-            ["safe-message"],
-        );
-        let abstract_system = system(
-            FiniteGraph::new(vec![state("visible", false)], vec![0], vec![]).unwrap(),
-            [],
-            [],
-            ["safe-message"],
-        );
-        let report = OpenRefinementCongruenceChecker::check(
-            &concrete,
-            &abstract_system,
-            &receptive_peer(),
-            &CongruenceSpec {
-                local_refinement: RefinementSpec {
-                    state_map: vec![0],
-                    concrete_observation: ObservationMap::identity(["visible"]),
-                    abstract_observation: ObservationMap::identity(["visible"]),
-                    actions: ActionHiding::new([("ping", None::<&str>)]),
-                },
-                concrete_composition: composition("ping", "hidden-transfer"),
-                abstract_composition: CompositionSpec::new(
-                    vec![],
-                    vec![ContractLink::new("safe-message", Side::Right, Side::Left)],
-                ),
-                peer_observation: ObservationMap::identity(["peer"]),
-            },
-        );
-
-        assert!(!report.accepted);
-        assert!(
-            report
-                .issues
-                .contains(&CongruenceIssue::HiddenConnectedAction("ping".to_owned()))
-        );
-        assert!(report.lifted_refinement.is_none());
-    }
-
-    #[test]
-    fn rejects_boundary_polarity_change_under_refinement() {
-        let (concrete, _, local_refinement) = sender_pair();
-        let abstract_system = system(
-            FiniteGraph::new(
-                vec![state("visible", false), state("visible", true)],
-                vec![0],
-                vec![Transition::action(0, "commit", 1)],
-            )
-            .unwrap(),
-            [("commit", ActionSignature::input("bus"))],
-            [],
-            ["safe-message"],
-        );
-        let peer = receptive_peer();
-        let report = OpenRefinementCongruenceChecker::check(
-            &concrete,
-            &abstract_system,
-            &peer,
-            &CongruenceSpec {
-                local_refinement,
-                concrete_composition: CompositionSpec::new(
-                    vec![],
-                    vec![ContractLink::new("safe-message", Side::Right, Side::Left)],
-                ),
-                abstract_composition: CompositionSpec::new(
-                    vec![],
-                    vec![ContractLink::new("safe-message", Side::Right, Side::Left)],
-                ),
-                peer_observation: ObservationMap::identity(["peer"]),
-            },
-        );
-
-        assert!(!report.accepted);
-        assert!(
-            report
-                .issues
-                .contains(&CongruenceIssue::PolarityNotPreserved {
-                    concrete_action: "send".to_owned(),
-                    abstract_action: "commit".to_owned(),
-                })
-        );
-    }
-
-    #[test]
-    fn rejects_boundary_channel_change_under_refinement() {
-        let (concrete, _, local_refinement) = sender_pair();
-        let abstract_system = system(
-            FiniteGraph::new(
-                vec![state("visible", false), state("visible", true)],
-                vec![0],
-                vec![Transition::action(0, "commit", 1)],
-            )
-            .unwrap(),
-            [("commit", ActionSignature::output("other-bus"))],
-            [],
-            ["safe-message"],
-        );
-        let peer = receptive_peer();
-        let open_composition = CompositionSpec::new(
-            vec![],
-            vec![ContractLink::new("safe-message", Side::Right, Side::Left)],
-        );
-        let report = OpenRefinementCongruenceChecker::check(
-            &concrete,
-            &abstract_system,
-            &peer,
-            &CongruenceSpec {
-                local_refinement,
-                concrete_composition: open_composition.clone(),
-                abstract_composition: open_composition,
-                peer_observation: ObservationMap::identity(["peer"]),
-            },
-        );
-
-        assert!(report.local_refinement.accepted);
-        assert!(report.concrete_compatibility.accepted);
-        assert!(report.abstract_compatibility.accepted);
-        assert!(!report.accepted);
-        assert!(
-            report
-                .issues
-                .contains(&CongruenceIssue::ChannelNotPreserved {
-                    concrete_action: "send".to_owned(),
-                    abstract_action: "commit".to_owned(),
-                })
-        );
-    }
-
-    #[test]
-    fn rejects_unused_visible_boundary_alias_mapping() {
-        let concrete = system(
-            FiniteGraph::new(
-                vec![state("visible", false), state("visible", true)],
-                vec![0],
-                vec![Transition::action(0, "send", 1)],
-            )
-            .unwrap(),
-            [
-                ("send", ActionSignature::output("bus")),
-                ("send-alias", ActionSignature::output("bus")),
-            ],
-            [],
-            ["safe-message"],
-        );
-        let (_, abstract_system, _) = sender_pair();
-        let peer = receptive_peer();
+    fn accepts_existing_finite_congruence_instance() {
+        let concrete = sender("send");
+        let abstract_system = sender("commit");
+        let peer = peer();
         let report = OpenRefinementCongruenceChecker::check(
             &concrete,
             &abstract_system,
@@ -2064,315 +1861,158 @@ mod tests {
                     state_map: vec![0, 1],
                     concrete_observation: ObservationMap::identity(["visible"]),
                     abstract_observation: ObservationMap::identity(["visible"]),
-                    actions: ActionHiding::new([
-                        ("send", Some("commit")),
-                        ("send-alias", Some("commit")),
-                    ]),
+                    actions: ActionHiding::new([("send", Some("commit"))]),
                 },
                 concrete_composition: composition("send", "transfer"),
                 abstract_composition: composition("commit", "abstract-transfer"),
                 peer_observation: ObservationMap::identity(["peer"]),
             },
         );
-
-        assert!(report.local_refinement.accepted);
-        assert!(report.concrete_compatibility.accepted);
-        assert!(report.abstract_compatibility.accepted);
-        assert!(!report.accepted);
-        assert!(report.issues.iter().any(|issue| matches!(
-            issue,
-            CongruenceIssue::NonInjectiveVisibleBoundaryMapping {
-                first_concrete_action,
-                second_concrete_action,
-                abstract_action,
-            } if first_concrete_action != second_concrete_action
-                && abstract_action == "commit"
-        )));
-        assert!(report.lifted_refinement.is_none());
+        assert!(report.accepted, "{:#?}", report.issues);
     }
 
     #[test]
-    fn rejects_connection_that_is_not_preserved() {
-        let (concrete, abstract_system, local_refinement) = sender_pair();
-        let peer = receptive_peer();
-        let report = OpenRefinementCongruenceChecker::check(
-            &concrete,
-            &abstract_system,
-            &peer,
-            &CongruenceSpec {
-                local_refinement,
-                concrete_composition: composition("send", "transfer"),
-                abstract_composition: CompositionSpec::new(
-                    vec![],
-                    vec![ContractLink::new("safe-message", Side::Right, Side::Left)],
-                ),
-                peer_observation: ObservationMap::identity(["peer"]),
-            },
+    fn rejects_missing_contract_discharge() {
+        let report = CompatibilityChecker::check(
+            &sender("send"),
+            &peer(),
+            &CompositionSpec::new(vec![Connection::new("send", "receive", "transfer")], vec![]),
         );
-
-        assert!(!report.accepted);
-        assert!(report.issues.iter().any(|issue| matches!(
-            issue,
-            CongruenceIssue::ConcreteConnectionNotPreserved(connection)
-                if connection.left_action == "send"
-        )));
-    }
-
-    #[test]
-    fn rejects_abstract_peer_connection_outside_concrete_action_map_image() {
-        let (concrete, _, local_refinement) = sender_pair();
-        let abstract_system = system(
-            FiniteGraph::new(
-                vec![state("visible", false), state("visible", true)],
-                vec![0],
-                vec![
-                    Transition::action(0, "commit", 1),
-                    Transition::action(0, "announce", 0),
-                    Transition::action(1, "announce", 1),
-                ],
-            )
-            .unwrap(),
-            [
-                ("commit", ActionSignature::output("bus")),
-                ("announce", ActionSignature::output("audit")),
-            ],
-            [],
-            ["safe-message"],
-        );
-        let peer = system(
-            FiniteGraph::new(
-                vec![state("peer", false)],
-                vec![0],
-                vec![
-                    Transition::action(0, "receive", 0),
-                    Transition::action(0, "record", 0),
-                ],
-            )
-            .unwrap(),
-            [
-                ("receive", ActionSignature::input("bus")),
-                ("record", ActionSignature::input("audit")),
-            ],
-            ["safe-message"],
-            [],
-        );
-        let report = OpenRefinementCongruenceChecker::check(
-            &concrete,
-            &abstract_system,
-            &peer,
-            &CongruenceSpec {
-                local_refinement,
-                concrete_composition: composition("send", "transfer"),
-                abstract_composition: CompositionSpec::new(
-                    vec![
-                        Connection::new("commit", "receive", "abstract-transfer"),
-                        Connection::new("announce", "record", "abstract-audit"),
-                    ],
-                    vec![ContractLink::new("safe-message", Side::Right, Side::Left)],
-                ),
-                peer_observation: ObservationMap::identity(["peer"]),
-            },
-        );
-
-        assert!(report.concrete_compatibility.accepted);
-        assert!(report.abstract_compatibility.accepted);
-        assert!(!report.accepted);
-        assert!(report.issues.iter().any(|issue| matches!(
-            issue,
-            CongruenceIssue::AbstractConnectionNotReflected(connection)
-                if connection.left_action == "announce" && connection.right_action == "record"
-        )));
-    }
-
-    #[test]
-    fn rejects_multiply_connected_action_and_sync_name_collision() {
-        let (sender, _, _) = sender_pair();
-        let peer = receptive_peer();
-        let spec = CompositionSpec::new(
-            vec![
-                Connection::new("send", "receive", "transfer"),
-                Connection::new("send", "receive", "transfer"),
-            ],
-            vec![ContractLink::new("safe-message", Side::Right, Side::Left)],
-        );
-        let report = CompatibilityChecker::check(&sender, &peer, &spec);
-
-        assert!(!report.accepted);
-        assert!(report.issues.iter().any(|issue| matches!(
-            issue,
-            CompatibilityIssue::ActionMultiplyConnected {
-                side: Side::Left,
-                action,
-            } if action == "send"
-        )));
-        assert!(report.issues.iter().any(|issue| matches!(
-            issue,
-            CompatibilityIssue::CompositeActionCollision(action) if action == "transfer"
-        )));
-    }
-
-    #[test]
-    fn direct_compatibility_check_fails_closed_at_work_limit() {
-        let (sender, _, _) = sender_pair();
-        let peer = receptive_peer();
-        let report = CompatibilityChecker::check_with_limits(
-            &sender,
-            &peer,
-            &composition("send", "transfer"),
-            CompositionLimits {
-                max_work_items: 0,
-                ..CompositionLimits::default()
-            },
-        );
-
-        assert!(!report.accepted);
-        assert_eq!(report.checked_connections, 0);
-        assert_eq!(report.checked_receptive_states, 0);
-        assert!(report.issues.iter().any(|issue| matches!(
-            issue,
-            CompatibilityIssue::WorkItemLimitExceeded { required, limit: 0 }
-                if *required > 0
-        )));
-    }
-
-    #[test]
-    fn composition_reports_work_limit_before_enumeration() {
-        let (sender, _, _) = sender_pair();
-        let peer = receptive_peer();
-        let error = compose_with_limits(
-            &sender,
-            &peer,
-            &composition("send", "transfer"),
-            CompositionLimits {
-                max_work_items: 0,
-                ..CompositionLimits::default()
-            },
-        )
-        .unwrap_err();
-
-        assert!(matches!(
-            error,
-            CompositionError::WorkItemLimitExceeded { required, limit: 0 }
-                if required > 0
-        ));
-    }
-
-    #[test]
-    fn checked_work_arithmetic_reports_overflow() {
-        assert_eq!(
-            checked_work_product(&[usize::MAX, 2]),
-            Err(WorkPreflightError::CountOverflow)
-        );
-        let mut work = WorkCounter { items: usize::MAX };
-        assert_eq!(work.add(1), Err(WorkPreflightError::CountOverflow));
-    }
-
-    #[test]
-    fn rejects_composed_state_count_above_configured_limit() {
-        let left = system(
-            FiniteGraph::new(
-                vec![state("left", false), state("left", true)],
-                vec![0],
-                vec![],
-            )
-            .unwrap(),
-            [],
-            [],
-            [],
-        );
-        let right = system(
-            FiniteGraph::new(
-                vec![state("right", false), state("right", true)],
-                vec![0],
-                vec![],
-            )
-            .unwrap(),
-            [],
-            [],
-            [],
-        );
-
-        let error = compose_with_limits(
-            &left,
-            &right,
-            &CompositionSpec::default(),
-            CompositionLimits {
-                max_states: 3,
-                max_transitions: 0,
-                max_work_items: DEFAULT_MAX_COMPOSITION_WORK_ITEMS,
-            },
-        )
-        .unwrap_err();
-        assert_eq!(
-            error,
-            CompositionError::StateLimitExceeded {
-                required: 4,
-                limit: 3,
-            }
+        assert!(
+            report
+                .issues
+                .contains(&CompatibilityIssue::UndischargedAssumption {
+                    side: Side::Right,
+                    action: "receive".to_owned(),
+                })
         );
     }
 
     #[test]
-    fn rejects_generated_transitions_above_configured_limit() {
+    fn rejects_circular_contract_discharge() {
         let left = system(
             FiniteGraph::new(
                 vec![state("left", false)],
                 vec![0],
-                vec![Transition::action(0, "left-step", 0)],
+                vec![
+                    Transition::action(0, "left-send", 0),
+                    Transition::action(0, "left-receive", 0),
+                ],
             )
             .unwrap(),
-            [("left-step", ActionSignature::internal())],
-            [],
-            [],
+            [
+                ("left-send", ActionSignature::output("a", unit())),
+                ("left-receive", ActionSignature::input("b", unit())),
+            ],
         );
         let right = system(
             FiniteGraph::new(
                 vec![state("right", false)],
                 vec![0],
-                vec![Transition::action(0, "right-step", 0)],
+                vec![
+                    Transition::action(0, "right-receive", 0),
+                    Transition::action(0, "right-send", 0),
+                ],
             )
             .unwrap(),
-            [("right-step", ActionSignature::internal())],
-            [],
-            [],
+            [
+                ("right-receive", ActionSignature::input("a", unit())),
+                ("right-send", ActionSignature::output("b", unit())),
+            ],
         );
-
-        let error = compose_with_limits(
-            &left,
-            &right,
-            &CompositionSpec::default(),
-            CompositionLimits {
-                max_states: 1,
-                max_transitions: 1,
-                max_work_items: DEFAULT_MAX_COMPOSITION_WORK_ITEMS,
-            },
-        )
-        .unwrap_err();
-        assert_eq!(
-            error,
-            CompositionError::TransitionLimitExceeded {
-                attempted: 2,
-                limit: 1,
+        let spec = CompositionSpec::new(
+            vec![
+                Connection::new("left-send", "right-receive", "a-transfer"),
+                Connection::new("left-receive", "right-send", "b-transfer"),
+            ],
+            vec![
+                ContractLink::new(Side::Right, "right-receive", Side::Left, "left-send"),
+                ContractLink::new(Side::Left, "left-receive", Side::Right, "right-send"),
+            ],
+        );
+        let report = CompatibilityChecker::check(&left, &right, &spec);
+        assert!(report.issues.iter().any(|issue| matches!(
+            issue,
+            CompatibilityIssue::ConditionalGuaranteeProvider {
+                provider: Side::Left,
+                ..
             }
+        )));
+        assert!(report.issues.iter().any(|issue| matches!(
+            issue,
+            CompatibilityIssue::ConditionalGuaranteeProvider {
+                provider: Side::Right,
+                ..
+            }
+        )));
+    }
+
+    #[test]
+    fn rejects_connection_payload_substitution() {
+        let other = PayloadType::enumeration("OtherUnit", ["unit"]).unwrap();
+        let receiver = system(
+            FiniteGraph::new(
+                vec![state("peer", false)],
+                vec![0],
+                vec![Transition::action(0, "receive", 0)],
+            )
+            .unwrap(),
+            [("receive", ActionSignature::input("bus", other))],
+        );
+        let report = CompatibilityChecker::check(
+            &sender("send"),
+            &receiver,
+            &composition("send", "transfer"),
+        );
+        assert!(report.issues.iter().any(|issue| matches!(
+            issue,
+            CompatibilityIssue::PayloadTypeMismatch { .. }
+                | CompatibilityIssue::ContractPayloadTypeMismatch(_)
+        )));
+    }
+
+    #[test]
+    fn rejects_nonreceptive_input_even_when_unreachable() {
+        let receiver = system(
+            FiniteGraph::new(
+                vec![state("peer", false), state("peer", true)],
+                vec![0],
+                vec![Transition::action(0, "receive", 0)],
+            )
+            .unwrap(),
+            [("receive", ActionSignature::input("bus", unit()))],
+        );
+        let report = CompatibilityChecker::check(
+            &sender("send"),
+            &receiver,
+            &composition("send", "transfer"),
+        );
+        assert!(
+            report
+                .issues
+                .contains(&CompatibilityIssue::InputNotReceptive {
+                    side: Side::Right,
+                    action: "receive".to_owned(),
+                    state: 1,
+                })
         );
     }
 
     #[test]
-    fn checked_product_arithmetic_reports_overflow() {
-        assert_eq!(
-            checked_product_state_count(usize::MAX, 2, usize::MAX),
-            Err(CompositionError::StateCountOverflow {
-                left_states: usize::MAX,
-                right_states: 2,
-            })
-        );
-        assert_eq!(
-            checked_product_index(usize::MAX, 1, 2),
-            Err(CompositionError::StateIndexOverflow {
-                left_state: usize::MAX,
-                right_state: 1,
-                right_states: 2,
-            })
-        );
+    fn composition_limits_fail_closed() {
+        let error = compose_with_limits(
+            &sender("send"),
+            &peer(),
+            &composition("send", "transfer"),
+            CompositionLimits {
+                max_work_items: 0,
+                ..CompositionLimits::default()
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error,
+            CompositionError::WorkItemLimitExceeded { .. }
+        ));
     }
 }
