@@ -12,6 +12,7 @@ members = [
     "crates/nmlt-temporal",
     "crates/nmlt-verify",
     "crates/nmlt-grades",
+    "crates/nmlt-open-kernel",
     "crates/nmlt-agent",
     "crates/nmlt-cli",
 ]

@@ -119,17 +119,17 @@
     "trusted_component_source_ids": {
       "evidence_harness": "nmlt-source-v1:sha256:c3e4f9a06d035035ed6ffda33a177653119c4a1809adae7ff3d4bd72dbfa6c89",
       "evidence_schema": "nmlt-source-v1:sha256:d2cea4f30bafaa88c080a6e28a4d6c3341d60fdde66b564db99b087f1f89e059",
-      "schema_validator": "nmlt-source-v1:sha256:30310e32421ef0b622c7c1ac64b9a0fa3914eb20f97a2a48c3def67135b6dc6d",
-      "trusted_component_inventory": "nmlt-source-v1:sha256:fbace700e76ec3eba3e0ab4bfc4e828eaf0f49caf2e05ec1fcece28edab8f7c9"
+      "schema_validator": "nmlt-source-v1:sha256:5721b737dd25c929c544a27a52543aa777965356fe24fa0f3c0c337209ad974a",
+      "trusted_component_inventory": "nmlt-source-v1:sha256:a81a0ae59ae2692e6979cd08f31c974671c995c8266831aa57420b121cae0179"
     }
   },
   "metatheory": {
     "scope": "mathematical_grade_algebra_only",
-    "source_set_id": "nmlt-source-set-v1:sha256:6fb32760a2610f3e9915c3d16b0acdc9b803d63e0f68b3d2a646534b3117a5a3",
-    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:45b6fbeeb62dd06a89f4ded0f6f5ff18a69f637484943e6501059205507a3eb6",
-    "root_source_id": "nmlt-source-v1:sha256:9f566c9ef3b20e5be6609ce80c7e5dae75f76279dcaf74a489ee72b247a90d9a",
+    "source_set_id": "nmlt-source-set-v1:sha256:77ca249ea2653550e6d0c43f9e652d5e83b2d51a98db4ec04f9aa21c03109a86",
+    "lean_tcb_source_set_id": "nmlt-source-set-v1:sha256:96f629f84ba4807bce2f6b79ad2a9f24f5e601444945bc6da5b20e441493dde5",
+    "root_source_id": "nmlt-source-v1:sha256:bb0cc867b525d1e2101829ecdc84bbfe3bbfee3e04f7fb400a0f0600751063e8",
     "entrypoint_source_id": "nmlt-source-v1:sha256:c439ff9ed311099540cd7fde4c7d9fb5f0449990a342b2aa526a877c6a61caa6",
-    "checker_source_id": "nmlt-source-v1:sha256:18b82433317754f2a3665ae729d925e7d8c025fbc2401ee94cbe95611fa36e0c",
+    "checker_source_id": "nmlt-source-v1:sha256:24bf341fe61c1dd1258cb420b7c57222f8b9cb212e0fc45085d2f59276f69fca",
     "toolchain": "v4.30.0",
     "theorem_handles": [
       "NMLT.Grades.zero_sequential",
@@ -161,5 +161,5 @@
     "rust_correspondence": "manual_operation_level_alignment",
     "verified_rust_extraction": false
   },
-  "manifest_id": "nmlt-evidence-v1:sha256:638eca5f997e9410bcf1675a5ef47714c58ab5e13c3379e883ddb9a59d423c4c"
+  "manifest_id": "nmlt-evidence-v1:sha256:547f71027bbc54fb46421f91c54e1e0ca9ad2f1591cf14ac5a4ea60198faabf3"
 }

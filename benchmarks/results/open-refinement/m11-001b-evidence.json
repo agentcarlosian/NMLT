@@ -1,0 +1,137 @@
+{
+  "claim_scope": "finite_contract_sound_open_refinement",
+  "evidence_id": "nmlt-open-refinement-evidence-v1:sha256:2b3c98912398f417f044d2bb66bbe5ddddb3a1a400472f026df0ad8bb2198662",
+  "executable_correspondence": {
+    "rust_checker": "finite_open_refinement_instance_checker",
+    "verified": false
+  },
+  "limitations": [
+    "No product congruence theorem for the new open-refinement relation.",
+    "No Rust/Lean correspondence or compiler-correctness theorem.",
+    "No payload subtyping, representation conversion, capabilities, or grades.",
+    "No circular contracts, fixed-point semantics, fairness, divergence, or liveness transport.",
+    "Lean predicates use one shared finite message cardinality; Rust binds each predicate to a nominal finite enum identity."
+  ],
+  "rust_controls": [
+    "identity_is_accepted",
+    "accepts_nonidentity_covariant_guarantee",
+    "composes_nonidentity_refinement_witnesses",
+    "rejects_assumption_strengthening",
+    "rejects_guarantee_weakening",
+    "rejects_payload_substitution_even_with_same_variants",
+    "rejects_hidden_boundary_action",
+    "rejects_incomplete_abstract_boundary_mapping",
+    "rejects_noninjective_boundary_mapping",
+    "rejects_circular_contract_discharge"
+  ],
+  "schema_version": "1.0.0",
+  "sources": {
+    "checker_source_id": "nmlt-source-v1:sha256:24bf341fe61c1dd1258cb420b7c57222f8b9cb212e0fc45085d2f59276f69fca",
+    "ci_workflow_source_id": "nmlt-source-v1:sha256:071a011e8c01e78a3b612d79e6928298fe5e51a95890a8031ff28ec52b987b66",
+    "entries": [
+      {
+        "path": "crates/nmlt-temporal/src/lib.rs",
+        "sha256": "8b1c55ec9ad6d768f0032ee9a9b7753c7697b7e85b8f42aac281d5aedf0acd2f"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open.rs",
+        "sha256": "670dd0a41e3e1e16b32cd511cd2e5e272119b2ff779c53bf0c3647017e10574e"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open_contract.rs",
+        "sha256": "226bbc79929f7160c9cc5cc18f70b579b7c20ee69e9e02b75dcc3fe8f40d23b7"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open_refinement.rs",
+        "sha256": "92ebaa15c10423777d05a65e7f250768c191cf346df2d9723f90b799f19f1b20"
+      },
+      {
+        "path": "mechanization/lean/NMLT.lean",
+        "sha256": "4661e4aa143a399f3ba80a7faf46cb00ea376f385c8241bf9f919fa8f9538bb9"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
+        "sha256": "de68188b17f180dac387aab58a6691a5a38ac1ab29d50cc5a28dcac370c116ff"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenRefinement.lean",
+        "sha256": "99ee5f640a3981206abac30abd562d7ec734b8ae338133a7df0e77a0e7e75b16"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/Refinement.lean",
+        "sha256": "f94f78bc4a4844abd6cf691c4ace7e8df5009646d68f81b57fbeae62157baa58"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
+        "sha256": "a76ea31e5c707e881a8bada7e06ce17a96a365b8e87594216ec8cb5f2ea5371d"
+      },
+      {
+        "path": "mechanization/lean/lake-manifest.json",
+        "sha256": "e76701ed7a638be47d93a7c71c970a833728dd017ad38c4ebdae4cfc8a1784d2"
+      },
+      {
+        "path": "mechanization/lean/lakefile.toml",
+        "sha256": "7220c1d89a71ab7a46568bfbaaef88037581edb650e228882c2397717638a33f"
+      },
+      {
+        "path": "mechanization/lean/lean-toolchain",
+        "sha256": "d98505f0e331ec8d3670abfe7b3e7f179f56a9ee827cd38b0c113a6e69c4b3fb"
+      },
+      {
+        "path": "rust-toolchain.toml",
+        "sha256": "0ceb751d66f44e50985538d239e0f5712acccb9f7e71a8afb56878f8fc2ba74a"
+      }
+    ],
+    "evidence_checker_source_id": "nmlt-source-v1:sha256:3ba7dff23f62770daa84c8b09f9f484885f3dab768b3327db32776d51a72627f",
+    "nanoda_checker_source_id": "nmlt-source-v1:sha256:fc0891182effa2f881be151b4519975c044965793a2aded2207f1ebceefd75ce",
+    "root_source_id": "nmlt-source-v1:sha256:bb0cc867b525d1e2101829ecdc84bbfe3bbfee3e04f7fb400a0f0600751063e8",
+    "schema_source_id": "nmlt-source-v1:sha256:f5869a1ee209bcec216ec21b6c1c8c01a181ae72951624d1d521f42508ea5e74",
+    "schema_validator_source_id": "nmlt-source-v1:sha256:5721b737dd25c929c544a27a52543aa777965356fe24fa0f3c0c337209ad974a",
+    "source_set_id": "nmlt-open-refinement-source-set-v1:sha256:b5e253e31f1f3ad6f158361491b0d1cddfaa791a5eebc149cdb0e3fea1135aae",
+    "trusted_component_inventory_source_id": "nmlt-source-v1:sha256:a81a0ae59ae2692e6979cd08f31c974671c995c8266831aa57420b121cae0179"
+  },
+  "statement": "Finite truth-table assumptions and guarantees refine under exact nominal payload identity, contravariant assumptions, covariant guarantees, and a complete injective label renaming; identity and composition are kernel checked.",
+  "theorem_audits": [
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenRefinement.PredicateSubset.refl",
+      "role": "identity"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenRefinement.PredicateSubset.trans",
+      "role": "composition"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenRefinement.Refinement.identity",
+      "role": "identity"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenRefinement.Refinement.compose",
+      "role": "composition"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenRefinement.Refinement.exactPayloadIdentity",
+      "role": "payload_identity"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenRefinement.Refinement.abstractAssumptionIncluded",
+      "role": "variance"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenRefinement.Refinement.concreteGuaranteeIncluded",
+      "role": "variance"
+    }
+  ],
+  "toolchain": {
+    "lean": "v4.30.0",
+    "rust": "1.94.0",
+    "standard_library_only": true
+  },
+  "validation_gate": "./tools/check_metatheory.sh"
+}

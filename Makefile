@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence open-composition-evidence evidence examples comparisons correspondence m9-audit metatheory ci reproduce
+.PHONY: help fmt fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence open-composition-evidence open-refinement-evidence open-congruence-evidence evidence examples comparisons correspondence m9-audit metatheory ci reproduce
 
 help:
 	@echo "NMLT development targets"
@@ -15,6 +15,8 @@ help:
 	@echo "  agentic-evidence Reproduce Phase 6 authority/runtime artifact graph"
 	@echo "  graded-evidence Reproduce Phase 7 resource-grade evidence"
 	@echo "  open-composition-evidence Check M11 theorem/source/axiom bindings"
+	@echo "  open-refinement-evidence Check M11-001b contract/refinement bindings"
+	@echo "  open-congruence-evidence Check M11-001c two-sided finite bindings"
 	@echo "  evidence   Reproduce canonical provider evidence manifests"
 	@echo "  examples   Structurally check all canonical NMLT fixtures"
 	@echo "  comparisons Validate NMLT and Quint; optionally TLC and P"
@@ -63,6 +65,13 @@ graded-evidence:
 open-composition-evidence:
 	python3 tools/check_open_composition_evidence.py
 
+open-refinement-evidence:
+	python3 tools/check_open_refinement_evidence.py
+
+open-congruence-evidence:
+	python3 tools/check_open_congruence_evidence.py
+	python3 tools/check_m11_congruence_correspondence.py
+
 evidence:
 	python3 tools/check_evidence.py
 
@@ -83,6 +92,6 @@ m9-audit:
 metatheory:
 	./tools/check_metatheory.sh
 
-ci: fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence open-composition-evidence evidence examples comparisons correspondence m9-audit
+ci: fmt-check check lint test corpus benchmarks model-reports temporal-evidence multi-engine-evidence agentic-evidence graded-evidence open-composition-evidence open-refinement-evidence open-congruence-evidence evidence examples comparisons correspondence m9-audit
 
 reproduce: ci metatheory

@@ -1,0 +1,325 @@
+{
+  "claim_scope": "finite_two_sided_open_refinement_congruence",
+  "correspondence": {
+    "adapter_verified": false,
+    "dictionary_readback_enforced": true,
+    "kind": "proof_carrying_canonical_certificate",
+    "vector_schema": "nmlt-m11-open-congruence-v1",
+    "verified_execution_kernel_theorem": true,
+    "verified_implementation_theorem": false
+  },
+  "evidence_id": "nmlt-open-congruence-evidence-v1:sha256:1c1c7248ae78728701694036f1d02922e4f753fd1fd1dc7ecd2f7a58aa78f878",
+  "limitations": [
+    "Safety-only finite exact-action profile; no liveness or fairness transport.",
+    "No liveness, fairness, hidden-divergence, payload-subtyping, or circular-discharge result.",
+    "The bounded Rust kernel is translated by pinned Charon/Aeneas; its numeric envelope carries a canonical atom dictionary and Rust independently reads every active field back, while Lean specifies unique decoding and referenced-ID coverage. The rich system-to-canonical encoder and Rust readback implementation remain outside verified extraction.",
+    "The correspondence profile deliberately requires one exact nominal payload universe across all four components and total visible action maps.",
+    "The proved canonical projection retains the uncertainty upper-bound coordinate but not Rust uncertainty family/profile identity; the stronger family checks remain in nmlt-grades."
+  ],
+  "rust_controls": [
+    "accepts_two_sided_contract_sound_congruence_and_invariant_transport",
+    "rejects_connection_not_preserved_on_both_mapped_endpoints",
+    "rejects_abstract_connection_outside_concrete_image",
+    "rejects_stale_invariant_domain",
+    "rejects_incomplete_component_boundary_mapping",
+    "rejects_nonmonotone_composite_grade",
+    "rejects_undischarged_rely_condition",
+    "rejects_shared_affine_capability_between_components",
+    "rejects_nonuniform_payload_universe_at_correspondence_boundary",
+    "canonical_certificate_validator_fails_closed_after_mutation",
+    "kernel_readback_rejects_dictionary_substitution",
+    "kernel_readback_rejects_numeric_atom_substitution",
+    "kernel_readback_rejects_active_action_omission",
+    "canonical_validator_rejects_kernel_capacity_overflow",
+    "shared_m11_congruence_vectors_bind_the_rust_controls"
+  ],
+  "schema_version": "1.0.0",
+  "sources": {
+    "entries": [
+      {
+        "path": "crates/nmlt-open-kernel/Cargo.toml",
+        "sha256": "116bbe012b8aacd5088d4dc5f6f3ef521b7336ecb7411af4a8e087cfba74580e"
+      },
+      {
+        "path": "crates/nmlt-open-kernel/src/lib.rs",
+        "sha256": "9d2cf66c1c2c57471cb2edb47a20caaf6e6a03f531b501a8eaefb1b1e36a4066"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/lib.rs",
+        "sha256": "8b1c55ec9ad6d768f0032ee9a9b7753c7697b7e85b8f42aac281d5aedf0acd2f"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open.rs",
+        "sha256": "670dd0a41e3e1e16b32cd511cd2e5e272119b2ff779c53bf0c3647017e10574e"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open_congruence.rs",
+        "sha256": "e7849124d8dd3330a4dc5cfbbb9edfd23809629bafbe98f0cbd5762fc212aa32"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open_contract.rs",
+        "sha256": "226bbc79929f7160c9cc5cc18f70b579b7c20ee69e9e02b75dcc3fe8f40d23b7"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open_encoding.rs",
+        "sha256": "a0e5dc729deea1cd482718781d8ae85f7e91754bf91c93b72fc59793efca28d3"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open_refinement.rs",
+        "sha256": "92ebaa15c10423777d05a65e7f250768c191cf346df2d9723f90b799f19f1b20"
+      },
+      {
+        "path": "crates/nmlt-temporal/src/open_resources.rs",
+        "sha256": "e6424935efe65479aa21e4a2cbf6cf1f8862967646af16ca61ed57bbc3f19ad0"
+      },
+      {
+        "path": "mechanization/lean/NMLT.lean",
+        "sha256": "4661e4aa143a399f3ba80a7faf46cb00ea376f385c8241bf9f919fa8f9538bb9"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
+        "sha256": "de68188b17f180dac387aab58a6691a5a38ac1ab29d50cc5a28dcac370c116ff"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenEncodingCorrespondence.lean",
+        "sha256": "cce035c4753307edcd41d0374084fd84e8e1ef06d558018e594076dc3db86e83"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean",
+        "sha256": "779dd977013a7401b17c9e6f94d63ef51f8be3ee9e7e8dd1cadc54cb4a2c6c4a"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
+        "sha256": "726ee05bcfb91d88d42e7a333abc52605b37e20d3350e3253b81b08eb9b8c63f"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Types.lean",
+        "sha256": "f400750e44229b26a98cdc0d2463642d9bdf297337569656cb217cb538efac8e"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenKernelReadback.lean",
+        "sha256": "fedc476ed43e654d09aee6d08e475e149e87929acf561d4868fb00f342b55318"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenMappedCongruence.lean",
+        "sha256": "93dd4160dafebe2d3b14071669691a4a4955f6bfc1a4c4c96e689ec412e8ff2b"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenRefinement.lean",
+        "sha256": "99ee5f640a3981206abac30abd562d7ec734b8ae338133a7df0e77a0e7e75b16"
+      },
+      {
+        "path": "mechanization/lean/NMLT/Behavior/OpenResourceCongruence.lean",
+        "sha256": "e422430035e4324cfd0db0fccbee50d8430b099f8ad15d8c5034d887dd95def7"
+      },
+      {
+        "path": "mechanization/lean/lakefile.toml",
+        "sha256": "7220c1d89a71ab7a46568bfbaaef88037581edb650e228882c2397717638a33f"
+      },
+      {
+        "path": "mechanization/lean/lean-toolchain",
+        "sha256": "d98505f0e331ec8d3670abfe7b3e7f179f56a9ee827cd38b0c113a6e69c4b3fb"
+      },
+      {
+        "path": "mechanization/vectors/m11-open-congruence-v1.json",
+        "sha256": "731ef57a5393b932ac74187e9df51ed7e1f9afe93d3e0edc655fbd567ce978a4"
+      },
+      {
+        "path": "rust-toolchain.toml",
+        "sha256": "0ceb751d66f44e50985538d239e0f5712acccb9f7e71a8afb56878f8fc2ba74a"
+      },
+      {
+        "path": "schemas/open-congruence-evidence-v1.schema.json",
+        "sha256": "468b10b93574f89fcecbf38c29fa545f6afeb0fb91f694d60a5fc2cbe7017c7c"
+      },
+      {
+        "path": "tools/check_m11_congruence_correspondence.py",
+        "sha256": "c902712085b691f4405d1c25f188d84386f3ae79b3a93b86244deaa6cb5d3f29"
+      },
+      {
+        "path": "tools/check_open_congruence_evidence.py",
+        "sha256": "942f98f8f97c1ae3d8cb07294dfc01409f5ad73a606317a9303d51a4e16fa2bf"
+      }
+    ],
+    "source_set_id": "nmlt-open-congruence-source-set-v1:sha256:03aa798e9a0d0bcf00d1a3b49614a795cfc99d86ec3080cbfb6ccea319b8cc37",
+    "vector_sha256": "731ef57a5393b932ac74187e9df51ed7e1f9afe93d3e0edc655fbd567ce978a4"
+  },
+  "statement": "Two independently checked finite open refinements lift through exact bijective wiring to a contract-checked product refinement, with finite reachable-state invariant transport, affine capability partitioning, monotone grades and rely discharge across every structural product-action case, plus a dictionary-readback-bound executable kernel contract.",
+  "theorem_audits": [
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.StrongRefinement.parallelStepCongruenceRight",
+      "role": "two_sided_lifting"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.StrongRefinement.twoSidedCompositionCongruence",
+      "role": "two_sided_lifting"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.StrongRefinement.preservesComposableRightUnderWiring",
+      "role": "contract_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenComposition.StrongRefinement.transportInvariant",
+      "role": "invariant_transport"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.MappedWiringEquivalent.leftConnected_iff",
+      "role": "contract_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.MappedWiringEquivalent.rightConnected_iff",
+      "role": "contract_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.MappedRefinement.parallelStepCongruence",
+      "role": "two_sided_lifting"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.MappedRefinement.liftParallel",
+      "role": "two_sided_lifting"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.MappedRefinement.transportInvariant",
+      "role": "invariant_transport"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.MappedRefinement.abstractPortCovered",
+      "role": "contract_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.MappedRefinement.abstractAssumptionIncluded",
+      "role": "contract_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.MappedRefinement.concreteGuaranteeIncluded",
+      "role": "contract_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenMappedCongruence.Examples.positiveMappedProduct",
+      "role": "two_sided_lifting"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenResourceCongruence.partition_preserved",
+      "role": "resource_soundness"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenResourceCongruence.liftOpenProductResources",
+      "role": "resource_soundness"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenResourceCongruence.liftResourceAwareParallel",
+      "role": "resource_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenResourceCongruence.synchronized_transfer_exact",
+      "role": "resource_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenResourceCongruence.concreteGradeIncluded",
+      "role": "resource_soundness"
+    },
+    {
+      "declared_axioms": [],
+      "handle": "NMLT.Behavior.OpenResourceCongruence.concreteRelyIncluded",
+      "role": "resource_soundness"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenEncodingCorrespondence.check_sound",
+      "role": "encoding_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenEncodingCorrespondence.accepted_has_typed_action_maps",
+      "role": "encoding_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenEncodingCorrespondence.accepted_implementation_contract",
+      "role": "encoding_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenKernelExecution.check_accepts_implies_contract",
+      "role": "execution_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext"
+      ],
+      "handle": "NMLT.Behavior.OpenKernelReadback.decode_functional",
+      "role": "execution_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenKernelReadback.decode_injective",
+      "role": "execution_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenKernelReadback.check_accepts_with_readback",
+      "role": "execution_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenKernelReadback.referenced_id_in_dictionary",
+      "role": "execution_correspondence"
+    }
+  ],
+  "toolchain": {
+    "aeneas_commit": "45061fa1a5b4bad876f17c03d3a5544d818622e6",
+    "charon_commit": "40ee060a8df43f4e7e0842d3f05387b0a4426aaf",
+    "lean": "v4.30.0",
+    "rust": "1.94.0",
+    "standard_library_only": false
+  },
+  "validation_gate": "./tools/check_metatheory.sh"
+}

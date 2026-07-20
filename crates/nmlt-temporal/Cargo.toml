@@ -8,6 +8,8 @@ description = "Finite temporal, fairness, refinement, and runtime trace semantic
 publish = false
 
 [dependencies]
+nmlt-grades = { path = "../nmlt-grades" }
+nmlt-open-kernel = { path = "../nmlt-open-kernel" }
 
 [lints]
 workspace = true

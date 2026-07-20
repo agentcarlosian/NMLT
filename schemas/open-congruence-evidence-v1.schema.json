@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/open-congruence-evidence-v1.schema.json",
+  "title": "NMLT finite two-sided open-congruence evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "evidence_id", "claim_scope", "statement", "sources",
+    "toolchain", "theorem_audits", "rust_controls", "correspondence",
+    "validation_gate", "limitations"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^nmlt-open-congruence-evidence-v1:sha256:[0-9a-f]{64}$"
+    },
+    "claim_scope": { "const": "finite_two_sided_open_refinement_congruence" },
+    "statement": { "type": "string", "minLength": 1 },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_set_id", "entries", "vector_sha256"],
+      "properties": {
+        "source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-open-congruence-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "entries": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
+        },
+        "vector_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "toolchain": {
+      "type": "object", "additionalProperties": false,
+      "required": ["lean", "rust", "aeneas_commit", "charon_commit", "standard_library_only"],
+      "properties": {
+        "lean": { "const": "v4.30.0" },
+        "rust": { "const": "1.94.0" },
+        "aeneas_commit": { "const": "45061fa1a5b4bad876f17c03d3a5544d818622e6" },
+        "charon_commit": { "const": "40ee060a8df43f4e7e0842d3f05387b0a4426aaf" },
+        "standard_library_only": { "const": false }
+      }
+    },
+    "theorem_audits": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["handle", "role", "declared_axioms"],
+        "properties": {
+          "handle": { "type": "string", "minLength": 1 },
+          "role": {
+            "enum": ["two_sided_lifting", "contract_soundness", "invariant_transport", "resource_soundness", "encoding_correspondence", "execution_correspondence"]
+          },
+          "declared_axioms": {
+            "type": "array", "uniqueItems": true,
+            "items": { "enum": ["propext", "Classical.choice", "Quot.sound"] }
+          }
+        }
+      }
+    },
+    "rust_controls": {
+      "type": "array", "minItems": 4, "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "correspondence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "vector_schema", "verified_implementation_theorem", "verified_execution_kernel_theorem", "dictionary_readback_enforced", "adapter_verified"],
+      "properties": {
+        "kind": { "const": "proof_carrying_canonical_certificate" },
+        "vector_schema": { "const": "nmlt-m11-open-congruence-v1" },
+        "verified_implementation_theorem": { "const": false },
+        "verified_execution_kernel_theorem": { "const": true },
+        "dictionary_readback_enforced": { "const": true },
+        "adapter_verified": { "const": false }
+      }
+    },
+    "validation_gate": { "const": "./tools/check_metatheory.sh" },
+    "limitations": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

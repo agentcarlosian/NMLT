@@ -1,6 +1,6 @@
 {
   "claim_scope": "finite_exact_action_open_composition",
-  "evidence_id": "nmlt-open-composition-evidence-v1:sha256:2709d1686729570b37f856a3343330ef0969ce3c103c44b5d6d61579e4caa0f3",
+  "evidence_id": "nmlt-open-composition-evidence-v1:sha256:fa835bd6d9d9a8ebfb38355f3a2648fca97a0d4f2c35ec7bd777a105246eb952",
   "executable_correspondence": {
     "rust_checker": "related_nonidentical_finite_instance_checker",
     "verified": false
@@ -15,16 +15,16 @@
   ],
   "schema_version": "1.0.0",
   "sources": {
-    "checker_source_id": "nmlt-source-v1:sha256:18b82433317754f2a3665ae729d925e7d8c025fbc2401ee94cbe95611fa36e0c",
+    "checker_source_id": "nmlt-source-v1:sha256:24bf341fe61c1dd1258cb420b7c57222f8b9cb212e0fc45085d2f59276f69fca",
     "ci_workflow_source_id": "nmlt-source-v1:sha256:071a011e8c01e78a3b612d79e6928298fe5e51a95890a8031ff28ec52b987b66",
     "entries": [
       {
         "path": "mechanization/lean/NMLT.lean",
-        "sha256": "f930f00004e02503de388ce49b971d5b1a947ff3393e7126ded71d244d98f3c2"
+        "sha256": "4661e4aa143a399f3ba80a7faf46cb00ea376f385c8241bf9f919fa8f9538bb9"
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
-        "sha256": "4485f125478f7aae4a1facf0d16924b3e74d3275046b6b7963f4236e950c4737"
+        "sha256": "de68188b17f180dac387aab58a6691a5a38ac1ab29d50cc5a28dcac370c116ff"
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/Refinement.lean",
@@ -44,11 +44,11 @@
       },
       {
         "path": "mechanization/lean/lake-manifest.json",
-        "sha256": "df151dea3882728992ab78008f68e5a64042df308da3ddfae80be6e650076850"
+        "sha256": "e76701ed7a638be47d93a7c71c970a833728dd017ad38c4ebdae4cfc8a1784d2"
       },
       {
         "path": "mechanization/lean/lakefile.toml",
-        "sha256": "087eee37473b91dbfa2627f651b2785ed166ac7db12ab611499eec47c2eb5a01"
+        "sha256": "7220c1d89a71ab7a46568bfbaaef88037581edb650e228882c2397717638a33f"
       },
       {
         "path": "mechanization/lean/lean-toolchain",
@@ -57,11 +57,11 @@
     ],
     "evidence_checker_source_id": "nmlt-source-v1:sha256:b2399838f88b75c115d7f7b11d1e51b80d6be3054f883eab4d12a3810a2b8a95",
     "nanoda_checker_source_id": "nmlt-source-v1:sha256:fc0891182effa2f881be151b4519975c044965793a2aded2207f1ebceefd75ce",
-    "root_source_id": "nmlt-source-v1:sha256:9f566c9ef3b20e5be6609ce80c7e5dae75f76279dcaf74a489ee72b247a90d9a",
+    "root_source_id": "nmlt-source-v1:sha256:bb0cc867b525d1e2101829ecdc84bbfe3bbfee3e04f7fb400a0f0600751063e8",
     "schema_source_id": "nmlt-source-v1:sha256:f9d91ecd72beced1e29eb5a2b7290d3fd4d2293f22be269942fa43c71bdf16c6",
-    "schema_validator_source_id": "nmlt-source-v1:sha256:30310e32421ef0b622c7c1ac64b9a0fa3914eb20f97a2a48c3def67135b6dc6d",
-    "source_set_id": "nmlt-open-composition-source-set-v1:sha256:7eaa79938de22d5480bf24520407d6ad33f2fb3db8ae975e660188975e6d371b",
-    "trusted_component_inventory_source_id": "nmlt-source-v1:sha256:fbace700e76ec3eba3e0ab4bfc4e828eaf0f49caf2e05ec1fcece28edab8f7c9"
+    "schema_validator_source_id": "nmlt-source-v1:sha256:5721b737dd25c929c544a27a52543aa777965356fe24fa0f3c0c337209ad974a",
+    "source_set_id": "nmlt-open-composition-source-set-v1:sha256:0b93f9aaf99e62b8a44cbec7f0585e8d0f6e684c05a4f788d829369e0a8102f8",
+    "trusted_component_inventory_source_id": "nmlt-source-v1:sha256:a81a0ae59ae2692e6979cd08f31c974671c995c8266831aa57420b121cae0179"
   },
   "statement": "Kernel-checked structural exact-action safety congruence plus separate composability preservation for globally input-receptive open systems under whole-wiring equivalence.",
   "theorem_audits": [

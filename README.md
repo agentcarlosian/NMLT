@@ -35,11 +35,27 @@ identity-bound bidirectional elaborator that emits a complete derivation DAG.
 An independent kernel replays that DAG against exact HIR and core and is the
 sole constructor of `CheckedProgram`; the bounded provider engine now consumes
 that checked value without a second parser. M10 has closed its bounded
-behavior-indexed mathematics and certificate seed. M11 has started with a
-finite safety-only open-system slice: global input receptiveness, explicit
-synchronous connections, executable lifted-refinement checks, and an
-axiom-free exact-action Lean congruence theorem. The full open refinement,
-contract, resource, fairness, and source-correspondence goals remain open.
+behavior-indexed mathematics and certificate seed. M11 now includes finite
+safety-only open composition and contract-sound label-aware refinement:
+global input receptiveness, explicit synchronous connections, canonical finite
+nominal payload contracts, executable A/G variance checks, an axiom-free
+exact-action Lean congruence theorem, and separate axiom-free open-refinement
+identity/composition laws. M11-001c additionally has a finite two-sided product
+checker, exact wiring-edge reflection, product-contract checking, invariant
+transport, and an axiom-free label-mapped Lean product theorem with contract
+variance and distinct concrete/abstract port types. The checker now also
+enforces affine capability partition/transfer, componentwise grade improvement,
+and rely/guarantee discharge, with matching Lean resource rules and a checked
+finite-table/typed-map boundary. Lean now bundles operational, contract, and
+resource refinement across all eight structural product-action constructors.
+Rust revalidates the isolated canonical certificate through a bounded
+dependency-free kernel. Pinned Charon/Aeneas translate that executed kernel to
+Lean, where acceptance is proved to imply its refinement and wiring contract.
+The numeric certificate carries its canonical atom dictionary and is read back
+field-by-field before execution; Lean proves unique decoding and referenced-ID
+coverage for that boundary. The full gate remains open because the rich
+system-to-certificate encoder and the Rust readback implementation are not
+verified extraction; fairness and source correspondence also remain open.
 NMLT does not
 yet provide full surface-language execution, verified source-to-IR
 elaboration, general or infinite-state verification, production runtime
@@ -94,7 +110,8 @@ The `evidence` command emits a structural scaffold with result `unknown`; it
 does not claim verification. Persisted, source-bound results live under
 `benchmarks/results/` and `benchmarks/grades/`. The corresponding reproduction
 targets are `model-reports`, `temporal-evidence`, `multi-engine-evidence`,
-`agentic-evidence`, `graded-evidence`, and `open-composition-evidence`.
+`agentic-evidence`, `graded-evidence`, `open-composition-evidence`,
+`open-refinement-evidence`, and `open-congruence-evidence`.
 
 ## Repository map
 

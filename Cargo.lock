@@ -96,8 +96,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "nmlt-open-kernel"
+version = "0.0.1"
+
+[[package]]
 name = "nmlt-temporal"
 version = "0.0.1"
+dependencies = [
+ "nmlt-grades",
+ "nmlt-open-kernel",
+]
 
 [[package]]
 name = "nmlt-verify"

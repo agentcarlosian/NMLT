@@ -131,12 +131,31 @@ construction. Lean separately proves axiom-free one-sided structural product
 congruence, composability preservation, and product receptiveness under its
 arbitrary exact-wiring model. No Rust/Lean correspondence theorem is claimed.
 
-M11-001b is next: canonical finite assumption/guarantee predicates,
-payload-type identity, contravariant assumptions, covariant guarantees, and
-identity/composition laws for open refinement. Full supported congruence,
-source/behavior preservation, constructive temporal evidence, artifact-bound
+M11-001b is complete at a finite contract-sound scope: canonical nominal
+payload identities, finite assumption/guarantee predicates, exact-type
+noncircular discharge, complete injective label renaming, contravariant
+assumptions, covariant guarantees, and axiom-free identity/composition laws.
+The [claim-specific manifest](../benchmarks/results/open-refinement/m11-001b-evidence.json)
+binds the exact Rust controls, Lean declarations, sources, and limitations.
+M11-001c's finite core now checks two-sided product lifting, remaining product
+contracts, exact edge-bijective wiring, and finite invariant transport. Lean
+separately proves the label-mapped two-sided core without axioms, including
+complete boundary bijections, mapped wiring, contract variance, and a positive
+instance with distinct concrete/abstract port types. The
+[M11-001c manifest](../benchmarks/results/open-congruence/m11-001c-evidence.json)
+now binds the resource-aware Rust checker, eleven controls, the Lean all-case
+resource theorem, and an executable finite-table certificate checker. Accepted tables carry
+typed `Fin` maps and exact nominal payload identity; Rust rejects nonuniform
+payload universes, hidden maps, non-surjective state tables, shared authority,
+nonmonotone grades, undischarged relies, and mutated canonical maps. Rust
+revalidates the isolated certificate, while Lean proves a quantified semantic
+contract for every accepted certificate and bundles behavioral, contract, and
+resource refinement across all eight product-action constructors. The full
+substage stays open because the Rust encoder and validator are not verified
+extraction. Source/behavior preservation,
+constructive temporal evidence, artifact-bound
 uncertainty, fairness, theorem-bound up-to closures, certificate cost evidence,
 the proof-relevant Segal experiment, and provenance synchronization remain
 later M11 gates. See the
-[reboot handoff](reboot-handoff-2026-07-19.md) for the exact continuation
-state.
+[reboot handoff](reboot-handoff-2026-07-19.md) for the prior continuation
+state. M11-001c remains the active objective.

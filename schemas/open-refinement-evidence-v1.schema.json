@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/open-refinement-evidence-v1.schema.json",
+  "title": "NMLT finite contract-sound open-refinement evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "evidence_id", "claim_scope", "statement", "sources",
+    "toolchain", "theorem_audits", "rust_controls", "validation_gate",
+    "executable_correspondence", "limitations"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^nmlt-open-refinement-evidence-v1:sha256:[0-9a-f]{64}$"
+    },
+    "claim_scope": { "const": "finite_contract_sound_open_refinement" },
+    "statement": { "type": "string", "minLength": 1 },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_set_id", "entries", "root_source_id",
+        "trusted_component_inventory_source_id", "checker_source_id",
+        "nanoda_checker_source_id", "ci_workflow_source_id",
+        "evidence_checker_source_id", "schema_validator_source_id", "schema_source_id"
+      ],
+      "properties": {
+        "source_set_id": {
+          "type": "string",
+          "pattern": "^nmlt-open-refinement-source-set-v1:sha256:[0-9a-f]{64}$"
+        },
+        "entries": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
+        },
+        "root_source_id": { "$ref": "#/$defs/sourceId" },
+        "trusted_component_inventory_source_id": { "$ref": "#/$defs/sourceId" },
+        "checker_source_id": { "$ref": "#/$defs/sourceId" },
+        "nanoda_checker_source_id": { "$ref": "#/$defs/sourceId" },
+        "ci_workflow_source_id": { "$ref": "#/$defs/sourceId" },
+        "evidence_checker_source_id": { "$ref": "#/$defs/sourceId" },
+        "schema_validator_source_id": { "$ref": "#/$defs/sourceId" },
+        "schema_source_id": { "$ref": "#/$defs/sourceId" }
+      }
+    },
+    "toolchain": {
+      "type": "object", "additionalProperties": false,
+      "required": ["lean", "rust", "standard_library_only"],
+      "properties": {
+        "lean": { "const": "v4.30.0" },
+        "rust": { "const": "1.94.0" },
+        "standard_library_only": { "const": true }
+      }
+    },
+    "theorem_audits": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["handle", "role", "declared_axioms"],
+        "properties": {
+          "handle": { "type": "string", "minLength": 1 },
+          "role": {
+            "enum": ["identity", "composition", "variance", "payload_identity"]
+          },
+          "declared_axioms": {
+            "type": "array", "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "rust_controls": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "validation_gate": { "const": "./tools/check_metatheory.sh" },
+    "executable_correspondence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["rust_checker", "verified"],
+      "properties": {
+        "rust_checker": { "const": "finite_open_refinement_instance_checker" },
+        "verified": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "sourceId": {
+      "type": "string",
+      "pattern": "^nmlt-source-v1:sha256:[0-9a-f]{64}$"
+    }
+  }
+}

@@ -2,6 +2,11 @@ import NMLT.Behavior.Refinement
 
 namespace NMLT.Behavior.OpenComposition
 
+/-! The companion translation-validation vectors are
+    `mechanization/vectors/m11-open-congruence-v1.json`, schema
+    `nmlt-m11-open-congruence-v1`. They bind the theorem handles and Rust
+    controls but do not constitute a proof about the Rust compiler or runtime. -/
+
 /-- The polarity of a boundary port. Internal actions have no port and are
     therefore not candidates for synchronization. -/
 inductive Direction where
@@ -321,6 +326,32 @@ structure StrongRefinement
 
 namespace StrongRefinement
 
+def identity
+    {Internal Port Message Observation : Type}
+    {interface : Interface Port Message}
+    (system : System Internal Port Message Observation interface) :
+    StrongRefinement system system where
+  mapState := id
+  stateSurjective := fun state => ⟨state, rfl⟩
+  initial := id
+  observation := fun _ => rfl
+  step := id
+
+def compose
+    {Internal Port Message Observation : Type}
+    {firstInterface secondInterface thirdInterface : Interface Port Message}
+    {first : System Internal Port Message Observation firstInterface}
+    {second : System Internal Port Message Observation secondInterface}
+    {third : System Internal Port Message Observation thirdInterface}
+    (left : StrongRefinement first second) (right : StrongRefinement second third) :
+    StrongRefinement first third where
+  mapState := right.mapState ∘ left.mapState
+  stateSurjective := right.stateSurjective.comp left.stateSurjective
+  initial := fun starts => right.initial (left.initial starts)
+  observation := fun state =>
+    (left.observation state).trans (right.observation (left.mapState state))
+  step := fun edge => right.step (left.step edge)
+
 theorem preservesInputReceptive
     {Internal Port Message Observation : Type}
     {interface : Interface Port Message}
@@ -484,6 +515,174 @@ def liftParallel
     (refinement.observation state.1)
   step := parallelStepCongruence refinement equivalent
 
+/-- Symmetric operational lifting for refinement of the right component. -/
+theorem parallelStepCongruenceRight
+    {LeftInternal LeftPort RightInternal RightPort Message LeftObservation RightObservation : Type}
+    {leftInterface : Interface LeftPort Message}
+    {rightInterface : Interface RightPort Message}
+    {peer : System LeftInternal LeftPort Message LeftObservation leftInterface}
+    {concrete abstract : System RightInternal RightPort Message RightObservation rightInterface}
+    {concreteWiring abstractWiring : Wiring LeftPort RightPort}
+    (refinement : StrongRefinement concrete abstract)
+    (equivalent : WiringEquivalent concreteWiring abstractWiring)
+    {before after : peer.State × concrete.State}
+    {action : OpenAction
+      (CompositeInternal LeftInternal LeftPort RightInternal RightPort Message)
+      (Sum LeftPort RightPort) Message} :
+    ParallelStep peer concrete concreteWiring before action after →
+      ParallelStep peer abstract abstractWiring
+        (before.1, refinement.mapState before.2) action
+        (after.1, refinement.mapState after.2) := by
+  intro transition
+  cases transition with
+  | fromLeftInternal edge => exact .fromLeftInternal edge
+  | fromRightInternal edge => exact .fromRightInternal (refinement.step edge)
+  | fromLeftInput isolated edge =>
+      exact .fromLeftInput (equivalent.reflectLeftIsolation isolated) edge
+  | fromLeftOutput isolated edge =>
+      exact .fromLeftOutput (equivalent.reflectLeftIsolation isolated) edge
+  | fromRightInput isolated edge =>
+      exact .fromRightInput (equivalent.reflectRightIsolation isolated) (refinement.step edge)
+  | fromRightOutput isolated edge =>
+      exact .fromRightOutput (equivalent.reflectRightIsolation isolated) (refinement.step edge)
+  | synchronizeLeftToRight connected send receive =>
+      exact .synchronizeLeftToRight
+        ((equivalent.leftToRight _ _).mp connected) send (refinement.step receive)
+  | synchronizeRightToLeft connected send receive =>
+      exact .synchronizeRightToLeft
+        ((equivalent.rightToLeft _ _).mp connected) (refinement.step send) receive
+
+def liftParallelRight
+    {LeftInternal LeftPort RightInternal RightPort Message LeftObservation RightObservation : Type}
+    {leftInterface : Interface LeftPort Message}
+    {rightInterface : Interface RightPort Message}
+    {peer : System LeftInternal LeftPort Message LeftObservation leftInterface}
+    {concrete abstract : System RightInternal RightPort Message RightObservation rightInterface}
+    {concreteWiring abstractWiring : Wiring LeftPort RightPort}
+    (refinement : StrongRefinement concrete abstract)
+    (equivalent : WiringEquivalent concreteWiring abstractWiring) :
+    StrongRefinement (parallel peer concrete concreteWiring)
+      (parallel peer abstract abstractWiring) where
+  mapState := fun state => (state.1, refinement.mapState state.2)
+  stateSurjective := by
+    intro state
+    obtain ⟨concreteState, mapped⟩ := refinement.stateSurjective state.2
+    exact ⟨(state.1, concreteState), Prod.ext rfl mapped⟩
+  initial := fun initial => ⟨initial.1, refinement.initial initial.2⟩
+  observation := fun state => congrArg (fun observation => (peer.observe state.1, observation))
+    (refinement.observation state.2)
+  step := parallelStepCongruenceRight refinement equivalent
+
+theorem preservesComposableRightUnderWiring
+    {LeftInternal LeftPort RightInternal RightPort Message LeftObservation RightObservation : Type}
+    {leftInterface : Interface LeftPort Message}
+    {rightInterface : Interface RightPort Message}
+    {peer : System LeftInternal LeftPort Message LeftObservation leftInterface}
+    {concrete abstract : System RightInternal RightPort Message RightObservation rightInterface}
+    {concreteWiring abstractWiring : Wiring LeftPort RightPort}
+    (refinement : StrongRefinement concrete abstract)
+    (equivalent : WiringEquivalent concreteWiring abstractWiring)
+    (ready : Composable peer concrete concreteWiring) :
+    Composable peer abstract abstractWiring where
+  interfaces := {
+    leftToRightPorts := by
+      intro leftPort rightPort connected
+      exact ready.interfaces.leftToRightPorts
+        ((equivalent.leftToRight leftPort rightPort).mpr connected)
+    rightToLeftPorts := by
+      intro rightPort leftPort connected
+      exact ready.interfaces.rightToLeftPorts
+        ((equivalent.rightToLeft rightPort leftPort).mpr connected)
+    leftToRightContract := by
+      intro leftPort rightPort message connected guaranteed
+      exact ready.interfaces.leftToRightContract
+        ((equivalent.leftToRight leftPort rightPort).mpr connected) guaranteed
+    rightToLeftContract := by
+      intro rightPort leftPort message connected guaranteed
+      exact ready.interfaces.rightToLeftContract
+        ((equivalent.rightToLeft rightPort leftPort).mpr connected) guaranteed
+  }
+  leftReceptive := ready.leftReceptive
+  rightReceptive := refinement.preservesInputReceptive ready.rightReceptive
+
+/-- M11-001c's exact-action two-sided core: refining both components preserves
+    composability and yields a refinement between the two products. Contract
+    soundness here is the `Composable` result; richer label variance is kept in
+    `OpenRefinement` and guarded against the executable product by shared
+    correspondence controls. -/
+theorem twoSidedCompositionCongruence
+    {LeftInternal LeftPort RightInternal RightPort Message LeftObservation RightObservation : Type}
+    {leftInterface : Interface LeftPort Message}
+    {rightInterface : Interface RightPort Message}
+    {concreteLeft abstractLeft :
+      System LeftInternal LeftPort Message LeftObservation leftInterface}
+    {concreteRight abstractRight :
+      System RightInternal RightPort Message RightObservation rightInterface}
+    {concreteWiring abstractWiring : Wiring LeftPort RightPort}
+    (leftRefinement : StrongRefinement concreteLeft abstractLeft)
+    (rightRefinement : StrongRefinement concreteRight abstractRight)
+    (equivalent : WiringEquivalent concreteWiring abstractWiring)
+    (ready : Composable concreteLeft concreteRight concreteWiring) :
+    Composable abstractLeft abstractRight abstractWiring ∧
+      Nonempty (StrongRefinement
+        (parallel concreteLeft concreteRight concreteWiring)
+        (parallel abstractLeft abstractRight abstractWiring)) := by
+  have middleReady : Composable abstractLeft concreteRight abstractWiring :=
+    leftRefinement.preservesComposableLeftUnderWiring equivalent ready
+  have abstractReady : Composable abstractLeft abstractRight abstractWiring :=
+    rightRefinement.preservesComposableRightUnderWiring
+      rightRefinementWiringEquivalent middleReady
+  exact ⟨abstractReady, ⟨StrongRefinement.compose
+    (leftRefinement.liftParallel equivalent)
+    (rightRefinement.liftParallelRight rightRefinementWiringEquivalent)⟩⟩
+where
+  rightRefinementWiringEquivalent : WiringEquivalent abstractWiring abstractWiring := {
+    leftToRight := fun _ _ => Iff.rfl
+    rightToLeft := fun _ _ => Iff.rfl
+  }
+
+/-- Exact finite reachability for open systems. -/
+inductive Reachable
+    {Internal Port Message Observation : Type}
+    {interface : Interface Port Message}
+    (system : System Internal Port Message Observation interface) : system.State → Prop
+  | initial {state} : system.init state → Reachable system state
+  | step {before action after} : Reachable system before →
+      system.step before action after → Reachable system after
+
+def Invariant
+    {Internal Port Message Observation : Type}
+    {interface : Interface Port Message}
+    (system : System Internal Port Message Observation interface)
+    (predicate : system.State → Prop) : Prop :=
+  ∀ state, Reachable system state → predicate state
+
+theorem mapReachable
+    {Internal Port Message Observation : Type}
+    {concreteInterface abstractInterface : Interface Port Message}
+    {concrete : System Internal Port Message Observation concreteInterface}
+    {abstract : System Internal Port Message Observation abstractInterface}
+    (refinement : StrongRefinement concrete abstract) {state : concrete.State} :
+    Reachable concrete state → Reachable abstract (refinement.mapState state) := by
+  intro reachable
+  induction reachable with
+  | initial starts => exact .initial (refinement.initial starts)
+  | step previous edge inductionHypothesis =>
+      exact .step inductionHypothesis (refinement.step edge)
+
+/-- Safety invariants transport contravariantly along any supported strong
+    refinement, including the two-sided product refinement above. -/
+theorem transportInvariant
+    {Internal Port Message Observation : Type}
+    {concreteInterface abstractInterface : Interface Port Message}
+    {concrete : System Internal Port Message Observation concreteInterface}
+    {abstract : System Internal Port Message Observation abstractInterface}
+    (refinement : StrongRefinement concrete abstract)
+    (predicate : abstract.State → Prop) (holds : Invariant abstract predicate) :
+    Invariant concrete (predicate ∘ refinement.mapState) := by
+  intro state reachable
+  exact holds (refinement.mapState state) (refinement.mapReachable reachable)
+
 /-- Bounded M11-001 composition congruence. A well-formed concrete composition
     remains well formed after exact-action refinement of its left component,
     and the concrete product strongly refines the abstract product.
@@ -515,6 +714,14 @@ theorem compositionCongruence
 #print axioms preservesComposableLeftUnderWiring
 #print axioms parallelStepCongruence
 #print axioms compositionCongruence
+#print axioms StrongRefinement.identity
+#print axioms StrongRefinement.compose
+#print axioms parallelStepCongruenceRight
+#print axioms liftParallelRight
+#print axioms preservesComposableRightUnderWiring
+#print axioms twoSidedCompositionCongruence
+#print axioms mapReachable
+#print axioms transportInvariant
 
 end StrongRefinement
 
@@ -658,6 +865,37 @@ theorem positiveCompositionCongruence :
   exact StrongRefinement.compositionCongruence senderRefinement
     connectedWiringEquivalent senderReceiverComposable
 
+/-- Two-sided theorem control. The right witness is explicit identity here;
+    the theorem itself accepts independent nonidentity refinements on both
+    components. -/
+theorem positiveTwoSidedCompositionCongruence :
+    Composable abstractSender receiver connectedWiring ∧
+      Nonempty (StrongRefinement
+        (parallel concreteSender receiver connectedWiring)
+        (parallel abstractSender receiver connectedWiring)) := by
+  exact StrongRefinement.twoSidedCompositionCongruence senderRefinement
+    (StrongRefinement.identity receiver) connectedWiringEquivalent
+    senderReceiverComposable
+
+theorem positiveProductInvariantTransport
+    (predicate : (Unit × Bool) → Prop)
+    (holds : StrongRefinement.Invariant
+      (parallel abstractSender receiver connectedWiring) predicate) :
+    ∃ refinement : StrongRefinement
+        (parallel concreteSender receiver connectedWiring)
+        (parallel abstractSender receiver connectedWiring),
+      StrongRefinement.Invariant
+        (parallel concreteSender receiver connectedWiring)
+        (predicate ∘ refinement.mapState) := by
+  have lifted : StrongRefinement
+      (parallel concreteSender receiver connectedWiring)
+      (parallel abstractSender receiver connectedWiring) :=
+    StrongRefinement.compose
+      (senderRefinement.liftParallel connectedWiringEquivalent)
+      ((StrongRefinement.identity receiver).liftParallelRight
+        connectedWiringEquivalent)
+  exact ⟨lifted, lifted.transportInvariant predicate holds⟩
+
 theorem positiveConcreteSynchronization :
     ParallelStep concreteSender receiver connectedWiring (false, false)
       (.internal (.leftToRight () () ())) (true, true) := by
@@ -707,6 +945,8 @@ theorem brokenWiringNotEquivalent :
     brokenWiringRightConnected
 
 #print axioms positiveCompositionCongruence
+#print axioms positiveTwoSidedCompositionCongruence
+#print axioms positiveProductInvariantTransport
 #print axioms positiveConcreteSynchronization
 #print axioms peerOnlyWithEmptyWiring
 #print axioms brokenWiringBlocksPeerOnly
