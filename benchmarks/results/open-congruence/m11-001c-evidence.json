@@ -9,11 +9,11 @@
     "verified_execution_kernel_theorem": true,
     "verified_implementation_theorem": false
   },
-  "evidence_id": "nmlt-open-congruence-evidence-v1:sha256:f1679c242672f943e73d2b535e6d4d3f68218da5d06442089cf70c864aadb8db",
+  "evidence_id": "nmlt-open-congruence-evidence-v1:sha256:fb55756cba5c574d90f6e0e57893c82f8e63dfb54dbccfec98a27db2e3b0a1e0",
   "limitations": [
     "Safety-only finite exact-action profile; no liveness or fairness transport.",
     "No liveness, fairness, hidden-divergence, payload-subtyping, or circular-discharge result.",
-    "The bounded Rust kernel is translated by pinned Charon/Aeneas; its numeric envelope carries a canonical atom dictionary and Rust independently reads every active field back. Rust also independently reads the canonical representation back against every rich source field, while Lean specifies exact source-readback transport plus unique dictionary decoding and referenced-ID coverage. The rich encoder and both Rust readback implementations remain outside verified extraction.",
+    "The bounded Rust kernel is translated by pinned Charon/Aeneas; it now executes structural equality against a separately reconstructed expected numeric certificate before validation, and Lean proves successful bound execution exposes that readback decision and the validation contract. Rust independently reads every active dictionary and source field back. The rich encoder, reconstruction, and Rust readback implementations remain outside verified extraction.",
     "The correspondence profile deliberately requires one exact nominal payload universe across all four components and total visible action maps.",
     "The proved canonical projection retains the uncertainty upper-bound coordinate but not Rust uncertainty family/profile identity; the stronger family checks remain in nmlt-grades."
   ],
@@ -31,6 +31,7 @@
     "kernel_readback_rejects_dictionary_substitution",
     "kernel_readback_rejects_numeric_atom_substitution",
     "kernel_readback_rejects_active_action_omission",
+    "verified_kernel_bound_rejects_certificate_substitution",
     "canonical_validator_rejects_kernel_capacity_overflow",
     "source_readback_rejects_action_name_substitution",
     "source_readback_rejects_resource_substitution",
@@ -46,7 +47,7 @@
       },
       {
         "path": "crates/nmlt-open-kernel/src/lib.rs",
-        "sha256": "9d2cf66c1c2c57471cb2edb47a20caaf6e6a03f531b501a8eaefb1b1e36a4066"
+        "sha256": "4021e1b738d9b53f402bd7ea68434353b39e227079b6c079e8a7e84f69a367cb"
       },
       {
         "path": "crates/nmlt-temporal/src/lib.rs",
@@ -58,7 +59,7 @@
       },
       {
         "path": "crates/nmlt-temporal/src/open_congruence.rs",
-        "sha256": "44a1cc8bee70b607e9a040a704eb19451fe37394dd2d5884ec91073610ea27e7"
+        "sha256": "4f046662a7987270bb70a834a3c1acfc2004e42fc5d398820d140945dc7340a7"
       },
       {
         "path": "crates/nmlt-temporal/src/open_contract.rs",
@@ -66,7 +67,7 @@
       },
       {
         "path": "crates/nmlt-temporal/src/open_encoding.rs",
-        "sha256": "10c67f40a9a6959b18c07dcb9e9708ef14a6d3884252e16b2ede76ab276621f8"
+        "sha256": "c57936e3fc3486964f210bd200b03d5557ddcc7cb9f95a3ff83f6803a82bdbbe"
       },
       {
         "path": "crates/nmlt-temporal/src/open_refinement.rs",
@@ -90,11 +91,11 @@
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean",
-        "sha256": "779dd977013a7401b17c9e6f94d63ef51f8be3ee9e7e8dd1cadc54cb4a2c6c4a"
+        "sha256": "e3b4a671344ca6ff232ac1d927b047c6e6dc112b7410aa8727edc3e74fc23e4d"
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
-        "sha256": "726ee05bcfb91d88d42e7a333abc52605b37e20d3350e3253b81b08eb9b8c63f"
+        "sha256": "ee27dacedff846a3b57ddc9b2b984c43cca61470ecb6426c34a3e5723dc9ba55"
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Types.lean",
@@ -130,7 +131,7 @@
       },
       {
         "path": "mechanization/vectors/m11-open-congruence-v1.json",
-        "sha256": "a4525c16e208a958e961a5f284ed518164490a24d3d48d98e51c9a39c195f98d"
+        "sha256": "086dba9997dbf55d938cbc99016d1e98a83f219ffdb4d73fd84d3bebb072e1fa"
       },
       {
         "path": "rust-toolchain.toml",
@@ -142,15 +143,15 @@
       },
       {
         "path": "tools/check_m11_congruence_correspondence.py",
-        "sha256": "e6fdeac2d75861997196ae5e99e10ef6344278523ee3f3988f85e72e9e856239"
+        "sha256": "d3015f8684ab1c5f90799f54f064a5028a6578ee6647169014193843265f8bdb"
       },
       {
         "path": "tools/check_open_congruence_evidence.py",
-        "sha256": "6172845328b8417c86b1eb2911f0f497ab5efb58ea7fca1c8d50c32efcdf2678"
+        "sha256": "5e4c0e11aa70d66d758e362d943b87f16836b1122049fea7e54406b326f911de"
       }
     ],
-    "source_set_id": "nmlt-open-congruence-source-set-v1:sha256:f7e2a1a7f2dce13e0c1d79d7bf6aefd125cd5fe35fd74a822fd6cb0a2c96cfca",
-    "vector_sha256": "a4525c16e208a958e961a5f284ed518164490a24d3d48d98e51c9a39c195f98d"
+    "source_set_id": "nmlt-open-congruence-source-set-v1:sha256:f17152d49192f6a3d45a7aebc92ccb35813e7f346cdb70d83e3348785da5c400",
+    "vector_sha256": "086dba9997dbf55d938cbc99016d1e98a83f219ffdb4d73fd84d3bebb072e1fa"
   },
   "statement": "Two independently checked finite open refinements lift through exact bijective wiring to a contract-checked product refinement, with finite reachable-state invariant transport, affine capability partitioning, monotone grades and rely discharge across every structural product-action case, plus a dictionary-readback-bound executable kernel contract.",
   "theorem_audits": [
@@ -286,6 +287,15 @@
         "Quot.sound"
       ],
       "handle": "NMLT.Behavior.OpenKernelExecution.check_accepts_implies_contract",
+      "role": "execution_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ],
+      "handle": "NMLT.Behavior.OpenKernelExecution.check_bound_accepts_implies_exact_contract",
       "role": "execution_correspondence"
     },
     {

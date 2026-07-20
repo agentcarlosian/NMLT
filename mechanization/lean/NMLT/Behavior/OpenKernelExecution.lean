@@ -62,6 +62,30 @@ theorem check_accepts_implies_contract (raw : Congruence)
     next variantsDuplicate => simp at accepted
   next payloadMissing => simp at accepted
 
+/-- Exact bounded readback is the equality decision executed by the translated
+Rust kernel. -/
+def KernelReadbackExact (expected raw : Congruence) : Prop :=
+  Congruence.Insts.CoreCmpPartialEqCongruence.eq expected raw = .ok true
+
+/-- The translated bound checker exposes its successful structural readback
+decision together with the complete execution contract. -/
+theorem check_bound_accepts_implies_exact_contract
+    (expected raw : Congruence)
+    (accepted : check_bound expected raw = .ok true) :
+    KernelReadbackExact expected raw ∧ ExecutionContract raw := by
+  simp only [check_bound] at accepted
+  generalize equalityEquation :
+    Congruence.Insts.CoreCmpPartialEqCongruence.eq expected raw = equalityResult at accepted
+  cases equalityResult with
+  | fail error => simp at accepted
+  | div => simp at accepted
+  | ok equal =>
+      cases equal with
+      | false => simp at accepted
+      | true =>
+          exact ⟨equalityEquation, check_accepts_implies_contract raw accepted⟩
+
 #print axioms check_accepts_implies_contract
+#print axioms check_bound_accepts_implies_exact_contract
 
 end NMLT.Behavior.OpenKernelExecution

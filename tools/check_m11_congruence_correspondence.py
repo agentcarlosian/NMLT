@@ -23,7 +23,7 @@ def main() -> None:
     vectors = json.loads(VECTORS.read_text(encoding="utf-8"))
     assert vectors["schema_version"] == "nmlt-m11-open-congruence-v1"
     assert vectors["claim_class"] == "shared-vector-drift-control"
-    assert len(vectors["cases"]) == 18
+    assert len(vectors["cases"]) == 19
     rust = RUST.read_text(encoding="utf-8")
     lean = "".join(
         path.read_text(encoding="utf-8")
