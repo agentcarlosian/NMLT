@@ -9,7 +9,7 @@
     "verified_execution_kernel_theorem": true,
     "verified_implementation_theorem": false
   },
-  "evidence_id": "nmlt-open-congruence-evidence-v1:sha256:fb55756cba5c574d90f6e0e57893c82f8e63dfb54dbccfec98a27db2e3b0a1e0",
+  "evidence_id": "nmlt-open-congruence-evidence-v1:sha256:a846f78b7582add382b10bcc0d68eec2ded9ce3e682237bef14eccd2f5f8c5b3",
   "limitations": [
     "Safety-only finite exact-action profile; no liveness or fairness transport.",
     "No liveness, fairness, hidden-divergence, payload-subtyping, or circular-discharge result.",
@@ -91,7 +91,7 @@
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean",
-        "sha256": "e3b4a671344ca6ff232ac1d927b047c6e6dc112b7410aa8727edc3e74fc23e4d"
+        "sha256": "5ecdac72bee35bac0828fbbd5d75c92e227e0f072f9dbf801d42908050ab87de"
       },
       {
         "path": "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
@@ -147,10 +147,10 @@
       },
       {
         "path": "tools/check_open_congruence_evidence.py",
-        "sha256": "5e4c0e11aa70d66d758e362d943b87f16836b1122049fea7e54406b326f911de"
+        "sha256": "1282893ac77f239591ab36abd5dbddb7babbefc117a6802b0031cac64997ad97"
       }
     ],
-    "source_set_id": "nmlt-open-congruence-source-set-v1:sha256:f17152d49192f6a3d45a7aebc92ccb35813e7f346cdb70d83e3348785da5c400",
+    "source_set_id": "nmlt-open-congruence-source-set-v1:sha256:c27de219b0417a6d4f029344c1d017491528acc037b220432bc5238ed32ec923",
     "vector_sha256": "086dba9997dbf55d938cbc99016d1e98a83f219ffdb4d73fd84d3bebb072e1fa"
   },
   "statement": "Two independently checked finite open refinements lift through exact bijective wiring to a contract-checked product refinement, with finite reachable-state invariant transport, affine capability partitioning, monotone grades and rely discharge across every structural product-action case, plus a dictionary-readback-bound executable kernel contract.",
@@ -287,6 +287,13 @@
         "Quot.sound"
       ],
       "handle": "NMLT.Behavior.OpenKernelExecution.check_accepts_implies_contract",
+      "role": "execution_correspondence"
+    },
+    {
+      "declared_axioms": [
+        "propext"
+      ],
+      "handle": "NMLT.Behavior.OpenKernelExecution.EqualitySoundness.grade",
       "role": "execution_correspondence"
     },
     {

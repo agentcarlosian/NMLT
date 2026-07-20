@@ -121,6 +121,7 @@ THEOREMS = (
     ("NMLT.Behavior.OpenEncodingCorrespondence.accepted_has_typed_action_maps", "encoding_correspondence", ("propext", "Quot.sound")),
     ("NMLT.Behavior.OpenEncodingCorrespondence.accepted_implementation_contract", "encoding_correspondence", ("propext", "Quot.sound")),
     ("NMLT.Behavior.OpenKernelExecution.check_accepts_implies_contract", "execution_correspondence", ("propext", "Classical.choice", "Quot.sound")),
+    ("NMLT.Behavior.OpenKernelExecution.EqualitySoundness.grade", "execution_correspondence", ("propext",)),
     ("NMLT.Behavior.OpenKernelExecution.check_bound_accepts_implies_exact_contract", "execution_correspondence", ("propext", "Classical.choice", "Quot.sound")),
     ("NMLT.Behavior.OpenKernelReadback.decode_functional", "execution_correspondence", ("propext",)),
     ("NMLT.Behavior.OpenKernelReadback.decode_injective", "execution_correspondence", ("propext", "Quot.sound")),

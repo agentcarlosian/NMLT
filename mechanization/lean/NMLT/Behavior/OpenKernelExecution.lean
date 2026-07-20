@@ -67,6 +67,33 @@ Rust kernel. -/
 def KernelReadbackExact (expected raw : Congruence) : Prop :=
   Congruence.Insts.CoreCmpPartialEqCongruence.eq expected raw = .ok true
 
+namespace EqualitySoundness
+
+/-- Soundness of the generated equality for the scalar-only grade leaf. -/
+theorem grade (left right : Grade)
+    (accepted : Grade.Insts.CoreCmpPartialEqGrade.eq left right = .ok true) :
+    left = right := by
+  rcases left with ⟨leftCost, leftPrivacy, leftEnergy, leftUncertainty⟩
+  rcases right with ⟨rightCost, rightPrivacy, rightEnergy, rightUncertainty⟩
+  simp only [Grade.Insts.CoreCmpPartialEqGrade.eq] at accepted
+  split at accepted
+  next costEqual =>
+    split at accepted
+    next privacyEqual =>
+      split at accepted
+      next energyEqual =>
+        simp only [Std.Result.ok.injEq, decide_eq_true_eq] at accepted
+        subst rightCost
+        subst rightPrivacy
+        subst rightEnergy
+        subst rightUncertainty
+        rfl
+      next energyDifferent => simp at accepted
+    next privacyDifferent => simp at accepted
+  next costDifferent => simp at accepted
+
+end EqualitySoundness
+
 /-- The translated bound checker exposes its successful structural readback
 decision together with the complete execution contract. -/
 theorem check_bound_accepts_implies_exact_contract
@@ -86,6 +113,7 @@ theorem check_bound_accepts_implies_exact_contract
           exact ⟨equalityEquation, check_accepts_implies_contract raw accepted⟩
 
 #print axioms check_accepts_implies_contract
+#print axioms EqualitySoundness.grade
 #print axioms check_bound_accepts_implies_exact_contract
 
 end NMLT.Behavior.OpenKernelExecution
