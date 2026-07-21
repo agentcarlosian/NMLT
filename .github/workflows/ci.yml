@@ -51,8 +51,8 @@ jobs:
           lake-package-directory: ${{ steps.stage_lean.outputs.path }}
           build: true
           nanoda: false
-          use-mathlib-cache: false
-          use-github-cache: false
+          use-mathlib-cache: true
+          use-github-cache: true
 
       - name: Independently check Lean artifacts with pinned nanoda
         env:
