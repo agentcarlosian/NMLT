@@ -373,7 +373,7 @@ impl Encoder {
         self.bytes.extend_from_slice(bytes);
     }
     fn u8(&mut self, value: u8) {
-        self.bytes.push(value);
+        self.raw(&[value]);
     }
     fn u32(&mut self, value: u32) {
         self.raw(&value.to_be_bytes());
@@ -393,5 +393,26 @@ impl Encoder {
     }
     const fn overflowed(&self) -> bool {
         self.overflowed
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Encoder;
+
+    #[test]
+    fn one_byte_tags_count_at_the_exact_canonical_limit() {
+        let mut at_limit = Encoder::with_domain_limit(b"", 1);
+        at_limit.u8(7);
+        assert_eq!(at_limit.encoded_len(), 1);
+        assert!(!at_limit.overflowed());
+        assert_eq!(at_limit.finish(), vec![7]);
+
+        let mut above_limit = Encoder::with_domain_limit(b"", 1);
+        above_limit.u8(7);
+        above_limit.u8(8);
+        assert_eq!(above_limit.encoded_len(), 2);
+        assert!(above_limit.overflowed());
+        assert_eq!(above_limit.finish(), vec![7]);
     }
 }

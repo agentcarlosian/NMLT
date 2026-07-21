@@ -206,3 +206,62 @@ fn semantic_mutation_cannot_target_property() {
     descriptor.target_role = ArtifactRole::Property;
     assert!(descriptor.validate().is_err());
 }
+
+#[test]
+fn rejects_zero_width_insertion_inside_protected_span() {
+    let (candidates, policy) = fixture();
+    let candidate = candidates.values().next().expect("fixture candidate");
+    let insertion = candidate
+        .source
+        .find("always")
+        .expect("protected property body")
+        + 1;
+    let proposal = Proposal::localized(
+        "insert-inside-protected",
+        vec![Edit::candidate(
+            candidate.path.clone(),
+            ByteSpan::new(insertion, insertion),
+            "x",
+        )],
+        "attempt to insert bytes into a protected span",
+    );
+
+    assert!(matches!(
+        validate_proposal(&candidates, &policy, &proposal),
+        Err(AuthorityError::ProtectedSpan(_))
+    ));
+}
+
+#[test]
+fn protected_span_endpoints_require_explicit_permission() {
+    for at_start in [true, false] {
+        let (candidates, mut policy) = fixture();
+        let candidate = candidates.values().next().expect("fixture candidate");
+        let boundary = if at_start {
+            candidate
+                .source
+                .find("safety")
+                .expect("protected property start")
+        } else {
+            candidate.source.len() - 1
+        };
+        let proposal = Proposal::localized(
+            "insert-at-protected-boundary",
+            vec![Edit::candidate(
+                candidate.path.clone(),
+                ByteSpan::new(boundary, boundary),
+                " ",
+            )],
+            "explicitly authorized boundary insertion",
+        );
+
+        assert!(matches!(
+            validate_proposal(&candidates, &policy, &proposal),
+            Err(AuthorityError::ProtectedBoundary(_))
+        ));
+
+        policy.allow_insertion_boundary(candidate.path.clone(), boundary);
+        nmlt_agent::authority::apply_proposal(&candidates, &policy, &proposal)
+            .expect("allowed boundary insertion preserves protected bytes");
+    }
+}

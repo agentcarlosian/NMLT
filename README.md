@@ -231,9 +231,12 @@ translation, evidence manifests, and comparison models in TLA+/Quint/P — was
 built during OpenAI Build Week working with **Sol**, GPT-5.6 running inside
 the Codex CLI. Sol accelerated construction and recovery across languages;
 architectural boundaries, trust assumptions, and the verification strategy
-remained human-directed. Every claim NMLT reports still has to clear an
-independent kernel bound to exact source identities — nothing here is trusted
-because an agent said so. See [the full story](docs/openai-build-week.md).
+remained human-directed. Implemented claim-specific paths use the deterministic
+checkers, source bindings, and adversarial controls appropriate to each claim;
+their assurance ceilings differ, and some structural evidence remains
+`unknown`. No single independent kernel covers the whole language, and Codex
+output is treated as proposed work rather than trusted evidence. See
+[the full story](docs/openai-build-week.md).
 
 ## Contribution and governance
 

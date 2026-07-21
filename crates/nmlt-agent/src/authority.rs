@@ -41,6 +41,13 @@ impl ByteSpan {
     const fn contains(self, other: Self) -> bool {
         self.start <= other.start && other.end <= self.end
     }
+
+    /// A zero-width edit is inside a nonempty span only at a strict interior
+    /// offset. Endpoints are boundaries governed by `insertion_boundaries`.
+    #[must_use]
+    const fn contains_insertion(self, offset: usize) -> bool {
+        self.start < offset && offset < self.end
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -331,6 +338,9 @@ pub fn validate_proposal(
             .iter()
             .filter(|protected| protected.path == edit.path)
         {
+            if edit.span.is_empty() && protected.span.contains_insertion(edit.span.start) {
+                return Err(AuthorityError::ProtectedSpan(edit.path.clone()));
+            }
             if edit.span.overlaps(protected.span) {
                 return Err(AuthorityError::ProtectedSpan(edit.path.clone()));
             }
@@ -369,6 +379,51 @@ pub fn validate_proposal(
     Ok(extent)
 }
 
+fn verify_protected_spans_after_apply(
+    files: &BTreeMap<String, CandidateFile>,
+    policy: &EditPolicy,
+    proposal: &Proposal,
+) -> Result<(), AuthorityError> {
+    for protected in &policy.protected_spans {
+        let candidate = files
+            .get(&protected.path)
+            .ok_or_else(|| AuthorityError::CandidateMissing(protected.path.clone()))?;
+        let mut start = protected.span.start;
+
+        for edit in proposal.edits.iter().filter(|edit| {
+            edit.path == protected.path && edit.span.end <= protected.span.start
+        }) {
+            start = start
+                .checked_sub(edit.span.len())
+                .and_then(|value| value.checked_add(edit.replacement.len()))
+                .ok_or(AuthorityError::InvalidSpan)?;
+        }
+
+        let end = start
+            .checked_add(protected.span.len())
+            .ok_or(AuthorityError::InvalidSpan)?;
+        let remapped = ByteSpan::new(start, end);
+        if !remapped.valid_for(candidate.source.len())
+            || !candidate.source.is_char_boundary(remapped.start)
+            || !candidate.source.is_char_boundary(remapped.end)
+        {
+            return Err(AuthorityError::InvalidSpan);
+        }
+
+        let digest = format!(
+            "sha256:{}",
+            sha256_hex(&candidate.source.as_bytes()[remapped.start..remapped.end])
+        );
+        if digest.as_str() != protected.digest.as_str() {
+            return Err(AuthorityError::ProtectedDigestChanged(
+                protected.path.clone(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 pub fn apply_proposal(
     candidates: &BTreeMap<String, CandidateFile>,
     policy: &EditPolicy,
@@ -392,6 +447,7 @@ pub fn apply_proposal(
             .replace_range(edit.span.start..edit.span.end, &edit.replacement);
         candidate.digest = format!("sha256:{}", sha256_hex(candidate.source.as_bytes()));
     }
+    verify_protected_spans_after_apply(&files, policy, proposal)?;
     Ok(AppliedCandidates {
         files,
         edited_bytes,

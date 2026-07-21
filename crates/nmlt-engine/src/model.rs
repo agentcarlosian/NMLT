@@ -261,6 +261,17 @@ pub fn check_model(typed: &TypedModel, config: CheckConfig) -> Result<CheckRepor
             "NMLT2202: model checking requires at least one declared property".to_owned(),
         ]);
     }
+    if let Some(property) = typed
+        .model
+        .properties
+        .iter()
+        .find(|property| contains_nested_next(&property.expression))
+    {
+        return Err(vec![format!(
+            "NMLT2212: property `{}` contains nested `next`, which the bounded one-step engine cannot evaluate",
+            property.name
+        )]);
+    }
 
     let initial = initialize(typed)?;
     let mut nodes = vec![Node {
@@ -733,6 +744,28 @@ fn contains_next(expression: &Expr) -> bool {
     contains_call(expression, "next")
 }
 
+fn contains_nested_next(expression: &Expr) -> bool {
+    contains_nested_next_within(expression, false)
+}
+
+fn contains_nested_next_within(expression: &Expr, within_next: bool) -> bool {
+    match expression {
+        Expr::Unary { operand, .. } => contains_nested_next_within(operand, within_next),
+        Expr::Binary { left, right, .. } => {
+            contains_nested_next_within(left, within_next)
+                || contains_nested_next_within(right, within_next)
+        }
+        Expr::Call { name, arguments } => {
+            let is_next = name == "next";
+            (is_next && within_next)
+                || arguments
+                    .iter()
+                    .any(|argument| contains_nested_next_within(argument, within_next || is_next))
+        }
+        Expr::Value(_) | Expr::Name(_) => false,
+    }
+}
+
 fn contains_eventuality(expression: &Expr) -> bool {
     contains_call(expression, "eventually")
 }
@@ -923,6 +956,21 @@ mod tests {
                 .unwrap(),
             "source-state antecedent must remain false: {:#?}",
             typed.model.properties[0].expression
+        );
+    }
+
+    #[test]
+    fn nested_next_fails_closed_before_one_step_exploration() {
+        let typed = compile(
+            "system S {\n state ready: Bool = true\n temporal TwoStep = next(next(ready))\n }",
+        )
+        .unwrap();
+        let errors = check_model(&typed, CheckConfig::default()).unwrap_err();
+        assert_eq!(
+            errors,
+            vec![
+                "NMLT2212: property `TwoStep` contains nested `next`, which the bounded one-step engine cannot evaluate"
+            ]
         );
     }
 
