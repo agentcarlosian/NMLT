@@ -1,0 +1,9 @@
+{
+  "name": "nmlt-quint-toolchain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Integrity-pinned Quint tooling for NMLT comparison validation",
+  "devDependencies": {
+    "@informalsystems/quint": "0.32.0"
+  }
+}

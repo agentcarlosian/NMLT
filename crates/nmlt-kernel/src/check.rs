@@ -19,11 +19,14 @@ use crate::identity::{
 use crate::input::{RawCertificate, RawDerivationNode, RawObligation};
 
 const FORMAT_VERSION: u16 = 1;
+const CERTIFICATE_DOMAIN: &[u8] = b"NMLT-ELABORATION-CERTIFICATE\0v1\0";
 const MAX_CERTIFICATE_BYTES: usize = 64 * 1024 * 1024;
+const MAX_REQUIRED_ROOTS: usize = 524_288;
 const MAX_DERIVATIONS: usize = 524_288;
 const MAX_PREMISE_EDGES: usize = 2_097_152;
 const MAX_PREMISES: usize = 32;
 const MAX_DERIVATION_DEPTH: usize = 256;
+const MAX_MAGNITUDE_BYTES: usize = 4_096;
 
 /// Stable failure classes at the independent M9-v1 acceptance boundary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -367,6 +370,12 @@ fn check_envelope(
             "certificate policy is not the checker-selected M9-v1 policy",
         ));
     }
+    if certificate.required_roots.len() > MAX_REQUIRED_ROOTS {
+        return Err(KernelDiagnostic::new(
+            KernelCode::ResourceLimit,
+            "required-root limit exceeded",
+        ));
+    }
     if certificate.derivations.len() > MAX_DERIVATIONS {
         return Err(KernelDiagnostic::new(
             KernelCode::ResourceLimit,
@@ -395,7 +404,168 @@ fn check_envelope(
             "premise-edge limit exceeded",
         ));
     }
+    preflight_certificate_bytes(certificate)?;
     Ok(())
+}
+
+fn preflight_certificate_bytes(
+    certificate: &RawCertificate,
+) -> Result<usize, KernelDiagnostic> {
+    let mut encoded_len = 0usize;
+    add_certificate_bytes(&mut encoded_len, CERTIFICATE_DOMAIN.len())?;
+    add_certificate_bytes(&mut encoded_len, 2 + 7 * 32 + 8)?;
+    add_certificate_bytes(
+        &mut encoded_len,
+        certificate
+            .required_roots
+            .len()
+            .checked_mul(1 + 32 + 32)
+            .ok_or(KernelDiagnostic::new(
+                KernelCode::ResourceLimit,
+                "canonical certificate-byte count overflow",
+            ))?,
+    )?;
+    add_certificate_bytes(&mut encoded_len, 8)?;
+
+    for node in &certificate.derivations {
+        add_certificate_bytes(&mut encoded_len, 32 + 2 + 1 + 32)?;
+        add_certificate_bytes(
+            &mut encoded_len,
+            match &node.conclusion {
+                DerivationConclusion::Type(ty) => 1 + encoded_core_type_bytes(ty),
+                DerivationConclusion::Protocol(_) | DerivationConclusion::Definition(_) => 1 + 32,
+                DerivationConclusion::Term { ty, .. } => 1 + 32 + encoded_core_type_bytes(ty),
+            },
+        )?;
+        add_certificate_bytes(
+            &mut encoded_len,
+            match &node.witness {
+                DerivationWitness::None => 1,
+                DerivationWitness::Boolean(_) => 2,
+                DerivationWitness::Magnitude { bytes, .. } => {
+                    if bytes.len() > MAX_MAGNITUDE_BYTES {
+                        return Err(KernelDiagnostic::at(
+                            KernelCode::ResourceLimit,
+                            node.obligation.origin,
+                            "integer magnitude length exceeds policy",
+                        ));
+                    }
+                    1 + 1 + 8 + bytes.len()
+                }
+                DerivationWitness::Definition(_) => 1 + 32,
+                DerivationWitness::SystemDefinition { .. } => 1 + 32 + 32,
+            },
+        )?;
+        add_certificate_bytes(&mut encoded_len, 8)?;
+        add_certificate_bytes(
+            &mut encoded_len,
+            node.premises
+                .len()
+                .checked_mul(32)
+                .ok_or(KernelDiagnostic::at(
+                    KernelCode::ResourceLimit,
+                    node.obligation.origin,
+                    "canonical certificate-byte count overflow",
+                ))?,
+        )?;
+    }
+    Ok(encoded_len)
+}
+
+const fn encoded_core_type_bytes(ty: &CoreType) -> usize {
+    match ty {
+        CoreType::Bool | CoreType::Nat | CoreType::Int => 1,
+        CoreType::Enum(_)
+        | CoreType::Once { .. }
+        | CoreType::StateProp { .. }
+        | CoreType::TemporalProp { .. } => 1 + 32,
+    }
+}
+
+fn add_certificate_bytes(
+    encoded_len: &mut usize,
+    additional: usize,
+) -> Result<(), KernelDiagnostic> {
+    *encoded_len = encoded_len.checked_add(additional).ok_or(KernelDiagnostic::new(
+        KernelCode::ResourceLimit,
+        "canonical certificate-byte count overflow",
+    ))?;
+    if *encoded_len > MAX_CERTIFICATE_BYTES {
+        return Err(KernelDiagnostic::new(
+            KernelCode::ResourceLimit,
+            "canonical certificate-byte limit exceeded",
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod certificate_size_tests {
+    use nmlt_certificate::{DerivationConclusion, DerivationWitness};
+    use nmlt_hir::NodeId;
+    use nmlt_ir::CoreType;
+
+    use super::{
+        FORMAT_VERSION, KernelCode, MAX_CERTIFICATE_BYTES, RawCertificate, RawDerivationNode,
+        RawObligation, add_certificate_bytes, preflight_certificate_bytes,
+    };
+
+    fn certificate_with_witness(witness: DerivationWitness) -> RawCertificate {
+        RawCertificate {
+            format_version: FORMAT_VERSION,
+            source_set_digest: [0; 32],
+            module_map_digest: [0; 32],
+            surface_program_digest: [0; 32],
+            resolved_hir_digest: [0; 32],
+            core_program_digest: [0; 32],
+            ruleset_bundle_digest: [0; 32],
+            resource_policy_digest: [0; 32],
+            required_roots: Vec::new(),
+            derivations: vec![RawDerivationNode {
+                claimed_digest: [0; 32],
+                rule_tag: 1,
+                obligation: RawObligation {
+                    judgment_tag: 1,
+                    origin: NodeId::from_untrusted_digest([0; 32]),
+                },
+                conclusion: DerivationConclusion::Type(CoreType::Bool),
+                witness,
+                premises: vec![[0; 32], [1; 32]],
+            }],
+            certificate_digest: [0; 32],
+        }
+    }
+
+    #[test]
+    fn structural_preflight_matches_canonical_encoding_length() {
+        let certificate = certificate_with_witness(DerivationWitness::Magnitude {
+            negative: false,
+            bytes: vec![1, 2, 3],
+        });
+        assert_eq!(
+            preflight_certificate_bytes(&certificate).unwrap(),
+            certificate.to_canonical_bytes().len()
+        );
+    }
+
+    #[test]
+    fn certificate_byte_limit_distinguishes_exact_boundary_from_plus_one() {
+        let mut encoded_len = MAX_CERTIFICATE_BYTES - 1;
+        add_certificate_bytes(&mut encoded_len, 1).unwrap();
+        assert_eq!(encoded_len, MAX_CERTIFICATE_BYTES);
+        let error = add_certificate_bytes(&mut encoded_len, 1).unwrap_err();
+        assert_eq!(error.code(), KernelCode::ResourceLimit);
+    }
+
+    #[test]
+    fn oversized_programmatic_magnitude_fails_preflight() {
+        let certificate = certificate_with_witness(DerivationWitness::Magnitude {
+            negative: false,
+            bytes: vec![0; 4_097],
+        });
+        let error = preflight_certificate_bytes(&certificate).unwrap_err();
+        assert_eq!(error.code(), KernelCode::ResourceLimit);
+    }
 }
 
 fn check_canonical_certificate(certificate: &RawCertificate) -> Result<(), KernelDiagnostic> {

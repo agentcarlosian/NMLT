@@ -127,7 +127,8 @@ print(
 )
 PY
 
-npx --yes @informalsystems/quint@0.32.0 typecheck \
+npm ci --prefix "$repo_root/tools/quint" --ignore-scripts --no-audit --no-fund
+"$repo_root/tools/quint/node_modules/.bin/quint" typecheck \
   comparisons/provider-attempt/quint/provider_attempt.qnt
 
 if [[ -n "${TLA2TOOLS_JAR:-}" ]]; then

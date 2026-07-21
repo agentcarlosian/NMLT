@@ -4,11 +4,11 @@ This document contains the submission story and evaluation workflow for the Open
 
 ## OpenAI Build Week & Codex Story
 
-- **What problem does NMLT address?** Software and AI-generated claims can outrun their evidence. NMLT ensures that all semantic claims (like safety or refinement properties) carry explicit, independent, machine-checkable evidence bound to precise sources, tools, and bounds.
+- **What problem does NMLT address?** Software and AI-generated claims can outrun their evidence. For its implemented, claim-specific paths, NMLT records and replays machine-checkable results bound to precise sources, tools, and bounds. Assurance ceilings differ by claim, and unsupported structural claims remain `unknown`.
 - **What can a judge run today?** You can run the CLI to parse, typecheck, inspect, and model-check behavior-first `.nmlt` programs, producing structured JSON outputs with counterexamples when properties are refuted.
 - **Where did Codex/GPT-5.6 accelerate development?** Codex accelerated construction and recovery of a multi-language verification chain spanning Rust, Lean, pinned Charon/Aeneas translation, evidence manifests, mutation controls, TLA+, and P.
 - **Which decisions remained human-directed?** High-level architectural boundaries, trust assumptions, relational and behavioral semantics, and the selection of formal mechanization strategies were entirely human-designed.
-- **How does NMLT prevent AI-generated output from being blindly trusted?** NMLT treats all generated work as a proposal: acceptance remains bound to independent kernels, exact identities, explicit trust boundaries, and adversarial controls. It fails closed on any mismatch or stale evidence.
+- **How does NMLT prevent AI-generated output from being blindly trusted?** NMLT treats generated work as a proposal. Implemented claims use their relevant deterministic checkers, exact identities, explicit trust boundaries, and adversarial controls. No single kernel verifies the whole language, and checked paths fail closed on mismatched or stale evidence.
 
 ## Five-Minute Judge Workflow
 
