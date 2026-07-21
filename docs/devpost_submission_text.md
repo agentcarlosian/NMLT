@@ -1,129 +1,104 @@
-# Devpost Submission Text
+# Inspiration
 
-## Project tagline
+AI-assisted development can produce a plausible change faster than a reviewer
+can explore all of its behavior. A stateful migration may compile, pass
+ordinary tests, and still lose one authorization or sequencing guard.
 
-Model finite software behavior, check bounded safety properties, and get
-source-bound results with structured counterexamples when a property fails.
+NMLT explores a narrower, inspectable approach. A developer manually abstracts
+the critical workflow into a finite behavior model. NMLT then exhausts its
+reachable state space within explicit bounds and returns either a bounded result
+or the exact transition that violated a property.
 
-## Inspiration
+# What it does
 
-Software claims can outrun their evidence, especially when an AI system can
-produce code faster than a person can review its behavior. Tests show selected
-examples; they do not necessarily expose unsafe reachable states or explain the
-exact transition that violated an invariant.
+NMLT is a pre-alpha behavior-modeling language and deterministic verification
+CLI for developers reviewing agentic workflows, stateful backends, distributed
+protocols, and safety-sensitive changes.
 
-NMLT explores a behavior-first alternative. A developer states a finite system
-and its properties, then deterministic tools either check the reachable state
-space within explicit bounds or return a reproducible counterexample. The goal
-is not to trust an AI-generated assertion. The goal is to make a concrete claim
-inspectable, bounded, and independently replayable.
+The Build Week judge demo uses one concrete migration-review story. A C provider
+dispatch function requires the attempt to be authorized and armed. A proposed
+Rust port drops the armed guard. The snippets make the review problem concrete,
+and their relevant behavior is manually represented by two NMLT models that
+differ by exactly one requirement.
 
-## What it does
+For the preserved workflow, NMLT completes finite state-space exploration and
+reports four properties as model_checked. For the dropped-guard model, it
+reports refuted and returns a structured witness: the attempt begins unarmed,
+is authorized, and then dispatches while armed is still false.
 
-NMLT is a pre-alpha research language, CLI, and verification laboratory for
-formal-methods researchers and developers evaluating safety-sensitive workflow
-or agent-system behavior.
+The same command saves a deterministic report, changes the exact NMLT model
+bytes, and attempts readback. The source binding changes, so the demo refuses
+to apply the prior result as current evidence.
 
-Today, a user can:
+NMLT does not currently parse C or Rust, translate between them, prove native
+memory safety, or establish source-code equivalence. Fidelity between the source
+snippets and the manually authored model is a review obligation. model_checked
+means complete exploration of the reported finite model within its displayed
+bounds, not an unbounded theorem about native code.
 
-- parse and inspect lossless `.nmlt` syntax;
-- resolve and type-check the supported executable core;
-- exhaust a finite reachable state space within declared limits;
-- receive JSON results and step-by-step counterexample witnesses;
-- replay claim-specific, source-bound evidence experiments; and
-- compare frozen provider-attempt models in NMLT, TLA+, Quint, and P.
+# How we built it
 
-The submission demo contrasts a reference provider workflow with a one-line
-seeded defect. The reference completes bounded exploration with its properties
-reported as `model_checked`. The mutant is `refuted` and includes a witness in
-which `dispatch` occurs while authorization is false.
+I built NMLT with Sol, GPT-5.6 running inside the OpenAI Codex CLI. I supplied
+the product thesis, behavioral constraints, architecture, semantic decisions,
+trust assumptions, and assurance ceilings. Codex accelerated implementation,
+debugging, recovery, and documentation across Rust, Python, Lean, TLA+, Quint,
+and P.
 
-`model_checked` is a bounded result, not an unbounded theorem. The structural
-`evidence` command reports `unknown`, and NMLT does not claim to be a
-general-purpose verified programming language.
+The runnable path is a Rust CLI with a lossless parser, recovering syntax tree,
+resolver, typed HIR, explicit core, deterministic finite-state exploration,
+structured witnesses, and source-bound semantic identities. Python and JSON
+Schema checkers exercise persisted evidence and adversarial controls. Separate
+Lean work studies a narrow Rust validation kernel and explicitly records the
+remaining correspondence boundary.
 
-## How we built it
+Codex output was treated as proposed work rather than trusted truth.
+Deterministic checkers, regression tests, and seeded negative controls decided
+what was accepted. NMLT itself has no runtime LLM dependency.
 
-The Rust workspace contains the lossless frontend, resolver, typed HIR,
-explicit core, deterministic breadth-first model checker, evidence tooling, and
-CLI. Python and JSON Schema checks validate frozen identities, manifests,
-negative controls, and readback paths.
+# Challenges we ran into
 
-A separate Lean 4 package contains mechanized, claim-specific results and a
-bounded Rust validation path translated with pinned Charon/Aeneas. Active work
-is still closing the correspondence between generated structural equality and
-native Lean equality layer by layer. Rich source-to-certificate encoding and
-general source correspondence remain outside verified extraction.
+The hardest problem was claim integrity across layers. A finite model result
+must expose its bounds. A generated Lean representation cannot inherit a native
+Rust claim without a checked correspondence path. Evidence from one source or
+checker configuration must not silently apply after those inputs change.
 
-The repository also carries comparison models in TLA+, Quint, and P. `make ci`
-runs the Rust workspace, evidence checks, and the pinned Quint typecheck. TLC
-runs only when `TLA2TOOLS_JAR` is supplied, and P runs only when P 3.1.0 is
-installed. Lean is a separate GitHub Actions job and is included in the local
-`make reproduce` gate. The corrected P model remains explicitly unvalidated
-when P is unavailable.
+The C-to-Rust vignette required the same discipline. It is a useful developer
+story only when presented as a manual behavioral abstraction, not as automatic
+translation or equivalence verification.
 
-GPT-5.6, running as Sol inside the Codex CLI, accelerated implementation,
-cross-language recovery, debugging, negative-control construction, and
-documentation across Rust, Lean, Python, TLA+, Quint, and P. The human author
-directed the architecture, semantics, trust boundaries, and which proof claims
-were acceptable. NMLT has no runtime LLM dependency; judges run deterministic
-local tools.
+# Accomplishments that we are proud of
 
-## Challenges we ran into
+The no-build release gives judges one command and three visible outcomes:
 
-- Keeping state exploration finite and making every bounded result state its
-  limits.
-- Connecting a translated Rust execution path to Lean without treating
-  generated structural equality as native equality before that implication is
-  proved.
-- Keeping results from different formal systems separate unless a checked
-  composition path justifies combining them.
-- Designing negative controls that reject stale, forged, mismatched, or
-  assurance-laundered artifacts.
+- A preserved workflow with complete bounded exploration
+- A one-line dropped-guard model refuted with an exact counterexample
+- An earlier report rejected after its bound model source changes
 
-## Accomplishments that we are proud of
+That is NMLT's core product loop: state the behavior, check the claim, inspect
+the witness, and keep the result tied to what was actually checked.
 
-- An end-to-end supported slice from `.nmlt` source through typed core to a
-  deterministic bounded result.
-- Structured counterexamples that show the exact transition and state that
-  refuted a property.
-- Claim-specific source bindings and adversarial controls that fail closed on
-  the mismatches they are designed to detect.
-- A public CI workflow split into a Rust/evidence job and a separate Lean
-  metatheory job, without representing optional TLC or P execution as complete.
-- Explicit `unknown`, `indeterminate`, and bounded-result semantics instead of
-  promoting incomplete evidence to proof.
+The broader repository also contains deterministic evidence manifests,
+independent readback scripts, seeded defects, open-system composition research,
+comparison models, and a separate Lean metatheory path. Those layers support
+the research direction, but the judge demo does not require them.
 
-## What we learned
+# What we learned
 
-- AI assistance is most useful when its output must pass deterministic,
-  independently replayable checks.
-- Counterexamples communicate a failed safety claim more effectively than a
-  generic test failure.
-- Formal evidence needs a stated trust boundary and result ceiling, not just a
-  green badge.
-- Cross-language verification is only as strong as the checked correspondence
-  between the languages.
+A structured counterexample is more actionable than a generic failing test.
+An honest bounded result is more useful than an overstated proof claim. AI
+assistance is strongest when generated work must clear deterministic,
+replayable checks and when negative controls remain visible.
 
-## What is next for NMLT
+We also learned that the product experience matters as much as the underlying
+research. A judge should reach the useful result in one command before being
+asked to understand the architecture.
 
-- Complete the remaining generated-to-native Lean equality layers.
-- Extend verified source-to-certificate correspondence beyond the current
-  bounded slices.
-- Package the CLI for easier evaluation and integrate bounded checking into
-  developer and agent workflows.
-- Research fairness transport, infinite-state techniques, signatures, and
-  runtime attestation without weakening the current result boundaries.
+# What is next for NMLT
 
-## Built with
+Future work includes verified source-to-model adapters, broader
+source-to-certificate correspondence, richer agent and CI integrations, and
+additional finite and infinite-state techniques.
 
-Rust, Lean 4, Python, JSON Schema, TLA+, Quint, P, Charon, Aeneas, GNU Make,
-and the OpenAI Codex CLI with GPT-5.6.
-
-## Links
-
-- Demo: https://www.youtube.com/watch?v=-PbhZ9me46Y
-- Repository: https://github.com/agentcarlosian/NMLT
-- Submission release: https://github.com/agentcarlosian/NMLT/releases/tag/build-week-submission-2026
-- Judge instructions: `docs/devpost_judge_instructions.md`
-
+Automatic C-to-Rust translation and source-equivalence proof are not current
+features. They are possible future integrations on top of the behavior-checking
+foundation demonstrated here.

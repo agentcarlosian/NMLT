@@ -1,0 +1,47 @@
+// Manual finite abstraction of the provider-dispatch migration vignette.
+// NMLT does not parse the accompanying C or Rust files or prove their equivalence.
+enum Phase { proposed, authorized, dispatched_phase, responded, indeterminate, evaluated, selected, reconciled }
+system ProviderDispatchMigration {
+  state phase: Phase = proposed
+  state armed: Bool = false
+  state dispatched: Bool = false
+  state dispatch_count: Nat = 0
+  state response_intact: Bool = false
+  state passed: Bool = false
+
+  action authorize { require phase == proposed; set phase = authorized }
+  action arm { require phase == authorized; set armed = true }
+  action dispatch {
+    require phase == authorized
+    require armed
+    set dispatched = true
+    set dispatch_count = dispatch_count + 1
+    set phase = dispatched_phase
+  }
+  action receive_response {
+    require phase == dispatched_phase
+    set response_intact = true
+    set phase = responded
+  }
+  action lose_response { require phase == dispatched_phase; set phase = indeterminate }
+  action evaluate_pass {
+    require phase == responded
+    require response_intact
+    set passed = true
+    set phase = evaluated
+  }
+  action evaluate_fail {
+    require phase == responded
+    require response_intact
+    set passed = false
+    set phase = evaluated
+  }
+  action select { require passed; set phase = selected }
+
+  safety DispatchRequiresArm = always(dispatched implies armed)
+  temporal NoBlindReplay =
+    always(phase == indeterminate implies not enabled(dispatch))
+  safety EvaluationRequiresIntactResponse =
+    always(phase == evaluated implies response_intact)
+  safety SelectionRequiresPass = always(phase == selected implies passed)
+}
