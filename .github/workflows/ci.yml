@@ -43,6 +43,10 @@ jobs:
         run: |
           lean_package_dir="$(mktemp -d "${RUNNER_TEMP}/nmlt-lean.XXXXXX")"
           cp -a mechanization/lean/. "${lean_package_dir}/"
+          # Mathlib's cache tool requires the fully-qualified toolchain name,
+          # while the repository pins the bare version in its evidence graph.
+          # Qualify it in the staged copy only.
+          printf 'leanprover/lean4:%s\n' "$(cat mechanization/lean/lean-toolchain)" > "${lean_package_dir}/lean-toolchain"
           echo "path=${lean_package_dir}" >> "${GITHUB_OUTPUT}"
 
       - name: Build Lean artifacts
