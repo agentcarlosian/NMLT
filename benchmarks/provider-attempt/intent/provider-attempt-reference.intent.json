@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "capsule_id": "nmlt-intent-capsule-v1:sha256:19b89eff2dda2c53970c49065b76ffe796e3b3ec762b8fdf213c4062fad82e81",
+  "capsule_id": "nmlt-intent-capsule-v1:sha256:4bea68b73c58b0397a0a94eae453f6895f70247b986cca625b4dd385ad2b50ac",
   "case_id": "provider-attempt-reference",
   "case_class": "reference",
   "source": {
@@ -38,7 +38,7 @@
     "support": "current",
     "result": {
       "path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
-      "result_id": "nmlt-benchmark-result-v1:sha256:ad566d21c7eac80b8688fb6e27f93da34f9b752a3ef22cfee1fbffe454e83026"
+      "result_id": "nmlt-benchmark-result-v1:sha256:e509bfbe0cf4fd577996f04fdc353f29e4aca0903def94999b5094cb8ec63346"
     },
     "witness_ids": []
   },

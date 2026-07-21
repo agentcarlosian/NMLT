@@ -12,7 +12,10 @@
   "result_class_policy": {
     "current": "source_bound_bounded_execution",
     "reason": "Deterministic explicit-state reports bind exact sources and finite bounds; model_checked is bounded evidence and never means proved.",
-    "allowed_current": ["model_checked", "refuted"],
+    "allowed_current": [
+      "model_checked",
+      "refuted"
+    ],
     "excluded_promotion": "proved"
   },
   "provenance": {
@@ -45,7 +48,7 @@
       "class": "reference",
       "intent_capsule": {
         "path": "benchmarks/provider-attempt/intent/provider-attempt-reference.intent.json",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:19b89eff2dda2c53970c49065b76ffe796e3b3ec762b8fdf213c4062fad82e81"
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:4bea68b73c58b0397a0a94eae453f6895f70247b986cca625b4dd385ad2b50ac"
       },
       "property_ids": [
         "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd",
@@ -59,7 +62,7 @@
       "support": "current",
       "result": {
         "path": "benchmarks/results/provider-attempt/provider-attempt-reference.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:ad566d21c7eac80b8688fb6e27f93da34f9b752a3ef22cfee1fbffe454e83026"
+        "result_id": "nmlt-benchmark-result-v1:sha256:e509bfbe0cf4fd577996f04fdc353f29e4aca0903def94999b5094cb8ec63346"
       },
       "expected_witnesses": []
     },
@@ -70,7 +73,7 @@
       "class": "semantic_mutant",
       "intent_capsule": {
         "path": "benchmarks/provider-attempt/intent/dispatch-before-authorize.intent.json",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:0cc6d6acd0eda9ef7b54bbb1ddbd3da32e56ac7159e5167315c73677fdacd736"
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:dbc2ce3018cd6d631e852458b141246ef720572650a27e66391cee3551bdb549"
       },
       "property_ids": [
         "nmlt-benchmark-property-v1:sha256:52ad13dda5c9023da2ac4142673e4d24db34a98e2d201b9b9795fcbfae4763bd"
@@ -81,7 +84,7 @@
       "support": "current",
       "result": {
         "path": "benchmarks/results/provider-attempt/dispatch-before-authorize.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:c343ee5837b575504398edab28ef700eb8db16dd1822ef6919085441aeb465e3"
+        "result_id": "nmlt-benchmark-result-v1:sha256:6255ece627a6f991215e32159d950eaf78e9a3f38852d8f67992db1b6705c885"
       },
       "expected_witnesses": [
         {
@@ -97,7 +100,7 @@
       "class": "semantic_mutant",
       "intent_capsule": {
         "path": "benchmarks/provider-attempt/intent/blind-replay.intent.json",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:5433e30fba582885cd3b8949e0baf27dd6804073faa1b9dbccc141b82dd1e5ab"
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:2e86d875062cb661748203da6315a0ad6925e2a39c945a1733929ef2b4b70cbc"
       },
       "property_ids": [
         "nmlt-benchmark-property-v1:sha256:c4b9cebc0ed34632f94db260c3c221832ceb243095268b3a54e04e5ff93a3fbe"
@@ -108,7 +111,7 @@
       "support": "current",
       "result": {
         "path": "benchmarks/results/provider-attempt/blind-replay.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:13c82d676db406aace0631ff0aefe26850d2bdee72693383cf3d8ba74d61b976"
+        "result_id": "nmlt-benchmark-result-v1:sha256:c0f5e96f0582a1a6d0726c537ed5945d706364c93ce21fa505fac37f9ef4c8bc"
       },
       "expected_witnesses": [
         {
@@ -124,7 +127,7 @@
       "class": "semantic_mutant",
       "intent_capsule": {
         "path": "benchmarks/provider-attempt/intent/response-binding.intent.json",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:6033f7fd15a5fbfeb5868c1c1926c76c1483990faa13bd7977c015dcd69c7eee"
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:27f6b5081e865a06912b06a40b9a100f3728aa591eefbf8fcfbd3ed187692a1f"
       },
       "property_ids": [
         "nmlt-benchmark-property-v1:sha256:15a3427faba0a4cf568c7bb01b98cf5ff750430d605d20c04dc8df80e7c64eb0"
@@ -135,7 +138,7 @@
       "support": "current",
       "result": {
         "path": "benchmarks/results/provider-attempt/response-binding.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:d4c89fe56b77ceafa43d73572f0873f124be53c08bfd993ea5848492a1f418fb"
+        "result_id": "nmlt-benchmark-result-v1:sha256:4647ea69bbe7a0bcedf721871c477e1bd56c687794a34cd71327c7394445d560"
       },
       "expected_witnesses": [
         {
@@ -151,7 +154,7 @@
       "class": "semantic_mutant",
       "intent_capsule": {
         "path": "benchmarks/provider-attempt/intent/passing-selection.intent.json",
-        "capsule_id": "nmlt-intent-capsule-v1:sha256:04e07e58a45bdd83559055188fb28afea77e39cd77b15eed362934f6330585f1"
+        "capsule_id": "nmlt-intent-capsule-v1:sha256:4967d65ee19bbac244f25eb86d3c8dcd33a443d9b83634b97d2f19730dd76a38"
       },
       "property_ids": [
         "nmlt-benchmark-property-v1:sha256:03a2a2ee37e3191d1f81ca722e60fb600efc60310c4855196904f0fd6ada7ba6"
@@ -162,7 +165,7 @@
       "support": "current",
       "result": {
         "path": "benchmarks/results/provider-attempt/passing-selection.json",
-        "result_id": "nmlt-benchmark-result-v1:sha256:94ae4555d517b698fe9f742b9ff3eb8ab7b433f70bb6f34efea07a3554851656"
+        "result_id": "nmlt-benchmark-result-v1:sha256:cbca2be4d6eff6d371d1b3cbe74218c663785774637614c96590e5faec1ce47e"
       },
       "expected_witnesses": [
         {
