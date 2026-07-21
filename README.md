@@ -179,12 +179,6 @@ The durable provider-attempt protocol anchors the current slices:
 See [Plan.md](Plan.md) for the exact gates, evidence boundaries, and residual
 gaps.
 
-## Contribution and governance
-
-See [CONTRIBUTING.md](CONTRIBUTING.md), [GOVERNANCE.md](GOVERNANCE.md), and
-[SECURITY.md](SECURITY.md). NMLT is licensed under the
-[Apache License 2.0](LICENSE). Contributions are accepted under the same terms.
-
 ## Five-minute judge path
 
 No Lean, TLC, Quint, or P required for this — just the Rust toolchain.
@@ -240,3 +234,9 @@ architectural boundaries, trust assumptions, and the verification strategy
 remained human-directed. Every claim NMLT reports still has to clear an
 independent kernel bound to exact source identities — nothing here is trusted
 because an agent said so. See [the full story](docs/openai-build-week.md).
+
+## Contribution and governance
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [GOVERNANCE.md](GOVERNANCE.md), and
+[SECURITY.md](SECURITY.md). NMLT is licensed under the
+[Apache License 2.0](LICENSE). Contributions are accepted under the same terms.
