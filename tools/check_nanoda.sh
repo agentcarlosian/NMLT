@@ -84,10 +84,37 @@ cargo "+${NANODA_RUST_TOOLCHAIN}" build \
   --release \
   --manifest-path "${CHECKER_DIR}/Cargo.toml"
 
+# Export only the checked module's own constants plus their transitive
+# dependency closure (dumpConstant recurses into everything they use).
+# A whole-environment export additionally drags in unrelated library
+# declarations — including dependency-internal `sorry`/`native_decide`
+# artifacts NMLT never relies on — which the checker would reject.
+readonly CONSTANT_LIST="${NANODA_TEMP_DIR}/checked-constants.txt"
+readonly LIST_SCRIPT="${NANODA_TEMP_DIR}/ListConstants.lean"
+cat > "${LIST_SCRIPT}" <<EOF
+import ${MODULE_NAME}
+open Lean
+run_meta do
+  let env ← getEnv
+  for entry in env.constants.toList do
+    let declName := entry.1
+    if !declName.isInternal then
+      if let some idx := env.getModuleIdxFor? declName then
+        if env.header.moduleNames[idx.toNat]!.getRoot == \`${MODULE_NAME} then
+          IO.println declName
+EOF
+echo "Enumerating ${MODULE_NAME} constants"
+(
+  cd "${LAKE_PACKAGE_DIR}"
+  lake env lean "${LIST_SCRIPT}"
+) > "${CONSTANT_LIST}"
+echo "Checked-module constants: $(wc -l < "${CONSTANT_LIST}")"
+
 echo "Exporting ${MODULE_NAME}"
 (
   cd "${LAKE_PACKAGE_DIR}"
-  lake env "${EXPORTER_DIR}/.lake/build/bin/lean4export" "${MODULE_NAME}"
+  # shellcheck disable=SC2046
+  lake env "${EXPORTER_DIR}/.lake/build/bin/lean4export" "${MODULE_NAME}" -- $(cat "${CONSTANT_LIST}")
 ) > "${EXPORT_FILE}"
 
 echo "Export bytes: $(wc -c < "${EXPORT_FILE}")"
