@@ -174,9 +174,7 @@ The durable provider-attempt protocol anchors the current slices:
    is recorded explicitly rather than promoted to a completed proof.
 
 See [Plan.md](Plan.md) for the exact gates, evidence boundaries, and residual
-gaps. The current reboot-safe continuation is in the
-[2026-07-20 M11 handoff](docs/reboot-handoff-2026-07-20.md). Passing any one
-slice does not verify arbitrary NMLT source.
+gaps.
 
 ## Contribution and governance
 
