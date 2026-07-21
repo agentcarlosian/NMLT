@@ -390,9 +390,11 @@ fn verify_protected_spans_after_apply(
             .ok_or_else(|| AuthorityError::CandidateMissing(protected.path.clone()))?;
         let mut start = protected.span.start;
 
-        for edit in proposal.edits.iter().filter(|edit| {
-            edit.path == protected.path && edit.span.end <= protected.span.start
-        }) {
+        for edit in proposal
+            .edits
+            .iter()
+            .filter(|edit| edit.path == protected.path && edit.span.end <= protected.span.start)
+        {
             start = start
                 .checked_sub(edit.span.len())
                 .and_then(|value| value.checked_add(edit.replacement.len()))

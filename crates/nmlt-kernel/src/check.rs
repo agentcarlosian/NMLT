@@ -408,9 +408,7 @@ fn check_envelope(
     Ok(())
 }
 
-fn preflight_certificate_bytes(
-    certificate: &RawCertificate,
-) -> Result<usize, KernelDiagnostic> {
+fn preflight_certificate_bytes(certificate: &RawCertificate) -> Result<usize, KernelDiagnostic> {
     let mut encoded_len = 0usize;
     add_certificate_bytes(&mut encoded_len, CERTIFICATE_DOMAIN.len())?;
     add_certificate_bytes(&mut encoded_len, 2 + 7 * 32 + 8)?;
@@ -486,10 +484,12 @@ fn add_certificate_bytes(
     encoded_len: &mut usize,
     additional: usize,
 ) -> Result<(), KernelDiagnostic> {
-    *encoded_len = encoded_len.checked_add(additional).ok_or(KernelDiagnostic::new(
-        KernelCode::ResourceLimit,
-        "canonical certificate-byte count overflow",
-    ))?;
+    *encoded_len = encoded_len
+        .checked_add(additional)
+        .ok_or(KernelDiagnostic::new(
+            KernelCode::ResourceLimit,
+            "canonical certificate-byte count overflow",
+        ))?;
     if *encoded_len > MAX_CERTIFICATE_BYTES {
         return Err(KernelDiagnostic::new(
             KernelCode::ResourceLimit,
