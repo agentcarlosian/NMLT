@@ -64,4 +64,4 @@ jobs:
         run: ./tools/check_nanoda.sh "${{ steps.stage_lean.outputs.path }}" NMLT
 
       - name: Enforce metatheory source policy
-        run: ./tools/check_metatheory.sh
+        run: ./tools/check_metatheory.sh "${{ steps.stage_lean.outputs.path }}"
