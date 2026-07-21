@@ -10,6 +10,65 @@ contemporary mathematics.
 > To truly progress, humanity needs new mathematics, new languages, and new
 > techniques.
 
+**[Watch the ~2.5 minute demo](https://www.youtube.com/watch?v=-PbhZ9me46Y)** —
+built for OpenAI Build Week with GPT-5.6 (Sol) running inside the Codex CLI.
+
+## Five-minute judge path
+
+No Lean, TLC, Quint, or P required for this — just the Rust toolchain.
+
+```bash
+# Accepted reference model: every property model-checked and holding
+cargo run -p nmlt-cli -- model-check --json benchmarks/seeded-defects/provider-attempt/reference.nmlt
+```
+
+```json
+{
+  "system": "ProviderAttemptReference",
+  "result": "model_checked",
+  "explored_states": 9,
+  "properties": [
+    { "property": "DispatchRequiresArm", "result": "model_checked", "reason": "holds on every reachable state and transition" }
+  ]
+}
+```
+
+```bash
+# Same protocol, one seeded defect: dispatch is reachable before authorization
+cargo run -p nmlt-cli -- model-check --json benchmarks/seeded-defects/provider-attempt/dispatch-before-authorize.nmlt
+```
+
+```json
+{
+  "system": "DispatchBeforeAuthorizeMutant",
+  "result": "refuted",
+  "properties": [
+    {
+      "property": "DispatchRequiresArm",
+      "result": "refuted",
+      "reason": "property `DispatchRequiresArm` is false in reachable state 1",
+      "witness": { "steps": [ { "action": "dispatch", "state": { "armed": false, "dispatched": true } } ] }
+    }
+  ]
+}
+```
+
+The second run is refuted with a structured counterexample instead of a pass —
+the same mechanism that accepts the reference model fails closed the moment a
+property actually breaks. Full commands and abbreviated output are also in
+[the Build Week guide](docs/openai-build-week.md).
+
+## OpenAI Build Week
+
+NMLT's multi-language verification chain — Rust, Lean 4, pinned Charon/Aeneas
+translation, evidence manifests, and comparison models in TLA+/Quint/P — was
+built during OpenAI Build Week working with **Sol**, GPT-5.6 running inside
+the Codex CLI. Sol accelerated construction and recovery across languages;
+architectural boundaries, trust assumptions, and the verification strategy
+remained human-directed. Every claim NMLT reports still has to clear an
+independent kernel bound to exact source identities — nothing here is trusted
+because an agent said so. See [the full story](docs/openai-build-week.md).
+
 ## NMLT Today
 
 NMLT already runs as an end-to-end laboratory for trustworthy computation. You
