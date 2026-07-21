@@ -1,57 +1,63 @@
-# NMLT Judge Quickstart
+# NMLT Build Week judge quickstart
 
-Release: `build-week-submission-2026`
+## Fastest path: one command, no build
 
-Release page:
-https://github.com/agentcarlosian/NMLT/releases/tag/build-week-submission-2026
+Supported prebuilt platform: Ubuntu 24.04 x86-64 with glibc 2.39.
 
-Submission revision: `<FINAL_COMMIT_SHA>`
+Requirements after download:
 
-Bundle SHA-256: `<RELEASE_SHA256>`
+- Python 3.11 or newer
+- Bash and standard GNU core utilities
+- No network access
 
-This Linux x86_64 bundle is expected to contain:
+Run:
 
-```text
-nmlt
-fixtures/provider-attempt/reference.nmlt
-fixtures/provider-attempt/dispatch-before-authorize.nmlt
-JUDGE_QUICKSTART.md
-```
+    ./judge-demo.sh
 
-From the extracted bundle directory, run:
+The command exits zero only when all expected controls occur:
 
-```bash
-chmod +x ./nmlt
-./nmlt model-check --json fixtures/provider-attempt/reference.nmlt
-./nmlt model-check --json fixtures/provider-attempt/dispatch-before-authorize.nmlt
-```
+- The preserved workflow completes finite exploration and all four properties hold.
+- The manually modeled dropped guard is refuted with the expected counterexample.
+- A prior report is rejected after the exact NMLT model source bytes change.
 
-These two runs do not require Rust, Lean, TLC, Quint, P, Python, Node, or
-network access.
+Use this for paced screen output:
 
-## Expected bounded outcomes
+    ./judge-demo.sh --paced
 
-The reference run reports:
+## Assurance boundary
 
-- `result: "model_checked"`
-- `complete: true`
-- `explored_states: 9`
-- `explored_transitions: 12`
-- four properties with `result: "model_checked"`
+The C-to-Rust files provide a concrete review scenario. Their relevant behavior
+is manually abstracted into NMLT. NMLT does not parse C or Rust, translate
+between them, prove source equivalence, or establish native memory safety.
 
-The seeded-defect run reports:
+model_checked means the reported finite model was explored completely within
+the displayed bounds. It is not an unbounded source-code proof.
 
-- `result: "refuted"`
-- `complete: true`
-- `explored_states: 2`
-- `explored_transitions: 2`
-- `DispatchRequiresArm` as refuted
-- a witness whose `dispatch` step has `armed: false`
+## Build from source
 
-`model_checked` means the properties held throughout the reachable state space
-exhausted within the result's declared finite bounds. It is not an unbounded
-proof, a production-safety claim, or verification of arbitrary NMLT source.
+Requirements:
 
-Demo: https://www.youtube.com/watch?v=-PbhZ9me46Y
+- Rust 1.94.0 through rustup
+- Python 3.11 or newer
+- Bash and GNU Make
 
-Repository: https://github.com/agentcarlosian/NMLT
+Commands:
+
+    cargo build -p nmlt-cli --release
+    ./judge-demo.sh --nmlt target/release/nmlt
+
+The judge demo does not require Lean, TLC, Quint, P, Node, or network access.
+Those tools belong to separate repository research and comparison gates.
+
+## Pinned release
+
+Release tag:
+
+    build-week-judge-demo-2026
+
+Repository:
+
+    https://github.com/agentcarlosian/NMLT
+
+Verify the downloaded archive with the adjacent .sha256 asset before
+extracting it. The bundle also contains SHA256SUMS for its internal files.
