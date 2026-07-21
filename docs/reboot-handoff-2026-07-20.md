@@ -2,7 +2,7 @@
 
 ## Repository state
 
-- Repository: `/home/carlos/Documents/Code/NMLT`
+- Repository: `~/NMLT`
 - Active branch: `agent/m11-verified-kernel-readback`
 - Remote tracking branch: `origin/agent/m11-verified-kernel-readback`
 - Base merge on `main`: `769cd55591f4535b88afc2d46e515d69601fba81`
@@ -120,7 +120,7 @@ Use constrained parallelism because earlier unconstrained Charon/Aeneas builds
 triggered `systemd-oomd`:
 
 ```bash
-cd /home/carlos/Documents/Code/NMLT
+cd ~/NMLT
 
 LAKE_JOBS=2 lake build +NMLT.Behavior.OpenKernelExecution \
   --dir mechanization/lean
@@ -156,15 +156,15 @@ audit passed. Run full `make ci` again after completing the equality stack.
 Pinned local tools used successfully:
 
 ```text
-/home/carlos/.local/share/nmlt-verification/aeneas/charon/bin/charon
-/home/carlos/.local/share/nmlt-verification/aeneas/bin/aeneas
+~/.local/share/nmlt-verification/aeneas/charon/bin/charon
+~/.local/share/nmlt-verification/aeneas/bin/aeneas
 ```
 
 Charon must use the Aeneas preset:
 
 ```bash
 cd crates/nmlt-open-kernel
-/home/carlos/.local/share/nmlt-verification/aeneas/charon/bin/charon \
+~/.local/share/nmlt-verification/aeneas/charon/bin/charon \
   cargo --preset=aeneas -- --lib
 ```
 

@@ -10,7 +10,7 @@ from the content-addressed artifacts that may support a released claim.
 Origin at project creation:
 
 ```text
-/home/carlos/Downloads/hyperbook
+~/local-sources/hyperbook
 ```
 
 Primary themes: state-based reasoning, actions and behaviors, safety and
@@ -47,7 +47,7 @@ corpus-wide license conclusion is asserted here.
 Origin at project creation:
 
 ```text
-/home/carlos/Documents/Code/agentic-formal-methods-papers
+~/local-sources/agentic-formal-methods-papers
 ```
 
 Primary themes: oracle routing, structured counterexamples, specification
@@ -66,7 +66,7 @@ collection path as evidence.
 Origin at project creation:
 
 ```text
-/home/carlos/Documents/Code/technicusverus
+~/local-sources/technicusverus
 ```
 
 Primary themes: durable effect boundaries, authorization before dispatch,

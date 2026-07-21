@@ -9,7 +9,7 @@ an NMLT claim.
 
 ## Archive upgrade and archive findings
 
-The original `/home/carlos/Math/math_frontier_offline_index.json` contained
+The original `~/research-archive/math_frontier_offline_index.json` contained
 2,334 recent paper records but was not directly compatible with the archive
 collector's expected top-level `papers` shape and lacked explicit quality and
 provenance fields. The reproducible v2 builder now combines that immutable
@@ -88,7 +88,7 @@ interface, not a completeness claim about all sound up-to techniques.
 
 ## Eight research loops
 
-The dated loop manifest in `/home/carlos/Math/math_frontier_research_loops.json`
+The dated loop manifest in `~/research-archive/math_frontier_research_loops.json`
 records queries, archive results, new primary sources, gaps, implications, and
 priority separately. Its strongest conclusions are:
 

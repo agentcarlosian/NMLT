@@ -7,7 +7,7 @@ evidence remain authoritative.
 
 ## Durable repository state
 
-- Local repository: `/home/carlos/Documents/Code/NMLT`
+- Local repository: `~/NMLT`
 - Private remote: `agentcarlosian/NMLT`
 - Branch: `main`
 - Durable implementation baseline: commit
@@ -123,7 +123,7 @@ correspondence between the executable checker and Lean statement.
 
 ## Local mathematics archive state
 
-The archive is at `/home/carlos/Math`. It is not a Git repository and has no
+The archive is at `~/research-archive`. It is not a Git repository and has no
 remote backup, so its hashes establish readback only—not remote durability or
 authorship. Its authoritative editable inputs are the generator, normalized
 offline index, curated-source manifest, and eight-loop research manifest. The
@@ -139,7 +139,7 @@ search index is derived.
   `ec47047fa958a39cfb466989e9d2f866c0e288b02aa6845f7b4ac7dcd459eb4a`
 
 The full local checksum manifest is
-`/home/carlos/Math/math_frontier_checkpoint_2026-07-19.sha256`. Its critical
+`~/research-archive/math_frontier_checkpoint_2026-07-19.sha256`. Its critical
 input identities are:
 
 - original web bundle:
@@ -158,13 +158,13 @@ The 2026-07-19 M11 repair added arXiv `1201.4449`, `1210.2450`, and
 `1306.3050`. The current check passes with 13 additions, 8 overlays, and 8
 research loops. Live collector attempts were rate-limited or timed out; that
 is missing coverage, not evidence against the missing work. The first archive
-maintenance decision after reboot is whether to place `/home/carlos/Math` in
+maintenance decision after reboot is whether to place `~/research-archive` in
 a separate private version-controlled repository or another durable backup.
 
 ## Resume and validation commands
 
 ```sh
-cd /home/carlos/Documents/Code/NMLT
+cd ~/NMLT
 git status --short --branch
 git log -3 --format='%h %ad %an <%ae> %s' --date=iso-strict
 git fetch --prune
@@ -173,10 +173,10 @@ git rev-parse origin/main
 gh auth status
 gh repo view --json nameWithOwner,visibility,isPrivate
 make ci
-env PATH="/home/carlos/.elan/toolchains/leanprover--lean4---v4.30.0/bin:$PATH" \
+env PATH="~/.elan/toolchains/leanprover--lean4---v4.30.0/bin:$PATH" \
   ./tools/check_metatheory.sh
 
-cd /home/carlos/Math
+cd ~/research-archive
 python3 build_math_frontier_search_index.py --check
 sha256sum -c math_frontier_checkpoint_2026-07-19.sha256
 ```
@@ -184,7 +184,7 @@ sha256sum -c math_frontier_checkpoint_2026-07-19.sha256
 `make ci` may skip TLC when `TLA2TOOLS_JAR` is unset and P when its toolchain is
 absent; retain those as explicit unvalidated comparison scopes. GitHub emitted
 a Node 20 deprecation warning for the pinned `actions/checkout` revision. The
-pinned Lean toolchain exists under `/home/carlos/.elan/toolchains`, but this
+pinned Lean toolchain exists under `~/.elan/toolchains`, but this
 shell did not have that directory on `PATH`; the explicit command above avoids
 depending on an Elan shim. A Dependabot update exists, but changing that
 pinned action also changes TCB/evidence identities and should be handled as a

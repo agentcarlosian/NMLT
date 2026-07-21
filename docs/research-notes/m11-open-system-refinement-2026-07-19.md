@@ -13,7 +13,7 @@ correct.
 ## Archive findings and gap
 
 Four focused searches were first run against
-`/home/carlos/Math/math_frontier_search_index.json` for interface automata,
+`~/research-archive/math_frontier_search_index.json` for interface automata,
 assume/guarantee contracts, alternating simulation, and compositional I/O
 refinement. The archive recovered
 [compositional refinement of assume/guarantee contracts](https://arxiv.org/abs/2103.13743),
@@ -35,7 +35,7 @@ and exact-file SHA-256
 `ec47047fa958a39cfb466989e9d2f866c0e288b02aa6845f7b4ac7dcd459eb4a`.
 The build identity now includes the generator itself as well as the immutable
 offline source, curated-source manifest, and research-loop manifest. The local
-`/home/carlos/Math` directory is not yet its own version-controlled repository;
+`~/research-archive` directory is not yet its own version-controlled repository;
 these identities provide readback, not remote durability or authorship.
 
 ## Current primary sources consulted separately
