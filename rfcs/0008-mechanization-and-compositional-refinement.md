@@ -337,7 +337,12 @@ Use `H(c,d) = (R.h(c),d)`.
 `Core/Transition.lean` as `weakConditionalCongruence_safety`, with
 `IsolationReflects` stated separately from `WiringCovered` (necessity:
 `CollidedAbstractWire`). Case 7 (`I-CAP` / `I-GRADE`) remains a proof
-outline, as do fairness and the OpenComposition *weak* hiding story. The
+outline, as do fairness and the OpenComposition *weak* hiding story. A
+first C1 *negative* slice is checked:
+`hiddenPing_consume_breaks_resourceRefinement` shows observational
+`WeakRefines` does not imply resource/capability preservation (I-CAP
+consume). That is not a Case 7 proof, not I-GRADE / I-FAIR, and not a
+claim that T5 is CONDITIONAL-CONGRUENCE. The
 small-model lift must not be inferred from the exact-action theorem, and
 the exact-action theorem must not be inferred from the small-model lift.
 Finite observation-trace inclusion from any `WeakRefines` witness is

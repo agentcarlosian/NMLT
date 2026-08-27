@@ -9,6 +9,8 @@ versioning compatibility promises.
 
 ### Added
 
+- First residual C1 *negative*: named Lean `hiddenPing_consume_breaks_resourceRefinement` (`[propext]` only). Observational `WeakRefines` (T1 / T5 small model) does not imply I-CAP consume: hidden ping still refines the step-free abstract sender, but a `token` consume unmatched on the abstract resource profile falsifies `ResourceRefinement` for every `SenderLabel` map. Case 7 of RFC 0008 remains open (no positive I-CAP lift; not I-GRADE / I-FAIR). Executable `nmlt-temporal` control: hidden ping consume is `HiddenActionHasResources` while observation refinement still accepts.
+
 - Paper 1 sketch graphs: hidden ping stutter-expands the one-state abstract obs; a one-wire visible sync-once path stutter-expands (equals) the same visible step. Finite instance via `observation_trace_inclusion`; not a compiler, not C1.
 
 - Paper 1 two-model split: Lean `Receiver` stays non-receptive (VisibleSync still `InputNotReceptive`); OpenSystem-receptive dual `examples/paper1/receptive_receiver.nmlt` (`set bit = true`, no `require`) is accepted by `OpenRefinementCongruenceChecker` with visible ping. Not a replacement, not canonical-v1, not a claim that Lean receiver is receptive or that OpenSystem is the paper small model.

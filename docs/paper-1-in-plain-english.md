@@ -39,6 +39,10 @@ We also have:
 
 There’s also an older *strong* / exact-action congruence theorem (T4) in a richer OpenComposition model. It’s real, but it’s a different setting—not residual C1. It does not secretly prove the full weak story with resources and fairness, and T5 does not close full RFC 0008.
 
+## Residual C1, first slice (authority is not silent either)
+
+The same hidden ping still observation-refines the do-nothing sender (T1). If that ping consumes a capability `token` the abstract profile does not, resource refinement fails (`hiddenPing_consume_breaks_resourceRefinement`). Hiding is not contextual silence for authority. That is I-CAP independence from T5, not a full resource/grade/fairness lift.
+
 ## What we are *not* claiming yet
 
 - Full “everything in RFC 0008” (capabilities, grades, fairness, liveness)
