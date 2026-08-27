@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split; I-GRADE hidden-ping negative; I-RELY hidden-ping negative; inert hidden-ping resource positive)
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split; I-GRADE hidden-ping negative; I-RELY hidden-ping negative; inert hidden-ping resource positive; I-FAIR hidden-ping divergence negative)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -355,10 +355,18 @@ ping resource profile matches the abstract stutter (no extra consume,
 epsilon grade, no extra rely), `ResourceRefinement` holds along
 `mapPing` while T1 still holds. The three negatives are independent of
 that matching case. That is not a Case 7 proof (the *compose* resource
-homomorphism remains open), not I-FAIR, not a product/compose resource
+homomorphism remains open), not a product/compose resource
 lift, and not a claim that T5 is CONDITIONAL-CONGRUENCE. The
 I-CAP/I-GRADE/I-RELY negatives plus this inert positive freeze the
-C1 resource-independence pack; do not start I-FAIR here. The
+C1 resource-independence pack. A first C1 I-FAIR *negative* slice is
+checked: `hiddenPing_divergence_not_discharged_by_weakRefines` shows
+observational `WeakRefines` (T1) permits an infinite hidden-ping path
+(`Nat → state`) that stays at the unique abstract state. Finite
+observation-trace inclusion still holds for every finite prefix, so T5
+does not discharge I-FAIR / RFC 0007 R-DIVERGENCE. This is not a
+liveness theorem, not WF/SF fairness transport, and not an I-FAIR lift
+through synchronization. Case 7 of the *compose* resource homomorphism
+remains open. The
 small-model lift must not be inferred from the exact-action theorem, and
 the exact-action theorem must not be inferred from the small-model lift.
 Finite observation-trace inclusion from any `WeakRefines` witness is
@@ -423,7 +431,7 @@ The mechanization program must retain:
 - a variant breaking connection reflection;
 - a variant sharing one affine capability between components;
 - a variant with a nonmonotone or non-homomorphic grade map;
-- a liveness example where infinite hidden steps invalidate progress transport;
+- a liveness example where infinite hidden steps invalidate progress transport (`hiddenPing_divergence_not_discharged_by_weakRefines`; T1 still holds; T5 finite prefixes still included; not a liveness theorem);
 - a theorem file containing `sorry` that the evidence gate rejects.
 
 ## Compatibility
@@ -520,6 +528,9 @@ dependent proof artifacts even if theorem names remain unchanged.
    (stutter-expansion of finite observation traces). The Rust helper
    `observation_trace_inclusion` is a small-graph regression, not a proof of
    the lemma. Infinite observation words / LTL / fairness transport remain open.
-6. Add fairness/divergence only after the safety theorem is stable.
+6. **First negative slice (2026-08-27):** `hiddenPing_divergence_not_discharged_by_weakRefines`
+   (T1 permits infinite hidden ping; T5 finite inclusion does not discharge
+   I-FAIR / R-DIVERGENCE). Not a liveness theorem; WF/SF transport and
+   fairness through compose remain open. Case 7 resource compose still open.
 7. Build a typed-IR correspondence test before attributing Lean theorems to
    compiler output.

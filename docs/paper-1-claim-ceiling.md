@@ -104,7 +104,7 @@ Axioms: `[propext]`.
 The remaining conjecture is anything beyond T5:
 
 - IsolationReflects without assuming it (or injectivity) as an extra field;
-- `I-FAIR` (I-CAP/I-GRADE/I-RELY resource-independence pack frozen below);
+- I-FAIR *positive* / fairness transport (first negative slice below; I-CAP/I-GRADE/I-RELY resource-independence pack frozen);
 - the OpenComposition port/assumption model of T4;
 - a composite hidden/map other than the defaults `compositeHiddenOf` /
   `compositeMapOf`.
@@ -117,7 +117,9 @@ The remaining conjecture is anything beyond T5:
 
 **Third C1 slice (negative; not a lift):** I-RELY is independent of T5. Named lemma `hiddenPing_rely_breaks_resourceRefinement` (`[propext]` only): observational `WeakRefines` still holds for hidden ping, but an extra `ready` Fact unmatched by the abstract stutter profile falsifies `ResourceRefinement.rely` (refinement must not widen assumptions). Not a positive I-RELY/I-FAIR theorem, not a rely discharge through compose; T4 does not imply this.
 
-**C1 resource-independence pack (frozen):** matching profiles lift; the three fails are independent. Named lemma `hiddenPing_inert_resourceRefinement` (`[propext]` only): if the hidden-ping resource profile matches the abstract stutter (no extra consume, epsilon grade, no extra rely), `ResourceRefinement` holds along `mapPing` while T1 `WeakRefines` still holds. RFC 0008 Case 7 remains open for the *compose* resource homomorphism. Not I-FAIR. Pack = I-CAP/I-GRADE/I-RELY negatives + inert positive.
+**C1 resource-independence pack (frozen):** matching profiles lift; the three fails are independent. Named lemma `hiddenPing_inert_resourceRefinement` (`[propext]` only): if the hidden-ping resource profile matches the abstract stutter (no extra consume, epsilon grade, no extra rely), `ResourceRefinement` holds along `mapPing` while T1 `WeakRefines` still holds. RFC 0008 Case 7 remains open for the *compose* resource homomorphism. Pack = I-CAP/I-GRADE/I-RELY negatives + inert positive.
+
+**First C1 I-FAIR slice (negative; not a liveness theorem):** observational `WeakRefines` (T1) permits hidden divergence. Named lemma `hiddenPing_divergence_not_discharged_by_weakRefines` (prefer axiom-free): ConcreteSender takes hidden `ping` at every `Nat` index (`Nat → state` path) and stays at the unique abstract state. Finite observation-trace inclusion still holds on every finite prefix, so T5 does not discharge I-FAIR / RFC 0007 R-DIVERGENCE. Not WF/SF fairness transport, not LTL, not an I-FAIR lift through synchronization. Case 7 compose resource homomorphism remains open.
 
 ### C2 — Hypothesis-independence of individual premises
 Each named premise of T5 is independently indispensable for the *default* lift
@@ -253,3 +255,4 @@ appendix for Lean listings.
 | 2026-08-27 | Second C1 negative slice: `hiddenPing_grade_breaks_resourceRefinement` (I-GRADE independent of T5) |
 | 2026-08-27 | Third C1 negative slice: `hiddenPing_rely_breaks_resourceRefinement` (I-RELY independent of T5) |
 | 2026-08-27 | C1 resource-independence pack frozen: `hiddenPing_inert_resourceRefinement` (matching profiles lift; three fails independent; Case 7 compose lift still open; not I-FAIR) |
+| 2026-08-27 | First C1 I-FAIR negative: `hiddenPing_divergence_not_discharged_by_weakRefines` (T1 permits infinite hidden ping; T5 finite prefixes do not discharge; not a liveness theorem; no WF/SF transport; no I-FAIR lift through sync) |

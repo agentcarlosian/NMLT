@@ -735,4 +735,80 @@ mod tests {
                 .holds()
         );
     }
+
+    /// ConcreteSender-like one-state hidden ping loop. Weak fairness of
+    /// `ping` is satisfied by repeating ping, but ping never leaves the
+    /// unique state, so `eventually` of a never-reached observation still
+    /// fails. Taking the hidden action does not imply observation progress
+    /// (I-FAIR / RFC 0007 R-DIVERGENCE). Not a liveness theorem.
+    #[test]
+    fn hidden_ping_loop_eventually_fails_under_weak_ping_fairness() {
+        let graph = FiniteGraph::new(
+            vec![BTreeMap::from([("obs".to_owned(), Value::Bool(false))])],
+            vec![0],
+            vec![Transition::action(0, "ping", 0)],
+        )
+        .unwrap();
+        let checker =
+            TemporalChecker::new(&graph, FairnessSet::new(vec![Fairness::weak("ping")]));
+        let outcome = checker.eventually(|s| s.get("obs") == Some(&Value::Bool(true)));
+        assert!(
+            !outcome.holds(),
+            "weak ping fairness must not force a never-reached observation"
+        );
+        let CheckOutcome::Violated { witness, .. } = outcome else {
+            panic!("expected a hidden-ping divergence lasso")
+        };
+        assert!(witness.is_well_formed(checker.graph()));
+        assert!(
+            witness
+                .loop_actions(checker.graph())
+                .iter()
+                .any(|action| *action == Some("ping")),
+            "fair counterexample should take ping, not only identity stutter: {:?}",
+            witness.loop_actions(checker.graph())
+        );
+    }
+
+    /// Empty-wiring sender||receiver: ping is independent of receive.
+    /// Weak fairness of ping is discharged by ping-forever at `bit=false`;
+    /// the peer bit never becomes true. Observation/progress of the peer
+    /// is not implied by taking the hidden action. Not I-FAIR transport
+    /// through sync (wiring is empty).
+    #[test]
+    fn empty_wiring_sender_receiver_eventually_peer_bit_fails() {
+        let graph = FiniteGraph::new(
+            vec![
+                BTreeMap::from([("bit".to_owned(), Value::Bool(false))]),
+                BTreeMap::from([("bit".to_owned(), Value::Bool(true))]),
+            ],
+            vec![0],
+            vec![
+                Transition::action(0, "ping", 0),
+                Transition::action(1, "ping", 1),
+                Transition::action(0, "receive", 1),
+            ],
+        )
+        .unwrap();
+        let checker =
+            TemporalChecker::new(&graph, FairnessSet::new(vec![Fairness::weak("ping")]));
+        let outcome = checker.eventually(|s| s.get("bit") == Some(&Value::Bool(true)));
+        assert!(
+            !outcome.holds(),
+            "empty-wiring product must not reach peer bit under ping-only fairness"
+        );
+        let CheckOutcome::Violated { witness, .. } = outcome else {
+            panic!("expected ping-forever lasso at bit=false")
+        };
+        assert!(witness.is_well_formed(checker.graph()));
+        assert!(
+            witness
+                .loop_states
+                .iter()
+                .all(|&state| checker.graph().state(state).get("bit")
+                    == Some(&Value::Bool(false))),
+            "counterexample loop must stay at bit=false: {:?}",
+            witness.loop_states
+        );
+    }
 }
