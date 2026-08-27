@@ -28,7 +28,7 @@ pub use graph::{
 };
 pub use observation::{
     ActionHiding, ActionProjectionError, ObservationError, ObservationMap, stutter_equivalent,
-    stutter_project,
+    stutter_expands, stutter_project,
 };
 pub use open::{
     ActionPolarity, ActionSignature, CompatibilityChecker, CompatibilityIssue, CompatibilityReport,
@@ -67,7 +67,8 @@ pub use open_resources::{
     mapped_product_resource_refinement,
 };
 pub use refinement::{
-    RefinementChecker, RefinementMismatch, RefinementMismatchKind, RefinementReport, RefinementSpec,
+    ObservationTraceError, ObservationTraceInclusion, RefinementChecker, RefinementMismatch,
+    RefinementMismatchKind, RefinementReport, RefinementSpec, observation_trace_inclusion,
 };
 pub use runtime::{
     JournalAction, JournalRecord, JournalValue, RuntimeIssue, RuntimeIssueKind, RuntimeMapping,

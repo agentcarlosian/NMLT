@@ -3,7 +3,7 @@
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
-- Revised: 2026-08-27 (`hide action` + surface `compose`/`connect` wiring)
+- Revised: 2026-08-27 (`hide action` + surface `compose`/`connect` wiring; finite stutter-expansion helper)
 - Mathematical-core backlog: `NMLT-P1-104`
 
 ## Summary
@@ -407,7 +407,9 @@ requires its own proof.
 1. Mechanize intensional traces, identity stutter, and observation projection.
 2. Prove `approx_st` is an equivalence.
 3. Prove the observation LTL fragment invariant under `approx_st`.
-4. Mechanize safety transport for `R-INIT` through `R-VISIBLE`.
+4. Mechanize safety transport for `R-INIT` through `R-VISIBLE`. Finite
+   `nmlt-temporal::observation_trace_inclusion` / `stutter_expands` is a
+   small-graph regression for the Lean corollary, not a proof of it.
 5. Add divergence and fairness structures before any liveness transport claim.
 6. Preserve uncollapsed intensional traces in evidence and test every negative
    control above.

@@ -343,6 +343,9 @@ the exact-action theorem must not be inferred from the small-model lift.
 Finite observation-trace inclusion from any `WeakRefines` witness is
 `weakRefines_finite_observation_trace_inclusion` (stutter-expansion of
 finite traces only; not infinite words, LTL, fairness, or liveness).
+`nmlt-temporal::observation_trace_inclusion` is a finite-graph regression
+that the checker agrees with that corollary on small paths; it is not a
+proof of the Lean lemma.
 
 ## 7. Mechanization gates
 
@@ -474,8 +477,9 @@ dependent proof artifacts even if theorem names remain unchanged.
    isolation necessity.
 4. Add capability partition and grade homomorphism structures and proofs.
 5. **Done (finite only, 2026-08-27):** `weakRefines_finite_observation_trace_inclusion`
-   (stutter-expansion of finite observation traces). Infinite observation
-   words / LTL / fairness transport remain open.
+   (stutter-expansion of finite observation traces). The Rust helper
+   `observation_trace_inclusion` is a small-graph regression, not a proof of
+   the lemma. Infinite observation words / LTL / fairness transport remain open.
 6. Add fairness/divergence only after the safety theorem is stable.
 7. Build a typed-IR correspondence test before attributing Lean theorems to
    compiler output.

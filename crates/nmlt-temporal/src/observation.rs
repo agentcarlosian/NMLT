@@ -214,6 +214,36 @@ pub fn stutter_equivalent<T: Clone + Eq>(left: &[T], right: &[T]) -> bool {
     stutter_project(left) == stutter_project(right)
 }
 
+/// Lean `StutterExpands short long`: `long` is `short` with adjacent copies
+/// inserted. Each element of `short` appears as a non-empty block.
+///
+/// Directional, unlike `stutter_equivalent`. `[A, A]` expands to `[A, A, A]`,
+/// but `[A, A]` does not expand to `[A]`. Matches the inductive in
+/// `mechanization/lean/NMLT/Core/FiniteObservationTrace.lean`.
+pub fn stutter_expands<T: Eq>(short: &[T], long: &[T]) -> bool {
+    let mut i = 0;
+    let mut j = 0;
+    while i < short.len() || j < long.len() {
+        if i == short.len() || j == long.len() || short[i] != long[j] {
+            return false;
+        }
+        let mut short_run = 0usize;
+        while i < short.len() && short[i] == long[j] {
+            short_run += 1;
+            i += 1;
+        }
+        let mut long_run = 0usize;
+        while j < long.len() && long[j] == short[i - 1] {
+            long_run += 1;
+            j += 1;
+        }
+        if long_run < short_run {
+            return false;
+        }
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -240,6 +270,28 @@ mod tests {
         let word = [false, false, true, true, false];
         assert_eq!(stutter_project(&word), vec![false, true, false]);
         assert!(stutter_equivalent(&word, &[false, true, false, false]));
+    }
+
+    #[test]
+    fn stutter_expands_matches_lean_inductive() {
+        let empty: [bool; 0] = [];
+        assert!(stutter_expands(&empty, &empty));
+        assert!(stutter_expands(&[false], &[false]));
+        assert!(stutter_expands(&[false], &[false, false]));
+        assert!(stutter_expands(&[false, true], &[false, false, true]));
+        assert!(stutter_expands(&[false, false], &[false, false, false]));
+        assert!(!stutter_expands(&empty, &[false]));
+        assert!(!stutter_expands(&[false], &empty));
+        assert!(
+            !stutter_expands(&[false, false], &[false]),
+            "directional: extra copies are allowed only in long"
+        );
+        assert!(
+            stutter_equivalent(&[false, false], &[false]),
+            "stutter_equivalent is not StutterExpands"
+        );
+        assert!(!stutter_expands(&[false], &[false, true]));
+        assert!(!stutter_expands(&[false, true, false], &[false, true]));
     }
 
     #[test]

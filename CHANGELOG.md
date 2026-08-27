@@ -12,6 +12,9 @@ versioning compatibility promises.
 - Named Lean theorem `weakRefines_finite_observation_trace_inclusion` for
   Paper 1 Corollary 22 (finite observation-trace inclusion / stutter-expansion
   from `WeakRefines`; axiom-free; not LTL/infinite/fairness/liveness).
+- Finite `nmlt-temporal` helper `observation_trace_inclusion` / `stutter_expands`
+  matching Lean `StutterExpands` on small graphs (kernel regression; not a
+  proof of the Lean lemma).
 - Named Lean theorem `visibleClassification_fails_on_hidden_ping_wire` for
   Paper 1's visible-classification failure (T3 dual; axiom-free). Local dual
   `visiblePing_breaks_senderRefinement`.

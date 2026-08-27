@@ -10,6 +10,8 @@
   observation list `aobs` from `R.mapState s` such that `obs` is a
   stutter-expansion of `aobs` (hidden concrete steps repeat the current
   abstract observation; visible steps take exactly one abstract step).
+  Finite-graph regression (not a proof of this lemma):
+  `nmlt-temporal::observation_trace_inclusion` / `stutter_expands`.
 -/
 import NMLT.Core.Transition
 
