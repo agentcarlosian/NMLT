@@ -3,7 +3,7 @@
 **Working title:** Hidden Actions Are Not Contextual Silence  
 **Subtitle (optional):** A mechanized counterexample to unconditional refinement congruence under synchronization, and a restricted repair  
 **Date:** 2026-08-27  
-**Repo snapshot:** local NMLT @ `0417f6e` (+ RFC 0001 repair of 2026-08-27)  
+**Repo snapshot:** local NMLT @ `451001b` (ahead of GitHub main `0417f6e`; not pushed)  
 **Status:** draft claim ceiling — freeze before expanding proofs or prose
 
 This document is the authority on what Paper 1 may and may not claim. If the

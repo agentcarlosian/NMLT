@@ -906,15 +906,16 @@ are axiom-free. Mathlib and Aeneas are dependencies of the broader
 \paragraph{Local tree vs published \texttt{main}.}
 As of this draft, Theorem~\ref{thm:weak-safety}
 (\lean{weakConditionalCongruence_safety}) and its independence
-controls may be present only in a local working tree relative to the
-published GitHub \texttt{main} tip at commit
-\texttt{0417f6e}. The frozen artifact SHA for the paper tag is left as
-a placeholder until the authors push and tag:
+controls live in the local freeze commit \texttt{451001b}, which is
+ahead of the published GitHub \texttt{main} tip \texttt{0417f6e}.
+That SHA is a local-only artifact identifier until the authors push
+and tag; it is not yet a remote ref.
 \begin{center}
-\texttt{artifact-SHA = <PLACEHOLDER: ask user before push/tag>}
+{\small\ttfamily artifact-SHA = 451001b\\
+451001b5697cfc7ec3e422412f0268a84a72da95\\
+(local; not pushed)}
 \end{center}
-Do not treat \texttt{0417f6e} alone as containing Theorem~\ref{thm:weak-safety}
-unless the local module has been merged.
+Do not treat \texttt{0417f6e} alone as containing Theorem~\ref{thm:weak-safety}.
 
 \paragraph{Reproduce.}
 From a checkout that contains the cited modules, on Lean~4.30.0:
@@ -1007,7 +1008,7 @@ lift.
 Recorded from \texttt{lake build NMLT} of the mechanization on Lean~4.30.0
 (27 August 2026). Policy: no \texttt{sorry}, no project-defined
 axioms. Lean's foundational \texttt{propext} is an accepted TCB
-entry when it appears. Artifact SHA: \texttt{<PLACEHOLDER>}.
+entry when it appears. Artifact SHA: 	exttt{451001b} (local freeze; not pushed).
 
 {\footnotesize
 \setlength{\tabcolsep}{4pt}
