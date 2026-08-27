@@ -9,10 +9,17 @@ versioning compatibility promises.
 
 ### Added
 
+- Optional surface polarity on action decls: `action output ping` /
+  `action input receive` project `UntypedAction.polarity`; bare `action ping`
+  stays `None`. Same keyword-as-identifier rule as `hide action` (`action input {`
+  is named `input` with no polarity). Complementary-wire check uses port
+  polarity if present, else action polarity, else skip. M9 records
+  `NMLT-M9-ACTION-POLARITY` and still fail-closes compose (not an elaborator).
+  Paper 1 fixture annotates ping/receive; `canonical-v1.json` is untouched.
 - Surface complementary-polarity check in `nmlt-core`: `connect` wires whose
-  caller-supplied or `port input`/`port output` polarities are both inputs or
-  both outputs are flagged. `UntypedAction` still has no polarity; Paper 1
-  ping/receive is unpolarized; M9 compose remains fail-closed (not an elaborator).
+  caller-supplied, `port input`/`port output`, or optional action polarities
+  are both inputs or both outputs are flagged. Bare `action ping` stays
+  unpolarized. M9 compose remains fail-closed (not an elaborator).
 - Named Lean theorem `weakRefines_finite_observation_trace_inclusion` for
   Paper 1 Corollary 22 (finite observation-trace inclusion / stutter-expansion
   from `WeakRefines`; axiom-free; not LTL/infinite/fairness/liveness).

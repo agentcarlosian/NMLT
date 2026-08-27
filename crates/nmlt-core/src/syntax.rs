@@ -606,6 +606,13 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
     fn parse_action_decl(&mut self) {
         self.start(SyntaxKind::ActionDecl);
         self.bump();
+        self.bump_inline_trivia();
+        // Optional `input`/`output` polarity: same keyword-as-identifier rule as
+        // `hide action name` — only when another identifier (the name) follows.
+        // `action input {` is an action named `input` with no polarity.
+        if self.at_action_polarity_keyword() && self.next_inline_is_identifier() {
+            self.bump();
+        }
         self.expect_identifier("NMLT2002", "expected an action name");
         self.bump_trivia();
         if self.at_kind(TokenKind::LeftParen) {
@@ -1080,6 +1087,30 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
             && self.current_text() == keyword
     }
 
+    fn at_action_polarity_keyword(&self) -> bool {
+        self.at_keyword("input") || self.at_keyword("output")
+    }
+
+    /// True when the next non-trivia token on this line is an identifier.
+    /// Line breaks do not count: polarity is only recognized beside the name.
+    fn next_inline_is_identifier(&self) -> bool {
+        let mut index = self.cursor + 1;
+        while index < self.tokens.len() {
+            let token = self.tokens[index];
+            if token.kind.is_trivia() {
+                if token.kind == TokenKind::Whitespace
+                    && token.text(self.source).contains(['\r', '\n'])
+                {
+                    return false;
+                }
+                index += 1;
+                continue;
+            }
+            return token.kind == TokenKind::Identifier;
+        }
+        false
+    }
+
     fn at_text(&self, text: &str) -> bool {
         !self.at_end() && self.current_text() == text
     }
@@ -1306,6 +1337,30 @@ mod tests {
         assert_eq!(parsed.root().descendants(SyntaxKind::StateDecl).len(), 1);
         assert_eq!(parsed.root().descendants(SyntaxKind::ActionDecl).len(), 1);
         assert_eq!(parsed.root().descendants(SyntaxKind::SafetyDecl).len(), 1);
+    }
+
+    #[test]
+    fn optional_action_polarity_is_lossless_and_does_not_steal_named_input() {
+        let polarized =
+            "system S { action output ping { set unit = unit } state unit: Bool = false }\n";
+        let parsed = parse_cst(polarized);
+        assert!(
+            parsed.diagnostics().is_empty(),
+            "{:?}",
+            parsed.diagnostics()
+        );
+        assert_eq!(parsed.reconstruct(), polarized);
+        assert_eq!(parsed.root().descendants(SyntaxKind::ActionDecl).len(), 1);
+
+        let named_input =
+            "system S { action input { set unit = unit } state unit: Bool = false }\n";
+        let parsed = parse_cst(named_input);
+        assert!(
+            parsed.diagnostics().is_empty(),
+            "{:?}",
+            parsed.diagnostics()
+        );
+        assert_eq!(parsed.reconstruct(), named_input);
     }
 
     #[test]

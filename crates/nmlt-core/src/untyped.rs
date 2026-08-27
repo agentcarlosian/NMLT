@@ -390,7 +390,8 @@ impl<'a> SurfaceWire<'a> {
 
     /// Port-declared polarity of the left endpoint, if a same-named `port` exists.
     ///
-    /// Never inferred from `action` members: [`UntypedAction`] has no polarity.
+    /// Port-only: action `input`/`output` keywords are ignored here. Use
+    /// [`Self::left_declared_polarity`] to fall back to [`UntypedAction::polarity`].
     #[must_use]
     pub fn left_port_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
         port_polarity(file.system_named(self.left_system?)?, self.left_action?)
@@ -400,6 +401,30 @@ impl<'a> SurfaceWire<'a> {
     #[must_use]
     pub fn right_port_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
         port_polarity(file.system_named(self.right_system?)?, self.right_action?)
+    }
+
+    /// Action-declared polarity of the left endpoint, if the named action has one.
+    #[must_use]
+    pub fn left_action_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        action_polarity(file.system_named(self.left_system?)?, self.left_action?)
+    }
+
+    /// Action-declared polarity of the right endpoint, if the named action has one.
+    #[must_use]
+    pub fn right_action_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        action_polarity(file.system_named(self.right_system?)?, self.right_action?)
+    }
+
+    /// Port polarity if present, else action polarity, else unknown. Never invented.
+    #[must_use]
+    pub fn left_declared_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        declared_polarity(file.system_named(self.left_system?)?, self.left_action?)
+    }
+
+    /// Port polarity if present, else action polarity, else unknown. Never invented.
+    #[must_use]
+    pub fn right_declared_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        declared_polarity(file.system_named(self.right_system?)?, self.right_action?)
     }
 
     /// `(left, right)` port polarities. `None` on either side is unknown, not invented.
@@ -414,13 +439,38 @@ impl<'a> SurfaceWire<'a> {
         )
     }
 
+    /// `(left, right)` declared polarities: port wins, else action, else unknown.
+    #[must_use]
+    pub fn declared_polarities(
+        self,
+        file: &UntypedFile,
+    ) -> (Option<SurfacePolarity>, Option<SurfacePolarity>) {
+        (
+            self.left_declared_polarity(file),
+            self.right_declared_polarity(file),
+        )
+    }
+
     /// True only when both endpoints have a known port polarity and they are not complementary.
     ///
-    /// Unknown polarities (typical of Paper 1 `action ping` / `action receive` with no
-    /// `port` members) are not mismatches. This is a surface name check, not elaboration.
+    /// Unknown polarities (no same-named `port`) are not mismatches. Action polarities
+    /// are ignored here; see [`Self::has_non_complementary_declared_polarities`].
+    /// This is a surface name check, not elaboration.
     #[must_use]
     pub fn has_non_complementary_port_polarities(self, file: &UntypedFile) -> bool {
         match self.port_polarities(file) {
+            (Some(left), Some(right)) => !left.is_complementary_to(right),
+            _ => false,
+        }
+    }
+
+    /// True only when both endpoints have a known declared polarity and they are not complementary.
+    ///
+    /// Rule: port polarity if present, else action polarity, else skip. Missing
+    /// polarities are not mismatches. Surface name check, not elaboration.
+    #[must_use]
+    pub fn has_non_complementary_declared_polarities(self, file: &UntypedFile) -> bool {
+        match self.declared_polarities(file) {
             (Some(left), Some(right)) => !left.is_complementary_to(right),
             _ => false,
         }
@@ -429,14 +479,13 @@ impl<'a> SurfaceWire<'a> {
 
 /// Declared surface input/output polarity. Not inferred from action bodies.
 ///
-/// [`UntypedAction`] has no polarity field: the parser recognizes `action ping { ... }`
-/// without an `in`/`out` keyword. Complementary-polarity checks for
-/// `connect Left.action -> Right.action` therefore require either:
-/// - caller-supplied polarities keyed by `(system, name)`, or
-/// - a same-named `port input` / `port output` member ([`UntypedPort::direction`]).
+/// Sources, in lookup order used by [`declared_polarity`]:
+/// - a same-named `port input` / `port output` member ([`UntypedPort::direction`]);
+/// - optional `action input name` / `action output name` ([`UntypedAction::polarity`]);
+/// - caller-supplied polarities keyed by `(system, name)`.
 ///
-/// Paper 1 `ping`/`receive` has neither; tests pass explicit [`SurfacePolarity::Output`]
-/// / [`SurfacePolarity::Input`]. This type is not an executable composition interface.
+/// Bare `action ping { ... }` stays [`None`] — polarity is never invented. This
+/// type is not an executable composition interface.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum SurfacePolarity {
     Input,
@@ -484,7 +533,7 @@ pub struct UntypedBinding {
 /// `port input name: T` / `port output name: T`.
 ///
 /// [`Self::direction`] is the identifier after `port` (`input` or `output` when well-formed).
-/// This is the only surface polarity that currently projects; actions do not carry one.
+/// Port polarity wins over [`UntypedAction::polarity`] when both name the same endpoint.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UntypedPort {
     pub direction: Option<SpannedText>,
@@ -539,15 +588,19 @@ impl UntypedParameterItem {
     }
 }
 
-/// Surface `action name ... { ... }`.
+/// Surface `action name ... { ... }` or optional `action input|output name ... { ... }`.
 ///
-/// There is **no** in/out polarity on this AST. The parser does not accept
-/// `action in ping` / `action out ping`; Paper 1 `ping`/`receive` are unpolarized.
-/// Complementary-polarity checks for `connect` take caller-supplied polarities
-/// or same-named [`UntypedPort`] members — they do not invent polarity here.
+/// [`Self::polarity`] is [`Some`] only when the parser saw `input`/`output` *and*
+/// another identifier (the name). `action ping { ... }` and `action input { ... }`
+/// (name `input`, no following name) stay [`None`]. `in`/`out` are not recognized.
+/// Complementary-polarity checks for `connect` use this field, same-named
+/// [`UntypedPort`] members (port wins), or caller-supplied maps — they do not
+/// invent polarity from action bodies.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UntypedAction {
     pub name: Option<SpannedText>,
+    /// `Some` only for `action input name` / `action output name`. Not inferred.
+    pub polarity: Option<SurfacePolarity>,
     /// Every direct parameter-list node in source order.
     pub parameters: Vec<UntypedParameterItem>,
     pub grade: Option<SpannedText>,
@@ -773,7 +826,8 @@ pub fn surface_wires_in_compose<'a>(
 
 /// Port-declared polarity of `name` on `system`, if a matching `port` exists.
 ///
-/// Looks at [`UntypedPort::direction`] only. Actions with the same name are ignored.
+/// Looks at [`UntypedPort::direction`] only. Action polarities are ignored here;
+/// see [`action_polarity`] and [`declared_polarity`].
 #[must_use]
 pub fn port_polarity(system: &UntypedSystem, name: &str) -> Option<SurfacePolarity> {
     system.members.iter().find_map(|member| match member {
@@ -784,9 +838,32 @@ pub fn port_polarity(system: &UntypedSystem, name: &str) -> Option<SurfacePolari
     })
 }
 
+/// Action-declared polarity of `name` on `system`, if that action has one.
+///
+/// Reads [`UntypedAction::polarity`] only. `action ping { ... }` yields [`None`].
+#[must_use]
+pub fn action_polarity(system: &UntypedSystem, name: &str) -> Option<SurfacePolarity> {
+    system.members.iter().find_map(|member| match member {
+        UntypedMember::Action(action)
+            if action.name.as_ref().map(|n| n.text.as_str()) == Some(name) =>
+        {
+            action.polarity
+        }
+        _ => None,
+    })
+}
+
+/// Port polarity if present, else action polarity, else unknown.
+///
+/// Never inferred from action bodies. A same-named port wins when both exist.
+#[must_use]
+pub fn declared_polarity(system: &UntypedSystem, name: &str) -> Option<SurfacePolarity> {
+    port_polarity(system, name).or_else(|| action_polarity(system, name))
+}
+
 /// `(system, port_name)` polarities from every well-formed `port input` / `port output`.
 ///
-/// Actions contribute nothing: they have no polarity on the AST.
+/// Action polarities are not included; see [`surface_action_polarities`].
 #[must_use]
 pub fn surface_port_polarities(file: &UntypedFile) -> BTreeMap<(String, String), SurfacePolarity> {
     let mut out = BTreeMap::new();
@@ -808,13 +885,54 @@ pub fn surface_port_polarities(file: &UntypedFile) -> BTreeMap<(String, String),
     out
 }
 
+/// `(system, action_name)` polarities from every `action input|output name`.
+///
+/// Bare `action ping` contributes nothing. Ports are not included.
+#[must_use]
+pub fn surface_action_polarities(
+    file: &UntypedFile,
+) -> BTreeMap<(String, String), SurfacePolarity> {
+    let mut out = BTreeMap::new();
+    for system in file.systems() {
+        let Some(system_name) = system.name.as_ref() else {
+            continue;
+        };
+        for member in &system.members {
+            if let UntypedMember::Action(action) = member {
+                let Some(action_name) = action.name.as_ref() else {
+                    continue;
+                };
+                if let Some(polarity) = action.polarity {
+                    out.insert(
+                        (system_name.text.clone(), action_name.text.clone()),
+                        polarity,
+                    );
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Declared polarities: action map, then port map overwrites (port wins).
+#[must_use]
+pub fn surface_declared_polarities(
+    file: &UntypedFile,
+) -> BTreeMap<(String, String), SurfacePolarity> {
+    let mut out = surface_action_polarities(file);
+    out.extend(surface_port_polarities(file));
+    out
+}
+
 /// Wires whose caller-supplied polarities are both known and not complementary.
 ///
 /// `polarity(system, name)` should return [`SurfacePolarity`] when the caller
-/// knows one (from a test, a later elaborator, or [`port_polarity`]). Missing
-/// polarities are skipped — this helper does **not** invent in/out from action
-/// bodies. Input-input and output-output wires are returned. Surface name check
-/// only; M9 still fail-closes compose (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`).
+/// knows one (from a test, a later elaborator, [`port_polarity`], or
+/// [`action_polarity`]). Missing polarities are skipped — this helper does
+/// **not** invent in/out from action bodies. Input-input and output-output
+/// wires are returned. Surface name check only; M9 still fail-closes compose
+/// (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`) and polarized actions
+/// (`NMLT-M9-ACTION-POLARITY`).
 #[must_use]
 pub fn non_complementary_surface_wires<'a, F>(
     wires: impl IntoIterator<Item = SurfaceWire<'a>>,
@@ -841,13 +959,26 @@ where
 
 /// Complementary-polarity mismatches using `port input` / `port output` as the source.
 ///
-/// Endpoints without a same-named port are skipped. Paper 1 ping/receive therefore
-/// yields an empty result. Not composition elaboration.
+/// Endpoints without a same-named port are skipped, even if the action has
+/// polarity. Use [`non_complementary_declared_wires`] to fall back to actions.
+/// Not composition elaboration.
 #[must_use]
 pub fn non_complementary_port_wires(file: &UntypedFile) -> Vec<SurfaceWire<'_>> {
     non_complementary_surface_wires(surface_wires(file), |system, name| {
         file.system_named(system)
             .and_then(|system| port_polarity(system, name))
+    })
+}
+
+/// Complementary-polarity mismatches using declared polarities.
+///
+/// Lookup: port polarity if present, else action polarity, else skip. Bare
+/// `action ping` is unknown. Not composition elaboration.
+#[must_use]
+pub fn non_complementary_declared_wires(file: &UntypedFile) -> Vec<SurfaceWire<'_>> {
+    non_complementary_surface_wires(surface_wires(file), |system, name| {
+        file.system_named(system)
+            .and_then(|system| declared_polarity(system, name))
     })
 }
 
@@ -1278,8 +1409,10 @@ impl Projector {
                     .map(|statement| self.project_statement(statement))
                     .collect()
             });
+        let (name, polarity) = action_name_and_polarity(node.node, node.span.start);
         UntypedMember::Action(UntypedAction {
-            name: identifier(node.node, node.span.start, 1),
+            name,
+            polarity,
             parameters,
             grade,
             statements,
@@ -1666,6 +1799,13 @@ fn collect_m9_system_issues(system: &UntypedSystem, issues: &mut Vec<M9SurfaceIs
 }
 
 fn collect_m9_action_issues(action: &UntypedAction, issues: &mut Vec<M9SurfaceIssue>) {
+    if action.polarity.is_some() {
+        issues.push(M9SurfaceIssue {
+            code: "NMLT-M9-ACTION-POLARITY",
+            feature: "action input/output polarity",
+            span: action.span,
+        });
+    }
     if let Some(grade) = &action.grade {
         issues.push(M9SurfaceIssue {
             code: "NMLT-M9-ACTION-GRADE",
@@ -2076,6 +2216,24 @@ fn direct_nodes(node: &GreenNode, base: usize) -> Vec<NodeAt<'_>> {
         offset += child.text_len();
     }
     nodes
+}
+
+fn action_name_and_polarity(
+    node: &GreenNode,
+    base: usize,
+) -> (Option<SpannedText>, Option<SurfacePolarity>) {
+    let first = identifier(node, base, 1);
+    let second = identifier(node, base, 2);
+    match (first, second) {
+        (Some(direction), Some(name)) => {
+            if let Some(polarity) = SurfacePolarity::from_direction_text(&direction.text) {
+                (Some(name), Some(polarity))
+            } else {
+                (Some(direction), None)
+            }
+        }
+        (name, _) => (name, None),
+    }
 }
 
 fn identifier(node: &GreenNode, base: usize, index: usize) -> Option<SpannedText> {

@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity)
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -472,9 +472,11 @@ dependent proof artifacts even if theorem names remain unchanged.
    via `CompositionSpec::from_left_right_wires`. Full elaborator still M9
    fail-closed (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`); this is not
    source-to-LTS elaboration. Surface complementary-polarity check: `nmlt-core`
-   flags `connect` wires whose caller-supplied or `port input`/`port output`
-   polarities are both inputs or both outputs; `UntypedAction` has no polarity
-   field, Paper 1 ping/receive stays unpolarized, and M9 compose remains fail-closed.
+   flags `connect` wires whose caller-supplied, `port input`/`port output`, or
+   optional `action input`/`action output` polarities are both inputs or both
+   outputs (port wins if both name the endpoint). Bare `action ping` stays
+   unpolarized. M9 records `NMLT-M9-ACTION-POLARITY` and still fail-closes
+   compose; this is not an elaborator.
 3. **Done (2026-08-27, small LTS model):** prove the repaired safety theorem
    by the six transition cases (`weakConditionalCongruence_safety`), with
    isolation necessity.

@@ -49,7 +49,7 @@ system ProviderAttempt(req: Request) {
 
 The current lossless frontend recognizes the Phase 1 declaration shells,
 including modules and surface-only data/record/function forms, systems, state,
-actions, `require`, explicit `set` targets, capabilities, properties,
+actions, optional `action input name` / `action output name` polarity (same keyword-as-identifier rule as `hide action`; bare `action ping` is unpolarized), `require`, explicit `set` targets, capabilities, properties,
 observations, hiding, and surface `compose` / `connect` wiring (not yet an
 executable composition elaborator). It projects that structure into a complete untyped
 surface artifact while preserving unsupported or recovered nodes explicitly.

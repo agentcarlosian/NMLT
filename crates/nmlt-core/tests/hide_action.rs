@@ -66,11 +66,11 @@ fn hide_action_ping_is_classified_as_action_hiding() {
         ["ping"]
     );
     assert!(hide.hides_actions());
+    let m9 = projection.m9_surface_issues();
+    assert!(m9.iter().any(|issue| issue.code == "NMLT-M9-HIDE-ACTION"));
     assert!(
-        projection
-            .m9_surface_issues()
-            .iter()
-            .any(|issue| issue.code == "NMLT-M9-HIDE-ACTION")
+        m9.iter()
+            .any(|issue| issue.code == "NMLT-M9-ACTION-POLARITY")
     );
 }
 
@@ -303,4 +303,27 @@ fn top_level_connect_projects_without_compose_wrapper() {
             .iter()
             .any(|issue| issue.code == "NMLT-M9-CONNECT")
     );
+}
+
+#[test]
+fn paper1_polarized_actions_do_not_change_hide_classification() {
+    let projection = project_untyped(&parse_cst(&paper1_source()));
+    let concrete = projection
+        .file
+        .system_named("ConcreteSender")
+        .expect("ConcreteSender");
+    assert_eq!(hidden_action_names(concrete), vec!["ping"]);
+    let ping = concrete
+        .members
+        .iter()
+        .find_map(|member| match member {
+            UntypedMember::Action(action)
+                if action.name.as_ref().map(|n| n.text.as_str()) == Some("ping") =>
+            {
+                Some(action)
+            }
+            _ => None,
+        })
+        .expect("ping");
+    assert_eq!(ping.polarity, Some(nmlt_core::SurfacePolarity::Output));
 }

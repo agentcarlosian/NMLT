@@ -3,7 +3,7 @@
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
-- Revised: 2026-08-27 (`hide action` + surface `compose`/`connect` wiring; finite stutter-expansion helper)
+- Revised: 2026-08-27 (`hide action` + optional `action input|output` polarity + surface `compose`/`connect` wiring; finite stutter-expansion helper)
 - Mathematical-core backlog: `NMLT-P1-104`
 
 ## Summary
@@ -164,6 +164,17 @@ while the executable composition-time I-NO-HIDDEN-BOUNDARY check lives as
 in `nmlt-core`.
 
 Paper 1 fixture: `examples/paper1/hidden_ping_receive.nmlt`.
+
+Optional action polarity uses the same keyword-as-identifier rule:
+`action output ping { ... }` / `action input receive { ... }` project
+`UntypedAction.polarity`; `action ping { ... }` stays `None`; `action input {`
+(no following name) is an action named `input` with no polarity. Complementary
+`connect` checks use port polarity if present, else action polarity, else skip
+(`non_complementary_declared_wires`). Polarized action decls are structurally
+complete and still M9-fail-closed (`NMLT-M9-ACTION-POLARITY`); compose is not
+silently opened. The fixture annotates ConcreteSender/VisibleAbstractSender
+`ping` as output and Receiver `receive` as input so that check can run from
+source. Not part of `canonical-v1.json`.
 
 Surface composition wiring (2026-08-27): the lossless frontend recognizes
 

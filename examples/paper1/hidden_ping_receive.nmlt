@@ -6,7 +6,8 @@
 // Systems parse as top-level `system Name { ... }`. Declared wiring uses
 // `compose` / `connect` (surface only). This is NOT a checked refinement claim
 // and is NOT part of canonical-v1.json. Full compose elaboration may still
-// fail-close under M9 (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`).
+// fail-close under M9 (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT` /
+// `NMLT-M9-ACTION-POLARITY` / `NMLT-M9-HIDE-ACTION`).
 //
 // Intended Lean correspondences (not discharged by this file):
 //   AbstractSender  ~ abstractSender      (no ping step)
@@ -27,8 +28,10 @@ system AbstractSender {
 system ConcreteSender {
   state unit: Bool = false
 
-  action ping {
+  action output ping {
     // Leaves local state and observation unchanged.
+    // Optional surface polarity (RFC 0007): Output. Bare `action ping`
+    // would stay unpolarized; this keyword is not invented by the checker.
     set unit = unit
   }
 
@@ -42,7 +45,7 @@ system ConcreteSender {
 system Receiver {
   state bit: Bool = false
 
-  action receive {
+  action input receive {
     require bit == false
     set bit = true
   }
@@ -53,7 +56,7 @@ system Receiver {
 system VisibleAbstractSender {
   state unit: Bool = false
 
-  action ping {
+  action output ping {
     set unit = unit
   }
 
@@ -64,6 +67,8 @@ system VisibleAbstractSender {
 // `surface_wired_action_pairs_for_left` + `hidden_wired_actions` flags `ping`
 // on InvalidHiddenPing; VisibleSync stays empty. Those name pairs feed
 // `CompositionSpec::from_left_right_wires` (nmlt-temporal); not source-to-LTS.
+// `non_complementary_declared_wires` uses action polarities (no ports):
+// ConcreteSender.ping Output, Receiver.receive Input — complementary.
 compose InvalidHiddenPing {
   connect ConcreteSender.ping -> Receiver.receive
 }
