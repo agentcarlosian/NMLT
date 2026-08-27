@@ -90,4 +90,34 @@ theorem noCompositeRefinement :
 #print axioms compositeRefinementImpossible
 #print axioms noCompositeRefinement
 
+/-- Dual of `compositeHidden`: treat the synchronized ping/receive as visible.
+    This is the paper's "visible reading" of Invalid-Congruence on the same
+    systems as T3. Distinct from `VisibleSync`, which changes the abstract
+    sender so that ping is honestly enabled. -/
+def compositeVisible : ParallelLabel SenderLabel ReceiverLabel -> Bool :=
+  fun _ => false
+
+/-- The abstract product cannot take `sync(ping, receive)`: `abstractSender`
+    has an empty step relation. -/
+theorem abstractSyncImpossible
+    {s t : abstractComposite.State} :
+    ¬ abstractComposite.step s (.sync .ping .receive) t := by
+  intro h
+  exact h.2.1
+
+/-- Named checked theorem for the visible reading of Paper 1. Any proposed
+    one-step refinement of the T3 composites that classifies the connected
+    ping as visible has no matching abstract product step. Contrast
+    `noCompositeRefinement` (hidden reading; uses `propext`) and
+    `VisibleSync.visibleSync_productRefinement` (honest visible ping with a
+    different abstract sender). Axiom-free. -/
+theorem visibleClassification_fails_on_hidden_ping_wire :
+    ¬ Nonempty
+        (WeakRefines concreteComposite abstractComposite compositeVisible id) := by
+  intro ⟨R⟩
+  exact abstractSyncImpossible (R.visibleStep concreteSynchronization rfl)
+
+#print axioms abstractSyncImpossible
+#print axioms visibleClassification_fails_on_hidden_ping_wire
+
 end NMLT.Counterexamples.CompositionCongruence

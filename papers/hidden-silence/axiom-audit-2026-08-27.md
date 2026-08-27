@@ -13,6 +13,8 @@
 | `NMLT.Counterexamples.CompositionCongruence.concreteSynchronization` | none |
 | `NMLT.Counterexamples.CompositionCongruence.compositeRefinementImpossible` | `[propext]` |
 | `NMLT.Counterexamples.CompositionCongruence.noCompositeRefinement` | `[propext]` |
+| `NMLT.Counterexamples.CompositionCongruence.abstractSyncImpossible` | none |
+| `NMLT.Counterexamples.CompositionCongruence.visibleClassification_fails_on_hidden_ping_wire` | none |
 
 ## Strong / exact-action repair (T4)
 
@@ -49,6 +51,8 @@
 | Declaration | Axioms |
 |---|---|
 | `pingReceive_violates_noHiddenBoundary` | none |
+| `visiblePing_breaks_senderRefinement` | none |
+| `visibleClassification_fails_default_lift` | none |
 | `pingReceive_wiring_id` | none |
 | `isolation_of_wiring_injective` | (lemma; no `#print axioms` line) |
 | `connected_not_hidden` | (lemma) |

@@ -140,6 +140,37 @@ theorem pingReceive_violates_noHiddenBoundary :
     ⟨ReceiverLabel.receive, ⟨rfl, rfl⟩⟩
   exact (h SenderLabel.ping rfl) connected
 
+/-- Dual of `pingReceive_violates_noHiddenBoundary`: classifying the connected
+    ping as visible against the original step-free abstract sender already
+    breaks local `WeakRefines` (A has no ping step). `VisibleSync` repairs
+    this only by changing A. -/
+theorem visiblePing_breaks_senderRefinement :
+    ¬ Nonempty
+        (WeakRefines
+          concreteSender abstractSender
+          (fun _ => false)
+          (id : SenderLabel → SenderLabel)) := by
+  intro ⟨R⟩
+  have hstep : concreteSender.step () .ping () := rfl
+  exact R.visibleStep hstep rfl
+
+/-- Same T3 systems under the default composite classifiers, with ping
+    treated as visible. Canonical product statement is
+    `visibleClassification_fails_on_hidden_ping_wire` in
+    `Counterexamples/CompositionCongruence.lean`. -/
+theorem visibleClassification_fails_default_lift :
+    ¬ Nonempty
+        (WeakRefines
+          concreteComposite
+          abstractComposite
+          (compositeHiddenOf (fun _ => false))
+          (compositeMapOf (id : SenderLabel → SenderLabel))) := by
+  intro ⟨R⟩
+  exact (R.visibleStep concreteSynchronization rfl).2.1
+
+#print axioms visiblePing_breaks_senderRefinement
+#print axioms visibleClassification_fails_default_lift
+
 /-- Same connection is covered by the identity wiring map (sanity for I-CONNECT). -/
 theorem pingReceive_wiring_id :
     WiringCovered connection connection (id : SenderLabel → SenderLabel) id := by

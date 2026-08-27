@@ -42,6 +42,14 @@ abstract state equality; observations preserved).
 Equivalently: unconditional congruence of the candidate weak simulation under
 this synchronization pattern is false.
 
+**Visible dual:** `visibleClassification_fails_on_hidden_ping_wire` (via
+`abstractSyncImpossible`; default-lift restatement
+`visibleClassification_fails_default_lift`). Same systems with the sync
+classified visible; still no product `WeakRefines`, because `A` has no
+matching step. Axiom-free. Distinct from T5a `VisibleSync` (honest visible
+ping with a different abstract sender). Local dual:
+`visiblePing_breaks_senderRefinement`.
+
 ### T4 — Exact-action / strong product congruence (restricted repair)
 **Lean:** `NMLT.Behavior.OpenComposition.StrongRefinement.compositionCongruence`
 (and related receptiveness / wiring lemmas cited in the paper body)  
@@ -108,6 +116,8 @@ Do not claim necessity in a stronger, model-universal sense.
 
 **Status (checked, local 2026-08-27; may be ahead of GitHub `main` @ `0417f6e`):**
 - Zero-premise / hidden-connected failure: T3 (`noCompositeRefinement`).
+- Visible-classification dual of T3 (same systems, sync classified visible):
+  `visibleClassification_fails_on_hidden_ping_wire` (axioms: none).
 - `I-NO-HIDDEN-BOUNDARY` fails on ping/receive:
   `pingReceive_violates_noHiddenBoundary`.
 - `IsolationReflects` independently indispensable for the default T5 lift even when NHB +
@@ -152,7 +162,7 @@ For T1–T5 (and T4 as cited):
 - Foundational axioms reported by `#print axioms` (expect Lean’s standard
   `propext` where applicable; **no** project `sorry`, `sorryAx`, or custom axiom)
 - **Recorded 2026-08-27:** T1/T2/T4 axiom-free; T3/T5/T5a/T5b depend on
-  `[propext]` only
+  `[propext]` only; visible-classification dual of T3 is axiom-free
   (see `papers/hidden-silence/axiom-audit-2026-08-27.md`)
 - Standard library only (no Mathlib) for these artifacts
 
@@ -222,3 +232,4 @@ appendix for Lean listings.
 |---|---|
 | 2026-08-27 | Initial ceiling drafted from Lean counterexample + OpenComposition strong theorem + RFC 0008 |
 | 2026-08-27 | Sol 5.6 paper sync: one-step mapping wording; hypothesis-independence; local-vs-0417f6e honesty |
+| 2026-08-27 | Named T3 visible dual: `visibleClassification_fails_on_hidden_ping_wire` |

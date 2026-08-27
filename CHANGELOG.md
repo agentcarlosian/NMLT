@@ -9,6 +9,9 @@ versioning compatibility promises.
 
 ### Added
 
+- Named Lean theorem `visibleClassification_fails_on_hidden_ping_wire` for
+  Paper 1's visible-classification failure (T3 dual; axiom-free). Local dual
+  `visiblePing_breaks_senderRefinement`.
 - Surface `connect` names lower to `CompositionSpec::from_left_right_wires` so
   Paper 1's InvalidHiddenPing path can feed `HiddenConnectedAction` without a
   hand-built spec. Full compose elaborator remains M9 fail-closed; this is not

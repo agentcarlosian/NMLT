@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (small-model weak safety lift recorded)
+- Revised: 2026-08-27 (visible-classification failure named)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -178,19 +178,23 @@ A || D:
 If the composite synchronization remains hidden, the refinement rule requires
 the mapped composite states to be equal. Observation preservation then implies
 `(false,false) = (false,true)`, a contradiction. If it is visible, the abstract
-composite has no matching step. Either classification fails.
+composite has no matching step. Either classification fails; both readings
+are named checked theorems.
 
 The checked Lean theorems are:
 
 ```text
 senderRefinement          : WeakRefines C A ...
 concreteSynchronization  : Step_(C||D) <unit,false> sync <unit,true>
-noCompositeRefinement    : not Nonempty(WeakRefines (C||D) (A||D) ...)
+noCompositeRefinement    : not Nonempty(WeakRefines (C||D) (A||D) compositeHidden id)
+visibleClassification_fails_on_hidden_ping_wire
+                          : not Nonempty(WeakRefines (C||D) (A||D) compositeVisible id)
 ```
 
-`lake build` on Lean 4.30.0 checks all three. `#print axioms` reports no custom
-axiom or `sorryAx`; the negative theorem uses Lean's standard `propext` axiom,
-which is part of the selected foundational TCB and is reported explicitly.
+`lake build` on Lean 4.30.0 checks all four. `#print axioms` reports no custom
+axiom or `sorryAx`; `noCompositeRefinement` uses Lean's standard `propext`
+axiom, which is part of the selected foundational TCB and is reported
+explicitly. The visible-classification theorem is axiom-free.
 
 ## 4. Diagnosis
 
@@ -382,6 +386,9 @@ separate control.
 The mechanization program must retain:
 
 - the checked hidden-synchronization counterexample;
+- the checked visible-classification failure on the same systems
+  (`visibleClassification_fails_on_hidden_ping_wire`; local dual
+  `visiblePing_breaks_senderRefinement`);
 - a variant omitting `I-NO-HIDDEN-BOUNDARY`, for which congruence remains false
   (ping/receive; `pingReceive_violates_noHiddenBoundary`);
 - a variant with `WiringCovered` but not `IsolationReflects`

@@ -162,9 +162,8 @@ collapses the two composite states under the refinement map and forces
 $\false=\true$ by observation preservation. Treating it as visible
 leaves the abstract product stuck. Either way,
 \eqref{eq:invalid} fails for this refinement and this composition
-operator. (The visible-classification failure is immediate from $A$'s
-empty step relation; it is not yet a separately named checked Lean
-theorem.)
+operator. (The visible-classification failure is
+\lean{visibleClassification_fails_on_hidden_ping_wire}.)
 
 The failure is not an artifact of an eccentric hiding rule. The
 candidate relation is a \emph{one-step refinement mapping with
@@ -486,10 +485,10 @@ Example~\ref{def:A}--\ref{def:KD}.
 \label{rem:visible}
 If $\sync(\ping,\receive)$ is instead treated as visible, the abstract
 product still has no matching step: $A$ admits no left-component step
-with which to synchronize. The mechanized theorem discharges the
-hidden reading used by ``synchronization is silent.'' The visible
-reading is immediate from $A$'s empty step relation; it is not yet
-packaged as a separately named checked Lean theorem.
+with which to synchronize. The mechanized theorem
+\lean{noCompositeRefinement} discharges the hidden reading used by
+``synchronization is silent.'' The visible reading is
+\lean{visibleClassification_fails_on_hidden_ping_wire}.
 \end{remark}
 
 \begin{figure}[t]
@@ -980,14 +979,16 @@ lift.
   in \lean{Core/Transition.lean}.
 \item[Counterexample]
   \lean{senderRefinement}, \lean{concreteSynchronization},
-  \lean{noCompositeRefinement}
+  \lean{noCompositeRefinement},
+  \lean{visibleClassification_fails_on_hidden_ping_wire}
   in \lean{Counterexamples/CompositionCongruence.lean}.
 \item[One-step lift]
   \lean{InterfaceCompatible},
   \lean{weakConditionalCongruence_safety}
   in \lean{Behavior/WeakConditionalCongruence.lean}.
 \item[Indep.\ (NHB)]
-  \lean{pingReceive_violates_noHiddenBoundary} (same module).
+  \lean{pingReceive_violates_noHiddenBoundary},
+  \lean{visiblePing_breaks_senderRefinement} (same module).
 \item[Indep.\ (isolation)]
   \lean{CollidedAbstractWire.isolation_necessary_for_default_lift}.
 \item[Indep.\ (wiring)]
@@ -1027,6 +1028,9 @@ Thm.~\ref{thm:no-composite} (lemma)
 Thm.~\ref{thm:no-composite}
   & \texttt{noCompositeRefinement}
   & \texttt{[propext]} \\
+Rem.~\ref{rem:visible}
+  & \texttt{visibleClassification\_fails\_}\newline\texttt{on\_hidden\_ping\_wire}
+  & none \\
 Lem.~\ref{lem:necessity-boundary}
   & \texttt{pingReceive\_violates\_}\newline\texttt{noHiddenBoundary}
   & none \\
@@ -1057,8 +1061,8 @@ Thm.~\ref{thm:strong-lift}
 
 The impossibility proof uses propositional extensionality to compare
 observations after identifying equal abstract states. The isolation and
-wiring independence lemmas and the local sender refinement are
-axiom-free.
+wiring independence lemmas, the local sender refinement, and the
+visible-classification failure are axiom-free.
 
 \begin{thebibliography}{99}
 
