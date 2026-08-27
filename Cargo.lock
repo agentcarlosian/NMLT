@@ -100,6 +100,14 @@ name = "nmlt-open-kernel"
 version = "0.0.1"
 
 [[package]]
+name = "nmlt-paper1-sketch"
+version = "0.0.1"
+dependencies = [
+ "nmlt-core",
+ "nmlt-temporal",
+]
+
+[[package]]
 name = "nmlt-temporal"
 version = "0.0.1"
 dependencies = [

@@ -9,6 +9,13 @@ versioning compatibility promises.
 
 ### Added
 
+- Paper 1 boolean-sketch adapter in `nmlt-paper1-sketch`: `BooleanSketch` to
+  `FiniteGraph`/`OpenSystem` (bool values, action names, surface polarities
+  else ping Output / receive Input). Parse+sketch of the Paper 1 fixture
+  reaches `HiddenConnectedAction("ping")`; VisibleSync does not. Sketch
+  fragment + finite checker, not a verified compiler, not source-to-LTS in
+  general. `nmlt-temporal` still has no `nmlt-core` dependency.
+
 - Paper 1 boolean finite-graph *sketch* in `nmlt-core` (`sketch_boolean_system`):
   reachable Bool assignments with `require ident == true|false` and
   `set ident = ident` / `set ident = true|false`. Fail-closes on Nat, params,

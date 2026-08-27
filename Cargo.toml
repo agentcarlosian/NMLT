@@ -10,6 +10,7 @@ members = [
     "crates/nmlt-certificate-tools",
     "crates/nmlt-engine",
     "crates/nmlt-temporal",
+    "crates/nmlt-paper1-sketch",
     "crates/nmlt-verify",
     "crates/nmlt-grades",
     "crates/nmlt-open-kernel",

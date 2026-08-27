@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity)
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -473,7 +473,11 @@ dependent proof artifacts even if theorem names remain unchanged.
    fail-closed (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`); this is not
    source-to-LTS elaboration. Paper 1 boolean sketch exists in `nmlt-core`
    (`sketch_boolean_system`); it is not source-to-LTS, and M9 still
-   fail-closes full compile. Surface complementary-polarity check: `nmlt-core`
+   fail-closes full compile. `nmlt-paper1-sketch` adapts those sketches to
+   `FiniteGraph`/`OpenSystem` so the Paper 1 fixture reaches
+   `HiddenConnectedAction` through the finite checker; this is a sketch
+   fragment plus instance check, not a verified compiler or source-to-LTS
+   in general. Surface complementary-polarity check: `nmlt-core`
    flags `connect` wires whose caller-supplied, `port input`/`port output`, or
    optional `action input`/`action output` polarities are both inputs or both
    outputs (port wins if both name the endpoint). Bare `action ping` stays
