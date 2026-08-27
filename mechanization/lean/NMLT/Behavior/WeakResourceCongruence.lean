@@ -6,8 +6,8 @@
   This is *not* the T4/mapped OpenComposition model
   (`liftOpenProductResources` / `liftResourceAwareParallel`). Those remain
   the exact-action resource congruence. Case 7 here is the small-model
-  homomorphism fragment plus EmptyWiringTau independence and VisibleSync
-  I-CAP transfer independence.
+  homomorphism fragment plus EmptyWiringTau independence, VisibleSync
+  I-CAP transfer independence, and VisibleSync I-GRADE through *sync*.
 
   Empty-wiring product pack (frozen): matching inert profiles lift; unmatched
   hidden-left consume, grade, and rely fail product `ResourceRefinement`
@@ -19,7 +19,11 @@
   still hold. Matching transfer is the extra I-CAP premise; it is not
   implied by T5.
 
-  Not grades through sync, not I-FAIR.
+  VisibleSync I-GRADE through sync: unmatched ping cost fails product
+  `ResourceRefinement.grade` at `.sync ping receive` while T5a still holds.
+  Matching epsilon grades lift the sync grade inequality.
+
+  Not I-FAIR through sync.
 
   `ResourceRefinement` is action-indexed independently of `LTS.step`; this
   file does not extend `LTS.step` with capabilities.
@@ -699,11 +703,29 @@ theorem visibleSync_matchedTransfer_synchronizationCompatible :
     pingReceiveCompatible,
     liftParallelResources pingTransferRefinement⟩
 
+/-- Named alias: matched-transfer profiles already use epsilon/`zero`
+    grades on ping, receive, and both abstracts. Product
+    `ResourceRefinement.grade` therefore holds on `.sync ping receive`
+    via `liftParallelResources`. Point the claim ceiling at this rather
+    than duplicating a zero-grade product. -/
+theorem visibleSync_matchedTransfer_syncGrade :
+    Le
+      ((smallProductSystemResources pingTransferResources
+          receiveReceiveResources).action
+        (.sync SenderLabel.ping ReceiverLabel.receive)).grade
+      ((smallProductSystemResources pingTransferResources
+          receiveReceiveResources).action
+        (compositeMapOf (id : SenderLabel → SenderLabel)
+          (.sync SenderLabel.ping ReceiverLabel.receive))).grade :=
+  (liftParallelResources pingTransferRefinement).grade
+    (.sync SenderLabel.ping ReceiverLabel.receive)
+
 #print axioms pingReceiveCompatible
 #print axioms ping_receive_transfer_exact
 #print axioms ping_receive_rely_discharged
 #print axioms matched_capabilityPartition
 #print axioms visibleSync_matchedTransfer_synchronizationCompatible
+#print axioms visibleSync_matchedTransfer_syncGrade
 
 end VisibleSyncMatchedTransfer
 
@@ -784,5 +806,100 @@ theorem visibleSync_sharedOwnership_not_capabilityPartition :
 #print axioms visibleSync_sharedOwnership_not_capabilityPartition
 
 end VisibleSyncSharedOwnership
+
+/-! ### Negative independence: T5 does not give I-GRADE through sync
+
+  Same VisibleSync systems (visible ping wired to receive), so T5a product
+  `WeakRefines` still holds. Concrete ping carries `HiddenGrade.pingCost`;
+  receiver grade is epsilon (`zero`); abstract ping and abstract receive
+  are epsilon. The `.sync ping receive` product grade is `parallelAction`
+  = `Grades.parallel` of the two action grades. Concrete parallel cost is
+  `pingCost` (`parallel pingCost zero`); abstract parallel is `zero`
+  (`parallel zero zero`). Product `ResourceRefinement.grade` fails at
+  that sync label. T5a still holds (observation only). Ceiling: T5 ⇏
+  I-GRADE through sync. Not I-FAIR, not unmatched transfer. Keep the
+  existing unmatched-transfer theorems. Lean `receiver` is not the
+  OpenSystem-receptive dual.
+-/
+
+namespace VisibleSyncHiddenGrade
+
+open VisibleSync
+open NMLT.Counterexamples.CompositionCongruence
+open NMLT.Counterexamples.HiddenGrade
+
+/-- Lean `receiver` (and the abstract receive image) use epsilon grade.
+    Capability, consume, transfer, and rely stay inert so the failure
+    isolates I-GRADE through the sync label. -/
+def receiveEpsilon : SystemResources ReceiverLabel Empty Empty where
+  owned := fun _ => False
+  action := fun
+    | .receive => pingEpsilonAction
+
+/-- Concrete visible ping carries `pingCost`. -/
+def concretePingCost : SystemResources SenderLabel Empty Empty where
+  owned := fun _ => False
+  action := fun
+    | .ping => pingCostAction
+
+/-- Abstract ping on the same name is epsilon (`zero`). -/
+def abstractPingEpsilon : SystemResources SenderLabel Empty Empty where
+  owned := fun _ => False
+  action := fun
+    | .ping => pingEpsilonAction
+
+theorem concrete_ping_grade_is_cost :
+    (concretePingCost.action SenderLabel.ping).grade = pingCost :=
+  rfl
+
+theorem receive_grade_is_epsilon :
+    (receiveEpsilon.action ReceiverLabel.receive).grade = zero :=
+  rfl
+
+theorem abstract_ping_grade_is_epsilon :
+    (abstractPingEpsilon.action SenderLabel.ping).grade = zero :=
+  rfl
+
+/-- Sync grade is `Grades.parallel` of the two action grades. Concrete
+    ping cost tensors with receiver epsilon, which is `pingCost`. -/
+theorem concrete_product_sync_grade_is_cost :
+    ((smallProductSystemResources concretePingCost receiveEpsilon).action
+      (.sync SenderLabel.ping ReceiverLabel.receive)).grade = pingCost := by
+  change Grades.parallel pingCost zero = pingCost
+  exact parallel_zero pingCost
+
+/-- Abstract sync grade is `parallel zero zero`, which is epsilon. -/
+theorem abstract_product_sync_grade_is_epsilon :
+    ((smallProductSystemResources abstractPingEpsilon receiveEpsilon).action
+      (.sync SenderLabel.ping ReceiverLabel.receive)).grade = zero := by
+  change Grades.parallel zero zero = zero
+  exact parallel_zero zero
+
+/-- T5a product `WeakRefines` still holds (VisibleSync observation). The
+    extra ping cost is unmatched by the abstract product epsilon, so
+    product `ResourceRefinement.grade` fails at `.sync ping receive`. -/
+theorem visibleSync_hiddenGrade_breaks_productResourceRefinement :
+    Nonempty
+      (WeakRefines
+        concreteCompositeVisible
+        abstractCompositeVisible
+        (compositeHiddenOf senderVisible)
+        (compositeMapOf (id : SenderLabel → SenderLabel))) ∧
+      ¬ ResourceRefinement
+          (smallProductSystemResources concretePingCost receiveEpsilon)
+          (smallProductSystemResources abstractPingEpsilon receiveEpsilon)
+          (compositeMapOf (id : SenderLabel → SenderLabel)) :=
+  ⟨visibleSync_productRefinement, fun refinement =>
+    pingCost_not_le_zero <| by
+      rw [← concrete_product_sync_grade_is_cost,
+          ← abstract_product_sync_grade_is_epsilon]
+      exact refinement.grade
+        (.sync SenderLabel.ping ReceiverLabel.receive)⟩
+
+#print axioms concrete_product_sync_grade_is_cost
+#print axioms abstract_product_sync_grade_is_epsilon
+#print axioms visibleSync_hiddenGrade_breaks_productResourceRefinement
+
+end VisibleSyncHiddenGrade
 
 end NMLT.Behavior.WeakResourceCongruence
