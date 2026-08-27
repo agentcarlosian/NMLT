@@ -11,6 +11,7 @@ import NMLT.Counterexamples.HiddenRely
 import NMLT.Counterexamples.HiddenInert
 import NMLT.Counterexamples.HiddenDivergence
 import NMLT.Behavior.WeakConditionalCongruence
+import NMLT.Behavior.WeakResourceCongruence
 import NMLT.Grades.Algebra
 import NMLT.Correspondence.M9Kernel
 import NMLT.Behavior.TemporalTyping
