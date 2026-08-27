@@ -115,6 +115,8 @@ The remaining conjecture is anything beyond T5:
 
 **Second C1 slice (negative; not a lift):** I-GRADE is independent of T5. Named lemma `hiddenPing_grade_breaks_resourceRefinement` (`[propext]` only): observational `WeakRefines` still holds for hidden ping, but a positive cost atom unmatched by the abstract epsilon (`zero`) profile falsifies `ResourceRefinement.grade`. Not a positive I-GRADE/I-FAIR/I-RELY theorem, not a grade homomorphism through compose; T4 does not imply this.
 
+**Third C1 slice (negative; not a lift):** I-RELY is independent of T5. Named lemma `hiddenPing_rely_breaks_resourceRefinement` (`[propext]` only): observational `WeakRefines` still holds for hidden ping, but an extra `ready` Fact unmatched by the abstract stutter profile falsifies `ResourceRefinement.rely` (refinement must not widen assumptions). Not a positive I-RELY/I-FAIR theorem, not a rely discharge through compose; T4 does not imply this.
+
 ### C2 — Hypothesis-independence of individual premises
 Each named premise of T5 is independently indispensable for the *default* lift
 (`compositeHiddenOf` / `compositeMapOf`) in the hypothesis-independence sense.
@@ -247,3 +249,4 @@ appendix for Lean listings.
 | 2026-08-27 | Named Lean vs OpenSystem receiver split (dual fixture is not the small model) |
 | 2026-08-27 | First C1 negative slice: `hiddenPing_consume_breaks_resourceRefinement` (I-CAP independent of T5) |
 | 2026-08-27 | Second C1 negative slice: `hiddenPing_grade_breaks_resourceRefinement` (I-GRADE independent of T5) |
+| 2026-08-27 | Third C1 negative slice: `hiddenPing_rely_breaks_resourceRefinement` (I-RELY independent of T5) |
