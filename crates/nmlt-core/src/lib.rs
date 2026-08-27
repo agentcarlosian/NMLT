@@ -23,13 +23,14 @@ pub use lexer::{LexedFile, Token, TokenKind, lex_source};
 pub use syntax::{ParsedFile, SyntaxParse, SystemDecl, parse_cst, parse_source};
 pub use untyped::{
     BindingKind, HideSort, M9SurfaceIssue, ObservationKind, ProjectionCoverage, ProjectionIssue,
-    ProjectionIssueKind, PropertyKind, RawTerm, SpannedText, SurfaceOrigin, SurfaceWire,
-    UntypedAction, UntypedBinding, UntypedCompose, UntypedComposeItem, UntypedConnect,
+    ProjectionIssueKind, PropertyKind, RawTerm, SpannedText, SurfaceOrigin, SurfacePolarity,
+    SurfaceWire, UntypedAction, UntypedBinding, UntypedCompose, UntypedComposeItem, UntypedConnect,
     UntypedDeclaration, UntypedEnum, UntypedEnumItem, UntypedEnumVariant, UntypedErrorNode,
     UntypedFile, UntypedImport, UntypedMember, UntypedModule, UntypedObservation, UntypedParameter,
     UntypedParameterItem, UntypedPort, UntypedProjection, UntypedProperty, UntypedStatement,
     UntypedSurfaceNode, UntypedSystem, UntypedUpdateTarget, hidden_action_names,
-    hidden_wired_actions, project_untyped, surface_connections, surface_endpoint_wires,
-    surface_endpoint_wires_for_left, surface_wired_action_pairs,
+    hidden_wired_actions, non_complementary_port_wires, non_complementary_surface_wires,
+    port_polarity, project_untyped, surface_connections, surface_endpoint_wires,
+    surface_endpoint_wires_for_left, surface_port_polarities, surface_wired_action_pairs,
     surface_wired_action_pairs_for_left, surface_wires, surface_wires_in_compose,
 };

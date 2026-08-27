@@ -9,6 +9,10 @@ versioning compatibility promises.
 
 ### Added
 
+- Surface complementary-polarity check in `nmlt-core`: `connect` wires whose
+  caller-supplied or `port input`/`port output` polarities are both inputs or
+  both outputs are flagged. `UntypedAction` still has no polarity; Paper 1
+  ping/receive is unpolarized; M9 compose remains fail-closed (not an elaborator).
 - Named Lean theorem `weakRefines_finite_observation_trace_inclusion` for
   Paper 1 Corollary 22 (finite observation-trace inclusion / stutter-expansion
   from `WeakRefines`; axiom-free; not LTL/infinite/fairness/liveness).
