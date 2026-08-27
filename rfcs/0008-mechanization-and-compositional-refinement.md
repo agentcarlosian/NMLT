@@ -471,7 +471,9 @@ dependent proof artifacts even if theorem names remain unchanged.
    `nmlt-core`; surface connect names can be fed to `HiddenConnectedAction`
    via `CompositionSpec::from_left_right_wires`. Full elaborator still M9
    fail-closed (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`); this is not
-   source-to-LTS elaboration. Surface complementary-polarity check: `nmlt-core`
+   source-to-LTS elaboration. Paper 1 boolean sketch exists in `nmlt-core`
+   (`sketch_boolean_system`); it is not source-to-LTS, and M9 still
+   fail-closes full compile. Surface complementary-polarity check: `nmlt-core`
    flags `connect` wires whose caller-supplied, `port input`/`port output`, or
    optional `action input`/`action output` polarities are both inputs or both
    outputs (port wins if both name the endpoint). Bare `action ping` stays

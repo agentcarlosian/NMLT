@@ -2,9 +2,11 @@
 //!
 //! This crate currently provides lossless lexing, an immutable concrete syntax
 //! tree, recovery-capable syntactic parsing, conservative formatting, and
-//! evidence scaffolding. It does not implement NMLT's proposed type system,
-//! transition semantics, model checking, or proof checking.
+//! evidence scaffolding. A fail-closed Paper 1 boolean finite-graph *sketch*
+//! enumerates reachable Bool assignments; it is not source-to-LTS, typed-core
+//! elaboration, model checking, or proof checking.
 
+pub mod boolean_sketch;
 pub mod cst;
 pub mod diagnostic;
 pub mod evidence;
@@ -13,6 +15,9 @@ pub mod lexer;
 pub mod syntax;
 pub mod untyped;
 
+pub use boolean_sketch::{
+    BooleanSketch, BooleanSketchError, SketchState, SketchTransition, sketch_boolean_system,
+};
 pub use cst::{
     GreenElement, GreenNode, GreenToken, SpannedGreenNode, SpannedGreenToken, SyntaxKind,
 };

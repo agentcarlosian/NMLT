@@ -9,6 +9,12 @@ versioning compatibility promises.
 
 ### Added
 
+- Paper 1 boolean finite-graph *sketch* in `nmlt-core` (`sketch_boolean_system`):
+  reachable Bool assignments with `require ident == true|false` and
+  `set ident = ident` / `set ident = true|false`. Fail-closes on Nat, params,
+  consume, capability, state-field hide, and any statement outside that
+  fragment. Not source-to-LTS; M9 still fail-closes full compile.
+
 - `nmlt-compile` Paper 1 fixture regression: parse+project of
   `examples/paper1/hidden_ping_receive.nmlt` fail-closes at projection with
   `NMLT-M9-HIDE-ACTION`, `NMLT-M9-COMPOSE`, `NMLT-M9-CONNECT`, and

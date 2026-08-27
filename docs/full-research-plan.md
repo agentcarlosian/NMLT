@@ -16,6 +16,10 @@ Immediate priority shifts to paper readability + PDF, not residual C1
 (resources/grades/fairness) or new big Lean theorems. See
 `docs/paper-1-in-plain-english.md`.
 
+Local surface slice: Paper 1 boolean finite-graph sketch in `nmlt-core`
+(reachable Bool assignments only; not source-to-LTS). M9 still fail-closes
+full compile.
+
 ## 0. Frame
 
 NMLT is three coupled bets:
