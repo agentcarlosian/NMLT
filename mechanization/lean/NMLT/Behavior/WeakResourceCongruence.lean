@@ -6,12 +6,20 @@
   This is *not* the T4/mapped OpenComposition model
   (`liftOpenProductResources` / `liftResourceAwareParallel`). Those remain
   the exact-action resource congruence. Case 7 here is the small-model
-  homomorphism fragment plus EmptyWiringTau independence.
+  homomorphism fragment plus EmptyWiringTau independence and VisibleSync
+  I-CAP transfer independence.
 
-  Product pack: matching inert profiles lift; unmatched hidden-left consume,
-  grade, and rely fail product `ResourceRefinement` while T5 product
-  `WeakRefines` still holds. Not sync transfer, not grades through sync,
-  not I-FAIR.
+  Empty-wiring product pack (frozen): matching inert profiles lift; unmatched
+  hidden-left consume, grade, and rely fail product `ResourceRefinement`
+  while T5 product `WeakRefines` still holds.
+
+  VisibleSync I-CAP transfer: unmatched ping transfer is not
+  `SynchronizationCompatible` while T5 product `WeakRefines` (and product
+  `ResourceRefinement`, because `parallelAction` zeros transfer/receive)
+  still hold. Matching transfer is the extra I-CAP premise; it is not
+  implied by T5.
+
+  Not grades through sync, not I-FAIR.
 
   `ResourceRefinement` is action-indexed independently of `LTS.step`; this
   file does not extend `LTS.step` with capabilities.
@@ -456,5 +464,325 @@ theorem emptyWiring_hiddenRely_breaks_productResourceRefinement :
 #print axioms emptyWiring_hiddenRely_breaks_productResourceRefinement
 
 end EmptyWiringHiddenRely
+
+
+/-! ### Negative independence: T5 does not give I-CAP transfer on VisibleSync
+
+  Same VisibleSync systems (visible ping wired to receive), so T5 product
+  `WeakRefines` still holds. Concrete ping transfers `token`; the Lean
+  `receiver` does not receive it (the reverse transfer/receive pair is
+  empty). `SynchronizationCompatible` fails. Product `ResourceRefinement`
+  can still hold via `liftParallelResources` because `parallelAction`
+  internalizes (zeros) transfer/receive. Companion: T5 + product
+  `ResourceRefinement` ⇏ `SynchronizationCompatible`. Ceiling: T5 ⇏
+  I-CAP transfer on sync. Not hidden ping, not I-FAIR, not empty-wiring
+  consume. Lean `receiver` is not the OpenSystem-receptive dual.
+-/
+
+namespace VisibleSyncUnmatchedTransfer
+
+open VisibleSync
+open NMLT.Counterexamples.CompositionCongruence
+
+inductive TokenCap
+  | token
+  deriving DecidableEq
+
+/-- Visible ping transfers `token`. Consume, grade, and rely stay inert so
+    the failure isolates I-CAP transfer. -/
+def pingTransferAction : ActionResources TokenCap Empty where
+  requires := fun c => c = .token
+  consumes := fun _ => False
+  transfers := fun c => c = .token
+  receives := fun _ => False
+  grade := zero
+  rely := fun _ => False
+  guarantees := fun _ => False
+
+/-- Lean `receiver` does not receive `token` (and does not transfer it). -/
+def receiveNoReceiveAction : ActionResources TokenCap Empty where
+  requires := fun _ => False
+  consumes := fun _ => False
+  transfers := fun _ => False
+  receives := fun _ => False
+  grade := zero
+  rely := fun _ => False
+  guarantees := fun _ => False
+
+def pingTransferResources : SystemResources SenderLabel TokenCap Empty where
+  owned := fun c => c = .token
+  action := fun
+    | .ping => pingTransferAction
+
+def receiveNoReceiveResources : SystemResources ReceiverLabel TokenCap Empty where
+  owned := fun _ => False
+  action := fun
+    | .receive => receiveNoReceiveAction
+
+theorem ping_transfers_token :
+    pingTransferAction.transfers TokenCap.token :=
+  rfl
+
+theorem receive_does_not_receive_token :
+    ¬ receiveNoReceiveAction.receives TokenCap.token :=
+  fun h => h
+
+theorem receive_does_not_transfer_token :
+    ¬ receiveNoReceiveAction.transfers TokenCap.token :=
+  fun h => h
+
+theorem ping_does_not_receive_token :
+    ¬ pingTransferAction.receives TokenCap.token :=
+  fun h => h
+
+/-- `parallelAction` zeros transfer even when the ping/receive pair is
+    unmatched. This is why product `ResourceRefinement` can hold. -/
+theorem unmatched_parallelAction_zeros_transfer :
+    ¬ (parallelAction pingTransferAction receiveNoReceiveAction).transfers
+        TokenCap.token :=
+  fun h => h
+
+theorem pingTransferRefinement :
+    ResourceRefinement pingTransferResources pingTransferResources
+      (id : SenderLabel → SenderLabel) where
+  owned := fun _ h => h
+  requires := fun _ _ h => h
+  consumes := fun _ _ => Iff.intro id id
+  transfers := fun _ _ => Iff.intro id id
+  receives := fun _ _ => Iff.intro id id
+  grade := fun _ => ⟨Nat.le_refl 0, Nat.le_refl 0, Nat.le_refl 0, Nat.le_refl 0⟩
+  rely := fun _ _ h => h
+  guarantees := fun _ _ h => h
+
+theorem ping_unmatched_not_synchronizationCompatible :
+    ¬ SynchronizationCompatible pingTransferAction receiveNoReceiveAction :=
+  fun compatible =>
+    receive_does_not_receive_token
+      ((compatible.leftTransfer TokenCap.token).mp ping_transfers_token)
+
+/-- T5 product `WeakRefines` still holds (VisibleSync observation). Ping
+    transfers `token` and receive does not receive it, so
+    `SynchronizationCompatible` fails. Product `ResourceRefinement` still
+    holds along `compositeMapOf id` because `parallelAction` internalizes
+    transfer/receive. Companion: T5 + product `ResourceRefinement` ⇏
+    I-CAP transfer on sync. -/
+theorem visibleSync_unmatchedTransfer_not_synchronizationCompatible :
+    Nonempty
+      (WeakRefines
+        concreteCompositeVisible
+        abstractCompositeVisible
+        (compositeHiddenOf senderVisible)
+        (compositeMapOf (id : SenderLabel → SenderLabel))) ∧
+      ¬ SynchronizationCompatible pingTransferAction receiveNoReceiveAction ∧
+      ResourceRefinement
+        (smallProductSystemResources pingTransferResources receiveNoReceiveResources)
+        (smallProductSystemResources pingTransferResources receiveNoReceiveResources)
+        (compositeMapOf (id : SenderLabel → SenderLabel)) :=
+  ⟨visibleSync_productRefinement,
+    ping_unmatched_not_synchronizationCompatible,
+    liftParallelResources pingTransferRefinement⟩
+
+#print axioms unmatched_parallelAction_zeros_transfer
+#print axioms ping_unmatched_not_synchronizationCompatible
+#print axioms visibleSync_unmatchedTransfer_not_synchronizationCompatible
+
+end VisibleSyncUnmatchedTransfer
+
+/-! ### Positive control: matching transfer is the extra I-CAP premise
+
+  Same VisibleSync systems. Ping transfers `token` iff receive receives it;
+  the reverse pair is empty. `SynchronizationCompatible` holds;
+  `synchronized_transfer_exact` / `synchronized_rely_discharged` instantiate
+  on this ping/receive pair. If profiles otherwise match, product
+  `ResourceRefinement` via `liftParallelResources`. Ceiling: matching
+  transfer is the extra I-CAP premise; it is not implied by T5.
+-/
+
+namespace VisibleSyncMatchedTransfer
+
+open VisibleSync
+open NMLT.Counterexamples.CompositionCongruence
+
+inductive TokenCap
+  | token
+  deriving DecidableEq
+
+def pingTransferAction : ActionResources TokenCap Empty where
+  requires := fun c => c = .token
+  consumes := fun _ => False
+  transfers := fun c => c = .token
+  receives := fun _ => False
+  grade := zero
+  rely := fun _ => False
+  guarantees := fun _ => False
+
+/-- Lean `receiver` receives `token`. Does not already own it. -/
+def receiveReceiveAction : ActionResources TokenCap Empty where
+  requires := fun _ => False
+  consumes := fun _ => False
+  transfers := fun _ => False
+  receives := fun c => c = .token
+  grade := zero
+  rely := fun _ => False
+  guarantees := fun _ => False
+
+def pingTransferResources : SystemResources SenderLabel TokenCap Empty where
+  owned := fun c => c = .token
+  action := fun
+    | .ping => pingTransferAction
+
+def receiveReceiveResources : SystemResources ReceiverLabel TokenCap Empty where
+  owned := fun _ => False
+  action := fun
+    | .receive => receiveReceiveAction
+
+theorem ping_transfers_token :
+    pingTransferAction.transfers TokenCap.token :=
+  rfl
+
+theorem receive_receives_token :
+    receiveReceiveAction.receives TokenCap.token :=
+  rfl
+
+def pingReceiveCompatible :
+    SynchronizationCompatible pingTransferAction receiveReceiveAction where
+  leftTransfer := fun _ => Iff.intro id id
+  rightTransfer := fun _ => Iff.intro id id
+  leftRely := fun _ h => h.elim
+  rightRely := fun _ h => h.elim
+
+theorem ping_receive_transfer_exact (capability : TokenCap) :
+    (pingTransferAction.transfers capability ↔
+      receiveReceiveAction.receives capability) ∧
+      (receiveReceiveAction.transfers capability ↔
+        pingTransferAction.receives capability) :=
+  synchronized_transfer_exact pingReceiveCompatible capability
+
+theorem ping_receive_rely_discharged (fact : Empty) :
+    ¬ (parallelAction pingTransferAction receiveReceiveAction).rely fact :=
+  synchronized_rely_discharged pingReceiveCompatible fact
+
+theorem matched_capabilityPartition :
+    CapabilityPartition pingTransferResources.owned receiveReceiveResources.owned :=
+  fun _ _ hR => hR
+
+theorem pingTransferRefinement :
+    ResourceRefinement pingTransferResources pingTransferResources
+      (id : SenderLabel → SenderLabel) where
+  owned := fun _ h => h
+  requires := fun _ _ h => h
+  consumes := fun _ _ => Iff.intro id id
+  transfers := fun _ _ => Iff.intro id id
+  receives := fun _ _ => Iff.intro id id
+  grade := fun _ => ⟨Nat.le_refl 0, Nat.le_refl 0, Nat.le_refl 0, Nat.le_refl 0⟩
+  rely := fun _ _ h => h
+  guarantees := fun _ _ h => h
+
+/-- T5 product `WeakRefines` still holds. Matching ping/receive transfer
+    witnesses `SynchronizationCompatible` (instantiating
+    `synchronized_transfer_exact` / `synchronized_rely_discharged`). Product
+    `ResourceRefinement` lifts because profiles otherwise match. Matching
+    transfer is the extra I-CAP premise; T5 does not imply it. -/
+theorem visibleSync_matchedTransfer_synchronizationCompatible :
+    Nonempty
+      (WeakRefines
+        concreteCompositeVisible
+        abstractCompositeVisible
+        (compositeHiddenOf senderVisible)
+        (compositeMapOf (id : SenderLabel → SenderLabel))) ∧
+      SynchronizationCompatible pingTransferAction receiveReceiveAction ∧
+      ResourceRefinement
+        (smallProductSystemResources pingTransferResources receiveReceiveResources)
+        (smallProductSystemResources pingTransferResources receiveReceiveResources)
+        (compositeMapOf (id : SenderLabel → SenderLabel)) :=
+  ⟨visibleSync_productRefinement,
+    pingReceiveCompatible,
+    liftParallelResources pingTransferRefinement⟩
+
+#print axioms pingReceiveCompatible
+#print axioms ping_receive_transfer_exact
+#print axioms ping_receive_rely_discharged
+#print axioms matched_capabilityPartition
+#print axioms visibleSync_matchedTransfer_synchronizationCompatible
+
+end VisibleSyncMatchedTransfer
+
+/-! ### Optional negative: shared ownership is independent of T5
+
+  Same VisibleSync systems. Both sides own `token`, so
+  `CapabilityPartition` fails, while T5 product `WeakRefines` still holds.
+  Transfer/receive stay inert so this does not fight the transfer lemmas.
+  Product `ResourceRefinement` can still hold (`ResourceRefinement.owned`
+  does not require disjointness). Ceiling: T5 ⇏ I-CAP disjointness.
+-/
+
+namespace VisibleSyncSharedOwnership
+
+open VisibleSync
+open NMLT.Counterexamples.CompositionCongruence
+
+inductive TokenCap
+  | token
+  deriving DecidableEq
+
+def inertAction : ActionResources TokenCap Empty where
+  requires := fun _ => False
+  consumes := fun _ => False
+  transfers := fun _ => False
+  receives := fun _ => False
+  grade := zero
+  rely := fun _ => False
+  guarantees := fun _ => False
+
+def pingSharedResources : SystemResources SenderLabel TokenCap Empty where
+  owned := fun c => c = .token
+  action := fun
+    | .ping => inertAction
+
+def receiveSharedResources : SystemResources ReceiverLabel TokenCap Empty where
+  owned := fun c => c = .token
+  action := fun
+    | .receive => inertAction
+
+theorem pingSharedRefinement :
+    ResourceRefinement pingSharedResources pingSharedResources
+      (id : SenderLabel → SenderLabel) where
+  owned := fun _ h => h
+  requires := fun _ _ h => h
+  consumes := fun _ _ => Iff.intro id id
+  transfers := fun _ _ => Iff.intro id id
+  receives := fun _ _ => Iff.intro id id
+  grade := fun _ => ⟨Nat.le_refl 0, Nat.le_refl 0, Nat.le_refl 0, Nat.le_refl 0⟩
+  rely := fun _ _ h => h
+  guarantees := fun _ _ h => h
+
+theorem shared_not_capabilityPartition :
+    ¬ CapabilityPartition pingSharedResources.owned receiveSharedResources.owned :=
+  fun partition =>
+    partition TokenCap.token rfl rfl
+
+/-- T5 product `WeakRefines` still holds. Both components own `token`, so
+    `CapabilityPartition` fails. Product `ResourceRefinement` still holds
+    because the owned-union lift does not require disjointness. -/
+theorem visibleSync_sharedOwnership_not_capabilityPartition :
+    Nonempty
+      (WeakRefines
+        concreteCompositeVisible
+        abstractCompositeVisible
+        (compositeHiddenOf senderVisible)
+        (compositeMapOf (id : SenderLabel → SenderLabel))) ∧
+      ¬ CapabilityPartition pingSharedResources.owned receiveSharedResources.owned ∧
+      ResourceRefinement
+        (smallProductSystemResources pingSharedResources receiveSharedResources)
+        (smallProductSystemResources pingSharedResources receiveSharedResources)
+        (compositeMapOf (id : SenderLabel → SenderLabel)) :=
+  ⟨visibleSync_productRefinement,
+    shared_not_capabilityPartition,
+    liftParallelResources pingSharedRefinement⟩
+
+#print axioms shared_not_capabilityPartition
+#print axioms visibleSync_sharedOwnership_not_capabilityPartition
+
+end VisibleSyncSharedOwnership
 
 end NMLT.Behavior.WeakResourceCongruence

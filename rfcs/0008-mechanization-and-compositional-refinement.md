@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split; I-GRADE hidden-ping negative; I-RELY hidden-ping negative; inert hidden-ping resource positive; I-FAIR hidden-ping divergence negative; Case 7 small-LTS product resource homomorphism fragment + T5⇏consume-through-compose)
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split; I-GRADE hidden-ping negative; I-RELY hidden-ping negative; inert hidden-ping resource positive; I-FAIR hidden-ping divergence negative; Case 7 small-LTS product resource homomorphism fragment + T5⇏consume-through-compose; VisibleSync I-CAP transfer independent of T5)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -355,8 +355,19 @@ through compose; extra `ready` Fact unmatched by abstract stutter). The
 inert product positive plus consume/grade/rely product negatives freeze
 the Case 7 product resource-independence pack. Ceiling: empty wiring,
 matching or unmatched hidden-left profiles, default `compositeMapOf`.
-Full CONDITIONAL-CONGRUENCE remains open (sync transfer I-CAP on
-ping/receive, grades through *sync*, I-FAIR through sync), as do
+VisibleSync I-CAP *transfer* is now checked independently of T5:
+`visibleSync_unmatchedTransfer_not_synchronizationCompatible` (visible ping
+wired to Lean `receiver`; ping transfers `token` unmatched by receive;
+`SynchronizationCompatible` fails; T5 product `WeakRefines` and product
+`ResourceRefinement` still hold because `parallelAction` zeros
+transfer/receive) and
+`visibleSync_matchedTransfer_synchronizationCompatible` (matching
+transfer/receive is the extra I-CAP premise; instantiates
+`synchronized_transfer_exact` / `synchronized_rely_discharged`). Optional
+shared-ownership negative
+`visibleSync_sharedOwnership_not_capabilityPartition`. Full
+CONDITIONAL-CONGRUENCE remains open (grades through *sync*, I-FAIR
+through sync), as do
 fairness and the OpenComposition *weak* hiding story. This is not T4
 (`liftOpenProductResources` / `liftResourceAwareParallel` remain the
 mapped OpenComposition model). A first C1 *negative* slice is checked:
@@ -454,6 +465,7 @@ The mechanization program must retain:
 - a variant where T5 product WeakRefines holds but an extra hidden-tau consume falsifies product ResourceRefinement (`emptyWiring_hiddenConsume_breaks_productResourceRefinement`; T5 ⇏ I-CAP through compose);
 - a variant where T5 product WeakRefines holds but a hidden-tau positive cost atom unmatched by abstract epsilon falsifies product ResourceRefinement.grade (`emptyWiring_hiddenGrade_breaks_productResourceRefinement`; T5 ⇏ I-GRADE through compose; not I-FAIR, not sync);
 - a variant where T5 product WeakRefines holds but a hidden-tau extra `ready` Fact unmatched by abstract stutter falsifies product ResourceRefinement.rely (`emptyWiring_hiddenRely_breaks_productResourceRefinement`; T5 ⇏ I-RELY through compose);
+- a variant where T5 VisibleSync product WeakRefines holds but unmatched ping transfer (receive does not receive `token`) falsifies `SynchronizationCompatible` while product ResourceRefinement still holds (`visibleSync_unmatchedTransfer_not_synchronizationCompatible`; T5 ⇏ I-CAP transfer on sync; `parallelAction` zeros transfer);
 - a theorem file containing `sorry` that the evidence gate rejects.
 
 ## Compatibility
@@ -545,7 +557,7 @@ dependent proof artifacts even if theorem names remain unchanged.
 3. **Done (2026-08-27, small LTS model):** prove the repaired safety theorem
    by the six transition cases (`weakConditionalCongruence_safety`), with
    isolation necessity.
-4. **Product pack (2026-08-27, small LTS):** `liftParallelResources` lifts left `ResourceRefinement` through `parallel` / `compositeMapOf` with a fixed peer (`WeakResourceCongruence.lean`). Instantiation `emptyWiring_inert_productResourceRefinement`. Product negatives `emptyWiring_hiddenConsume_breaks_productResourceRefinement` (T5 ⇏ I-CAP through compose), `emptyWiring_hiddenGrade_breaks_productResourceRefinement` (T5 ⇏ I-GRADE through compose), `emptyWiring_hiddenRely_breaks_productResourceRefinement` (T5 ⇏ I-RELY through compose). Pack frozen: inert product positive + consume/grade/rely product negatives. Remaining: sync transfer I-CAP on ping/receive, grades through *sync*, I-FAIR through sync. Not full CONDITIONAL-CONGRUENCE.
+4. **Product pack (2026-08-27, small LTS):** `liftParallelResources` lifts left `ResourceRefinement` through `parallel` / `compositeMapOf` with a fixed peer (`WeakResourceCongruence.lean`). Instantiation `emptyWiring_inert_productResourceRefinement`. Product negatives `emptyWiring_hiddenConsume_breaks_productResourceRefinement` (T5 ⇏ I-CAP through compose), `emptyWiring_hiddenGrade_breaks_productResourceRefinement` (T5 ⇏ I-GRADE through compose), `emptyWiring_hiddenRely_breaks_productResourceRefinement` (T5 ⇏ I-RELY through compose). Pack frozen: inert product positive + consume/grade/rely product negatives. **Sync-transfer I-CAP (2026-08-27, VisibleSync):** `visibleSync_unmatchedTransfer_not_synchronizationCompatible` (T5 ⇏ I-CAP transfer on sync; product ResourceRefinement still holds) and `visibleSync_matchedTransfer_synchronizationCompatible` (matching transfer is the extra premise). Optional `visibleSync_sharedOwnership_not_capabilityPartition`. Remaining: grades through *sync*, I-FAIR through sync. Not full CONDITIONAL-CONGRUENCE.
 5. **Done (finite only, 2026-08-27):** `weakRefines_finite_observation_trace_inclusion`
    (stutter-expansion of finite observation traces). The Rust helper
    `observation_trace_inclusion` is a small-graph regression, not a proof of
@@ -554,7 +566,8 @@ dependent proof artifacts even if theorem names remain unchanged.
    (T1 permits infinite hidden ping; T5 finite inclusion does not discharge
    I-FAIR / R-DIVERGENCE). Not a liveness theorem; WF/SF transport and
    fairness through compose remain open. Case 7 has a small-LTS homomorphism
-   fragment and product resource-independence pack; sync transfer I-CAP /
-   grades through *sync* / I-FAIR through sync remain open.
+   fragment, product resource-independence pack, and VisibleSync I-CAP
+   transfer independence; grades through *sync* / I-FAIR through sync remain
+   open.
 7. Build a typed-IR correspondence test before attributing Lean theorems to
    compiler output.
