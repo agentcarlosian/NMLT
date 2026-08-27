@@ -1,16 +1,22 @@
 //! Parse the Paper 1 fixture, sketch systems, adapt to OpenSystem, and feed
-//! the existing finite `HiddenConnectedAction` path.
+//! the existing finite `HiddenConnectedAction` / VisibleSync paths.
 //!
 //! Claim: sketch fragment + finite checker. Not a verified compiler, not
 //! source-to-LTS in general. `nmlt-temporal` still does not depend on
-//! `nmlt-core`.
+//! `nmlt-core`. VisibleSync product refinement mirrors Lean
+//! `VisibleSync.visibleSync_productRefinement` at the finite-instance level
+//! only (one-wire sketch product, not OpenSystem `compose`).
 
 use nmlt_core::{UntypedFile, parse_cst, project_untyped, surface_wires_in_compose};
-use nmlt_paper1_sketch::open_system_from_untyped;
+use nmlt_paper1_sketch::{
+    local_refinement_spec, observation_map_from_sketch, open_system_from_untyped,
+    paper1_sync_product_graph, product_observation_map,
+};
 use nmlt_temporal::{
-    ActionHiding, CompositionSpec, CongruenceIssue, CongruenceSpec, ObservationMap,
-    OpenRefinementCongruenceChecker, OpenSystem, RefinementSpec,
-    congruence_inputs_from_surface_names, hidden_connected_left_actions,
+    ActionHiding, CompatibilityIssue, CompositionSpec, CongruenceIssue, CongruenceSpec,
+    ObservationMap, OpenRefinementChecker, OpenRefinementCongruenceChecker, OpenSystem,
+    RefinementChecker, RefinementSpec, Side, congruence_inputs_from_surface_names,
+    hidden_connected_left_actions, identity_refinement_spec,
 };
 
 fn paper1_source() -> String {
@@ -46,14 +52,6 @@ fn compose_wires<'a>(
         .collect()
 }
 
-fn identity_state_map(system: &OpenSystem) -> Vec<usize> {
-    (0..system.graph().states().len()).collect()
-}
-
-fn observed(sketch: &nmlt_core::BooleanSketch) -> ObservationMap {
-    ObservationMap::identity(sketch.observed_fields.iter().map(String::as_str))
-}
-
 #[test]
 fn invalid_hidden_ping_sketch_reports_hidden_connected_action() {
     let file = paper1_file();
@@ -65,6 +63,9 @@ fn invalid_hidden_ping_sketch_reports_hidden_connected_action() {
     assert_eq!(concrete_sketch.hidden_actions, ["ping"]);
     assert!(abstract_sketch.action_names.is_empty());
     assert_eq!(receiver_sketch.action_names, ["receive"]);
+    assert_eq!(concrete_sketch.observed_fields, ["unit"]);
+    assert_eq!(abstract_sketch.observed_fields, ["unit"]);
+    assert_eq!(receiver_sketch.observed_fields, ["bit"]);
 
     let wires = compose_wires(&file, "InvalidHiddenPing");
     assert_eq!(wires, [("ping", "receive", "InvalidHiddenPing")]);
@@ -97,15 +98,15 @@ fn invalid_hidden_ping_sketch_reports_hidden_connected_action() {
         &abstract_sender,
         &receiver,
         &CongruenceSpec {
-            local_refinement: RefinementSpec {
-                state_map: identity_state_map(&concrete),
-                concrete_observation: observed(&concrete_sketch),
-                abstract_observation: observed(&abstract_sketch),
-                actions: hiding,
-            },
+            local_refinement: local_refinement_spec(
+                &concrete,
+                &concrete_sketch,
+                &abstract_sketch,
+                hiding,
+            ),
             concrete_composition,
             abstract_composition: CompositionSpec::default(),
-            peer_observation: observed(&receiver_sketch),
+            peer_observation: observation_map_from_sketch(&receiver_sketch),
         },
     );
     assert!(
@@ -126,6 +127,8 @@ fn visible_sync_sketch_does_not_flag_hidden_connected_ping() {
 
     assert!(visible_sketch.hidden_actions.is_empty());
     assert_eq!(visible_sketch.action_names, ["ping"]);
+    assert_eq!(visible_sketch.observed_fields, ["unit"]);
+    assert_eq!(receiver_sketch.observed_fields, ["bit"]);
 
     let wires = compose_wires(&file, "VisibleSync");
     assert_eq!(wires, [("ping", "receive", "VisibleSync")]);
@@ -152,19 +155,19 @@ fn visible_sync_sketch_does_not_flag_hidden_connected_ping() {
         &visible,
         &receiver,
         &CongruenceSpec {
-            local_refinement: RefinementSpec {
-                state_map: identity_state_map(&visible),
-                concrete_observation: observed(&visible_sketch),
-                abstract_observation: observed(&visible_sketch),
-                actions: hiding,
-            },
+            local_refinement: local_refinement_spec(
+                &visible,
+                &visible_sketch,
+                &visible_sketch,
+                hiding,
+            ),
             abstract_composition: CompositionSpec::from_left_right_wires([(
                 "ping",
                 "receive",
                 "VisibleSync",
             )]),
             concrete_composition,
-            peer_observation: observed(&receiver_sketch),
+            peer_observation: observation_map_from_sketch(&receiver_sketch),
         },
     );
     assert!(
@@ -173,5 +176,150 @@ fn visible_sync_sketch_does_not_flag_hidden_connected_ping() {
         ),
         "VisibleSync must not flag ping: {:#?}",
         report.issues
+    );
+}
+
+#[test]
+fn visible_sync_local_and_product_refinement_accepted() {
+    // Finite-instance mirror of Lean VisibleSync.visibleSync_productRefinement:
+    // VisibleAbstractSender (visible ping, no hide) wired to Receiver.
+    // Local identity refinement accepts. The one-wire sketch product accepts
+    // with peer observation `bit` (false→true on both products).
+    // OpenRefinementCongruenceChecker still cannot accept: sketched `receive`
+    // is not enabled after the bit flips, and CompatibilityChecker requires
+    // inputs in every local state. That is OpenSystem receptiveness, not a
+    // VisibleSync / AbstractSender mismatch, and not M9 / general LTS / C1.
+    let file = paper1_file();
+    let (visible_sketch, visible) = sketched(&file, "VisibleAbstractSender");
+    let (receiver_sketch, receiver) = sketched(&file, "Receiver");
+
+    assert_eq!(visible_sketch.observed_fields, ["unit"]);
+    assert_eq!(receiver_sketch.observed_fields, ["bit"]);
+    assert_eq!(
+        observation_map_from_sketch(&visible_sketch),
+        ObservationMap::identity(["unit"])
+    );
+    assert_eq!(
+        observation_map_from_sketch(&receiver_sketch),
+        ObservationMap::identity(["bit"])
+    );
+
+    let local_open = OpenRefinementChecker::check(
+        &visible,
+        &visible,
+        &identity_refinement_spec(&visible, observation_map_from_sketch(&visible_sketch)),
+    );
+    assert!(
+        local_open.accepted,
+        "VisibleAbstractSender identity open refinement: {:#?}",
+        local_open.issues
+    );
+
+    let (hiding, _) = congruence_inputs_from_surface_names(
+        visible_sketch.hidden_actions.iter().cloned(),
+        [("ping".to_owned(), "ping".to_owned())],
+        compose_wires(&file, "VisibleSync"),
+    );
+    let local = RefinementChecker::check(
+        visible.graph(),
+        visible.graph(),
+        &local_refinement_spec(&visible, &visible_sketch, &visible_sketch, hiding),
+    );
+    assert!(
+        local.accepted,
+        "VisibleAbstractSender identity behavior: {:#?}",
+        local.mismatches
+    );
+
+    let product = paper1_sync_product_graph(
+        visible.graph(),
+        receiver.graph(),
+        "ping",
+        "receive",
+        "VisibleSync",
+    )
+    .expect("VisibleSync sketch product");
+    assert_eq!(product.states().len(), 2);
+    assert_eq!(
+        product.states()[0].get("bit"),
+        Some(&nmlt_temporal::Value::Bool(false))
+    );
+    assert_eq!(
+        product.states()[1].get("bit"),
+        Some(&nmlt_temporal::Value::Bool(true))
+    );
+    assert_eq!(product.transitions().len(), 1);
+    assert_eq!(product.transitions()[0].from, 0);
+    assert_eq!(product.transitions()[0].to, 1);
+    assert_eq!(product.transitions()[0].kind.action(), Some("VisibleSync"));
+
+    let product_spec = RefinementSpec {
+        state_map: vec![0, 1],
+        concrete_observation: product_observation_map(&visible_sketch, &receiver_sketch),
+        abstract_observation: product_observation_map(&visible_sketch, &receiver_sketch),
+        actions: ActionHiding::new([("VisibleSync", Some("VisibleSync"))]),
+    };
+    let product_report = RefinementChecker::check(&product, &product, &product_spec);
+    assert!(
+        product_report.accepted,
+        "VisibleSync product identity: {:#?}",
+        product_report.mismatches
+    );
+
+    let wires = compose_wires(&file, "VisibleSync");
+    let (hiding, concrete_composition) = congruence_inputs_from_surface_names(
+        visible_sketch.hidden_actions.iter().cloned(),
+        [("ping".to_owned(), "ping".to_owned())],
+        wires,
+    );
+    let report = OpenRefinementCongruenceChecker::check(
+        &visible,
+        &visible,
+        &receiver,
+        &CongruenceSpec {
+            local_refinement: local_refinement_spec(
+                &visible,
+                &visible_sketch,
+                &visible_sketch,
+                hiding,
+            ),
+            abstract_composition: CompositionSpec::from_left_right_wires([(
+                "ping",
+                "receive",
+                "VisibleSync",
+            )]),
+            concrete_composition,
+            peer_observation: observation_map_from_sketch(&receiver_sketch),
+        },
+    );
+    assert!(
+        !report.issues.iter().any(
+            |issue| matches!(issue, CongruenceIssue::HiddenConnectedAction(name) if name == "ping")
+        ),
+        "{:#?}",
+        report.issues
+    );
+    assert!(
+        !report.accepted,
+        "OpenSystem congruence must not silently accept a non-receptive receive"
+    );
+    assert!(
+        report
+            .issues
+            .contains(&CongruenceIssue::ConcreteCompositionIncompatible)
+    );
+    assert!(
+        report.concrete_compatibility.issues.iter().any(|issue| {
+            matches!(
+                issue,
+                CompatibilityIssue::InputNotReceptive {
+                    side: Side::Right,
+                    action,
+                    state: 1
+                } if action == "receive"
+            )
+        }),
+        "expected InputNotReceptive receive @ bit=true: {:#?}",
+        report.concrete_compatibility.issues
     );
 }

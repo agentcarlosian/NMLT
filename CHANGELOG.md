@@ -9,6 +9,8 @@ versioning compatibility promises.
 
 ### Added
 
+- VisibleSync sketch path: local identity and one-wire product accepted with surface `observe` maps (peer `bit` false→true); OpenSystem congruence still rejects non-receptive `receive`.
+
 - Paper 1 boolean-sketch adapter in `nmlt-paper1-sketch`: `BooleanSketch` to
   `FiniteGraph`/`OpenSystem` (bool values, action names, surface polarities
   else ping Output / receive Input). Parse+sketch of the Paper 1 fixture
