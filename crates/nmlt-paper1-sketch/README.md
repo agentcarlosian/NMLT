@@ -12,6 +12,8 @@ product: Lean `receive` is not receptive after the flip. The OpenSystem
 dual `examples/paper1/receptive_receiver.nmlt` is accepted with visible ping;
 it is not the paper small model. Not `nmlt-temporal` `compose`.
 
+Sketched graphs from the Paper 1 fixture feed existing `observation_trace_inclusion` / `stutter_expands`: hidden ping stutter-expands the one-state abstract observation; a one-wire visible sync-once path equals (hence stutter-expands) the same visible step.
+
 This crate exists because `nmlt-compile` does not depend on `nmlt-temporal`
 and `nmlt-temporal` must not depend on `nmlt-core`. It is a sketch fragment
 plus a finite instance check. It is **not** a verified compiler and **not**

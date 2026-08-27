@@ -1,11 +1,14 @@
 //! Parse the Paper 1 fixture, sketch systems, adapt to OpenSystem, and feed
-//! the existing finite `HiddenConnectedAction` / VisibleSync paths.
+//! the existing finite `HiddenConnectedAction` / VisibleSync paths, then
+//! `observation_trace_inclusion` / `stutter_expands` on those graphs.
 //!
 //! Claim: sketch fragment + finite checker. Not a verified compiler, not
 //! source-to-LTS in general. `nmlt-temporal` still does not depend on
 //! `nmlt-core`. VisibleSync product refinement mirrors Lean
 //! `VisibleSync.visibleSync_productRefinement` at the finite-instance level
-//! only (one-wire sketch product, not OpenSystem `compose`).
+//! only (one-wire sketch product, not OpenSystem `compose`). Pipeline is
+//! source → sketch → finite graph → stutter-expansion check on this fixture;
+//! not C1, not a general elaborator, not LTL/infinite/fairness/liveness.
 //!
 //! Two receivers: Lean `Receiver` (not receptive at bit=true) stays rejected
 //! by OpenRefinementCongruenceChecker; `ReceptiveReceiver` is the OpenSystem
@@ -18,9 +21,10 @@ use nmlt_paper1_sketch::{
 };
 use nmlt_temporal::{
     ActionHiding, CompatibilityIssue, CompositionSpec, CongruenceIssue, CongruenceSpec,
-    ObservationMap, OpenRefinementChecker, OpenRefinementCongruenceChecker, OpenSystem,
-    RefinementChecker, RefinementSpec, Side, congruence_inputs_from_surface_names,
-    hidden_connected_left_actions, identity_refinement_spec,
+    ObservationMap, ObservationTraceError, OpenRefinementChecker, OpenRefinementCongruenceChecker,
+    OpenSystem, RefinementChecker, RefinementMismatchKind, RefinementSpec, Side,
+    congruence_inputs_from_surface_names, hidden_connected_left_actions, identity_refinement_spec,
+    observation_trace_inclusion, stutter_expands,
 };
 
 fn paper1_source() -> String {
@@ -426,4 +430,165 @@ fn visible_sync_receptive_dual_open_congruence_accepted() {
         "receptive dual must not report InputNotReceptive: {:#?}",
         report.concrete_compatibility.issues
     );
+}
+
+#[test]
+fn concrete_sender_hidden_ping_stutter_expands_abstract_one_state() {
+    // Paper 1 ConcreteSender: ping is a same-state loop and is hidden.
+    // AbstractSender has one state and no ping. Local hide is accepted;
+    // the path that takes ping stutter-expands the one-state abstract obs.
+    let file = paper1_file();
+    let (concrete_sketch, concrete) = sketched(&file, "ConcreteSender");
+    let (abstract_sketch, abstract_sender) = sketched(&file, "AbstractSender");
+
+    assert_eq!(concrete.graph().states().len(), 1);
+    assert_eq!(abstract_sender.graph().states().len(), 1);
+    assert_eq!(
+        concrete.graph().transitions()[0].kind.action(),
+        Some("ping")
+    );
+    assert_eq!(concrete.graph().transitions()[0].from, 0);
+    assert_eq!(concrete.graph().transitions()[0].to, 0);
+    assert_eq!(concrete_sketch.hidden_actions, ["ping"]);
+    assert!(abstract_sketch.action_names.is_empty());
+
+    let hiding = ActionHiding::from_hide_actions(
+        concrete_sketch.hidden_actions.iter().cloned(),
+        [] as [(String, String); 0],
+    );
+    let spec = local_refinement_spec(&concrete, &concrete_sketch, &abstract_sketch, hiding);
+    assert_eq!(
+        spec.concrete_observation,
+        observation_map_from_sketch(&concrete_sketch)
+    );
+    assert_eq!(
+        spec.abstract_observation,
+        observation_map_from_sketch(&abstract_sketch)
+    );
+
+    let report = RefinementChecker::check(concrete.graph(), abstract_sender.graph(), &spec);
+    assert!(
+        report.accepted,
+        "local hide of ConcreteSender ping: {:#?}",
+        report.mismatches
+    );
+
+    let inclusion =
+        observation_trace_inclusion(concrete.graph(), abstract_sender.graph(), &spec, &[0, 0])
+            .expect("hidden ping path");
+    assert_eq!(inclusion.concrete_path, vec![0, 0]);
+    assert_eq!(inclusion.abstract_path, vec![0]);
+    assert_eq!(inclusion.concrete_observations.len(), 2);
+    assert_eq!(inclusion.abstract_observations.len(), 1);
+    assert_eq!(
+        inclusion.concrete_observations[0],
+        inclusion.abstract_observations[0]
+    );
+    assert_eq!(
+        inclusion.concrete_observations[0],
+        inclusion.concrete_observations[1]
+    );
+    assert!(stutter_expands(
+        &inclusion.abstract_observations,
+        &inclusion.concrete_observations
+    ));
+}
+
+#[test]
+fn visible_sync_once_stutter_expands_same_visible_step() {
+    // VisibleAbstractSender || ReceptiveReceiver one-wire product: ping ||
+    // receive becomes one visible sync. A concrete path that syncs once is
+    // equal to (hence a stutter-expansion of) the abstract path of that step.
+    // OpenSystem dual peer, not the Lean small-model Receiver.
+    let file = receptive_file();
+    let (visible_sketch, visible) = sketched(&file, "VisibleAbstractSender");
+    let (receiver_sketch, receiver) = sketched(&file, "ReceptiveReceiver");
+
+    let product = paper1_sync_product_graph(
+        visible.graph(),
+        receiver.graph(),
+        "ping",
+        "receive",
+        "VisibleSyncReceptive",
+    )
+    .expect("VisibleSyncReceptive sketch product");
+    assert_eq!(product.states().len(), 2);
+    assert_eq!(product.transitions()[0].from, 0);
+    assert_eq!(product.transitions()[0].to, 1);
+    assert_eq!(
+        product.transitions()[0].kind.action(),
+        Some("VisibleSyncReceptive")
+    );
+
+    let spec = RefinementSpec {
+        state_map: vec![0, 1],
+        concrete_observation: product_observation_map(&visible_sketch, &receiver_sketch),
+        abstract_observation: product_observation_map(&visible_sketch, &receiver_sketch),
+        actions: ActionHiding::new([("VisibleSyncReceptive", Some("VisibleSyncReceptive"))]),
+    };
+    let report = RefinementChecker::check(&product, &product, &spec);
+    assert!(
+        report.accepted,
+        "visible one-wire product identity: {:#?}",
+        report.mismatches
+    );
+
+    let inclusion =
+        observation_trace_inclusion(&product, &product, &spec, &[0, 1]).expect("sync-once path");
+    assert_eq!(inclusion.concrete_path, vec![0, 1]);
+    assert_eq!(inclusion.abstract_path, vec![0, 1]);
+    assert_eq!(
+        inclusion.concrete_observations,
+        inclusion.abstract_observations
+    );
+    assert!(stutter_expands(
+        &inclusion.abstract_observations,
+        &inclusion.concrete_observations
+    ));
+}
+
+#[test]
+fn hidden_sync_that_flips_bit_fails_trace_inclusion() {
+    // Cheap negative on the Paper 1 one-wire product: hide VisibleSync while
+    // the receiver bit flips. Same failure as nmlt-temporal's hand-built
+    // hidden-step-changes-obs case, now on sketched graphs.
+    let file = paper1_file();
+    let (visible_sketch, visible) = sketched(&file, "VisibleAbstractSender");
+    let (receiver_sketch, receiver) = sketched(&file, "Receiver");
+
+    let product = paper1_sync_product_graph(
+        visible.graph(),
+        receiver.graph(),
+        "ping",
+        "receive",
+        "VisibleSync",
+    )
+    .expect("VisibleSync sketch product");
+
+    let spec = RefinementSpec {
+        state_map: vec![0, 1],
+        concrete_observation: product_observation_map(&visible_sketch, &receiver_sketch),
+        abstract_observation: product_observation_map(&visible_sketch, &receiver_sketch),
+        actions: ActionHiding::from_hide_actions(["VisibleSync"], [] as [(&str, &str); 0]),
+    };
+    let report = RefinementChecker::check(&product, &product, &spec);
+    assert!(
+        report.mismatches.iter().any(|mismatch| {
+            mismatch.kind == RefinementMismatchKind::HiddenStepChangesAbstractState
+        }),
+        "expected hidden-step-changes-obs: {:#?}",
+        report.mismatches
+    );
+
+    let error = observation_trace_inclusion(&product, &product, &spec, &[0, 1])
+        .expect_err("hidden sync that flips bit");
+    assert!(matches!(
+        error,
+        ObservationTraceError::HiddenStepChangesAbstractState {
+            from: 0,
+            to: 1,
+            mapped_from: 0,
+            mapped_to: 1,
+        }
+    ));
 }
