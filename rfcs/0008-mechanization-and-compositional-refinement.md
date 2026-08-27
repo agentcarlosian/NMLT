@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split)
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split; I-GRADE hidden-ping negative)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -341,8 +341,12 @@ outline, as do fairness and the OpenComposition *weak* hiding story. A
 first C1 *negative* slice is checked:
 `hiddenPing_consume_breaks_resourceRefinement` shows observational
 `WeakRefines` does not imply resource/capability preservation (I-CAP
-consume). That is not a Case 7 proof, not I-GRADE / I-FAIR, and not a
-claim that T5 is CONDITIONAL-CONGRUENCE. The
+consume). A sibling slice
+`hiddenPing_grade_breaks_resourceRefinement` shows the same for I-GRADE:
+hidden ping still weakly refines, but a positive cost atom unmatched by
+the abstract epsilon profile falsifies `ResourceRefinement.grade`. That
+is not a Case 7 proof, not I-FAIR / I-RELY, not a grade homomorphism
+through compose, and not a claim that T5 is CONDITIONAL-CONGRUENCE. The
 small-model lift must not be inferred from the exact-action theorem, and
 the exact-action theorem must not be inferred from the small-model lift.
 Finite observation-trace inclusion from any `WeakRefines` witness is

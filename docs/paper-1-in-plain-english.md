@@ -41,7 +41,7 @@ There’s also an older *strong* / exact-action congruence theorem (T4) in a ric
 
 ## Residual C1, first slice (authority is not silent either)
 
-The same hidden ping still observation-refines the do-nothing sender (T1). If that ping consumes a capability `token` the abstract profile does not, resource refinement fails (`hiddenPing_consume_breaks_resourceRefinement`). Hiding is not contextual silence for authority. That is I-CAP independence from T5, not a full resource/grade/fairness lift.
+The same hidden ping still observation-refines the do-nothing sender (T1). If that ping consumes a capability `token` the abstract profile does not, resource refinement fails (`hiddenPing_consume_breaks_resourceRefinement`). Hiding is not contextual silence for authority. That is I-CAP independence from T5, not a full resource/grade/fairness lift. The same shape holds for grades: a hidden ping with a real cost against a silent abstract stutter fails `ResourceRefinement.grade` (`hiddenPing_grade_breaks_resourceRefinement`). That is I-GRADE independence from T5, not a positive grade lift and not I-FAIR / I-RELY.
 
 ## What we are *not* claiming yet
 

@@ -6,6 +6,7 @@ import NMLT.Metatheory.Soundness
 import NMLT.Core.Provider
 import NMLT.Counterexamples.CompositionCongruence
 import NMLT.Counterexamples.HiddenConsume
+import NMLT.Counterexamples.HiddenGrade
 import NMLT.Behavior.WeakConditionalCongruence
 import NMLT.Grades.Algebra
 import NMLT.Correspondence.M9Kernel

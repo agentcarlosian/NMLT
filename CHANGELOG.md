@@ -9,6 +9,8 @@ versioning compatibility promises.
 
 ### Added
 
+- Sibling residual C1 *negative*: named Lean `hiddenPing_grade_breaks_resourceRefinement` (`[propext]` only). Observational `WeakRefines` (T1 / T5 small model) does not imply I-GRADE: hidden ping still refines the step-free abstract sender, but a positive cost atom unmatched by the abstract epsilon (`zero`) profile falsifies `ResourceRefinement.grade` for every `SenderLabel` map. Case 7 of RFC 0008 remains open (no positive I-GRADE lift; not I-FAIR / I-RELY; not a grade homomorphism through compose). Executable `nmlt-temporal` control: hidden ping with a non-silent grade is `HiddenActionHasResources` while observation refinement still accepts.
+
 - First residual C1 *negative*: named Lean `hiddenPing_consume_breaks_resourceRefinement` (`[propext]` only). Observational `WeakRefines` (T1 / T5 small model) does not imply I-CAP consume: hidden ping still refines the step-free abstract sender, but a `token` consume unmatched on the abstract resource profile falsifies `ResourceRefinement` for every `SenderLabel` map. Case 7 of RFC 0008 remains open (no positive I-CAP lift; not I-GRADE / I-FAIR). Executable `nmlt-temporal` control: hidden ping consume is `HiddenActionHasResources` while observation refinement still accepts.
 
 - Paper 1 sketch graphs: hidden ping stutter-expands the one-state abstract obs; a one-wire visible sync-once path stutter-expands (equals) the same visible step. Finite instance via `observation_trace_inclusion`; not a compiler, not C1.

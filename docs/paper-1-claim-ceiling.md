@@ -113,6 +113,8 @@ The remaining conjecture is anything beyond T5:
 
 **First C1 slice (negative; not a lift):** I-CAP is independent of T5. Named lemma `hiddenPing_consume_breaks_resourceRefinement` (`[propext]` only): observational `WeakRefines` (T1 / T5 small model) still holds for hidden ping, but a `token` consume unmatched on the abstract profile falsifies `ResourceRefinement`. Not a positive I-CAP/I-GRADE/I-FAIR theorem; T4 does not imply this.
 
+**Second C1 slice (negative; not a lift):** I-GRADE is independent of T5. Named lemma `hiddenPing_grade_breaks_resourceRefinement` (`[propext]` only): observational `WeakRefines` still holds for hidden ping, but a positive cost atom unmatched by the abstract epsilon (`zero`) profile falsifies `ResourceRefinement.grade`. Not a positive I-GRADE/I-FAIR/I-RELY theorem, not a grade homomorphism through compose; T4 does not imply this.
+
 ### C2 — Hypothesis-independence of individual premises
 Each named premise of T5 is independently indispensable for the *default* lift
 (`compositeHiddenOf` / `compositeMapOf`) in the hypothesis-independence sense.
@@ -244,3 +246,4 @@ appendix for Lean listings.
 | 2026-08-27 | Named finite obs-trace inclusion: `weakRefines_finite_observation_trace_inclusion` |
 | 2026-08-27 | Named Lean vs OpenSystem receiver split (dual fixture is not the small model) |
 | 2026-08-27 | First C1 negative slice: `hiddenPing_consume_breaks_resourceRefinement` (I-CAP independent of T5) |
+| 2026-08-27 | Second C1 negative slice: `hiddenPing_grade_breaks_resourceRefinement` (I-GRADE independent of T5) |
