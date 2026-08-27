@@ -455,10 +455,10 @@ dependent proof artifacts even if theorem names remain unchanged.
 1. Keep the checked counterexample permanently as a regression test.
 2. Encode ports, direction, connection maps, and `I-NO-HIDDEN-BOUNDARY`.
    Surface progress (2026-08-27): `compose` / `connect` parse and project in
-   `nmlt-core` so Paper 1 can declare wires and run `hidden_wired_actions` from
-   source; full compose elaborator / M9 acceptance remains fail-closed
-   (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`). Executable NHB stays in
-   `nmlt-temporal` on `CompositionSpec`.
+   `nmlt-core`; surface connect names can be fed to `HiddenConnectedAction`
+   via `CompositionSpec::from_left_right_wires`. Full elaborator still M9
+   fail-closed (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`); this is not
+   source-to-LTS elaboration.
 3. **Done (2026-08-27, small LTS model):** prove the repaired safety theorem
    by the six transition cases (`weakConditionalCongruence_safety`), with
    isolation necessity.

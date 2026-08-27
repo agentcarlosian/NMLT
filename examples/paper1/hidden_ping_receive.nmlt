@@ -61,8 +61,9 @@ system VisibleAbstractSender {
 }
 
 // Surface wiring for I-NO-HIDDEN-BOUNDARY demos.
-// `hidden_wired_actions(ConcreteSender, surface_wired_action_pairs(...))`
-// flags `ping` on InvalidHiddenPing; VisibleSync stays empty for NHB.
+// `surface_wired_action_pairs_for_left` + `hidden_wired_actions` flags `ping`
+// on InvalidHiddenPing; VisibleSync stays empty. Those name pairs feed
+// `CompositionSpec::from_left_right_wires` (nmlt-temporal); not source-to-LTS.
 compose InvalidHiddenPing {
   connect ConcreteSender.ping -> Receiver.receive
 }

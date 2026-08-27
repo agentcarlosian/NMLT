@@ -450,6 +450,33 @@ impl CompositionSpec {
             contract_links,
         }
     }
+
+    /// Build a spec from surface-style `(left_action, right_action, sync)` triples.
+    ///
+    /// Each triple becomes one [`Connection`]. Contract links default to Paper 1
+    /// polarity: the right action consumes, the left action provides. Callers
+    /// pass already-extracted names; this is **not** source-to-LTS elaboration.
+    #[must_use]
+    pub fn from_left_right_wires<I, L, R, S>(wires: I) -> Self
+    where
+        I: IntoIterator<Item = (L, R, S)>,
+        L: Into<String>,
+        R: Into<String>,
+        S: Into<String>,
+    {
+        let mut connections = Vec::new();
+        let mut contract_links = Vec::new();
+        for (left, right, sync) in wires {
+            let left = left.into();
+            let right = right.into();
+            connections.push(Connection::new(left.clone(), right.clone(), sync));
+            contract_links.push(ContractLink::new(Side::Right, right, Side::Left, left));
+        }
+        Self {
+            connections,
+            contract_links,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1518,6 +1545,34 @@ impl OpenRefinementCongruenceChecker {
     }
 }
 
+/// Package Paper 1 surface names for [`OpenRefinementCongruenceChecker`].
+///
+/// `hidden` is `hide action` labels; `visible` is concrete-to-abstract renames;
+/// `wires` are `(left_action, right_action, sync)` triples from `connect`.
+/// Finite [`OpenSystem`] graphs are still supplied separately. This is **not**
+/// source-to-LTS elaboration.
+#[must_use]
+pub fn congruence_inputs_from_surface_names<H, V, W, S, T, L, R, C>(
+    hidden: H,
+    visible: V,
+    wires: W,
+) -> (ActionHiding, CompositionSpec)
+where
+    H: IntoIterator<Item = S>,
+    V: IntoIterator<Item = (S, T)>,
+    W: IntoIterator<Item = (L, R, C)>,
+    S: Into<String>,
+    T: Into<String>,
+    L: Into<String>,
+    R: Into<String>,
+    C: Into<String>,
+{
+    (
+        ActionHiding::from_hide_actions(hidden, visible),
+        CompositionSpec::from_left_right_wires(wires),
+    )
+}
+
 /// I-NO-HIDDEN-BOUNDARY: left actions that are both refinement-hidden and wired.
 #[must_use]
 pub fn hidden_connected_left_actions(
@@ -1903,8 +1958,11 @@ mod tests {
         );
         let peer = peer();
         let peer_obs = ObservationMap::identity(["peer"]);
-        let hiding = ActionHiding::from_hide_actions(["ping"], [] as [(&str, &str); 0]);
-        let concrete_composition = composition("ping", "transfer");
+        let (hiding, concrete_composition) = congruence_inputs_from_surface_names(
+            ["ping"],
+            [] as [(&str, &str); 0],
+            [("ping", "receive", "transfer")],
+        );
         assert_eq!(
             hidden_connected_left_actions(&hiding, &concrete_composition.connections),
             vec!["ping".to_owned()]
@@ -1934,6 +1992,25 @@ mod tests {
             report.issues
         );
         assert!(!report.accepted);
+    }
+
+    #[test]
+    fn from_left_right_wires_builds_paper1_connection() {
+        let spec =
+            CompositionSpec::from_left_right_wires([("ping", "receive", "InvalidHiddenPing")]);
+        assert_eq!(
+            spec.connections,
+            vec![Connection::new("ping", "receive", "InvalidHiddenPing")]
+        );
+        assert_eq!(
+            spec.contract_links,
+            vec![ContractLink::new(
+                Side::Right,
+                "receive",
+                Side::Left,
+                "ping"
+            )]
+        );
     }
 
     #[test]

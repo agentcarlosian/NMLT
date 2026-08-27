@@ -249,7 +249,11 @@ mod tests {
             [("send", "deliver"), ("cache", "kept")],
         );
         assert_eq!(map.get("ping"), Some(None));
-        assert_eq!(map.get("cache"), Some(None), "hiding wins over visible rename");
+        assert_eq!(
+            map.get("cache"),
+            Some(None),
+            "hiding wins over visible rename"
+        );
         assert_eq!(map.get("send"), Some(Some("deliver")));
         assert_eq!(
             map.hidden_actions().collect::<Vec<_>>(),

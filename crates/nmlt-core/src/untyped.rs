@@ -60,6 +60,20 @@ impl UntypedProjection {
     /// An empty result means only that projection was exact and that no
     /// explicitly excluded surface construct was present. Raw types and
     /// expressions still require parsing, resolution, and elaboration.
+    /// Fully projected `connect` endpoints as
+    /// `(left_system, left_action, right_system, right_action)`.
+    /// Incomplete names are skipped. This is not composition elaboration.
+    #[must_use]
+    pub fn surface_endpoint_wires(&self) -> Vec<(&str, &str, &str, &str)> {
+        surface_endpoint_wires(&self.file)
+    }
+
+    /// `(left_action, right_action)` for wires whose left system is `left_system`.
+    #[must_use]
+    pub fn wired_action_pairs_for_left(&self, left_system: &str) -> Vec<(&str, &str)> {
+        surface_wired_action_pairs_for_left(&self.file, left_system)
+    }
+
     #[must_use]
     pub fn m9_surface_issues(&self) -> Vec<M9SurfaceIssue> {
         let mut issues = Vec::new();
@@ -121,6 +135,24 @@ impl UntypedFile {
         let mut systems = Vec::new();
         collect_systems(&self.declarations, &mut systems);
         systems
+    }
+
+    /// First system whose projected name is `name`.
+    #[must_use]
+    pub fn system_named(&self, name: &str) -> Option<&UntypedSystem> {
+        self.systems()
+            .into_iter()
+            .find(|system| system.name.as_ref().map(|n| n.text.as_str()) == Some(name))
+    }
+
+    /// First `compose` whose projected name is `name`, including nested modules.
+    #[must_use]
+    pub fn compose_named(&self, name: &str) -> Option<&UntypedCompose> {
+        let mut composes = Vec::new();
+        collect_composes(&self.declarations, &mut composes);
+        composes
+            .into_iter()
+            .find(|compose| compose.name.as_ref().map(|n| n.text.as_str()) == Some(name))
     }
 }
 
@@ -250,8 +282,9 @@ impl UntypedSystem {
 
 /// Top-level `compose Name { connect ... }` surface form.
 ///
-/// This is wiring syntax only. It does **not** elaborate to an executable
-/// `CompositionSpec` or discharge congruence; M9 still fail-closes compose.
+/// Wiring syntax only. Endpoint names can be fed to `nmlt-temporal`'s
+/// `CompositionSpec::from_left_right_wires`; this crate does **not** elaborate
+/// an executable open-system graph. M9 still fail-closes compose.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UntypedCompose {
     pub name: Option<SpannedText>,
@@ -307,7 +340,52 @@ impl UntypedConnect {
     /// `(left_action, right_action)` when both action names projected.
     #[must_use]
     pub fn action_pair(&self) -> Option<(&str, &str)> {
-        Some((self.left_action.as_ref()?.text.as_str(), self.right_action.as_ref()?.text.as_str()))
+        Some((
+            self.left_action.as_ref()?.text.as_str(),
+            self.right_action.as_ref()?.text.as_str(),
+        ))
+    }
+}
+
+/// One projected `connect`, with optional enclosing `compose` name.
+///
+/// Endpoints are `None` when a name failed to project. This is a name-level
+/// view of surface wiring, not an executable composition.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SurfaceWire<'a> {
+    pub compose_name: Option<&'a str>,
+    pub left_system: Option<&'a str>,
+    pub left_action: Option<&'a str>,
+    pub right_system: Option<&'a str>,
+    pub right_action: Option<&'a str>,
+}
+
+impl<'a> SurfaceWire<'a> {
+    fn from_connect(compose_name: Option<&'a str>, connect: &'a UntypedConnect) -> Self {
+        Self {
+            compose_name,
+            left_system: connect.left_system.as_ref().map(|n| n.text.as_str()),
+            left_action: connect.left_action.as_ref().map(|n| n.text.as_str()),
+            right_system: connect.right_system.as_ref().map(|n| n.text.as_str()),
+            right_action: connect.right_action.as_ref().map(|n| n.text.as_str()),
+        }
+    }
+
+    /// Fully projected `Left.action -> Right.action` endpoints.
+    #[must_use]
+    pub fn endpoints(self) -> Option<(&'a str, &'a str, &'a str, &'a str)> {
+        Some((
+            self.left_system?,
+            self.left_action?,
+            self.right_system?,
+            self.right_action?,
+        ))
+    }
+
+    /// `(left_action, right_action)` when both action names projected.
+    #[must_use]
+    pub fn action_pair(self) -> Option<(&'a str, &'a str)> {
+        Some((self.left_action?, self.right_action?))
     }
 }
 
@@ -511,6 +589,90 @@ pub fn surface_wired_action_pairs(file: &UntypedFile) -> Vec<(&str, &str)> {
     surface_connections(file)
         .into_iter()
         .filter_map(UntypedConnect::action_pair)
+        .collect()
+}
+
+/// Every projected `connect` with optional enclosing `compose` name, source order.
+#[must_use]
+pub fn surface_wires(file: &UntypedFile) -> Vec<SurfaceWire<'_>> {
+    let mut out = Vec::new();
+    collect_surface_wires(&file.declarations, &mut out);
+    out
+}
+
+fn collect_surface_wires<'a>(
+    declarations: &'a [UntypedDeclaration],
+    out: &mut Vec<SurfaceWire<'a>>,
+) {
+    for declaration in declarations {
+        match declaration {
+            UntypedDeclaration::Module(module) => {
+                collect_surface_wires(&module.declarations, out);
+            }
+            UntypedDeclaration::Compose(compose) => {
+                let name = compose.name.as_ref().map(|n| n.text.as_str());
+                for item in &compose.connections {
+                    if let UntypedComposeItem::Connect(connect) = item {
+                        out.push(SurfaceWire::from_connect(name, connect));
+                    }
+                }
+            }
+            UntypedDeclaration::Connect(connect) => {
+                out.push(SurfaceWire::from_connect(None, connect));
+            }
+            UntypedDeclaration::Import(_)
+            | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Unsupported(_)
+            | UntypedDeclaration::Error(_) => {}
+        }
+    }
+}
+
+/// Fully projected `(left_system, left_action, right_system, right_action)` wires.
+#[must_use]
+pub fn surface_endpoint_wires(file: &UntypedFile) -> Vec<(&str, &str, &str, &str)> {
+    surface_wires(file)
+        .into_iter()
+        .filter_map(SurfaceWire::endpoints)
+        .collect()
+}
+
+/// Endpoint 4-tuples whose left system is `left_system`.
+#[must_use]
+pub fn surface_endpoint_wires_for_left<'a>(
+    file: &'a UntypedFile,
+    left_system: &str,
+) -> Vec<(&'a str, &'a str, &'a str, &'a str)> {
+    surface_wires(file)
+        .into_iter()
+        .filter(|wire| wire.left_system == Some(left_system))
+        .filter_map(SurfaceWire::endpoints)
+        .collect()
+}
+
+/// `(left_action, right_action)` for wires whose left system is `left_system`.
+#[must_use]
+pub fn surface_wired_action_pairs_for_left<'a>(
+    file: &'a UntypedFile,
+    left_system: &str,
+) -> Vec<(&'a str, &'a str)> {
+    surface_wires(file)
+        .into_iter()
+        .filter(|wire| wire.left_system == Some(left_system))
+        .filter_map(SurfaceWire::action_pair)
+        .collect()
+}
+
+/// Wires inside a named `compose` declaration.
+#[must_use]
+pub fn surface_wires_in_compose<'a>(
+    file: &'a UntypedFile,
+    compose_name: &str,
+) -> Vec<SurfaceWire<'a>> {
+    surface_wires(file)
+        .into_iter()
+        .filter(|wire| wire.compose_name == Some(compose_name))
         .collect()
 }
 
@@ -1144,6 +1306,26 @@ fn collect_systems<'file>(
             UntypedDeclaration::Import(_)
             | UntypedDeclaration::Enum(_)
             | UntypedDeclaration::Compose(_)
+            | UntypedDeclaration::Connect(_)
+            | UntypedDeclaration::Unsupported(_)
+            | UntypedDeclaration::Error(_) => {}
+        }
+    }
+}
+
+fn collect_composes<'file>(
+    declarations: &'file [UntypedDeclaration],
+    composes: &mut Vec<&'file UntypedCompose>,
+) {
+    for declaration in declarations {
+        match declaration {
+            UntypedDeclaration::Module(module) => {
+                collect_composes(&module.declarations, composes);
+            }
+            UntypedDeclaration::Compose(compose) => composes.push(compose),
+            UntypedDeclaration::Import(_)
+            | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::System(_)
             | UntypedDeclaration::Connect(_)
             | UntypedDeclaration::Unsupported(_)
             | UntypedDeclaration::Error(_) => {}
@@ -2021,7 +2203,10 @@ fn classify_hide_expression(expression: Option<&RawTerm>) -> (Option<HideSort>, 
     };
     let idents = ident_spans_in_term(term);
     if idents.first().map(|name| name.text.as_str()) == Some("action") && idents.len() > 1 {
-        (Some(HideSort::Actions), idents.into_iter().skip(1).collect())
+        (
+            Some(HideSort::Actions),
+            idents.into_iter().skip(1).collect(),
+        )
     } else {
         (Some(HideSort::StateFields), idents)
     }

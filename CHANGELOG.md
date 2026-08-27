@@ -9,6 +9,11 @@ versioning compatibility promises.
 
 ### Added
 
+- Surface `connect` names lower to `CompositionSpec::from_left_right_wires` so
+  Paper 1's InvalidHiddenPing path can feed `HiddenConnectedAction` without a
+  hand-built spec. Full compose elaborator remains M9 fail-closed; this is not
+  source-to-LTS elaboration.
+
 - Apache-2.0 project governance, research charter, RFC/decision process,
   architecture, calculus, language, threat-model, and evidence contracts.
 - Ten source-identity-frozen canonical examples and comparative NMLT, TLA+,

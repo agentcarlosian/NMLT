@@ -473,7 +473,6 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
     }
 
     fn parse_system_decl(&mut self) {
-
         let start = self.current_span().start;
         self.start(SyntaxKind::SystemDecl);
         self.bump();

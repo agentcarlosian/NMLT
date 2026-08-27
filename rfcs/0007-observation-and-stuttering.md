@@ -175,12 +175,14 @@ compose InvalidHiddenPing {
 
 and file-level `connect Left.action -> Right.action`. Untyped projection
 exposes `UntypedCompose` / `UntypedConnect` plus helpers
-`surface_connections` / `surface_wired_action_pairs`, so
+`surface_wires` / `surface_wired_action_pairs_for_left`, so
 `hidden_wired_actions(system, pairs)` can run from declared source wires.
-This is **not** a full composition elaborator: M9 still emits
-`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`, and executable
-`CompositionSpec` / congruence checking remain in `nmlt-temporal` on
-hand-built specs. The fixture is not part of `canonical-v1.json`.
+Those `(left_action, right_action)` names (plus a caller-chosen sync label)
+feed `CompositionSpec::from_left_right_wires` and
+`CongruenceIssue::HiddenConnectedAction`; full elaborator still M9
+fail-closed (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`). This is **not**
+source-to-LTS lowering: finite `OpenSystem` graphs remain hand-built
+fixtures. The fixture is not part of `canonical-v1.json`.
 
 ## 3. Observation projections
 
