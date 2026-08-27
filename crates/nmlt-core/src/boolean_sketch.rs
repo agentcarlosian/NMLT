@@ -28,8 +28,11 @@ pub struct SketchTransition {
 /// Reachable Bool assignments and action names for one system.
 ///
 /// Not a `nmlt-temporal::FiniteGraph`. Names match the Paper 1 OpenSystem
-/// fixtures (ping loop; receive false→true). Hidden action names are recorded
-/// but not projected; surface `compose` is out of scope.
+/// fixtures (ping loop; Lean receive false→true). An unguarded
+/// `set ident = true|false` (no `require`) is enabled in every reachable
+/// assignment, so the OpenSystem-receptive dual can loop receive at bit=true.
+/// Hidden action names are recorded but not projected; surface `compose` is
+/// out of scope.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BooleanSketch {
     pub system_name: String,
@@ -90,6 +93,8 @@ struct CompiledAction {
 /// `require ident == true|false`, `set ident = ident` (same name), and
 /// `set ident = true|false`; `observe` of those fields; `hide action`.
 /// Optional `action input|output` polarity is ignored (names only).
+/// No `require` means the action is enabled in every reachable assignment
+/// (from init: `set bit = true` yields false→true then true→true).
 ///
 /// Refused: Nat, params, consume, capability, state-field hide, emit, ports,
 /// properties, grades, non-literal inits, non-identity copies, and any other

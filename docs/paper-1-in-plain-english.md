@@ -45,9 +45,15 @@ There’s also an older *strong* / exact-action congruence theorem (T4) in a ric
 - That the contest demo / Rust verifier is the research contribution
 - That we’ve finished a journal paper ready to submit without more writing
 
+## Two receivers, two models (do not mix them)
+
+The Lean paper uses a small receiver: `receive` is on only while the bit is `false`, then it flips to `true` and stays off. That is the math. The executable OpenSystem checker is stricter: every input has to stay enabled in *every* local state (I/O-automata-style receptiveness). So the Lean receiver is right for the paper and *rejected* by the OpenSystem checker after the bit flips.
+
+There is a second fixture, not a replacement: `examples/paper1/receptive_receiver.nmlt` still accepts `receive` after the bit is already true (`set bit = true` with no `require`, so true stays true). That dual is what the executable VisibleSync path can accept. It is not the Lean small model. Accepting it does not mean the Lean receiver is receptive, and OpenSystem is not the paper small model.
+
 ## Local pipeline (2026-08-27)
 
-Parse of `examples/paper1/hidden_ping_receive.nmlt` → boolean sketch → `OpenSystem` now drives two finite checks: InvalidHiddenPing is rejected with `HiddenConnectedAction("ping")`; VisibleSync (visible ping, no hide, wired to receive) has an accepted local identity refinement and an accepted one-wire product refinement (peer `bit` false→true on both products). The OpenSystem congruence checker still does not accept that product: sketched `receive` is not enabled after the bit flips, and CompatibilityChecker requires inputs in every local state (receptiveness). That is not M9 compile, not general LTS, and not residual C1.
+Parse of `examples/paper1/hidden_ping_receive.nmlt` → boolean sketch → `OpenSystem` now drives two finite checks: InvalidHiddenPing is rejected with `HiddenConnectedAction("ping")`; VisibleSync (visible ping, no hide, wired to Lean `receive`) has an accepted local identity refinement and an accepted one-wire product refinement (peer `bit` false→true on both products). The OpenSystem congruence checker still does not accept that Lean product: sketched `receive` is not enabled after the bit flips, and CompatibilityChecker requires inputs in every local state (receptiveness). The OpenSystem-receptive dual is accepted with visible ping. That is not M9 compile, not general LTS, and not residual C1.
 
 ## Artifact note (2026-08-27)
 

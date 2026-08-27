@@ -127,3 +127,39 @@ fn rejects_nat_state_and_unsupported_statements() {
     assert_eq!(consume.code, "NMLT-SKETCH-UNSUPPORTED");
     assert!(consume.to_string().contains("consume"));
 }
+
+fn receptive_source() -> String {
+    std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../examples/paper1/receptive_receiver.nmlt"
+    ))
+    .expect("receptive dual fixture")
+}
+
+#[test]
+fn receptive_receiver_receive_from_false_and_true() {
+    // Unguarded `set bit = true` is enabled at both reachable assignments.
+    // This is the OpenSystem dual, not the Lean Receiver.
+    let sketch = sketch_named(&receptive_source(), "ReceptiveReceiver");
+    assert_eq!(sketch.fields, ["bit"]);
+    assert_eq!(sketch.states, [state("bit", false), state("bit", true)]);
+    assert_eq!(sketch.initial, 0);
+    assert_eq!(
+        sketch.transitions,
+        [
+            SketchTransition {
+                from: 0,
+                action: "receive".to_owned(),
+                to: 1,
+            },
+            SketchTransition {
+                from: 1,
+                action: "receive".to_owned(),
+                to: 1,
+            },
+        ]
+    );
+    assert_eq!(sketch.action_names, ["receive"]);
+    assert!(sketch.hidden_actions.is_empty());
+    assert_eq!(sketch.observed_fields, ["bit"]);
+}

@@ -152,6 +152,10 @@ The paper **does not** claim:
 8. That the strong theorem (T4) implies residual C1.
 9. That T5 is the full RFC 0008 CONDITIONAL-CONGRUENCE (resources,
    grades, fairness, OpenComposition ports).
+10. That the Lean Paper 1 `receiver` is input-receptive, or that the
+    OpenSystem-receptive dual (`examples/paper1/receptive_receiver.nmlt`)
+    is the paper small model. Lean receive is enabled only at `bit=false`;
+    the dual is a distinct executable fixture.
 
 ---
 
@@ -236,3 +240,4 @@ appendix for Lean listings.
 | 2026-08-27 | Sol 5.6 paper sync: one-step mapping wording; hypothesis-independence; local-vs-0417f6e honesty |
 | 2026-08-27 | Named T3 visible dual: `visibleClassification_fails_on_hidden_ping_wire` |
 | 2026-08-27 | Named finite obs-trace inclusion: `weakRefines_finite_observation_trace_inclusion` |
+| 2026-08-27 | Named Lean vs OpenSystem receiver split (dual fixture is not the small model) |

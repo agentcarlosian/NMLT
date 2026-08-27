@@ -9,7 +9,9 @@ versioning compatibility promises.
 
 ### Added
 
-- VisibleSync sketch path: local identity and one-wire product accepted with surface `observe` maps (peer `bit` false→true); OpenSystem congruence still rejects non-receptive `receive`.
+- Paper 1 two-model split: Lean `Receiver` stays non-receptive (VisibleSync still `InputNotReceptive`); OpenSystem-receptive dual `examples/paper1/receptive_receiver.nmlt` (`set bit = true`, no `require`) is accepted by `OpenRefinementCongruenceChecker` with visible ping. Not a replacement, not canonical-v1, not a claim that Lean receiver is receptive or that OpenSystem is the paper small model.
+
+- VisibleSync sketch path: local identity and one-wire product accepted with surface `observe` maps (peer `bit` false→true); OpenSystem congruence still rejects non-receptive Lean `receive`.
 
 - Paper 1 boolean-sketch adapter in `nmlt-paper1-sketch`: `BooleanSketch` to
   `FiniteGraph`/`OpenSystem` (bool values, action names, surface polarities

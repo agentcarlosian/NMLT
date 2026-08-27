@@ -13,5 +13,8 @@ Every example should eventually include intended claims, negative controls,
 expected evidence class, and a concrete implementation or trace mapping.
 
 Paper 1 (hidden ping / receive) lives outside the frozen v1 corpus, as a
-design fixture only: [`paper1/hidden_ping_receive.nmlt`](paper1/hidden_ping_receive.nmlt).
-Do not add it to `canonical-v1.json` without a corpus-identity bump.
+design fixture only: [`paper1/hidden_ping_receive.nmlt`](paper1/hidden_ping_receive.nmlt)
+(Lean small-model `Receiver`) and
+[`paper1/receptive_receiver.nmlt`](paper1/receptive_receiver.nmlt)
+(OpenSystem-receptive dual, not a replacement).
+Do not add either to `canonical-v1.json` without a corpus-identity bump.

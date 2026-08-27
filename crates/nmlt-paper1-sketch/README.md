@@ -6,9 +6,11 @@ Adapter from `nmlt-core`'s Paper 1 boolean finite-graph *sketch* onto
 
 Surface `observe` fields become `ObservationMap::identity` maps. InvalidHiddenPing
 reaches `HiddenConnectedAction("ping")`. VisibleSync (visible ping, no hide)
-accepts local identity refinement and a one-wire sketch product (peer `bit`
-false→true). OpenSystem congruence still rejects that product:
-`receive` is not receptive after the flip. Not `nmlt-temporal` `compose`.
+with Lean `Receiver` accepts local identity refinement and a one-wire sketch
+product (peer `bit` false→true). OpenSystem congruence still rejects that
+product: Lean `receive` is not receptive after the flip. The OpenSystem
+dual `examples/paper1/receptive_receiver.nmlt` is accepted with visible ping;
+it is not the paper small model. Not `nmlt-temporal` `compose`.
 
 This crate exists because `nmlt-compile` does not depend on `nmlt-temporal`
 and `nmlt-temporal` must not depend on `nmlt-core`. It is a sketch fragment

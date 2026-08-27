@@ -1,0 +1,41 @@
+// OpenSystem-receptive dual of Paper 1 Receiver. NOT the Lean small model.
+// NOT part of canonical-v1.json. NOT a replacement for Receiver in
+// hidden_ping_receive.nmlt.
+//
+// Lean Receiver (`require bit == false; set bit = true`) is enabled only at
+// bit=false. After the flip, receive is off. That matches the paper small
+// model. OpenRefinementCongruenceChecker rejects it with InputNotReceptive
+// because CompatibilityChecker requires inputs in every local graph state.
+// The Lean-style one-wire sketch product of VisibleAbstractSender || Receiver
+// still refines VisibleSync; that is not OpenSystem compose.
+//
+// This dual omits `require`, so `set bit = true` is enabled in every reachable
+// assignment: false -receive-> true, and true -receive-> true (self-loop).
+// That is the executable-compatible VisibleSync peer. Do not claim the Lean
+// receiver is receptive. Do not claim OpenSystem is the paper small model.
+
+system VisibleAbstractSender {
+  state unit: Bool = false
+
+  action output ping {
+    set unit = unit
+  }
+
+  observe unit
+}
+
+system ReceptiveReceiver {
+  state bit: Bool = false
+
+  action input receive {
+    set bit = true
+  }
+
+  observe bit
+}
+
+// Visible ping wire. Same names as VisibleSync, distinct compose so the Lean
+// fixture's VisibleSync stays wired to non-receptive Receiver.
+compose VisibleSyncReceptive {
+  connect VisibleAbstractSender.ping -> ReceptiveReceiver.receive
+}

@@ -6,6 +6,10 @@
 //! `nmlt-core`. VisibleSync product refinement mirrors Lean
 //! `VisibleSync.visibleSync_productRefinement` at the finite-instance level
 //! only (one-wire sketch product, not OpenSystem `compose`).
+//!
+//! Two receivers: Lean `Receiver` (not receptive at bit=true) stays rejected
+//! by OpenRefinementCongruenceChecker; `ReceptiveReceiver` is the OpenSystem
+//! dual, not the paper small model.
 
 use nmlt_core::{UntypedFile, parse_cst, project_untyped, surface_wires_in_compose};
 use nmlt_paper1_sketch::{
@@ -25,6 +29,24 @@ fn paper1_source() -> String {
         "/../../examples/paper1/hidden_ping_receive.nmlt"
     ))
     .expect("paper1 fixture")
+}
+
+fn receptive_source() -> String {
+    std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../examples/paper1/receptive_receiver.nmlt"
+    ))
+    .expect("receptive dual fixture")
+}
+
+fn receptive_file() -> UntypedFile {
+    let projection = project_untyped(&parse_cst(&receptive_source()));
+    assert!(
+        projection.is_structurally_complete(),
+        "{:?}",
+        projection.issues
+    );
+    projection.file
 }
 
 fn paper1_file() -> UntypedFile {
@@ -182,13 +204,14 @@ fn visible_sync_sketch_does_not_flag_hidden_connected_ping() {
 #[test]
 fn visible_sync_local_and_product_refinement_accepted() {
     // Finite-instance mirror of Lean VisibleSync.visibleSync_productRefinement:
-    // VisibleAbstractSender (visible ping, no hide) wired to Receiver.
+    // VisibleAbstractSender (visible ping, no hide) wired to Lean Receiver.
     // Local identity refinement accepts. The one-wire sketch product accepts
     // with peer observation `bit` (false→true on both products).
     // OpenRefinementCongruenceChecker still cannot accept: sketched `receive`
     // is not enabled after the bit flips, and CompatibilityChecker requires
     // inputs in every local state. That is OpenSystem receptiveness, not a
     // VisibleSync / AbstractSender mismatch, and not M9 / general LTS / C1.
+    // The OpenSystem-receptive dual is a different fixture (not this Receiver).
     let file = paper1_file();
     let (visible_sketch, visible) = sketched(&file, "VisibleAbstractSender");
     let (receiver_sketch, receiver) = sketched(&file, "Receiver");
@@ -320,6 +343,87 @@ fn visible_sync_local_and_product_refinement_accepted() {
             )
         }),
         "expected InputNotReceptive receive @ bit=true: {:#?}",
+        report.concrete_compatibility.issues
+    );
+}
+
+#[test]
+fn visible_sync_receptive_dual_open_congruence_accepted() {
+    // OpenSystem-faithful peer, not the Lean small-model Receiver.
+    // Unguarded `set bit = true` enables receive at false and true.
+    let file = receptive_file();
+    let (visible_sketch, visible) = sketched(&file, "VisibleAbstractSender");
+    let (receiver_sketch, receiver) = sketched(&file, "ReceptiveReceiver");
+
+    assert!(visible_sketch.hidden_actions.is_empty());
+    assert_eq!(visible_sketch.action_names, ["ping"]);
+    assert_eq!(visible_sketch.observed_fields, ["unit"]);
+    assert_eq!(receiver_sketch.action_names, ["receive"]);
+    assert_eq!(receiver_sketch.observed_fields, ["bit"]);
+    assert_eq!(receiver_sketch.states.len(), 2);
+    assert_eq!(
+        receiver_sketch.transitions.len(),
+        2,
+        "receive must be enabled at bit=false and bit=true: {:#?}",
+        receiver_sketch.transitions
+    );
+    assert!(
+        receiver_sketch
+            .transitions
+            .iter()
+            .any(|t| t.action == "receive" && t.from == 0 && t.to == 1)
+    );
+    assert!(
+        receiver_sketch
+            .transitions
+            .iter()
+            .any(|t| t.action == "receive" && t.from == 1 && t.to == 1)
+    );
+
+    let wires = compose_wires(&file, "VisibleSyncReceptive");
+    assert_eq!(wires, [("ping", "receive", "VisibleSyncReceptive")]);
+
+    let (hiding, concrete_composition) = congruence_inputs_from_surface_names(
+        visible_sketch.hidden_actions.iter().cloned(),
+        [("ping".to_owned(), "ping".to_owned())],
+        wires,
+    );
+    assert_eq!(hiding.get("ping"), Some(Some("ping")));
+    assert!(hidden_connected_left_actions(&hiding, &concrete_composition.connections).is_empty());
+
+    let report = OpenRefinementCongruenceChecker::check(
+        &visible,
+        &visible,
+        &receiver,
+        &CongruenceSpec {
+            local_refinement: local_refinement_spec(
+                &visible,
+                &visible_sketch,
+                &visible_sketch,
+                hiding,
+            ),
+            abstract_composition: CompositionSpec::from_left_right_wires([(
+                "ping",
+                "receive",
+                "VisibleSyncReceptive",
+            )]),
+            concrete_composition,
+            peer_observation: observation_map_from_sketch(&receiver_sketch),
+        },
+    );
+    assert!(
+        report.accepted,
+        "receptive dual must pass OpenSystem VisibleSync congruence: {:#?}",
+        report.issues
+    );
+    assert!(!report.issues.iter().any(
+        |issue| matches!(issue, CongruenceIssue::HiddenConnectedAction(name) if name == "ping")
+    ));
+    assert!(
+        !report.concrete_compatibility.issues.iter().any(|issue| {
+            matches!(issue, CompatibilityIssue::InputNotReceptive { action, .. } if action == "receive")
+        }),
+        "receptive dual must not report InputNotReceptive: {:#?}",
         report.concrete_compatibility.issues
     );
 }

@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction)
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -477,7 +477,15 @@ dependent proof artifacts even if theorem names remain unchanged.
    `FiniteGraph`/`OpenSystem` so the Paper 1 fixture reaches
    `HiddenConnectedAction` through the finite checker; this is a sketch
    fragment plus instance check, not a verified compiler or source-to-LTS
-   in general. Surface complementary-polarity check: `nmlt-core`
+   in general. Two fixtures, not a replacement: Lean `Receiver`
+   (`require bit == false`) is not input-receptive at bit=true, so
+   OpenRefinementCongruenceChecker rejects VisibleSync with
+   `InputNotReceptive` while the Lean-style one-wire sketch product still
+   refines; `examples/paper1/receptive_receiver.nmlt` enables `receive` in
+   every reachable assignment (`set bit = true`, no require) and the same
+   checker accepts visible ping. Do not treat the Lean receiver as
+   receptive, or OpenSystem as the paper small model. Surface
+   complementary-polarity check: `nmlt-core`
    flags `connect` wires whose caller-supplied, `port input`/`port output`, or
    optional `action input`/`action output` polarities are both inputs or both
    outputs (port wins if both name the endpoint). Bare `action ping` stays

@@ -43,6 +43,9 @@ system ConcreteSender {
 }
 
 system Receiver {
+  // Lean small-model receiver: receive only from bit=false. Not input-receptive
+  // at bit=true. OpenSystem dual (not this system, not the paper small model):
+  // examples/paper1/receptive_receiver.nmlt
   state bit: Bool = false
 
   action input receive {
