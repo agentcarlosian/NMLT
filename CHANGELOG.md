@@ -9,6 +9,10 @@ versioning compatibility promises.
 
 ### Added
 
+- `nmlt-compile` Paper 1 fixture regression: parse+project of
+  `examples/paper1/hidden_ping_receive.nmlt` fail-closes at projection with
+  `NMLT-M9-HIDE-ACTION`, `NMLT-M9-COMPOSE`, `NMLT-M9-CONNECT`, and
+  `NMLT-M9-ACTION-POLARITY`. Not a verified compile.
 - `nmlt-hir` skips surface `compose`/`connect` (M9 fail-closed; not resolver
   declarations) so the crate compiles against the Paper 1 wiring slice.
   Polarized `action output ping` is collected as action `ping`, not `output`.
