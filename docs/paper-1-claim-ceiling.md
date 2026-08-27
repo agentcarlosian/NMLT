@@ -80,8 +80,10 @@ composite hidden classifier and label map.
 **Axioms:** `[propext]` only.
 
 **Ceiling:** This is the one-step observation-safety fragment of the original C1
-*for this small model* (finite observation-trace inclusion is a paper corollary of
-the same witness). It does not prove resource/grade/fairness congruence,
+*for this small model* (finite observation-trace inclusion is the named Lean theorem
+`weakRefines_finite_observation_trace_inclusion`: a finite concrete
+observation trace is a stutter-expansion of a finite abstract observation
+trace; not LTL / infinite traces / fairness / liveness). It does not prove resource/grade/fairness congruence,
 OpenComposition port systems, or IsolationReflects from `WiringCovered` alone
 (that needs injective `mapLabel`, which is a separate lemma). Do not claim T5
 closes full RFC 0008 CONDITIONAL-CONGRUENCE. Relative to published GitHub
@@ -233,3 +235,4 @@ appendix for Lean listings.
 | 2026-08-27 | Initial ceiling drafted from Lean counterexample + OpenComposition strong theorem + RFC 0008 |
 | 2026-08-27 | Sol 5.6 paper sync: one-step mapping wording; hypothesis-independence; local-vs-0417f6e honesty |
 | 2026-08-27 | Named T3 visible dual: `visibleClassification_fails_on_hidden_ping_wire` |
+| 2026-08-27 | Named finite obs-trace inclusion: `weakRefines_finite_observation_trace_inclusion` |

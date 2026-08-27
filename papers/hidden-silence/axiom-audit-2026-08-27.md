@@ -68,6 +68,16 @@
 T5 is a small-model safety lift, not residual C1 (resources/grades/fairness /
 OpenComposition). Necessity lemmas remain axiom-free.
 
+## Finite observation-trace inclusion (Corollary)
+
+| Declaration | Axioms |
+|---|---|
+| `weakRefines_finite_observation_trace_inclusion` | none |
+| `weakRefines_finite_observation_trace_inclusion_from_init` | none |
+| `weakRefines_hidden_preserves_observe` | none |
+
+Finite traces only. Not LTL, infinite words, fairness, or liveness.
+
 ## Notes
 
 - No `sorry`, `sorryAx`, or project-defined axioms on these declarations.

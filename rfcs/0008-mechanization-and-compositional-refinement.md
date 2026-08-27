@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (visible-classification failure named)
+- Revised: 2026-08-27 (finite observation-trace inclusion named)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -340,6 +340,9 @@ Use `H(c,d) = (R.h(c),d)`.
 outline, as do fairness and the OpenComposition *weak* hiding story. The
 small-model lift must not be inferred from the exact-action theorem, and
 the exact-action theorem must not be inferred from the small-model lift.
+Finite observation-trace inclusion from any `WeakRefines` witness is
+`weakRefines_finite_observation_trace_inclusion` (stutter-expansion of
+finite traces only; not infinite words, LTL, fairness, or liveness).
 
 ## 7. Mechanization gates
 
@@ -470,8 +473,9 @@ dependent proof artifacts even if theorem names remain unchanged.
    by the six transition cases (`weakConditionalCongruence_safety`), with
    isolation necessity.
 4. Add capability partition and grade homomorphism structures and proofs.
-5. Define finite prefixes and infinite observation words; then prove
-   stuttering safety transport.
+5. **Done (finite only, 2026-08-27):** `weakRefines_finite_observation_trace_inclusion`
+   (stutter-expansion of finite observation traces). Infinite observation
+   words / LTL / fairness transport remain open.
 6. Add fairness/divergence only after the safety theorem is stable.
 7. Build a typed-IR correspondence test before attributing Lean theorems to
    compiler output.

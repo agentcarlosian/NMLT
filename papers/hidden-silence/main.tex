@@ -1,6 +1,7 @@
 % Hidden Actions Are Not Contextual Silence
 % Lean sources:
 %   mechanization/lean/NMLT/Core/Transition.lean
+%   mechanization/lean/NMLT/Core/FiniteObservationTrace.lean
 %   mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean
 %   mechanization/lean/NMLT/Behavior/WeakConditionalCongruence.lean
 %   mechanization/lean/NMLT/Behavior/OpenComposition.lean
@@ -653,20 +654,21 @@ mappings on this LTS fragment. It does not transport liveness,
 divergence, capabilities, or grades. It does not close full RFC~0008
 conditional congruence.
 
-\begin{corollary}[Observation-trace inclusion]
+\begin{corollary}[Finite observation-trace inclusion]
 \label{cor:obs-trace}
-Under the hypotheses of Theorem~\ref{thm:weak-safety}, every finite
-sequence of product observations produced by a run of
-$C\parallel_{K_C} D$ from an initial state is also the observation
-sequence of the $H$-image run of $A\parallel_{K_A} D$. Equivalently,
-one-step observation safety lifts to finite observation-trace
-inclusion along the refinement map.
+If $C\preceqhm_{h,m} A$ (\lean{WeakRefines}), every finite observation
+trace of $C$ is a stutter-expansion of a finite observation trace of
+$A$ from the mapped start state
+(\lean{weakRefines_finite_observation_trace_inclusion}); in particular
+this holds for product observations under
+Theorem~\ref{thm:weak-safety}. Finite traces only: not LTL, infinite
+words, fairness, or liveness.
 \end{corollary}
 
 \begin{proof}[Proof sketch]
-By induction on run length: initialization and the observe clause of
-$\lean{WeakRefines}$ give the base, and each product step preserves
-observations by Theorem~\ref{thm:weak-safety}'s lifted witness.
+By induction on the concrete run: the observe clause matches the
+initial observation; a hidden step repeats the current abstract
+observation; a visible step takes exactly one mapped abstract step.
 \end{proof}
 
 \subsection{Positive and negative controls}
@@ -977,6 +979,9 @@ lift.
 \item[LTS / map / product]
   \lean{NMLT.LTS}, \lean{WeakRefines}, \lean{parallel}
   in \lean{Core/Transition.lean}.
+\item[Finite obs.\ traces]
+  \lean{weakRefines_finite_observation_trace_inclusion}
+  in \lean{Core/FiniteObservationTrace.lean}.
 \item[Counterexample]
   \lean{senderRefinement}, \lean{concreteSynchronization},
   \lean{noCompositeRefinement},
@@ -1038,8 +1043,8 @@ Thm.~\ref{thm:weak-safety}
   & \texttt{weakConditional\-Congruence\_safety}
   & \texttt{[propext]} \\
 Cor.~\ref{cor:obs-trace}
-  & (paper corollary from Thm.~\ref{thm:weak-safety})
-  & --- \\
+  & \texttt{weakRefines\_finite\_}\newline\texttt{observation\_trace\_inclusion}
+  & none \\
 Lem.~\ref{lem:visible-sync}
   & \texttt{visibleSync\_product\-Refinement}
   & \texttt{[propext]} \\

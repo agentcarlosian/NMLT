@@ -1,4 +1,5 @@
 import NMLT.Core.Transition
+import NMLT.Core.FiniteObservationTrace
 import NMLT.Core.TypedCore
 import NMLT.Typing.Judgments
 import NMLT.Metatheory.Soundness
