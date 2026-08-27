@@ -1,12 +1,17 @@
 /-
-  Case 7 first slice for the Paper 1 small LTS: capability/grade/rely through
+  Case 7 small-LTS product resource pack: capability/grade/rely through
   `NMLT.Core.Transition.parallel` (labels `ParallelLabel` = left | right | sync)
   under `compositeMapOf`.
 
   This is *not* the T4/mapped OpenComposition model
   (`liftOpenProductResources` / `liftResourceAwareParallel`). Those remain
   the exact-action resource congruence. Case 7 here is the small-model
-  homomorphism fragment.
+  homomorphism fragment plus EmptyWiringTau independence.
+
+  Product pack: matching inert profiles lift; unmatched hidden-left consume,
+  grade, and rely fail product `ResourceRefinement` while T5 product
+  `WeakRefines` still holds. Not sync transfer, not grades through sync,
+  not I-FAIR.
 
   `ResourceRefinement` is action-indexed independently of `LTS.step`; this
   file does not extend `LTS.step` with capabilities.
@@ -14,6 +19,8 @@
 import NMLT.Core.Transition
 import NMLT.Behavior.OpenResourceCongruence
 import NMLT.Behavior.WeakConditionalCongruence
+import NMLT.Counterexamples.HiddenGrade
+import NMLT.Counterexamples.HiddenRely
 
 namespace NMLT.Behavior.WeakResourceCongruence
 
@@ -320,5 +327,134 @@ theorem emptyWiring_hiddenConsume_breaks_productResourceRefinement :
 #print axioms emptyWiring_hiddenConsume_breaks_productResourceRefinement
 
 end EmptyWiringHiddenConsume
+
+/-! ### Negative independence: T5 does not give I-GRADE through compose
+
+  Same EmptyWiringTau systems, so InterfaceCompatible / T5 product
+  WeakRefines still holds. The hidden left tau is decorated with a
+  positive cost atom unmatched by the abstract epsilon (`zero`) stutter
+  (HiddenGrade pattern, on the product via `smallProductSystemResources`).
+  Product `ResourceRefinement.grade` fails. Ceiling: T5 ⇏ I-GRADE through
+  compose. Not I-FAIR, not sync.
+-/
+
+namespace EmptyWiringHiddenGrade
+
+open EmptyWiringTau
+open EmptyWiringInert
+open NMLT.Counterexamples.HiddenGrade
+
+/-- Hidden left tau carries `pingCost`. Capability, consume, transfer, and
+    rely/guarantee fields stay inert so the failure isolates I-GRADE. -/
+def concreteTauGrade : SystemResources TauLabel Empty Empty where
+  owned := fun _ => False
+  action := fun
+    | .tau => pingCostAction
+
+/-- Abstract stutter on the same tau *name*: epsilon (`zero`) grade.
+    `ResourceRefinement.grade` requires `Le concrete.grade abstract.grade`. -/
+def abstractTauEpsilon : SystemResources TauLabel Empty Empty where
+  owned := fun _ => False
+  action := fun
+    | .tau => pingEpsilonAction
+
+theorem concrete_product_left_tau_grade_is_cost :
+    ((smallProductSystemResources concreteTauGrade peerInert).action
+      (.left TauLabel.tau)).grade = pingCost :=
+  rfl
+
+theorem abstract_product_left_tau_grade_is_epsilon :
+    ((smallProductSystemResources abstractTauEpsilon peerInert).action
+      (.left TauLabel.tau)).grade = zero :=
+  rfl
+
+/-- T5 product `WeakRefines` still holds (observation only). The extra
+    hidden-tau cost is unmatched by the abstract product stutter, so
+    product `ResourceRefinement.grade` fails along `compositeMapOf id`. -/
+theorem emptyWiring_hiddenGrade_breaks_productResourceRefinement :
+    Nonempty
+      (WeakRefines
+        (parallel concreteTau peerIdle emptyConn)
+        (parallel abstractTau peerIdle emptyConn)
+        (compositeHiddenOf tauHidden)
+        (compositeMapOf (id : TauLabel → TauLabel))) ∧
+      ¬ ResourceRefinement
+          (smallProductSystemResources concreteTauGrade peerInert)
+          (smallProductSystemResources abstractTauEpsilon peerInert)
+          (compositeMapOf (id : TauLabel → TauLabel)) :=
+  ⟨emptyWiring_productRefinement, fun refinement =>
+    pingCost_not_le_zero (refinement.grade (.left TauLabel.tau))⟩
+
+#print axioms emptyWiring_hiddenGrade_breaks_productResourceRefinement
+
+end EmptyWiringHiddenGrade
+
+/-! ### Negative independence: T5 does not give I-RELY through compose
+
+  Same EmptyWiringTau systems, so InterfaceCompatible / T5 product
+  WeakRefines still holds. The hidden left tau relies on extra `ready`
+  Fact unmatched by the abstract stutter (HiddenRely pattern, on the
+  product via `smallProductSystemResources`). Product
+  `ResourceRefinement.rely` fails. Ceiling: T5 ⇏ I-RELY through compose.
+  Not I-FAIR, not sync.
+-/
+
+namespace EmptyWiringHiddenRely
+
+open EmptyWiringTau
+open NMLT.Counterexamples.HiddenRely
+
+/-- Idle peer: no rely, epsilon grade. Reuses the HiddenRely inert stutter
+    action so Capability/Fact stay `Empty`/`EnvFact`. -/
+def peerIdleRely : SystemResources Unit Empty EnvFact where
+  owned := fun _ => False
+  action := fun _ => pingNoRelyAction
+
+/-- Hidden left tau relies on `ready`. Capability, consume, transfer, and
+    grade fields stay inert so the failure isolates I-RELY. -/
+def concreteTauRely : SystemResources TauLabel Empty EnvFact where
+  owned := fun _ => False
+  action := fun
+    | .tau => pingRelyAction
+
+/-- Abstract stutter on the same tau *name*: does not rely on `ready`.
+    `ResourceRefinement.rely` forbids widening assumptions. -/
+def abstractTauNoRely : SystemResources TauLabel Empty EnvFact where
+  owned := fun _ => False
+  action := fun
+    | .tau => pingNoRelyAction
+
+theorem concrete_product_left_tau_relies_on_ready :
+    ((smallProductSystemResources concreteTauRely peerIdleRely).action
+      (.left TauLabel.tau)).rely EnvFact.ready :=
+  rfl
+
+theorem abstract_product_left_tau_does_not_rely_ready :
+    ¬ ((smallProductSystemResources abstractTauNoRely peerIdleRely).action
+        (.left TauLabel.tau)).rely EnvFact.ready :=
+  fun h => h
+
+/-- T5 product `WeakRefines` still holds (observation only). The extra
+    hidden-tau `ready` rely is unmatched by the abstract product stutter,
+    so product `ResourceRefinement.rely` fails along `compositeMapOf id`. -/
+theorem emptyWiring_hiddenRely_breaks_productResourceRefinement :
+    Nonempty
+      (WeakRefines
+        (parallel concreteTau peerIdle emptyConn)
+        (parallel abstractTau peerIdle emptyConn)
+        (compositeHiddenOf tauHidden)
+        (compositeMapOf (id : TauLabel → TauLabel))) ∧
+      ¬ ResourceRefinement
+          (smallProductSystemResources concreteTauRely peerIdleRely)
+          (smallProductSystemResources abstractTauNoRely peerIdleRely)
+          (compositeMapOf (id : TauLabel → TauLabel)) :=
+  ⟨emptyWiring_productRefinement, fun refinement =>
+    abstract_product_left_tau_does_not_rely_ready
+      ((refinement.rely (.left TauLabel.tau) EnvFact.ready)
+        concrete_product_left_tau_relies_on_ready)⟩
+
+#print axioms emptyWiring_hiddenRely_breaks_productResourceRefinement
+
+end EmptyWiringHiddenRely
 
 end NMLT.Behavior.WeakResourceCongruence

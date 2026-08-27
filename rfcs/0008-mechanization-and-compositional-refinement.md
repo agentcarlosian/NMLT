@@ -344,13 +344,19 @@ homomorphism fragment `liftParallelResources` (in
 = left | right | sync; `.sync` uses `parallelAction`). Instantiation
 `emptyWiring_inert_productResourceRefinement` is the first *compose*
 resource homomorphism on this small model (T5b EmptyWiringTau + matching
-inert profiles). Negative independence
-`emptyWiring_hiddenConsume_breaks_productResourceRefinement` shows T5
-product `WeakRefines` does not give I-CAP consume through compose (same
-empty-wiring systems; extra hidden-tau consume unmatched by the abstract
-stutter). Ceiling: empty wiring, matching profiles, default
-`compositeMapOf`. Full CONDITIONAL-CONGRUENCE remains open (sync transfer
-I-CAP on ping/receive, grades through sync, I-FAIR through sync), as do
+inert profiles). Product negatives (same empty-wiring systems still
+product-WeakRefine):
+`emptyWiring_hiddenConsume_breaks_productResourceRefinement` (T5 ⇏
+I-CAP consume through compose),
+`emptyWiring_hiddenGrade_breaks_productResourceRefinement` (T5 ⇏ I-GRADE
+through compose; HiddenGrade cost atom unmatched by abstract epsilon),
+`emptyWiring_hiddenRely_breaks_productResourceRefinement` (T5 ⇏ I-RELY
+through compose; extra `ready` Fact unmatched by abstract stutter). The
+inert product positive plus consume/grade/rely product negatives freeze
+the Case 7 product resource-independence pack. Ceiling: empty wiring,
+matching or unmatched hidden-left profiles, default `compositeMapOf`.
+Full CONDITIONAL-CONGRUENCE remains open (sync transfer I-CAP on
+ping/receive, grades through *sync*, I-FAIR through sync), as do
 fairness and the OpenComposition *weak* hiding story. This is not T4
 (`liftOpenProductResources` / `liftResourceAwareParallel` remain the
 mapped OpenComposition model). A first C1 *negative* slice is checked:
@@ -446,6 +452,8 @@ The mechanization program must retain:
 - a variant with a nonmonotone or non-homomorphic grade map;
 - a liveness example where infinite hidden steps invalidate progress transport (`hiddenPing_divergence_not_discharged_by_weakRefines`; T1 still holds; T5 finite prefixes still included; not a liveness theorem);
 - a variant where T5 product WeakRefines holds but an extra hidden-tau consume falsifies product ResourceRefinement (`emptyWiring_hiddenConsume_breaks_productResourceRefinement`; T5 ⇏ I-CAP through compose);
+- a variant where T5 product WeakRefines holds but a hidden-tau positive cost atom unmatched by abstract epsilon falsifies product ResourceRefinement.grade (`emptyWiring_hiddenGrade_breaks_productResourceRefinement`; T5 ⇏ I-GRADE through compose; not I-FAIR, not sync);
+- a variant where T5 product WeakRefines holds but a hidden-tau extra `ready` Fact unmatched by abstract stutter falsifies product ResourceRefinement.rely (`emptyWiring_hiddenRely_breaks_productResourceRefinement`; T5 ⇏ I-RELY through compose);
 - a theorem file containing `sorry` that the evidence gate rejects.
 
 ## Compatibility
@@ -537,7 +545,7 @@ dependent proof artifacts even if theorem names remain unchanged.
 3. **Done (2026-08-27, small LTS model):** prove the repaired safety theorem
    by the six transition cases (`weakConditionalCongruence_safety`), with
    isolation necessity.
-4. **First slice (2026-08-27, small LTS):** `liftParallelResources` lifts left `ResourceRefinement` through `parallel` / `compositeMapOf` with a fixed peer (`WeakResourceCongruence.lean`). Instantiation `emptyWiring_inert_productResourceRefinement`. Negative `emptyWiring_hiddenConsume_breaks_productResourceRefinement` (T5 ⇏ consume-through-compose). Remaining: sync transfer I-CAP on ping/receive, grades through sync, I-FAIR through sync. Not full CONDITIONAL-CONGRUENCE.
+4. **Product pack (2026-08-27, small LTS):** `liftParallelResources` lifts left `ResourceRefinement` through `parallel` / `compositeMapOf` with a fixed peer (`WeakResourceCongruence.lean`). Instantiation `emptyWiring_inert_productResourceRefinement`. Product negatives `emptyWiring_hiddenConsume_breaks_productResourceRefinement` (T5 ⇏ I-CAP through compose), `emptyWiring_hiddenGrade_breaks_productResourceRefinement` (T5 ⇏ I-GRADE through compose), `emptyWiring_hiddenRely_breaks_productResourceRefinement` (T5 ⇏ I-RELY through compose). Pack frozen: inert product positive + consume/grade/rely product negatives. Remaining: sync transfer I-CAP on ping/receive, grades through *sync*, I-FAIR through sync. Not full CONDITIONAL-CONGRUENCE.
 5. **Done (finite only, 2026-08-27):** `weakRefines_finite_observation_trace_inclusion`
    (stutter-expansion of finite observation traces). The Rust helper
    `observation_trace_inclusion` is a small-graph regression, not a proof of
@@ -546,7 +554,7 @@ dependent proof artifacts even if theorem names remain unchanged.
    (T1 permits infinite hidden ping; T5 finite inclusion does not discharge
    I-FAIR / R-DIVERGENCE). Not a liveness theorem; WF/SF transport and
    fairness through compose remain open. Case 7 has a small-LTS homomorphism
-   fragment; sync transfer I-CAP / grades through sync / I-FAIR through sync
-   remain open.
+   fragment and product resource-independence pack; sync transfer I-CAP /
+   grades through *sync* / I-FAIR through sync remain open.
 7. Build a typed-IR correspondence test before attributing Lean theorems to
    compiler output.

@@ -105,7 +105,7 @@ The remaining conjecture is anything beyond T5:
 
 - IsolationReflects without assuming it (or injectivity) as an extra field;
 - I-FAIR *positive* / fairness transport (first negative slice below; I-CAP/I-GRADE/I-RELY resource-independence pack frozen);
-- Case 7 remainder: sync transfer I-CAP on ping/receive, grades through sync, I-FAIR through sync (first small-LTS homomorphism slice below; T5 ≠ CONDITIONAL-CONGRUENCE);
+- Case 7 remainder: sync transfer I-CAP on ping/receive, grades through *sync*, I-FAIR through sync (product resource-independence pack frozen below; T5 ≠ CONDITIONAL-CONGRUENCE);
 - the OpenComposition port/assumption model of T4;
 - a composite hidden/map other than the defaults `compositeHiddenOf` /
   `compositeMapOf`.
@@ -122,7 +122,7 @@ The remaining conjecture is anything beyond T5:
 
 **First C1 I-FAIR slice (negative; not a liveness theorem):** observational `WeakRefines` (T1) permits hidden divergence. Named lemma `hiddenPing_divergence_not_discharged_by_weakRefines` (prefer axiom-free): ConcreteSender takes hidden `ping` at every `Nat` index (`Nat → state` path) and stays at the unique abstract state. Finite observation-trace inclusion still holds on every finite prefix, so T5 does not discharge I-FAIR / RFC 0007 R-DIVERGENCE. Not WF/SF fairness transport, not LTL, not an I-FAIR lift through synchronization.
 
-**C1 Case 7 first slice (small-LTS product resource homomorphism; not full CONDITIONAL-CONGRUENCE):** Named lemma `liftParallelResources` (`[propext]` only): a left-component `ResourceRefinement` lifts through `NMLT.Core.Transition.parallel` (labels `ParallelLabel` = left | right | sync) under `compositeMapOf` with identical peer resources on both products. `.left`/`.right` keep the originating profile; `.sync` uses `parallelAction` (internalizes transfer/receive). Instantiation `emptyWiring_inert_productResourceRefinement`: T5b EmptyWiringTau product `WeakRefines` plus matching inert profiles yield product `ResourceRefinement` via the lift. Negative independence `emptyWiring_hiddenConsume_breaks_productResourceRefinement`: same EmptyWiringTau systems still product-WeakRefine (T5 / observation only), but an extra hidden-tau `token` consume unmatched by the abstract stutter falsifies product `ResourceRefinement`. Ceiling: empty wiring, matching profiles, default `compositeMapOf`. Not I-FAIR, not hidden-connected ping, not OpenComposition T4, not sync transfer I-CAP on ping/receive, not grades through sync. T5 ≠ CONDITIONAL-CONGRUENCE.
+**C1 Case 7 product resource-independence pack (frozen; not full CONDITIONAL-CONGRUENCE):** Named lemma `liftParallelResources` (`[propext]` only): a left-component `ResourceRefinement` lifts through `NMLT.Core.Transition.parallel` (labels `ParallelLabel` = left | right | sync) under `compositeMapOf` with identical peer resources on both products. `.left`/`.right` keep the originating profile; `.sync` uses `parallelAction` (internalizes transfer/receive). Instantiation `emptyWiring_inert_productResourceRefinement`: T5b EmptyWiringTau product `WeakRefines` plus matching inert profiles yield product `ResourceRefinement` via the lift. Product negatives (same EmptyWiringTau systems still product-WeakRefine; T5 / observation only): `emptyWiring_hiddenConsume_breaks_productResourceRefinement` (extra hidden-tau `token` consume unmatched by the abstract stutter; T5 ⇏ I-CAP through compose); `emptyWiring_hiddenGrade_breaks_productResourceRefinement` (positive cost atom unmatched by abstract epsilon/`zero`; T5 ⇏ I-GRADE through compose; not I-FAIR, not sync); `emptyWiring_hiddenRely_breaks_productResourceRefinement` (extra `ready` Fact unmatched by abstract stutter; T5 ⇏ I-RELY through compose). Pack = inert product positive + consume/grade/rely product negatives. Ceiling: empty wiring, matching or unmatched hidden-left profiles, default `compositeMapOf`. Not I-FAIR, not hidden-connected ping, not OpenComposition T4, not sync transfer I-CAP on ping/receive, not grades through *sync*. T5 ≠ CONDITIONAL-CONGRUENCE.
 
 ### C2 — Hypothesis-independence of individual premises
 Each named premise of T5 is independently indispensable for the *default* lift
@@ -184,7 +184,9 @@ For T1–T5 (and T4 as cited):
   `[propext]` only; visible-classification dual of T3 is axiom-free
   (see `papers/hidden-silence/axiom-audit-2026-08-27.md`); Case 7 fragment
   `liftParallelResources` / `emptyWiring_inert_productResourceRefinement` /
-  `emptyWiring_hiddenConsume_breaks_productResourceRefinement` are `[propext]` only
+  `emptyWiring_hiddenConsume_breaks_productResourceRefinement` /
+  `emptyWiring_hiddenGrade_breaks_productResourceRefinement` /
+  `emptyWiring_hiddenRely_breaks_productResourceRefinement` are `[propext]` only
 - Standard library only (no Mathlib) for these artifacts
 
 Paper must include an axiom-audit sentence and a reproducibility appendix
@@ -262,3 +264,4 @@ appendix for Lean listings.
 | 2026-08-27 | C1 resource-independence pack frozen: `hiddenPing_inert_resourceRefinement` (matching profiles lift; three fails independent; Case 7 compose lift still open; not I-FAIR) |
 | 2026-08-27 | First C1 I-FAIR negative: `hiddenPing_divergence_not_discharged_by_weakRefines` (T1 permits infinite hidden ping; T5 finite prefixes do not discharge; not a liveness theorem; no WF/SF transport; no I-FAIR lift through sync) |
 | 2026-08-27 | C1 Case 7 first slice: `liftParallelResources` small-LTS product resource lift; `emptyWiring_inert_productResourceRefinement`; T5 ⇏ consume-through-compose `emptyWiring_hiddenConsume_breaks_productResourceRefinement`; T5 ≠ CONDITIONAL-CONGRUENCE |
+| 2026-08-27 | C1 Case 7 product pack frozen: inert product positive + consume/grade/rely product negatives (`emptyWiring_hiddenGrade_breaks_productResourceRefinement`, `emptyWiring_hiddenRely_breaks_productResourceRefinement`); remaining open is sync transfer / grades through *sync* / I-FAIR through sync |
