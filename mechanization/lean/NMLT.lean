@@ -8,6 +8,7 @@ import NMLT.Counterexamples.CompositionCongruence
 import NMLT.Counterexamples.HiddenConsume
 import NMLT.Counterexamples.HiddenGrade
 import NMLT.Counterexamples.HiddenRely
+import NMLT.Counterexamples.HiddenInert
 import NMLT.Behavior.WeakConditionalCongruence
 import NMLT.Grades.Algebra
 import NMLT.Correspondence.M9Kernel

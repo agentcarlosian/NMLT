@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split; I-GRADE hidden-ping negative; I-RELY hidden-ping negative)
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split; I-GRADE hidden-ping negative; I-RELY hidden-ping negative; inert hidden-ping resource positive)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -349,9 +349,16 @@ further sibling slice
 `hiddenPing_rely_breaks_resourceRefinement` shows the same for I-RELY:
 hidden ping still weakly refines, but an extra `ready` Fact unmatched
 by the abstract stutter profile falsifies `ResourceRefinement.rely`
-(refinement must not widen assumptions). That is not a Case 7 proof,
-not I-FAIR, not a positive I-RELY lift, not a rely discharge through
-compose, and not a claim that T5 is CONDITIONAL-CONGRUENCE. The
+(refinement must not widen assumptions). Matching profiles *do* lift
+locally: `hiddenPing_inert_resourceRefinement` shows that if the hidden
+ping resource profile matches the abstract stutter (no extra consume,
+epsilon grade, no extra rely), `ResourceRefinement` holds along
+`mapPing` while T1 still holds. The three negatives are independent of
+that matching case. That is not a Case 7 proof (the *compose* resource
+homomorphism remains open), not I-FAIR, not a product/compose resource
+lift, and not a claim that T5 is CONDITIONAL-CONGRUENCE. The
+I-CAP/I-GRADE/I-RELY negatives plus this inert positive freeze the
+C1 resource-independence pack; do not start I-FAIR here. The
 small-model lift must not be inferred from the exact-action theorem, and
 the exact-action theorem must not be inferred from the small-model lift.
 Finite observation-trace inclusion from any `WeakRefines` witness is

@@ -1112,3 +1112,141 @@ mod hidden_rely_c1 {
         );
     }
 }
+
+#[cfg(test)]
+mod hidden_inert_c1 {
+    use std::collections::BTreeMap;
+
+    use super::{ActionResourceProfile, ResourceRefinementChecker, SystemResourceProfile};
+    use crate::graph::{FiniteGraph, ModelState, Transition, Value};
+    use crate::observation::{ActionHiding, ObservationMap};
+    use crate::open::{ActionSignature, Interface, OpenSystem};
+    use crate::open_contract::{FiniteContract, PayloadPredicate, PayloadType};
+    use crate::refinement::{RefinementChecker, RefinementSpec};
+
+    fn visible_false() -> ModelState {
+        BTreeMap::from([("visible".to_owned(), Value::Bool(false))])
+    }
+
+    fn ping_output_system(has_ping_step: bool) -> OpenSystem {
+        let payload = PayloadType::unit();
+        let transitions = if has_ping_step {
+            vec![Transition::action(0, "ping", 0)]
+        } else {
+            vec![]
+        };
+        OpenSystem::new(
+            FiniteGraph::new(vec![visible_false()], vec![0], transitions).unwrap(),
+            Interface::new([("ping", ActionSignature::output("bus", payload.clone()))]).unwrap(),
+            FiniteContract::new(
+                Vec::<(&str, PayloadPredicate)>::new(),
+                [("ping", PayloadPredicate::all(&payload))],
+            )
+            .unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn empty_abstract_system() -> OpenSystem {
+        OpenSystem::new(
+            FiniteGraph::new(vec![visible_false()], vec![0], vec![]).unwrap(),
+            Interface::new([] as [(&str, ActionSignature); 0]).unwrap(),
+            FiniteContract::new(
+                Vec::<(&str, PayloadPredicate)>::new(),
+                Vec::<(&str, PayloadPredicate)>::new(),
+            )
+            .unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn observation_spec(hide_ping: bool) -> RefinementSpec {
+        RefinementSpec {
+            state_map: vec![0],
+            concrete_observation: ObservationMap::identity(["visible"]),
+            abstract_observation: ObservationMap::identity(["visible"]),
+            actions: if hide_ping {
+                ActionHiding::from_hide_actions(["ping"], [] as [(&str, &str); 0])
+            } else {
+                ActionHiding::new([("ping", Some("ping"))])
+            },
+        }
+    }
+
+    /// Hidden ping still observation-refines the step-free abstract sender,
+    /// and an inert (no consume / epsilon grade / no rely) profile makes the
+    /// resource checker accept. Dual of the three C1 negatives: matching
+    /// stutter profiles lift. Connection is orthogonal; not a compose lift.
+    #[test]
+    fn hidden_unconnected_ping_inert_passes_observation_and_resource() {
+        let concrete = ping_output_system(true);
+        let abstract_system = empty_abstract_system();
+        let concrete_resources = SystemResourceProfile::new(
+            Vec::<&str>::new(),
+            [("ping", ActionResourceProfile::inert())],
+        )
+        .unwrap();
+        let abstract_resources = SystemResourceProfile::new(
+            Vec::<&str>::new(),
+            Vec::<(&str, ActionResourceProfile)>::new(),
+        )
+        .unwrap();
+        let spec = observation_spec(true);
+
+        let observation =
+            RefinementChecker::check(concrete.graph(), abstract_system.graph(), &spec);
+        assert!(
+            observation.accepted,
+            "hidden ping must still observation-refine: {:#?}",
+            observation.mismatches
+        );
+
+        let resources = ResourceRefinementChecker::check(
+            &concrete,
+            &abstract_system,
+            &concrete_resources,
+            &abstract_resources,
+            &spec,
+        );
+        assert!(
+            resources.accepted,
+            "inert hidden ping must resource-refine: {:#?}",
+            resources.issues
+        );
+    }
+
+    /// Same matching inert profiles with ping mapped to the ping *name*
+    /// (Lean `mapPing` / `SenderLabel` singleton). Observation refinement
+    /// would *not* pass this visible mapping against a step-free abstract
+    /// sender; this is only the resource side of
+    /// `hiddenPing_inert_resourceRefinement`.
+    #[test]
+    fn mapped_ping_inert_matches_abstract_inert() {
+        let concrete = ping_output_system(true);
+        let abstract_system = ping_output_system(false);
+        let concrete_resources = SystemResourceProfile::new(
+            Vec::<&str>::new(),
+            [("ping", ActionResourceProfile::inert())],
+        )
+        .unwrap();
+        let abstract_resources = SystemResourceProfile::new(
+            Vec::<&str>::new(),
+            [("ping", ActionResourceProfile::inert())],
+        )
+        .unwrap();
+        let spec = observation_spec(false);
+
+        let resources = ResourceRefinementChecker::check(
+            &concrete,
+            &abstract_system,
+            &concrete_resources,
+            &abstract_resources,
+            &spec,
+        );
+        assert!(
+            resources.accepted,
+            "matching inert profiles must resource-refine along mapPing: {:#?}",
+            resources.issues
+        );
+    }
+}
