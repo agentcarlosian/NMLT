@@ -1,0 +1,1125 @@
+% Hidden Actions Are Not Contextual Silence
+% Lean sources:
+%   mechanization/lean/NMLT/Core/Transition.lean
+%   mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean
+%   mechanization/lean/NMLT/Behavior/WeakConditionalCongruence.lean
+%   mechanization/lean/NMLT/Behavior/OpenComposition.lean
+% Build: pdflatex main
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[hyphens]{url}
+\Urlmuskip=0mu plus 1mu
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{remark}[theorem]{Remark}
+
+% Lean identifiers: safe in text/math; break after _ . /
+\makeatletter
+\def\lean@us{\char`\_}
+\def\lean@emit#1{%
+  \ifx\relax#1\else
+    \expandafter\lean@emit@i\expandafter#1%
+  \fi}
+\def\lean@emit@i#1{%
+  \ifnum\pdfstrcmp{\detokenize{#1}}{_}=0
+    \lean@us\allowbreak
+  \else\ifnum\pdfstrcmp{\detokenize{#1}}{.}=0
+    .\allowbreak
+  \else\ifnum\pdfstrcmp{\detokenize{#1}}{/}=0
+    /\allowbreak
+  \else
+    #1%
+  \fi\fi\fi
+  \lean@emit}
+\DeclareRobustCommand{\lean}[1]{%
+  \ifmmode
+    \text{\ttfamily\expandafter\lean@emit\detokenize{#1}\relax}%
+  \else
+    {\ttfamily\expandafter\lean@emit\detokenize{#1}\relax}%
+  \fi}
+\makeatother
+
+\newcommand{\nmlt}{\textsc{Nmlt}}
+\newcommand{\true}{\mathsf{true}}
+\newcommand{\false}{\mathsf{false}}
+\newcommand{\ping}{\mathsf{ping}}
+\newcommand{\receive}{\mathsf{receive}}
+\newcommand{\sync}{\mathsf{sync}}
+\newcommand{\preceqhm}{\mathrel{\preceq}}
+
+\title{Hidden Actions Are Not Contextual Silence\\
+\large One-step refinement mappings, synchronization, and a mechanized counterexample}
+\author{Carlosian\\
+\texttt{carlosian@agentmail.to}}
+\date{27 August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}\sloppy
+Refinement theories often treat a concrete step as hidden when it maps to
+equality of abstract state. Open systems, separately, compose by
+synchronization on shared labels. The combination suggests a congruence
+rule: if $C$ refines $A$, then $C$ in parallel with a peer $D$ refines
+$A$ in parallel with $D$. We show that the rule is false for a one-step
+refinement mapping with stuttering (not conventional weak simulation). In
+Lean~4 we construct a sender whose hidden $\ping$ refines a step-free
+abstraction in isolation, wire $\ping$ to a receiver that flips an observed
+bit, and prove that no observation-preserving one-step refinement relates
+the composites.
+The diagnosis is local rather than exotic: abstract-state equality is not
+contextual silence when the hidden label remains connected.
+
+The same development yields a matching positive theorem. On the same
+labelled-transition fragment, the one-step refinement \emph{does} lift
+through parallel composition if three interface conditions hold: no hidden
+label is connected, wirings are covered and reflected, and the label map
+preserves independence of unconnected labels. For the \emph{default}
+composite classifiers, each named premise is independently indispensable
+in the hypothesis-independence sense---witnessed by
+\lean{pingReceive_violates_noHiddenBoundary},
+\lean{CollidedAbstractWire.isolation_necessary_for_default_lift}, and
+\lean{ExtraAbstractWire.wiring_necessary_for_default_lift}.
+We also record a sibling exact-action congruence theorem in a stronger
+open-system model where internal actions cannot synchronize. We do not
+claim that every interface condition is necessary in a stronger sense than
+hypothesis-independence, nor resource, grade, or fairness congruence, nor
+a verified compiler from source programs to these transition systems.
+\end{abstract}
+
+%------------------------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+%------------------------------------------------------------------------------
+
+Two classical ideas sit next to each other in almost every account of
+open-system refinement. The first is \emph{hiding}: a concrete step need
+not match an abstract step if it leaves the abstract state unchanged.
+The second is \emph{synchronization}: two components may be required to
+take a joint step on a pair of connected labels, and a connected label
+may not move alone. Each idea is well understood. Together they invite
+an apparently harmless congruence rule.
+
+The precise candidate we study---matching the Lean package
+\lean{weakConditionalCongruence_safety}---is not a single shared wiring.
+Fix a peer $D$, concrete and abstract wirings $K_C$ and $K_A$, a local
+witness $R : C\preceqhm_{h,m} A$, and the default composite classifiers
+\lean{compositeHiddenOf}$(h)$ and \lean{compositeMapOf}$(m)$. The
+tempting rule is
+\begin{equation}
+\frac{R : C \preceqhm_{h,m} A}
+     {\begin{array}{@{}c@{}}
+      C \parallel_{K_C} D \;\preceqhm_{h^\parallel,m^\parallel}\;
+      A \parallel_{K_A} D
+      \\[2pt]
+      \scriptstyle h^\parallel=\mathtt{compositeHiddenOf}(h),\;
+      m^\parallel=\mathtt{compositeMapOf}(m)
+      \end{array}}
+\tag{Candidate-Congruence}
+\label{eq:candidate}
+\end{equation}
+A common special case takes $K_C=K_A=K$ and $m=\mathrm{id}$; that sketch
+is already false, and the general form is what the positive theorem
+repairs under interface premises. Writing $\preceqhm$ without subscripts
+for the special case, the unconditional rule
+\begin{equation}
+\frac{C \preceqhm A}
+     {C \parallel_K D \preceqhm A \parallel_K D}
+\tag{Invalid-Congruence}
+\label{eq:invalid}
+\end{equation}
+would be a lemma if hiding meant silence in every context. It is not.
+
+This paper mechanizes a minimal counterexample and a matching repair.
+A concrete sender $C$ has a single action $\ping$. Declared hidden,
+$\ping$ does not change $C$'s state or observation, so $C$ one-step
+refines a step-free abstract sender $A$. A receiver $D$ flips an
+observed Boolean on $\receive$. Connect $\ping$ to $\receive$. The
+composite $C\parallel_K D$ can take a synchronized step that changes
+the pair's observation from $(\false,\false)$ to $(\false,\true)$.
+The abstract composite $A\parallel_K D$ has no corresponding left
+step with which to synchronize. Treating the product step as hidden
+collapses the two composite states under the refinement map and forces
+$\false=\true$ by observation preservation. Treating it as visible
+leaves the abstract product stuck. Either way,
+\eqref{eq:invalid} fails for this refinement and this composition
+operator. (The visible-classification failure is immediate from $A$'s
+empty step relation; it is not yet a separately named checked Lean
+theorem.)
+
+The failure is not an artifact of an eccentric hiding rule. The
+candidate relation is a \emph{one-step refinement mapping with
+stuttering}: hidden steps preserve the abstract state; visible steps
+match exactly one abstract step; observations are preserved. It is
+\emph{not} conventional weak simulation: there are no $\tau^*$-paths,
+no multi-step abstract matching, and no relational simulation witness
+beyond a state map. The composition
+operator is the obvious synchronized product: linked labels must move
+together, unlinked labels move independently. What the local rule does
+not see is that a hidden label may still be \emph{connected}. Local
+abstract-state equality then coexists with a peer observation change.
+
+That diagnosis suggests a repair rather than an abandonment of hiding.
+On the same labelled-transition fragment we prove a conditional
+congruence theorem: if no hidden label is connected, if the concrete
+and abstract wirings cover and reflect each other, and if the label
+map sends unconnected concrete labels to unconnected abstract labels,
+then left-component one-step refinement lifts through the product under
+the default classifiers of \eqref{eq:candidate}. The three premises are
+independently indispensable for that default lift. Dropping the first
+recovers the ping/receive counterexample
+(\lean{pingReceive_violates_noHiddenBoundary}). Dropping the third,
+while keeping wiring coverage, admits a second counterexample in which
+a non-injective label map collapses an independent concrete action onto
+a connected abstract name
+(\lean{CollidedAbstractWire.isolation_necessary_for_default_lift}).
+Dropping wiring coverage while keeping the other two admits a third
+(\lean{ExtraAbstractWire.wiring_necessary_for_default_lift}).
+
+A sibling result lives in a different model. Exact-action (strong)
+refinement of open systems with explicit ports, in which internal
+actions are ineligible for synchronization by construction, does lift
+through parallel composition under whole-wiring equivalence. We report
+that theorem because it is checked and because it shows that an
+interface-aware positive result is available once hiding through
+connections is forbidden structurally. It is not a proof of the weak
+one-step theorem, not residual RFC~0008 conditional congruence, and we
+do not treat it as one.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item A Lean~4 mechanization of \eqref{eq:invalid}'s failure: local
+  sender refinement, an enabled synchronized step, and the absence of
+  any observation-preserving one-step refinement of the composites
+  (Theorems~\ref{thm:sender}--\ref{thm:no-composite}).
+  \item The diagnosis that local abstract-state equality is not
+  contextual silence at a live connection, and the corresponding
+  interface obligation
+  $\mathsf{I\textrm{-}NO\textrm{-}HIDDEN\textrm{-}BOUNDARY}$.
+  \item A checked one-step observation-safety lift on the same small
+  model (Theorem~\ref{thm:weak-safety}), with positive controls and
+  hypothesis-independence lemmas for isolation reflection and wiring
+  coverage (Lemmas~\ref{lem:isolation-necessary},%
+  \ref{lem:wiring-necessary}).
+  \item A restricted exact-action product congruence theorem in a
+  stronger open-system model (Theorem~\ref{thm:strong-lift}),
+  separated from the weak development and not residual C1.
+\end{enumerate}
+
+The host development is \nmlt{}, an Apache-2.0 research kernel for
+behavior-indexed types and evidence-carrying composition. The theorems
+of this paper concern the labelled-transition fragment in
+\lean{NMLT.Core.Transition} and the modules cited in
+Appendix~\ref{app:defs}. We do not claim a verified translation from
+\nmlt{} source programs to these transition systems, nor congruence
+for capabilities, grades, or fairness, nor that Theorem~\ref{thm:weak-safety}
+closes full RFC~0008 conditional congruence.
+
+%------------------------------------------------------------------------------
+\section{The model}
+\label{sec:model}
+%------------------------------------------------------------------------------
+
+Notation follows the Lean development in \lean{NMLT.Core.Transition}.
+
+\begin{definition}[LTS]
+\label{def:lts}
+For types $\mathit{Label}$ and $\mathit{Obs}$, a labelled transition
+system is a record
+\[
+\langle
+  \mathit{State},\;
+  \mathit{init} : \mathit{State}\to\mathrm{Prop},\;
+  \mathit{step} : \mathit{State}\to\mathit{Label}\to\mathit{State}\to\mathrm{Prop},\;
+  \mathit{observe} : \mathit{State}\to\mathit{Obs}
+\rangle
+\]
+(\lean{NMLT.LTS}).
+\end{definition}
+
+\begin{definition}[One-step refinement mapping with stuttering]
+\label{def:weak}
+Fix LTSs $C$ and $A$ with a common observation type, a hiding map
+$h : \mathit{Label}_C\to\mathrm{Bool}$, and a label map
+$m : \mathit{Label}_C\to\mathit{Label}_A$.
+A witness of $C\preceqhm_{h,m} A$ (\lean{WeakRefines}) is a state map
+$\mu$ such that:
+\begin{itemize}
+  \item \textbf{init:} $C.\mathit{init}\,s$ implies $A.\mathit{init}\,(\mu\,s)$;
+  \item \textbf{observe:} $C.\mathit{observe}\,s = A.\mathit{observe}\,(\mu\,s)$;
+  \item \textbf{hidden step (stutter):} if $C$ steps $s\xrightarrow{\ell}t$ and
+  $h(\ell)=\true$, then $\mu\,s = \mu\,t$;
+  \item \textbf{visible step:} if $C$ steps $s\xrightarrow{\ell}t$ and
+  $h(\ell)=\false$, then $A$ steps $\mu\,s\xrightarrow{m(\ell)}\mu\,t$.
+\end{itemize}
+A hidden concrete step is required to preserve the \emph{abstract
+state}, not merely the concrete observation. There is no multi-step
+abstract matching: a visible concrete step corresponds to exactly one
+abstract step. In particular, this is \emph{not} conventional weak
+simulation in the process-calculus sense (no $\tau^*$-closure, no
+relational witness relating states after silent sequences). It is closer
+to a one-step Abadi--Lamport refinement mapping with stuttering on
+hidden labels.
+\end{definition}
+
+\begin{definition}[Synchronized parallel composition]
+\label{def:par}
+Product labels are $\mathsf{left}\,\ell$, $\mathsf{right}\,r$, or
+$\sync(\ell,r)$ (\lean{ParallelLabel}).
+A connection $K$ is a relation on left and right labels
+(\lean{Connection.linked}).
+The product $L\parallel_K R$ (\lean{parallel}) has state space
+$L.\mathit{State}\times R.\mathit{State}$, componentwise
+initialization and observation, and steps:
+\begin{itemize}
+  \item $\mathsf{left}\,\ell$ only if $\ell$ is not linked to any right
+  label, the left component steps, and the right state is unchanged;
+  \item $\mathsf{right}\,r$ symmetrically;
+  \item $\sync(\ell,r)$ only if $K$ links $\ell$ to $r$ and both
+  components step.
+\end{itemize}
+Linked labels cannot move independently. Unlinked labels cannot
+synchronize.
+\end{definition}
+
+This is a small model. It has no ports, directions, capabilities, or
+fairness. That is deliberate: the counterexample and the one-step lift
+should be checkable against the same four-field LTS, without an
+intervening encoding.
+
+%------------------------------------------------------------------------------
+\section{The counterexample}
+\label{sec:counterexample}
+%------------------------------------------------------------------------------
+
+Let $\mathit{SenderLabel} ::= \ping$ and
+$\mathit{ReceiverLabel} ::= \receive$.
+The constructions are those of
+\lean{NMLT.Counterexamples.CompositionCongruence}.
+
+\begin{definition}[Abstract sender $A$]
+\label{def:A}
+\lean{abstractSender}: state $\mathbf{1}$, every state initial, no
+steps, observation constantly $\false$.
+\end{definition}
+
+\begin{definition}[Concrete sender $C$]
+\label{def:C}
+\lean{concreteSender}: state $\mathbf{1}$, every state initial, a
+step for label $\ping$ to any post-state, observation constantly
+$\false$.
+\end{definition}
+
+\begin{definition}[Receiver $D$]
+\label{def:D}
+\lean{receiver}: state $\mathrm{Bool}$, only $\false$ initial; a step
+holds iff the label is $\receive$, the pre-state is $\false$, and the
+post-state is $\true$; observation is the identity on $\mathrm{Bool}$.
+\end{definition}
+
+\begin{definition}[Connection and composites]
+\label{def:KD}
+\lean{connection} links $\ping$ to $\receive$.
+Write $C\parallel_K D$ for \lean{concreteComposite} and
+$A\parallel_K D$ for \lean{abstractComposite}.
+\end{definition}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=6pt},
+  lab/.style={font=\scriptsize\ttfamily}]
+  \node[box] (A) {
+    \textbf{abstract sender $A$}\\[2pt]
+    State $=\mathbf{1}$\\
+    init $=\top$\\
+    step $=\bot$\\
+    observe $= \false$
+  };
+  \node[box, right=2.8cm of A] (C) {
+    \textbf{concrete sender $C$}\\[2pt]
+    State $=\mathbf{1}$\\
+    init $=\top$\\
+    step holds on $\ping$\\
+    observe $= \false$
+  };
+  \node[box, below=1.8cm of C] (D) {
+    \textbf{receiver $D$}\\[2pt]
+    State $=\mathrm{Bool}$\\
+    init: only $\false$\\
+    $\false \xrightarrow{\receive} \true$\\
+    observe $=$ id
+  };
+  \draw[-{Latex}, thick, dashed] (C) -- node[above, lab] {WeakRefines, $h\equiv\true$} (A);
+  \draw[-{Latex}, thick] (C) -- node[right, lab, xshift=2pt] {linked: ping--receive} (D);
+\end{tikzpicture}
+\caption{The three systems. Locally, hidden $\ping$ preserves $C$'s
+observation and maps to the unique abstract state. The connection still
+exposes $\ping$ to $D$.}
+\label{fig:ping}
+\end{figure}
+
+\subsection{Local refinement}
+
+\begin{definition}[Sender hiding]
+\label{def:senderHidden}
+\lean{senderHidden} hides every sender label. The label map is
+$\mathrm{id}$.
+\end{definition}
+
+\begin{theorem}[Standalone sender refinement]
+\label{thm:sender}
+The structure \lean{senderRefinement} inhabits
+\begin{center}\footnotesize
+\lean{WeakRefines}\ $C$\ $A$\ \lean{senderHidden}\ $\mathrm{id}$.
+\end{center}
+\end{theorem}
+
+\begin{proof}
+Take $\mu(\_)=()$. Initialization and observation are immediate.
+Every concrete step uses $\ping$, which is hidden, and $\mu$ is
+constant, so the hidden-step obligation is reflexivity. The
+visible-step obligation is vacuous.
+\end{proof}
+
+Thus the premise of \eqref{eq:invalid} holds for this $C$ and $A$.
+
+\subsection{The composite}
+
+\begin{definition}[Composite hiding]
+\label{def:compositeHidden}
+\lean{compositeHidden} hides synchronized product labels and leaves
+independent left and right labels visible:
+\[
+\begin{aligned}
+&\mathtt{compositeHidden}(\sync(\_,\_))=\true,\\
+&\mathtt{compositeHidden}(\mathsf{left}\_)=
+ \mathtt{compositeHidden}(\mathsf{right}\_)=\false.
+\end{aligned}
+\]
+\end{definition}
+
+\begin{theorem}[Concrete synchronization]
+\label{thm:sync}
+\[
+\begin{aligned}
+&(C\parallel_K D).\mathit{step}\\
+&\qquad ((),\false)\;
+  \sync(\ping,\receive)\;
+  ((),\true).
+\end{aligned}
+\]
+\end{theorem}
+
+\begin{proof}
+$K$ links $\ping$ to $\receive$; $C$ may step on $\ping$; $D$ steps
+$\false\to\true$ on $\receive$
+(\texttt{concrete\-Synchronization}).
+\end{proof}
+
+\begin{lemma}[Endpoint observations]
+\label{lem:obs}
+$(C\parallel_K D).\mathit{observe}\,((),\false)=(\false,\false)$ and
+$(C\parallel_K D).\mathit{observe}\,((),\true)=(\false,\true)$.
+In particular the second components differ.
+\end{lemma}
+
+\begin{theorem}[No composite one-step refinement]
+\label{thm:no-composite}
+There is no inhabitant of
+\begin{quote}
+\raggedright\footnotesize
+\lean{WeakRefines}
+  $(C\parallel_K D)$
+  $(A\parallel_K D)$
+  \lean{compositeHidden}
+  $\mathrm{id}$.
+\end{quote}
+Equivalently, $\neg\mathrm{Nonempty}(\cdots)$ as in
+\lean{noCompositeRefinement}.
+\end{theorem}
+
+\begin{proof}
+Suppose $R$ is such a refinement with state map $\mu$.
+Theorem~\ref{thm:sync} gives a $C\parallel_K D$ step on a hidden
+product label, so the hidden-step rule yields
+$\mu((),\false)=\mu((),\true)$.
+Observation preservation for $R$, together with congruence of
+$(A\parallel_K D).\mathit{observe}$, implies
+\[
+(C\parallel_K D).\mathit{observe}\,((),\false)
+=
+(C\parallel_K D).\mathit{observe}\,((),\true).
+\]
+Projecting the second component contradicts Lemma~\ref{lem:obs}.
+\end{proof}
+
+\begin{corollary}[Invalid-Congruence fails]
+\label{cor:invalid}
+The rule ``$C\preceqhm A$ implies
+$C\parallel_K D\preceqhm A\parallel_K D$'' is false for
+Definitions~\ref{def:weak}--\ref{def:par} and
+Example~\ref{def:A}--\ref{def:KD}.
+\end{corollary}
+
+\begin{remark}[The visible reading also fails]
+\label{rem:visible}
+If $\sync(\ping,\receive)$ is instead treated as visible, the abstract
+product still has no matching step: $A$ admits no left-component step
+with which to synchronize. The mechanized theorem discharges the
+hidden reading used by ``synchronization is silent.'' The visible
+reading is immediate from $A$'s empty step relation; it is not yet
+packaged as a separately named checked Lean theorem.
+\end{remark}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  state/.style={draw, circle, inner sep=3pt, minimum size=1.35cm, align=center},
+  arr/.style={-{Latex}, thick}]
+  \node[state] (c0) {$((),\false)$};
+  \node[state, right=4.0cm of c0] (c1) {$((),\true)$};
+  \node[font=\scriptsize, below=0.15cm of c0] {obs $(\false,\false)$};
+  \node[font=\scriptsize, below=0.15cm of c1] {obs $(\false,\true)$};
+  \draw[arr] (c0) --
+    node[above=2pt, font=\small] {$\sync(\ping,\receive)$} (c1);
+  \node[font=\scriptsize, text=black!55, align=center]
+    at ($(c0)!0.5!(c1)+(0,-0.72)$) {hidden under \texttt{compositeHidden}};
+  \node[anchor=north, font=\scriptsize, align=left, text width=0.88\linewidth]
+    at ($(c0.south)!0.5!(c1.south)+(0,-0.85)$) {
+    Hidden-step rule $\Rightarrow$ $\mu((),\false)=\mu((),\true)$.\\
+    Observation preservation $\Rightarrow$ equal observations.\\
+    Second component: $\false=\true$. Contradiction.
+  };
+\end{tikzpicture}
+\caption{The composite step used in Theorem~\ref{thm:no-composite}.}
+\label{fig:composite-step}
+\end{figure}
+
+%------------------------------------------------------------------------------
+\section{Diagnosis}
+\label{sec:diagnosis}
+%------------------------------------------------------------------------------
+
+Definition~\ref{def:weak}'s hidden-step clause constrains only the
+component state map $\mu$. Definition~\ref{def:par} allows the same
+concrete label to appear in a $\sync$ transition with a peer. Nothing
+in the local rule prevents a hidden action from changing a peer
+observation.
+
+\begin{quote}
+\textbf{Local state-map equality is not contextual silence.}
+\end{quote}
+
+A tempting hygiene clause is that a hidden synchronization should map
+to a composite silent observation. That clause does not repair
+Example~\ref{def:A}--\ref{def:KD}: even if the product label is
+classified hidden, $D$'s observation still changes from $\false$ to
+$\true$, and Theorem~\ref{thm:no-composite} applies. The clause is
+withdrawn.
+
+The failure is not that hiding is meaningless. It is that hiding was
+allowed to coexist with a live connection. The first repaired
+obligation is therefore:
+
+\begin{definition}[No hidden boundary]
+\label{def:no-hidden-boundary}
+If $h(\ell)=\true$ under the refinement witness, then $\ell$ is not
+linked by the concrete connection $K_C$ to any peer label
+(\lean{NoHiddenBoundary}).
+\end{definition}
+
+\begin{lemma}[Independence of no-hidden-boundary]
+\label{lem:necessity-boundary}
+\sloppy\lean{NoHiddenBoundary} fails for \lean{senderRefinement} and
+\lean{connection}
+(\lean{pingReceive_violates_noHiddenBoundary}).
+\end{lemma}
+
+\begin{proof}
+\lean{senderHidden} hides $\ping$, and \lean{connection} links
+$\ping$ to $\receive$, so $\ping$ is connected.
+\end{proof}
+
+%------------------------------------------------------------------------------
+\section{Conditional one-step observation-safety congruence}
+\label{sec:conditional}
+%------------------------------------------------------------------------------
+
+Forming a product and lifting a refinement through a product are
+different judgments. The latter needs an explicit interface.
+
+Write $H(c,d)=(\mu(c),d)$ for the left-lift of a state map $\mu$
+across a fixed peer (\lean{liftMap}). The default composite hiding
+map \lean{compositeHiddenOf} classifies a left or synchronized
+product label as hidden exactly when the underlying left label is
+hidden, and treats peer-only steps as visible. The default composite
+label map \lean{compositeMapOf} applies $m$ on the left component and
+the identity on the peer. These are exactly the classifiers in
+\eqref{eq:candidate}.
+
+\begin{definition}[Wiring coverage]
+\label{def:wiring}
+A pair of connections $K_C,K_A$ is \emph{covered} by maps
+$m$ and $\mathrm{id}$ (\lean{WiringCovered}) when every concrete
+link maps to an abstract link, and every abstract link is the image
+of some concrete link.
+\end{definition}
+
+\begin{definition}[Isolation reflection]
+\label{def:isolation}
+The maps \emph{reflect isolation} (\lean{IsolationReflects}) when
+every unconnected concrete left label remains unconnected after $m$:
+if $\ell$ has no $K_C$-partner, then $m(\ell)$ has no $K_A$-partner.
+\end{definition}
+
+Coverage is a statement about the \emph{wires}. Isolation is a
+statement about the \emph{free names}. They coincide when $m$ is
+injective (\lean{isolation_of_wiring_injective}); they come apart
+when $m$ collapses an independent concrete label onto a connected
+abstract label.
+
+\begin{definition}[Interface compatibility]
+\label{def:iface}
+A witness $R : C \preceqhm_{h,m} A$ is \emph{interface-compatible}
+with peer $D$ and wirings $K_C,K_A$
+(\lean{InterfaceCompatible}) when
+Definition~\ref{def:no-hidden-boundary}, Definition~\ref{def:wiring},
+and Definition~\ref{def:isolation} all hold.
+\end{definition}
+
+Observation of a product is componentwise by Definition~\ref{def:par},
+so the usual observation-commutation premise is not an extra
+hypothesis in this fragment. Synchronization of labels commutes with
+$m$ because the default composite map applies $m$ on the left and
+$\mathrm{id}$ on the right.
+
+\begin{theorem}[Small-model one-step observation-safety lift]
+\label{thm:weak-safety}
+In the model of Definitions~\ref{def:weak}--\ref{def:par}, if
+$R$ is interface-compatible with $D$, $K_C$, and $K_A$ in the sense
+of Definition~\ref{def:iface}, then $H$ is a \lean{WeakRefines} of
+the products under \lean{compositeHiddenOf} and \lean{compositeMapOf}
+(\lean{weakConditionalCongruence_safety}).
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+The Lean proof is a case analysis on product labels.
+\begin{enumerate}
+  \item \textbf{Init / observe.} Component initiality and $R$'s
+  init and observe rules lift pairwise.
+  \item \textbf{Hidden left.} Definition~\ref{def:no-hidden-boundary}
+  makes the label unconnected, so the product permits a left-only
+  step. $R$'s hidden-step rule gives $H(c,d)=H(c',d)$ with the peer
+  fixed. A hidden $\sync$ is impossible: a connected label cannot be
+  hidden.
+  \item \textbf{Visible independent left.} $R$'s visible-step rule
+  supplies an abstract left step.
+  Definition~\ref{def:isolation} keeps the image unconnected on
+  $K_A$, so the abstract product also permits the left-only step.
+  \item \textbf{Independent peer.} Reuse the same $D$ step. Wiring
+  reflection sends an abstract peer-link to a concrete one, so
+  independence is preserved, and the left coordinate of $H$ is
+  unchanged.
+  \item \textbf{Synchronization.} Definition~\ref{def:no-hidden-boundary}
+  forces the concrete left label visible. $R$'s visible-step rule
+  and wiring coverage supply a matching abstract $\sync$ with the
+  same peer transition.
+\end{enumerate}
+\end{proof}
+
+The theorem is an observation-safety result about one-step refinement
+mappings on this LTS fragment. It does not transport liveness,
+divergence, capabilities, or grades. It does not close full RFC~0008
+conditional congruence.
+
+\begin{corollary}[Observation-trace inclusion]
+\label{cor:obs-trace}
+Under the hypotheses of Theorem~\ref{thm:weak-safety}, every finite
+sequence of product observations produced by a run of
+$C\parallel_{K_C} D$ from an initial state is also the observation
+sequence of the $H$-image run of $A\parallel_{K_A} D$. Equivalently,
+one-step observation safety lifts to finite observation-trace
+inclusion along the refinement map.
+\end{corollary}
+
+\begin{proof}[Proof sketch]
+By induction on run length: initialization and the observe clause of
+$\lean{WeakRefines}$ give the base, and each product step preserves
+observations by Theorem~\ref{thm:weak-safety}'s lifted witness.
+\end{proof}
+
+\subsection{Positive and negative controls}
+
+\begin{lemma}[Visible ping/receive]
+\label{lem:visible-sync}
+The same connection as Example~\ref{def:A}--\ref{def:KD}, with $\ping$
+classified visible and with an abstract sender that can take $\ping$,
+admits a product one-step refinement
+(\lean{VisibleSync.visibleSync_productRefinement}).
+\end{lemma}
+
+\begin{lemma}[Empty wiring and hidden $\tau$]
+\label{lem:empty-tau}
+A hidden left $\tau$ over the empty connection admits a product
+one-step refinement
+(\lean{EmptyWiringTau.emptyWiring_productRefinement}).
+\end{lemma}
+
+Lemma~\ref{lem:visible-sync} is the ping/receive system with the
+offending hiding bit flipped: the wiring is unchanged, the local
+refinement is now a strong one, and the lift goes through.
+Lemma~\ref{lem:empty-tau} is the complementary case in which hiding
+is genuine because there is nothing to connect.
+
+\begin{lemma}[Isolation reflection is indispensable for the default lift]
+\label{lem:isolation-necessary}
+There exist systems and wirings such that
+Definition~\ref{def:no-hidden-boundary} and
+Definition~\ref{def:wiring} hold,
+Definition~\ref{def:isolation} fails, and no \lean{WeakRefines} of
+the products exists under the default composite classifiers
+(\mbox{}\linebreak[1]\lean{CollidedAbstractWire.isolation_necessary_for_default_lift}).
+\end{lemma}
+
+\begin{lemma}[Wiring coverage is indispensable for the default lift]
+\label{lem:wiring-necessary}
+There exist systems and wirings such that
+Definition~\ref{def:no-hidden-boundary} and
+Definition~\ref{def:isolation} hold,
+Definition~\ref{def:wiring} fails (an abstract wire on a label outside
+the image of $m$), and no \lean{WeakRefines} of the products exists
+under the default classifiers
+(\mbox{}\linebreak[1]\lean{ExtraAbstractWire.wiring_necessary_for_default_lift};
+axioms: none).
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+The concrete left component has labels $\tau$ and $\ping$; the
+abstract left component has a single label $\mathsf{abs}$; both
+concrete labels map to $\mathsf{abs}$. Only $\ping$ is wired to a
+peer $\receive$, so $\tau$ is independent. Nothing is hidden, so
+Definition~\ref{def:no-hidden-boundary} is vacuous. Wiring coverage
+holds because the unique abstract wire reflects to $\ping$. Isolation
+fails at $\tau$: $m(\tau)=\mathsf{abs}$ is connected. The concrete
+product can take a left-only $\tau$ step; the abstract product cannot
+take a left-only $\mathsf{abs}$ step. The default visible-left
+obligation is therefore unsatisfiable.
+\end{proof}
+
+Together, Theorem~\ref{thm:no-composite} and
+Lemmas~\ref{lem:necessity-boundary}, \ref{lem:isolation-necessary},
+and~\ref{lem:wiring-necessary} say that each named premise of
+Theorem~\ref{thm:weak-safety} is sharp for the default lift in the
+hypothesis-independence sense: omitting that premise alone, while
+keeping the others (or the ping/receive pattern for NHB), admits a
+counterexample under \lean{compositeHiddenOf}/\lean{compositeMapOf}.
+We do not claim necessity in any stronger, model-universal sense.
+
+\begin{figure}[t]
+\centering
+\resizebox{0.96\textwidth}{!}{\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=5pt},
+  lab/.style={font=\scriptsize}]
+  \node[box] (C) {
+    \textbf{concrete left}\\[2pt]
+    labels $\{\tau,\ping\}$\\
+    $\tau$ unconnected\\
+    $\ping$ wired to $\receive$
+  };
+  \node[box, right=3.2cm of C] (A) {
+    \textbf{abstract left}\\[2pt]
+    label $\{\mathsf{abs}\}$\\
+    $\mathsf{abs}$ wired to $\receive$
+  };
+  \node[box, below=2.3cm of C] (D) {
+    \textbf{peer}\\[2pt]
+    $\receive$ flips observed bit
+  };
+  \draw[-{Latex}, thick] (C) --
+    node[above, lab, align=center]
+      {$m(\tau)=m(\ping)=\mathsf{abs}$} (A);
+  \draw[-{Latex}, thick] (C.south) --
+    node[left, lab, xshift=-4pt] {wire: ping} (D.north);
+  \draw[-{Latex}, thick, dashed]
+    (A.south east) .. controls +(0.9,-0.9) and +(1.4,0.2) ..
+    node[right, lab, xshift=3pt] {wire: abs} (D.east);
+  \node[anchor=north, lab, align=left, text width=0.92\linewidth]
+    at ($(D.south)+(0,-0.45)$) {
+    Coverage holds (abstract wire reflects to $\ping$).
+    Isolation fails at $\tau$: concrete can take left-only $\tau$;
+    abstract cannot take left-only $\mathsf{abs}$.
+  };
+\end{tikzpicture}}
+\caption{Isolation counterexample (Lemma~\ref{lem:isolation-necessary}).
+Coverage fails for a non-injective map.}
+\label{fig:isolation}
+\end{figure}
+
+\begin{conjecture}[Residual weak congruence]
+\label{conj:weak}
+Theorem~\ref{thm:weak-safety} does not yet give congruence for
+capabilities, grades, fairness, or the port/assumption model of
+Theorem~\ref{thm:strong-lift} below. Deriving
+Definition~\ref{def:isolation} from Definition~\ref{def:wiring}
+without injectivity of $m$ remains unsound, as
+Lemma~\ref{lem:isolation-necessary} shows. Closing residual C1 / full
+RFC~0008 CONDITIONAL-CONGRUENCE remains open.
+\end{conjecture}
+
+%------------------------------------------------------------------------------
+\section{An exact-action sibling}
+\label{sec:strong}
+%------------------------------------------------------------------------------
+
+The repository also contains a \emph{different} refinement model:
+exact-action (strong) refinement of open systems with explicit ports,
+assumptions and guarantees, and whole-wiring equivalence
+(\lean{NMLT.Behavior.OpenComposition}). Internal actions in that
+model are ineligible for synchronization by construction, so the
+ping/receive pattern cannot be expressed as a hidden connected
+action. The results of this section are therefore not residual
+obligations of Conjecture~\ref{conj:weak}; they live in another
+formalism.
+
+\begin{theorem}[Exact-action product congruence]
+\label{thm:strong-lift}
+In the OpenComposition model, with whole-wiring equivalence and the
+stated composability premises,
+\lean{StrongRefinement.compositionCongruence} holds: left-component
+refinement lifts through parallel composition, and product
+receptiveness and composability are preserved as stated in the
+development. (Self-contained reading: exact matching of actions, no
+weak hiding classifier, ports rather than free labels, and internal
+actions barred from synchronization.)
+\end{theorem}
+
+Theorem~\ref{thm:strong-lift} is not a proof of
+Theorem~\ref{thm:weak-safety} or of Conjecture~\ref{conj:weak}, and it
+is not residual C1. By the module's own statement it claims nothing
+about weak hiding, label maps beyond the strong model, capability
+partition, grades, or liveness. We include it as evidence that an
+interface-aware positive lifting theorem is available once hiding
+through connections is ruled out structurally.
+
+%------------------------------------------------------------------------------
+\section{Related work}
+\label{sec:rw}
+%------------------------------------------------------------------------------
+
+\paragraph{Refinement mappings and stuttering.}
+Abadi and Lamport's refinement mappings~\cite{abadiLamport1991} and
+Lamport's TLA~\cite{lamport2002} treat implementation steps as
+abstract stuttering under a state map. Definition~\ref{def:weak}'s
+hidden-step rule is in that spirit: hidden steps preserve abstract
+\emph{state}. The counterexample shows that port synchronization is
+an additional obligation those local rules do not discharge. A
+stuttering step that is still connected is not a stutter of the
+composite.
+
+\paragraph{Weak equivalences and congruence formats.}
+Classical weak bisimulation and weak simulation
+\cite{milner1989,vanGlabbeek1993} close silent transitions under
+$\tau^*$ and ask for matching after silent sequences. Congruence
+formats for weak equivalences (e.g.\ the tyft/tyxt and ntyft/ntyxt
+tradition, and later rule formats for weak bisimulation)
+\cite{grooteVaandrager1992,ulidowskiPhillips2002} study syntactic
+conditions under which a weak equivalence is a congruence for a
+process language's operators. Our contribution is complementary and
+narrower: we fix an \emph{already chosen} one-step refinement mapping
+(no $\tau^*$), fix a synchronized product, and mechanize the failure
+of unconditional contextual lift when hiding coexists with a live
+connection---together with hypothesis-independence controls for a
+conditional repair. We do not propose a new congruence format.
+
+\paragraph{I/O automata and simulations.}
+I/O automata distinguish input, output, and internal actions and
+prove composition theorems under compatibility and
+receptiveness~\cite{lynchTuttle1987,lynchVaandrager1995}. Forward
+simulations in that tradition are not expected to lift through
+composition without those premises. Our result is consistent with
+that lesson: the failure appears when compatibility-style premises
+are omitted from a TLA-style hiding rule. We do not propose a new
+automaton model.
+
+\paragraph{Interface automata.}
+de~Alfaro and Henzinger's interface automata~\cite{deAlfaroHenzinger2001}
+make composition a partial operation, failing when an output is not
+accepted. The moral is again that composition is not automatic.
+Theorem~\ref{thm:weak-safety} takes the complementary route of
+stating the missing premises rather than making the product partial.
+
+\paragraph{Process calculus hiding.}
+CCS restriction and hiding~\cite{milner1989}, and CSP
+concealment~\cite{hoare1985}, remove names from the interface. The
+mistake in \eqref{eq:invalid} is to hide a name that is still in the
+interface of the product. Once $\ping$ is connected it is not an
+internal name of $C\parallel_K D$, regardless of $C$'s local
+classification.
+
+\paragraph{Stutter-invariant temporal logic.}
+Peled and Wilke~\cite{peledWilke} characterize stutter-invariant LTL
+by the absence of $\mathsf{next}$. That motivates separating
+action-level claims from observation transport. It does not, by
+itself, police connected hidden labels.
+
+%------------------------------------------------------------------------------
+\section{Artifact}
+\label{sec:artifact}
+%------------------------------------------------------------------------------
+
+The definitions and proofs are checked in Lean~4.30.0. The trusted
+computing base for Theorems~\ref{thm:sender}--\ref{thm:weak-safety}
+is the Lean kernel, the four-field LTS of
+\lean{NMLT.Core.Transition}, and the modules in
+Appendix~\ref{app:defs}. There is no \texttt{sorry} and no
+project-defined axiom. Lean's propositional extensionality
+\texttt{propext} appears in Theorem~\ref{thm:no-composite} and
+Theorem~\ref{thm:weak-safety}; the independence lemmas of
+Section~\ref{sec:diagnosis} and Lemmas~\ref{lem:isolation-necessary},%
+\ref{lem:wiring-necessary}
+are axiom-free. Mathlib and Aeneas are dependencies of the broader
+\nmlt{} workspace and are not on the TCB of these theorems.
+
+\paragraph{Local tree vs published \texttt{main}.}
+As of this draft, Theorem~\ref{thm:weak-safety}
+(\lean{weakConditionalCongruence_safety}) and its independence
+controls may be present only in a local working tree relative to the
+published GitHub \texttt{main} tip at commit
+\texttt{0417f6e}. The frozen artifact SHA for the paper tag is left as
+a placeholder until the authors push and tag:
+\begin{center}
+\texttt{artifact-SHA = <PLACEHOLDER: ask user before push/tag>}
+\end{center}
+Do not treat \texttt{0417f6e} alone as containing Theorem~\ref{thm:weak-safety}
+unless the local module has been merged.
+
+\paragraph{Reproduce.}
+From a checkout that contains the cited modules, on Lean~4.30.0:
+\begin{verbatim}
+cd mechanization/lean
+lake build NMLT
+# axiom audit (representative):
+lake env lean --run <<'EOF'
+  -- or open the modules and evaluate:
+  -- #print axioms weakConditionalCongruence_safety
+  -- #print axioms noCompositeRefinement
+  -- #print axioms StrongRefinement.compositionCongruence
+EOF
+\end{verbatim}
+Equivalently, after \texttt{lake build NMLT}, inspect the
+\texttt{\#print axioms} lines already present in
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item \lean{Behavior/WeakConditionalCongruence.lean}
+\item \lean{Counterexamples/CompositionCongruence.lean}
+\item \lean{Behavior/OpenComposition.lean}
+\item or the summary
+\texttt{papers/hidden-silence/axiom-audit-2026-08-27.md}
+\end{itemize}
+
+The host repository is \nmlt{}, distributed under Apache License
+2.0.\footnote{\url{https://github.com/agentcarlosian/NMLT}}
+Appendix~\ref{app:axioms}
+records a \texttt{\#print axioms} audit from a clean \texttt{lake
+build}. A surface-language sketch of the three systems, not part of the
+frozen example corpus and not a checked composition claim, is
+\path{examples/paper1/hidden_ping_receive.nmlt}.
+
+%------------------------------------------------------------------------------
+\section{Conclusion}
+\label{sec:conc}
+%------------------------------------------------------------------------------
+
+A hidden action is not contextually silent if it is still connected.
+We mechanized the resulting failure of unconditional one-step refinement
+congruence under synchronization, and we mechanized a matching
+conditional observation-safety lift on the same small model: no hidden
+connected labels, covered wirings, and a label map that preserves
+independence. The exact-action theorem shows that a stronger model
+can rule the failure out by construction; it is a different model, not
+residual C1. What remains is to carry the one-step theorem up through
+resources, grades, and fairness, and to connect these transition systems
+to the surface language, without weakening the interface conditions that
+the counterexamples show are independently indispensable for the default
+lift.
+
+%------------------------------------------------------------------------------
+\appendix
+\section{Lean pointers}
+\label{app:defs}
+%------------------------------------------------------------------------------
+
+{\footnotesize\raggedright
+\begin{description}
+\setlength{\itemsep}{0.35em}
+\item[LTS / map / product]
+  \lean{NMLT.LTS}, \lean{WeakRefines}, \lean{parallel}
+  in \lean{Core/Transition.lean}.
+\item[Counterexample]
+  \lean{senderRefinement}, \lean{concreteSynchronization},
+  \lean{noCompositeRefinement}
+  in \lean{Counterexamples/CompositionCongruence.lean}.
+\item[One-step lift]
+  \lean{InterfaceCompatible},
+  \lean{weakConditionalCongruence_safety}
+  in \lean{Behavior/WeakConditionalCongruence.lean}.
+\item[Indep.\ (NHB)]
+  \lean{pingReceive_violates_noHiddenBoundary} (same module).
+\item[Indep.\ (isolation)]
+  \lean{CollidedAbstractWire.isolation_necessary_for_default_lift}.
+\item[Indep.\ (wiring)]
+  \lean{ExtraAbstractWire.wiring_necessary_for_default_lift}.
+\item[Positive controls]
+  \lean{VisibleSync.visibleSync_productRefinement},
+  \lean{EmptyWiringTau.emptyWiring_productRefinement}.
+\item[Exact-action lift]
+  \lean{StrongRefinement.compositionCongruence}
+  in \lean{Behavior/OpenComposition.lean}.
+\end{description}
+}
+
+\section{Axiom audit}
+\label{app:axioms}
+%------------------------------------------------------------------------------
+
+Recorded from \texttt{lake build NMLT} of the mechanization on Lean~4.30.0
+(27 August 2026). Policy: no \texttt{sorry}, no project-defined
+axioms. Lean's foundational \texttt{propext} is an accepted TCB
+entry when it appears. Artifact SHA: \texttt{<PLACEHOLDER>}.
+
+{\footnotesize
+\setlength{\tabcolsep}{4pt}
+\noindent
+\begin{tabularx}{\textwidth}{@{}p{2.2cm} >{\raggedright\arraybackslash}X p{1.7cm}@{}}
+\toprule
+Claim & Lean declaration & Axioms \\
+\midrule
+Thm.~\ref{thm:sender} & \texttt{senderRefinement}
+  & none \\
+Thm.~\ref{thm:sync} & \texttt{concrete\-Synchronization}
+  & none \\
+Thm.~\ref{thm:no-composite} (lemma)
+  & \texttt{compositeRefinement\-Impossible}
+  & \texttt{[propext]} \\
+Thm.~\ref{thm:no-composite}
+  & \texttt{noCompositeRefinement}
+  & \texttt{[propext]} \\
+Lem.~\ref{lem:necessity-boundary}
+  & \texttt{pingReceive\_violates\_}\newline\texttt{noHiddenBoundary}
+  & none \\
+Thm.~\ref{thm:weak-safety}
+  & \texttt{weakConditional\-Congruence\_safety}
+  & \texttt{[propext]} \\
+Cor.~\ref{cor:obs-trace}
+  & (paper corollary from Thm.~\ref{thm:weak-safety})
+  & --- \\
+Lem.~\ref{lem:visible-sync}
+  & \texttt{visibleSync\_product\-Refinement}
+  & \texttt{[propext]} \\
+Lem.~\ref{lem:empty-tau}
+  & \texttt{emptyWiring\_product\-Refinement}
+  & \texttt{[propext]} \\
+Lem.~\ref{lem:isolation-necessary}
+  & \texttt{isolation\_necessary\_}\newline\texttt{for\_default\_lift}
+  & none \\
+Lem.~\ref{lem:wiring-necessary}
+  & \texttt{wiring\_necessary\_}\newline\texttt{for\_default\_lift}
+  & none \\
+Thm.~\ref{thm:strong-lift}
+  & \texttt{compositionCongruence}
+  & none \\
+\bottomrule
+\end{tabularx}
+}
+
+The impossibility proof uses propositional extensionality to compare
+observations after identifying equal abstract states. The isolation and
+wiring independence lemmas and the local sender refinement are
+axiom-free.
+
+\begin{thebibliography}{99}
+
+\bibitem{abadiLamport1991}
+M.~Abadi and L.~Lamport.
+\newblock The existence of refinement mappings.
+\newblock \emph{Theoretical Computer Science}, 82(2):253--284, 1991.
+
+\bibitem{deAlfaroHenzinger2001}
+L.~de~Alfaro and T.~A.~Henzinger.
+\newblock Interface automata.
+\newblock In \emph{Proceedings of ESEC/FSE 2001}, pp.~109--120. ACM, 2001.
+
+\bibitem{grooteVaandrager1992}
+J.~F.~Groote and F.~Vaandrager.
+\newblock Structured operational semantics and bisimulation as a congruence.
+\newblock \emph{Information and Computation}, 100(2):202--260, 1992.
+
+\bibitem{hoare1985}
+C.~A.~R.~Hoare.
+\newblock \emph{Communicating Sequential Processes}.
+\newblock Prentice-Hall, 1985.
+
+\bibitem{lamport2002}
+L.~Lamport.
+\newblock \emph{Specifying Systems}.
+\newblock Addison-Wesley, 2002.
+
+\bibitem{lynchTuttle1987}
+N.~A.~Lynch and M.~R.~Tuttle.
+\newblock Hierarchical correctness proofs for distributed algorithms.
+\newblock In \emph{Proceedings of the Sixth Annual ACM Symposium on
+Principles of Distributed Computing (PODC)}, pp.~137--146. ACM, 1987.
+
+\bibitem{lynchVaandrager1995}
+N.~A.~Lynch and F.~W.~Vaandrager.
+\newblock Forward and backward simulations.
+\newblock Part~I: Untimed systems.
+\newblock \emph{Information and Computation}, 121(2):214--233, 1995.
+
+\bibitem{milner1989}
+R.~Milner.
+\newblock \emph{Communication and Concurrency}.
+\newblock Prentice-Hall, 1989.
+
+\bibitem{peledWilke}
+D.~Peled and T.~Wilke.
+\newblock Stutter-invariant temporal properties are expressible without the
+next-time operator.
+\newblock \emph{Information Processing Letters}, 63(5):243--246, 1997.
+
+\bibitem{ulidowskiPhillips2002}
+I.~Ulidowski and I.~Phillips.
+\newblock Ordered SOS rules and weak bisimulation.
+\newblock In \emph{CONCUR 2002}, LNCS 2421, pp.~172--186. Springer, 2002.
+
+\bibitem{vanGlabbeek1993}
+R.~J.~van~Glabbeek.
+\newblock The linear time -- branching time spectrum~II: the semantics of
+sequential systems with silent moves.
+\newblock In \emph{CONCUR '93}, LNCS 715, pp.~66--81. Springer, 1993.
+
+\end{thebibliography}
+
+\end{document}

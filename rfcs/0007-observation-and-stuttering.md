@@ -3,6 +3,7 @@
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
+- Revised: 2026-08-27 (`hide action` + surface `compose`/`connect` wiring)
 - Mathematical-core backlog: `NMLT-P1-104`
 
 ## Summary
@@ -134,6 +135,52 @@ its capability/grade effect satisfies the declared hidden-effect policy
 The first condition is stronger than
 `observe_A(h(s)) = observe_A(h(s'))`. The connected-port condition is required
 by the congruence counterexample in RFC 0008.
+
+### Surface syntax (v1 candidate)
+
+The parser already treats `hide` / `observe` as member declarations whose
+body is an expression of names (RFC 0003 keywords are identifiers until
+the parser classifies them). Two forms must not be conflated:
+
+```text
+observe bit, output          // state-observation projection (V)
+hide input, channel          // omit state fields from V (C06)
+
+hide action ping             // refinement-hidden *label*
+                             // legal only if ping is not connected
+                             // (I-NO-HIDDEN-BOUNDARY / Paper 1)
+```
+
+The untyped projection classifies `hide action ping[, q]*` as
+`HideSort::Actions` (names after the `action` keyword). A hide list
+that does not begin with `action` plus at least one name remains
+`HideSort::StateFields`, so `hide action` alone still hides a state
+field named `action`. Connecting a label that appears in `hide action`
+is a static error at composition time, not a silent composite stutter;
+surface projection still records `NMLT-M9-HIDE-ACTION` as an M9 gap marker,
+while the executable composition-time I-NO-HIDDEN-BOUNDARY check lives as
+`CongruenceIssue::HiddenConnectedAction` inside `OpenRefinementCongruenceChecker`
+(`nmlt-temporal`), after surface `hide action` lowers to `HideSort::Actions`
+in `nmlt-core`.
+
+Paper 1 fixture: `examples/paper1/hidden_ping_receive.nmlt`.
+
+Surface composition wiring (2026-08-27): the lossless frontend recognizes
+
+```text
+compose InvalidHiddenPing {
+  connect ConcreteSender.ping -> Receiver.receive
+}
+```
+
+and file-level `connect Left.action -> Right.action`. Untyped projection
+exposes `UntypedCompose` / `UntypedConnect` plus helpers
+`surface_connections` / `surface_wired_action_pairs`, so
+`hidden_wired_actions(system, pairs)` can run from declared source wires.
+This is **not** a full composition elaborator: M9 still emits
+`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`, and executable
+`CompositionSpec` / congruence checking remain in `nmlt-temporal` on
+hand-built specs. The fixture is not part of `canonical-v1.json`.
 
 ## 3. Observation projections
 

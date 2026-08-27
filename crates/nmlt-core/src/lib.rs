@@ -22,10 +22,12 @@ pub use formatter::{FormatMode, FormatOutput, format_cst, format_source};
 pub use lexer::{LexedFile, Token, TokenKind, lex_source};
 pub use syntax::{ParsedFile, SyntaxParse, SystemDecl, parse_cst, parse_source};
 pub use untyped::{
-    BindingKind, M9SurfaceIssue, ObservationKind, ProjectionCoverage, ProjectionIssue,
+    BindingKind, HideSort, M9SurfaceIssue, ObservationKind, ProjectionCoverage, ProjectionIssue,
     ProjectionIssueKind, PropertyKind, RawTerm, SpannedText, SurfaceOrigin, UntypedAction,
-    UntypedBinding, UntypedDeclaration, UntypedEnum, UntypedEnumItem, UntypedEnumVariant,
-    UntypedErrorNode, UntypedFile, UntypedImport, UntypedMember, UntypedModule, UntypedObservation,
-    UntypedParameter, UntypedParameterItem, UntypedPort, UntypedProjection, UntypedProperty,
-    UntypedStatement, UntypedSurfaceNode, UntypedSystem, UntypedUpdateTarget, project_untyped,
+    UntypedBinding, UntypedCompose, UntypedComposeItem, UntypedConnect, UntypedDeclaration,
+    UntypedEnum, UntypedEnumItem, UntypedEnumVariant, UntypedErrorNode, UntypedFile, UntypedImport,
+    UntypedMember, UntypedModule, UntypedObservation, UntypedParameter, UntypedParameterItem,
+    UntypedPort, UntypedProjection, UntypedProperty, UntypedStatement, UntypedSurfaceNode,
+    UntypedSystem, UntypedUpdateTarget, hidden_action_names, hidden_wired_actions, project_untyped,
+    surface_connections, surface_wired_action_pairs,
 };

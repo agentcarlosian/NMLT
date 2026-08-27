@@ -50,7 +50,8 @@ system ProviderAttempt(req: Request) {
 The current lossless frontend recognizes the Phase 1 declaration shells,
 including modules and surface-only data/record/function forms, systems, state,
 actions, `require`, explicit `set` targets, capabilities, properties,
-observations, and hiding. It projects that structure into a complete untyped
+observations, hiding, and surface `compose` / `connect` wiring (not yet an
+executable composition elaborator). It projects that structure into a complete untyped
 surface artifact while preserving unsupported or recovered nodes explicitly.
 M9 strengthens that boundary into an ordered, origin-censused surface
 projection: modules are not flattened, imports and enums are structured,

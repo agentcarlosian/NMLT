@@ -1,0 +1,64 @@
+# Paper 1 in plain English
+
+**For:** sus magi  
+**Date:** 2026-08-27  
+**Status:** Orbit A core frozen enough to write against; residual math deferred
+
+## What this project is trying to say
+
+NMLT treats programs as *behaviors* you can compose. Refinement means “the concrete thing is a valid stand-in for the abstract thing.” Composition means “plug two behaviors together on matching ports.”
+
+The hard question: if A is a good stand-in for B *alone*, is “A plugged into D” still a good stand-in for “B plugged into D”?
+
+If the answer were always yes, composition would be easy. It isn’t always yes.
+
+## The bug we checked (the punchline)
+
+Imagine a sender that can `ping`, and a receiver that flips an observable bit when it gets the ping.
+
+Locally, you can classify `ping` as “hidden” (internal noise) under a one-step refinement mapping with stuttering (not classical weak simulation) and still say the sender refines a do-nothing abstract sender.
+
+After you wire them together, that “hidden” ping is no longer private: it forces the receiver to move, and the *pair* changes what you can observe. So the composed concrete system is *not* a refinement of the composed abstract system.
+
+**Moral:** something you hide locally is not automatically silent in a larger system if it’s still connected to a peer.
+
+That’s Theorem T3 in Lean. It’s the paper’s main negative result.
+
+## The repair (what we’re allowed to claim positively)
+
+For the small mathematical model in the Lean core files, we proved a conditional positive theorem (T5):
+
+If you refuse to hide any connected action, the wirings match, and label renaming doesn’t smash a free action onto a busy name, then left-side refinement *does* lift through composition (observation-safety / finite observation-trace inclusion). Those three premises are independently indispensable for the default lift—not “necessary” in a stronger universal sense.
+
+We also have:
+
+- a positive example where `ping` is visible (same wiring, lift works)
+- a positive example with a private internal step and *no* wires (lift works)
+- a negative example where label renaming collides names (lift fails even though wires “match”)
+- a negative example with an extra abstract wire (wiring coverage fails; lift fails)
+
+There’s also an older *strong* / exact-action congruence theorem (T4) in a richer OpenComposition model. It’s real, but it’s a different setting—not residual C1. It does not secretly prove the full weak story with resources and fairness, and T5 does not close full RFC 0008.
+
+## What we are *not* claiming yet
+
+- Full “everything in RFC 0008” (capabilities, grades, fairness, liveness)
+- That the contest demo / Rust verifier is the research contribution
+- That we’ve finished a journal paper ready to submit without more writing
+
+## Artifact note (2026-08-27)
+
+T5 and the independence lemmas may still be local-only relative to GitHub `main` @ `0417f6e`. Frozen paper SHA stays a placeholder until you approve push/tag.
+
+## Decision (2026-08-27)
+
+**Freeze** the Orbit A mechanization core as the mathematical spine of Paper 1.
+
+**Next work** should make the paper readable and self-contained (prose, figures, PDF), not invent new big theorems tonight.
+
+Later research map (not blocked, just not the immediate push): resource-aware congruence, language surface = Lean theorems, evidence calculus thickness.
+
+## If you only remember three sentences
+
+1. Local hiding + live connection can break composition; we proved that.
+2. Under clear interface rules, a small-model repair works; we proved that too.
+3. The rest of the research program is real, but Paper 1 should ship this spine cleanly rather than swallowing the whole map.

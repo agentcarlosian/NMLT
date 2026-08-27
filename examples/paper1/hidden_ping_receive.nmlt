@@ -1,0 +1,72 @@
+// Paper 1 design fixture. NOT part of canonical-v1.json.
+// Lean source of truth:
+//   mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean
+//   mechanization/lean/NMLT/Behavior/WeakConditionalCongruence.lean
+//
+// Systems parse as top-level `system Name { ... }`. Declared wiring uses
+// `compose` / `connect` (surface only). This is NOT a checked refinement claim
+// and is NOT part of canonical-v1.json. Full compose elaboration may still
+// fail-close under M9 (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`).
+//
+// Intended Lean correspondences (not discharged by this file):
+//   AbstractSender  ~ abstractSender      (no ping step)
+//   ConcreteSender  ~ concreteSender      (ping, locally hideable)
+//   Receiver        ~ receiver            (false -receive-> true, observe bit)
+// Connecting ping to receive and hiding ping is Invalid-Congruence.
+// The same wiring with ping visible is VisibleSync.
+
+system AbstractSender {
+  state unit: Bool = false
+
+  // No ping action: the abstract sender cannot take the step that
+  // the concrete sender wants to hide.
+
+  observe unit
+}
+
+system ConcreteSender {
+  state unit: Bool = false
+
+  action ping {
+    // Leaves local state and observation unchanged.
+    set unit = unit
+  }
+
+  observe unit
+  hide action ping
+  // Projected as HideSort::Actions with name `ping` (RFC 0007 / nmlt-core).
+  // Connecting ping while it is hidden is Invalid-Congruence;
+  // composition-time check: CongruenceIssue::HiddenConnectedAction (nmlt-temporal).
+}
+
+system Receiver {
+  state bit: Bool = false
+
+  action receive {
+    require bit == false
+    set bit = true
+  }
+
+  observe bit
+}
+
+system VisibleAbstractSender {
+  state unit: Bool = false
+
+  action ping {
+    set unit = unit
+  }
+
+  observe unit
+}
+
+// Surface wiring for I-NO-HIDDEN-BOUNDARY demos.
+// `hidden_wired_actions(ConcreteSender, surface_wired_action_pairs(...))`
+// flags `ping` on InvalidHiddenPing; VisibleSync stays empty for NHB.
+compose InvalidHiddenPing {
+  connect ConcreteSender.ping -> Receiver.receive
+}
+
+compose VisibleSync {
+  connect VisibleAbstractSender.ping -> Receiver.receive
+}

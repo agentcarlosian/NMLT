@@ -1518,6 +1518,19 @@ impl OpenRefinementCongruenceChecker {
     }
 }
 
+/// I-NO-HIDDEN-BOUNDARY: left actions that are both refinement-hidden and wired.
+#[must_use]
+pub fn hidden_connected_left_actions(
+    hiding: &ActionHiding,
+    connections: &[Connection],
+) -> Vec<String> {
+    connections
+        .iter()
+        .filter(|c| matches!(hiding.get(&c.left_action), Some(None)))
+        .map(|c| c.left_action.clone())
+        .collect()
+}
+
 fn check_interface_preservation(
     concrete: &OpenSystem,
     abstract_system: &OpenSystem,
@@ -1869,6 +1882,58 @@ mod tests {
             },
         );
         assert!(report.accepted, "{:#?}", report.issues);
+    }
+
+    #[test]
+    fn rejects_paper1_hidden_connected_ping() {
+        // ConcreteSender hides ping but wires it to receive — Paper 1 Invalid-Congruence.
+        // Locally, ping leaves the observation unchanged (Paper 1 concreteSender).
+        let concrete = system(
+            FiniteGraph::new(
+                vec![state("visible", false)],
+                vec![0],
+                vec![Transition::action(0, "ping", 0)],
+            )
+            .unwrap(),
+            [("ping", ActionSignature::output("bus", unit()))],
+        );
+        let abstract_system = system(
+            FiniteGraph::new(vec![state("visible", false)], vec![0], vec![]).unwrap(),
+            [],
+        );
+        let peer = peer();
+        let peer_obs = ObservationMap::identity(["peer"]);
+        let hiding = ActionHiding::from_hide_actions(["ping"], [] as [(&str, &str); 0]);
+        let concrete_composition = composition("ping", "transfer");
+        assert_eq!(
+            hidden_connected_left_actions(&hiding, &concrete_composition.connections),
+            vec!["ping".to_owned()]
+        );
+        let report = OpenRefinementCongruenceChecker::check(
+            &concrete,
+            &abstract_system,
+            &peer,
+            &CongruenceSpec {
+                local_refinement: RefinementSpec {
+                    state_map: vec![0],
+                    concrete_observation: ObservationMap::identity(["visible"]),
+                    abstract_observation: ObservationMap::identity(["visible"]),
+                    actions: hiding,
+                },
+                concrete_composition,
+                // Abstract has no ping to wire; empty composition is intentional.
+                abstract_composition: CompositionSpec::default(),
+                peer_observation: peer_obs,
+            },
+        );
+        assert!(
+            report
+                .issues
+                .contains(&CongruenceIssue::HiddenConnectedAction("ping".to_owned())),
+            "{:#?}",
+            report.issues
+        );
+        assert!(!report.accepted);
     }
 
     #[test]

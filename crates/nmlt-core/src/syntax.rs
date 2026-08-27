@@ -259,6 +259,10 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
             self.parse_enum_decl();
         } else if self.at_keyword("system") {
             self.parse_system_decl();
+        } else if self.at_keyword("compose") {
+            self.parse_compose_decl();
+        } else if self.at_keyword("connect") {
+            self.parse_connect_decl();
         } else {
             return false;
         }
@@ -401,7 +405,75 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
         self.finish();
     }
 
+    fn parse_compose_decl(&mut self) {
+        self.start(SyntaxKind::ComposeDecl);
+        self.bump();
+        self.expect_identifier("NMLT2015", "expected a compose name after `compose`");
+        self.bump_trivia();
+        if !self.at_kind(TokenKind::LeftBrace) {
+            self.error_at_current("NMLT2015", "expected `{` to start compose body");
+            self.parse_line_tail();
+            self.finish();
+            return;
+        }
+
+        self.start(SyntaxKind::ComposeBody);
+        self.bump();
+        self.parse_compose_body();
+        self.finish();
+        self.finish();
+    }
+
+    fn parse_compose_body(&mut self) {
+        while !self.at_end() && !self.at_significant_kind(TokenKind::RightBrace) {
+            if self.at_trivia() {
+                self.bump();
+                continue;
+            }
+            if self.at_keyword("connect") {
+                self.parse_connect_decl();
+            } else {
+                self.error_and_recover_line(
+                    "NMLT2015",
+                    "expected a `connect` declaration in compose body",
+                );
+            }
+        }
+        if self.at_significant_kind(TokenKind::RightBrace) {
+            self.bump_trivia();
+            self.bump();
+        }
+    }
+
+    /// `connect Left.action -> Right.action` (top-level or inside `compose`).
+    fn parse_connect_decl(&mut self) {
+        self.start(SyntaxKind::ConnectDecl);
+        self.bump();
+        self.expect_identifier("NMLT2016", "expected a left system name after `connect`");
+        self.bump_inline_trivia();
+        if !self.eat_text(".") {
+            self.error_at_current("NMLT2016", "expected `.` after left system name");
+        }
+        self.expect_identifier("NMLT2016", "expected a left action name");
+        self.bump_inline_trivia();
+        if !self.eat_text("->") {
+            self.error_at_current("NMLT2016", "expected `->` between connected actions");
+        }
+        self.expect_identifier("NMLT2016", "expected a right system name");
+        self.bump_inline_trivia();
+        if !self.eat_text(".") {
+            self.error_at_current("NMLT2016", "expected `.` after right system name");
+        }
+        self.expect_identifier("NMLT2016", "expected a right action name");
+        self.bump_inline_trivia();
+        if self.at_statement_terminator() {
+            self.bump();
+        }
+        self.finish();
+    }
+
     fn parse_system_decl(&mut self) {
+
         let start = self.current_span().start;
         self.start(SyntaxKind::SystemDecl);
         self.bump();

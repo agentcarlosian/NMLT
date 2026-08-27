@@ -11,3 +11,7 @@ that all exact source identities still match.
 
 Every example should eventually include intended claims, negative controls,
 expected evidence class, and a concrete implementation or trace mapping.
+
+Paper 1 (hidden ping / receive) lives outside the frozen v1 corpus, as a
+design fixture only: [`paper1/hidden_ping_receive.nmlt`](paper1/hidden_ping_receive.nmlt).
+Do not add it to `canonical-v1.json` without a corpus-identity bump.

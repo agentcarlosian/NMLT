@@ -37,7 +37,7 @@ pub use open::{
     DEFAULT_MAX_COMPOSED_TRANSITIONS, DEFAULT_MAX_COMPOSITION_WORK_ITEMS,
     Interface as OpenInterface, InterfaceBuildError, OpenRefinementCongruenceChecker, OpenSystem,
     OpenSystemIssue, Side, compose as compose_open_systems,
-    compose_with_limits as compose_open_systems_with_limits,
+    compose_with_limits as compose_open_systems_with_limits, hidden_connected_left_actions,
 };
 pub use open_congruence::{
     FiniteStateInvariant, InvariantTransportReport, TwoSidedCongruenceChecker,

@@ -145,6 +145,33 @@ impl ActionHiding {
         &self.actions
     }
 
+    /// Build an action map from surface `hide action` names plus visible renames.
+    /// Hidden names map to `None`. Visible pairs map concrete → Some(abstract).
+    /// If a name appears both hidden and visible, hiding wins.
+    pub fn from_hide_actions<H, V, S, T>(hidden: H, visible: V) -> Self
+    where
+        H: IntoIterator<Item = S>,
+        V: IntoIterator<Item = (S, T)>,
+        S: Into<String>,
+        T: Into<String>,
+    {
+        let mut actions = BTreeMap::new();
+        for (concrete, abstract_action) in visible {
+            actions.insert(concrete.into(), Some(abstract_action.into()));
+        }
+        for name in hidden {
+            actions.insert(name.into(), None);
+        }
+        Self { actions }
+    }
+
+    /// Names explicitly marked hidden (`Some(None)`).
+    pub fn hidden_actions(&self) -> impl Iterator<Item = &str> + '_ {
+        self.actions
+            .iter()
+            .filter_map(|(name, mapped)| mapped.is_none().then_some(name.as_str()))
+    }
+
     /// Drops explicitly hidden actions and renames visible actions. Unmapped actions
     /// are errors so trace projection cannot silently hide a new or misspelled action.
     pub fn project_visible<'a, I>(&self, actions: I) -> Result<Vec<String>, ActionProjectionError>
@@ -213,6 +240,21 @@ mod tests {
         let word = [false, false, true, true, false];
         assert_eq!(stutter_project(&word), vec![false, true, false]);
         assert!(stutter_equivalent(&word, &[false, true, false, false]));
+    }
+
+    #[test]
+    fn from_hide_actions_hides_and_lets_hiding_win() {
+        let map = ActionHiding::from_hide_actions(
+            ["ping", "cache"],
+            [("send", "deliver"), ("cache", "kept")],
+        );
+        assert_eq!(map.get("ping"), Some(None));
+        assert_eq!(map.get("cache"), Some(None), "hiding wins over visible rename");
+        assert_eq!(map.get("send"), Some(Some("deliver")));
+        assert_eq!(
+            map.hidden_actions().collect::<Vec<_>>(),
+            vec!["cache", "ping"]
+        );
     }
 
     #[test]

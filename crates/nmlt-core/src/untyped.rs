@@ -131,6 +131,8 @@ pub enum UntypedDeclaration {
     Import(UntypedImport),
     Enum(UntypedEnum),
     System(UntypedSystem),
+    Compose(UntypedCompose),
+    Connect(UntypedConnect),
     Unsupported(UntypedSurfaceNode),
     Error(UntypedErrorNode),
 }
@@ -144,6 +146,8 @@ impl UntypedDeclaration {
             Self::Import(import) => import.span,
             Self::Enum(enumeration) => enumeration.span,
             Self::System(system) => system.span,
+            Self::Compose(compose) => compose.span,
+            Self::Connect(connect) => connect.span,
             Self::Unsupported(node) => node.source.span,
             Self::Error(node) => node.source.span,
         }
@@ -241,6 +245,69 @@ impl UntypedSystem {
         self.parameters
             .iter()
             .filter_map(UntypedParameterItem::as_parameter)
+    }
+}
+
+/// Top-level `compose Name { connect ... }` surface form.
+///
+/// This is wiring syntax only. It does **not** elaborate to an executable
+/// `CompositionSpec` or discharge congruence; M9 still fail-closes compose.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UntypedCompose {
+    pub name: Option<SpannedText>,
+    pub span: Span,
+    pub connections: Vec<UntypedComposeItem>,
+}
+
+impl UntypedCompose {
+    pub fn supported_connections(&self) -> impl Iterator<Item = &UntypedConnect> {
+        self.connections
+            .iter()
+            .filter_map(UntypedComposeItem::as_connect)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum UntypedComposeItem {
+    Connect(UntypedConnect),
+    SurfaceOnly(UntypedSurfaceNode),
+    Error(UntypedErrorNode),
+}
+
+impl UntypedComposeItem {
+    #[must_use]
+    pub const fn span(&self) -> Span {
+        match self {
+            Self::Connect(connect) => connect.span,
+            Self::SurfaceOnly(node) => node.source.span,
+            Self::Error(node) => node.source.span,
+        }
+    }
+
+    #[must_use]
+    pub const fn as_connect(&self) -> Option<&UntypedConnect> {
+        match self {
+            Self::Connect(connect) => Some(connect),
+            Self::SurfaceOnly(_) | Self::Error(_) => None,
+        }
+    }
+}
+
+/// `connect Left.action -> Right.action` (file-level or inside `compose`).
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UntypedConnect {
+    pub left_system: Option<SpannedText>,
+    pub left_action: Option<SpannedText>,
+    pub right_system: Option<SpannedText>,
+    pub right_action: Option<SpannedText>,
+    pub span: Span,
+}
+
+impl UntypedConnect {
+    /// `(left_action, right_action)` when both action names projected.
+    #[must_use]
+    pub fn action_pair(&self) -> Option<(&str, &str)> {
+        Some((self.left_action.as_ref()?.text.as_str(), self.right_action.as_ref()?.text.as_str()))
     }
 }
 
@@ -346,11 +413,105 @@ pub enum ObservationKind {
     Hide,
 }
 
+/// What a `hide` declaration conceals. `observe` does not use this.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum HideSort {
+    /// `hide input, channel` — omit state fields from the observation.
+    StateFields,
+    /// `hide action ping` — mark labels as refinement-hidden (Paper 1 / RFC 0007).
+    Actions,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UntypedObservation {
     pub kind: ObservationKind,
+    pub hide_sort: Option<HideSort>,
+    pub names: Vec<SpannedText>,
     pub expression: Option<RawTerm>,
     pub span: Span,
+}
+
+impl UntypedObservation {
+    #[must_use]
+    pub fn hides_actions(&self) -> bool {
+        self.kind == ObservationKind::Hide && self.hide_sort == Some(HideSort::Actions)
+    }
+}
+
+/// Collect action labels named by every `hide action ...` in a system.
+#[must_use]
+pub fn hidden_action_names(system: &UntypedSystem) -> Vec<&str> {
+    system
+        .members
+        .iter()
+        .filter_map(|member| match member {
+            UntypedMember::Observation(observation) if observation.hides_actions() => {
+                Some(observation)
+            }
+            _ => None,
+        })
+        .flat_map(|observation| observation.names.iter().map(|name| name.text.as_str()))
+        .collect()
+}
+
+/// Left-action names that violate I-NO-HIDDEN-BOUNDARY given explicit wires.
+/// `connections` are `(left_action, right_action)` pairs; only left is checked.
+#[must_use]
+pub fn hidden_wired_actions<'a>(
+    system: &'a UntypedSystem,
+    connections: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> Vec<&'a str> {
+    let hidden: HashSet<&str> = hidden_action_names(system).into_iter().collect();
+    let mut out = Vec::new();
+    for (left, _) in connections {
+        if hidden.contains(left) && !out.contains(&left) {
+            out.push(left);
+        }
+    }
+    out
+}
+
+/// Every projected `connect` in source order (file-level and inside `compose`).
+#[must_use]
+pub fn surface_connections(file: &UntypedFile) -> Vec<&UntypedConnect> {
+    let mut out = Vec::new();
+    collect_surface_connections(&file.declarations, &mut out);
+    out
+}
+
+fn collect_surface_connections<'a>(
+    declarations: &'a [UntypedDeclaration],
+    out: &mut Vec<&'a UntypedConnect>,
+) {
+    for declaration in declarations {
+        match declaration {
+            UntypedDeclaration::Module(module) => {
+                collect_surface_connections(&module.declarations, out);
+            }
+            UntypedDeclaration::Compose(compose) => {
+                for item in &compose.connections {
+                    if let UntypedComposeItem::Connect(connect) = item {
+                        out.push(connect);
+                    }
+                }
+            }
+            UntypedDeclaration::Connect(connect) => out.push(connect),
+            UntypedDeclaration::Import(_)
+            | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Unsupported(_)
+            | UntypedDeclaration::Error(_) => {}
+        }
+    }
+}
+
+/// `(left_action, right_action)` pairs from surface `connect` declarations.
+#[must_use]
+pub fn surface_wired_action_pairs(file: &UntypedFile) -> Vec<(&str, &str)> {
+    surface_connections(file)
+        .into_iter()
+        .filter_map(UntypedConnect::action_pair)
+        .collect()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -553,6 +714,8 @@ impl Projector {
             SyntaxKind::SystemDecl => {
                 UntypedDeclaration::System(self.project_system(node.node, node.span.start))
             }
+            SyntaxKind::ComposeDecl => UntypedDeclaration::Compose(self.project_compose(node)),
+            SyntaxKind::ConnectDecl => UntypedDeclaration::Connect(self.project_connect(node)),
             SyntaxKind::Error => {
                 self.record_recovery(node.span);
                 UntypedDeclaration::Error(error_node(node))
@@ -582,6 +745,51 @@ impl Projector {
     fn project_import(&mut self, node: NodeAt<'_>) -> UntypedImport {
         UntypedImport {
             module: identifier(node.node, node.span.start, 1),
+            span: node.span,
+        }
+    }
+
+    fn project_compose(&mut self, node: NodeAt<'_>) -> UntypedCompose {
+        let children = direct_nodes(node.node, node.span.start);
+        let mut connections = Vec::new();
+        if let Some(body) = children
+            .into_iter()
+            .find(|child| child.node.kind() == SyntaxKind::ComposeBody)
+        {
+            for child in direct_nodes(body.node, body.span.start) {
+                let item = match child.node.kind() {
+                    SyntaxKind::ConnectDecl => {
+                        UntypedComposeItem::Connect(self.project_connect(child))
+                    }
+                    SyntaxKind::Error => {
+                        self.record_recovery(child.span);
+                        UntypedComposeItem::Error(error_node(child))
+                    }
+                    kind => {
+                        self.issues.push(ProjectionIssue {
+                            kind: ProjectionIssueKind::UnexpectedProjectedNode { kind },
+                            span: child.span,
+                        });
+                        UntypedComposeItem::SurfaceOnly(surface_node(child))
+                    }
+                };
+                connections.push(item);
+            }
+        }
+        UntypedCompose {
+            name: identifier(node.node, node.span.start, 1),
+            span: node.span,
+            connections,
+        }
+    }
+
+    fn project_connect(&mut self, node: NodeAt<'_>) -> UntypedConnect {
+        // Identifier tokens: connect, left_system, left_action, right_system, right_action
+        UntypedConnect {
+            left_system: identifier(node.node, node.span.start, 1),
+            left_action: identifier(node.node, node.span.start, 2),
+            right_system: identifier(node.node, node.span.start, 3),
+            right_action: identifier(node.node, node.span.start, 4),
             span: node.span,
         }
     }
@@ -874,9 +1082,16 @@ impl Projector {
 
     fn project_observation(&mut self, node: NodeAt<'_>, kind: ObservationKind) -> UntypedMember {
         let children = direct_nodes(node.node, node.span.start);
+        let expression = raw_child(&children, SyntaxKind::Expr);
+        let (hide_sort, names) = match kind {
+            ObservationKind::Hide => classify_hide_expression(expression.as_ref()),
+            ObservationKind::Observe => (None, observation_names(expression.as_ref())),
+        };
         UntypedMember::Observation(UntypedObservation {
             kind,
-            expression: raw_child(&children, SyntaxKind::Expr),
+            hide_sort,
+            names,
+            expression,
             span: node.span,
         })
     }
@@ -928,6 +1143,8 @@ fn collect_systems<'file>(
             UntypedDeclaration::System(system) => systems.push(system),
             UntypedDeclaration::Import(_)
             | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::Compose(_)
+            | UntypedDeclaration::Connect(_)
             | UntypedDeclaration::Unsupported(_)
             | UntypedDeclaration::Error(_) => {}
         }
@@ -981,6 +1198,33 @@ fn collect_m9_declaration_issues(
             }
             UntypedDeclaration::Enum(_) => {}
             UntypedDeclaration::System(system) => collect_m9_system_issues(system, issues),
+            UntypedDeclaration::Compose(compose) => {
+                issues.push(M9SurfaceIssue {
+                    code: "NMLT-M9-COMPOSE",
+                    feature: "compose declaration (surface wiring only; no elaborator)",
+                    span: compose.span,
+                });
+                for item in &compose.connections {
+                    if let UntypedComposeItem::Connect(connect) = item {
+                        issues.push(M9SurfaceIssue {
+                            code: "NMLT-M9-CONNECT",
+                            feature: "connect declaration (surface wiring only; no elaborator)",
+                            span: connect.span,
+                        });
+                    } else {
+                        issues.push(M9SurfaceIssue {
+                            code: "NMLT-M9-SURFACE-INCOMPLETE",
+                            feature: "recovered or unsupported compose member",
+                            span: item.span(),
+                        });
+                    }
+                }
+            }
+            UntypedDeclaration::Connect(connect) => issues.push(M9SurfaceIssue {
+                code: "NMLT-M9-CONNECT",
+                feature: "connect declaration (surface wiring only; no elaborator)",
+                span: connect.span,
+            }),
             UntypedDeclaration::Unsupported(node) => issues.push(M9SurfaceIssue {
                 code: "NMLT-M9-UNSUPPORTED-DECLARATION",
                 feature: unsupported_declaration_name(node.kind),
@@ -1035,11 +1279,19 @@ fn collect_m9_system_issues(system: &UntypedSystem, issues: &mut Vec<M9SurfaceIs
             }
             UntypedMember::Observation(observation) => {
                 if observation.kind == ObservationKind::Hide {
-                    issues.push(M9SurfaceIssue {
-                        code: "NMLT-M9-HIDING",
-                        feature: "hiding declaration",
-                        span: observation.span,
-                    });
+                    if observation.hides_actions() {
+                        issues.push(M9SurfaceIssue {
+                            code: "NMLT-M9-HIDE-ACTION",
+                            feature: "hide action (refinement-hidden label)",
+                            span: observation.span,
+                        });
+                    } else {
+                        issues.push(M9SurfaceIssue {
+                            code: "NMLT-M9-HIDING",
+                            feature: "hiding declaration",
+                            span: observation.span,
+                        });
+                    }
                 }
             }
             UntypedMember::SurfaceOnly(node) => issues.push(M9SurfaceIssue {
@@ -1179,6 +1431,7 @@ const fn is_semantic_node(kind: SyntaxKind) -> bool {
     match kind {
         SyntaxKind::SourceFile
         | SyntaxKind::SystemBody
+        | SyntaxKind::ComposeBody
         | SyntaxKind::ParameterList
         | SyntaxKind::ActionBody => false,
         SyntaxKind::ModuleDecl
@@ -1207,6 +1460,8 @@ const fn is_semantic_node(kind: SyntaxKind) -> bool {
         | SyntaxKind::ResourceDecl
         | SyntaxKind::ObserveDecl
         | SyntaxKind::HideDecl
+        | SyntaxKind::ComposeDecl
+        | SyntaxKind::ConnectDecl
         | SyntaxKind::TypeExpr
         | SyntaxKind::Expr
         | SyntaxKind::Error => true,
@@ -1260,6 +1515,32 @@ fn census_projected_declaration(
             }
         }
         UntypedDeclaration::System(system) => census_projected_system(system, origins),
+        UntypedDeclaration::Compose(compose) => {
+            origins.push(SurfaceOrigin {
+                kind: SyntaxKind::ComposeDecl,
+                span: compose.span,
+            });
+            for item in &compose.connections {
+                match item {
+                    UntypedComposeItem::Connect(connect) => origins.push(SurfaceOrigin {
+                        kind: SyntaxKind::ConnectDecl,
+                        span: connect.span,
+                    }),
+                    UntypedComposeItem::SurfaceOnly(node) => origins.push(SurfaceOrigin {
+                        kind: node.kind,
+                        span: node.source.span,
+                    }),
+                    UntypedComposeItem::Error(node) => origins.push(SurfaceOrigin {
+                        kind: SyntaxKind::Error,
+                        span: node.source.span,
+                    }),
+                }
+            }
+        }
+        UntypedDeclaration::Connect(connect) => origins.push(SurfaceOrigin {
+            kind: SyntaxKind::ConnectDecl,
+            span: connect.span,
+        }),
         UntypedDeclaration::Unsupported(node) => origins.push(SurfaceOrigin {
             kind: node.kind,
             span: node.source.span,
@@ -1728,4 +2009,54 @@ mod tests {
             matches!(target, UntypedUpdateTarget::Location { root, .. } if root.text == "missing")
         );
     }
+}
+
+fn observation_names(expression: Option<&RawTerm>) -> Vec<SpannedText> {
+    expression.map(ident_spans_in_term).unwrap_or_default()
+}
+
+fn classify_hide_expression(expression: Option<&RawTerm>) -> (Option<HideSort>, Vec<SpannedText>) {
+    let Some(term) = expression else {
+        return (Some(HideSort::StateFields), Vec::new());
+    };
+    let idents = ident_spans_in_term(term);
+    if idents.first().map(|name| name.text.as_str()) == Some("action") && idents.len() > 1 {
+        (Some(HideSort::Actions), idents.into_iter().skip(1).collect())
+    } else {
+        (Some(HideSort::StateFields), idents)
+    }
+}
+
+fn ident_spans_in_term(term: &RawTerm) -> Vec<SpannedText> {
+    let text = &term.source.text;
+    let base = term.source.span.start;
+    let bytes = text.as_bytes();
+    let mut names = Vec::new();
+    let mut index = 0;
+    while index < bytes.len() {
+        let ch = bytes[index];
+        if ch == b',' || ch.is_ascii_whitespace() {
+            index += 1;
+            continue;
+        }
+        if ch.is_ascii_alphabetic() || ch == b'_' {
+            let start = index;
+            index += 1;
+            while index < bytes.len() {
+                let next = bytes[index];
+                if next.is_ascii_alphanumeric() || next == b'_' {
+                    index += 1;
+                } else {
+                    break;
+                }
+            }
+            names.push(SpannedText {
+                text: text[start..index].to_string(),
+                span: Span::new(base + start, base + index),
+            });
+            continue;
+        }
+        index += 1;
+    }
+    names
 }

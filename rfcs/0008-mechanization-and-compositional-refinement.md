@@ -2,6 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
+- Revised: 2026-08-27 (small-model weak safety lift recorded)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -328,9 +329,13 @@ Use `H(c,d) = (R.h(c),d)`.
 7. **Capability and grade side facts:** `I-CAP` proves disjointness/transfer;
    `I-GRADE` proves the composite grade inequality.
 
-This case split remains a proof outline for weak hiding, label mapping,
-capabilities, and grades. It must not be inferred from the checked bounded
-exact-action theorem.
+**Status 2026-08-27.** Cases 1–6 are checked for the small LTS model of
+`Core/Transition.lean` as `weakConditionalCongruence_safety`, with
+`IsolationReflects` stated separately from `WiringCovered` (necessity:
+`CollidedAbstractWire`). Case 7 (`I-CAP` / `I-GRADE`) remains a proof
+outline, as do fairness and the OpenComposition *weak* hiding story. The
+small-model lift must not be inferred from the exact-action theorem, and
+the exact-action theorem must not be inferred from the small-model lift.
 
 ## 7. Mechanization gates
 
@@ -347,9 +352,10 @@ An NMLT theorem is reportable as `proved` only when:
 
 ## Evidence consequences
 
-The current artifacts support both a checked **refutation** of unconditional
-congruence and a checked bounded exact-action safety theorem. They do not
-support:
+The current artifacts support a checked **refutation** of unconditional
+congruence, a checked **small-model weak safety lift** under
+`I-NO-HIDDEN-BOUNDARY` + `WiringCovered` + `IsolationReflects`, and a
+checked bounded exact-action safety theorem. They do not support:
 
 - congruence of the full weak/refinement-and-resource rule;
 - soundness of RFC 0001 as a whole;
@@ -376,7 +382,10 @@ separate control.
 The mechanization program must retain:
 
 - the checked hidden-synchronization counterexample;
-- a variant omitting `I-NO-HIDDEN-BOUNDARY`, for which congruence remains false;
+- a variant omitting `I-NO-HIDDEN-BOUNDARY`, for which congruence remains false
+  (ping/receive; `pingReceive_violates_noHiddenBoundary`);
+- a variant with `WiringCovered` but not `IsolationReflects`
+  (`CollidedAbstractWire`);
 - a variant breaking connection reflection;
 - a variant sharing one affine capability between components;
 - a variant with a nonmonotone or non-homomorphic grade map;
@@ -445,7 +454,14 @@ dependent proof artifacts even if theorem names remain unchanged.
 
 1. Keep the checked counterexample permanently as a regression test.
 2. Encode ports, direction, connection maps, and `I-NO-HIDDEN-BOUNDARY`.
-3. Prove the repaired safety theorem by the six transition cases above.
+   Surface progress (2026-08-27): `compose` / `connect` parse and project in
+   `nmlt-core` so Paper 1 can declare wires and run `hidden_wired_actions` from
+   source; full compose elaborator / M9 acceptance remains fail-closed
+   (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`). Executable NHB stays in
+   `nmlt-temporal` on `CompositionSpec`.
+3. **Done (2026-08-27, small LTS model):** prove the repaired safety theorem
+   by the six transition cases (`weakConditionalCongruence_safety`), with
+   isolation necessity.
 4. Add capability partition and grade homomorphism structures and proofs.
 5. Define finite prefixes and infinite observation words; then prove
    stuttering safety transport.
