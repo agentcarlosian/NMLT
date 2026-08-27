@@ -9,6 +9,10 @@ versioning compatibility promises.
 
 ### Added
 
+- `nmlt-hir` skips surface `compose`/`connect` (M9 fail-closed; not resolver
+  declarations) so the crate compiles against the Paper 1 wiring slice.
+  Polarized `action output ping` is collected as action `ping`, not `output`.
+
 - Optional surface polarity on action decls: `action output ping` /
   `action input receive` project `UntypedAction.polarity`; bare `action ping`
   stays `None`. Same keyword-as-identifier rule as `hide action` (`action input {`

@@ -2,7 +2,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use nmlt_core::{
-    FormatMode, SyntaxKind, format_source, parse_cst, project_untyped, render_diagnostic_snapshot,
+    FormatMode, SurfacePolarity, SyntaxKind, UntypedMember, format_source, parse_cst,
+    project_untyped, render_diagnostic_snapshot,
 };
 
 const FIXTURES: &[&str] = &[
@@ -185,4 +186,109 @@ fn unsupported_unicode_is_retained_and_diagnosed() {
             .iter()
             .any(|item| item.code == "NMLT1003" && item.span.is_some())
     );
+}
+
+#[test]
+fn paper1_fixture_is_lossless_and_does_not_name_actions_output() {
+    let relative_path = "examples/paper1/hidden_ping_receive.nmlt";
+    let source = read_fixture(relative_path);
+    let parsed = parse_cst(&source);
+    assert!(
+        parsed.diagnostics().is_empty(),
+        "{relative_path}:\n{}",
+        render_diagnostic_snapshot(&source, parsed.diagnostics())
+    );
+    assert_eq!(parsed.reconstruct(), source, "{relative_path}");
+
+    let once = format_source(&source, FormatMode::Preserve);
+    let twice = format_source(once.text(), FormatMode::Preserve);
+    assert!(once.diagnostics().is_empty(), "{relative_path}");
+    assert_eq!(once.text(), source, "{relative_path}");
+    assert_eq!(twice.text(), once.text(), "{relative_path}");
+
+    let projection = project_untyped(&parsed);
+    assert!(
+        projection.is_structurally_complete(),
+        "{relative_path}: {:?}",
+        projection.issues
+    );
+    assert_eq!(projection.coverage.expected, projection.coverage.projected);
+
+    let mut names = Vec::new();
+    for system in projection.file.systems() {
+        for member in &system.members {
+            if let UntypedMember::Action(action) = member {
+                let name = action
+                    .name
+                    .as_ref()
+                    .map(|name| name.text.as_str())
+                    .expect("polarized paper1 actions project a name");
+                assert_ne!(name, "output", "polarity word stolen as action name");
+                assert_ne!(name, "input", "polarity word stolen as action name");
+                names.push((
+                    system.name.as_ref().map(|name| name.text.as_str()),
+                    name,
+                    action.polarity,
+                ));
+            }
+        }
+    }
+    assert_eq!(
+        names,
+        [
+            (
+                Some("ConcreteSender"),
+                "ping",
+                Some(SurfacePolarity::Output)
+            ),
+            (Some("Receiver"), "receive", Some(SurfacePolarity::Input)),
+            (
+                Some("VisibleAbstractSender"),
+                "ping",
+                Some(SurfacePolarity::Output)
+            ),
+        ]
+    );
+}
+
+#[test]
+fn polarized_and_compose_syntax_round_trips_through_the_formatter() {
+    let source = concat!(
+        "system Left {\n",
+        "  state unit: Bool = false\n",
+        "  action output ping { set unit = unit }\n",
+        "  hide action ping\n",
+        "}\n",
+        "system Right {\n",
+        "  state bit: Bool = false\n",
+        "  action input receive { set bit = true }\n",
+        "}\n",
+        "compose Wired {\n",
+        "  connect Left.ping -> Right.receive\n",
+        "}\n",
+        "connect Left.ping -> Right.receive\n",
+    );
+    let once = format_source(source, FormatMode::Preserve);
+    let twice = format_source(once.text(), FormatMode::Preserve);
+    assert!(once.diagnostics().is_empty(), "{:?}", once.diagnostics());
+    assert_eq!(once.text(), source);
+    assert_eq!(twice.text(), once.text());
+
+    let projection = project_untyped(&parse_cst(source));
+    assert!(
+        projection.is_structurally_complete(),
+        "{:?}",
+        projection.issues
+    );
+    let left = projection.file.system_named("Left").expect("Left");
+    let ping = left
+        .members
+        .iter()
+        .find_map(|member| match member {
+            UntypedMember::Action(action) => Some(action),
+            _ => None,
+        })
+        .expect("ping");
+    assert_eq!(ping.name.as_ref().unwrap().text, "ping");
+    assert_eq!(ping.polarity, Some(SurfacePolarity::Output));
 }
