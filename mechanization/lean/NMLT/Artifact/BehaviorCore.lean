@@ -4,6 +4,7 @@ import NMLT.Behavior.ResourceBehavior
 namespace NMLT.Artifact.BehaviorCore
 
 open Lean
+open NMLT.Behavior.ResourceBehavior
 
 abbrev JObject := Std.TreeMap.Raw String Json compare
 
@@ -15,7 +16,7 @@ structure Summary where
   refinements : Nat
 deriving Repr
 
-private structure Profile where
+structure Profile where
   requires : List String
   consumes : List String
   transfers : List String
@@ -23,6 +24,7 @@ private structure Profile where
   grade : List (String × Nat)
   relies : List String
   guarantees : List String
+deriving Repr, BEq
 
 private def reject (message : String) : Except String α :=
   throw s!"behavior-core-v1: {message}"
@@ -152,6 +154,16 @@ private partial def renderTerm (term : Json) : Except String String := do
       pure s!"{leftText} == {rightText}"
   | kind => reject s!"cannot render unknown term kind '{kind}'"
 
+private partial def closedInitializer (term : Json) : Except String Bool := do
+  match ← stringAt term "kind" with
+  | "bool" | "unit" | "enum" => pure true
+  | "read" => pure false
+  | "not" => closedInitializer (← term.getObjVal? "value")
+  | "equal" =>
+      pure ((← closedInitializer (← term.getObjVal? "left")) &&
+        (← closedInitializer (← term.getObjVal? "right")))
+  | kind => reject s!"unknown term kind '{kind}'"
+
 private def actionAt (system : Json) (name : String) : Except String Json := do
   lookup (← objectAt system "actions") name
 
@@ -159,13 +171,63 @@ private def systemAt (systems : JObject) (name : String) : Except String Json :=
   lookup systems name
 
 private def validateAction
-    (facts : List String) (state : JObject)
+    (facts : List String) (state capabilities ports : JObject)
     (systemName actionName : String) (action : Json) : Except String Unit := do
   let direction ← stringAt action "direction"
+  let parametersJson ← action.getObjVal? "parameters"
+  let parameters ← parametersJson.getArr?
+  let parameterNames ← parameters.toList.mapM fun parameter => stringAt parameter "name"
+  let outputs ← strings (← action.getObjVal? "outputs")
+  let resources ← profile action
+  let ownedCapabilities := capabilities.toList.map Prod.fst
+  if !subset resources.requires ownedCapabilities ||
+      !subset resources.consumes ownedCapabilities ||
+      !subset resources.transfers ownedCapabilities then
+    reject s!"action '{systemName}.{actionName}' uses authority it does not own"
+  if resources.consumes.any resources.transfers.contains then
+    reject s!"action '{systemName}.{actionName}' both consumes and transfers the same authority"
+  if resources.receives.any ownedCapabilities.contains then
+    reject s!"action '{systemName}.{actionName}' receives authority it already owns"
   if direction != "internal" && direction != "input" && direction != "output" then
     reject s!"action '{systemName}.{actionName}' has invalid direction '{direction}'"
+  if direction == "internal" then
+    if ports.contains actionName then
+      reject s!"internal action '{systemName}.{actionName}' cannot own a boundary port"
+    if !parameterNames.isEmpty || !outputs.isEmpty || !resources.receives.isEmpty ||
+        !resources.transfers.isEmpty then
+      reject s!"internal action '{systemName}.{actionName}' cannot bind or move a port payload"
+  else
+    let port ← lookup ports actionName
+    let portDirection ← stringAt port "direction"
+    if portDirection != direction then
+      reject s!"action and port '{systemName}.{actionName}' disagree on direction"
+    let payload ← stringAt port "payload"
+    if direction == "input" then
+      if !outputs.isEmpty || !resources.transfers.isEmpty then
+        reject s!"input action '{systemName}.{actionName}' cannot emit or transfer authority"
+      if payload == "Unit" then
+        if parameters.size != 0 || !resources.receives.isEmpty then
+          reject s!"input action '{systemName}.{actionName}' has a nonempty Unit payload binding"
+      else
+        if parameters.size != 1 || (← stringAt parameters[0]! "type") != payload then
+          reject s!"input action '{systemName}.{actionName}' does not bind its port payload"
+        if resources.receives != parameterNames then
+          reject s!"input action '{systemName}.{actionName}' receive profile does not match its payload binding"
+    else
+      if !parameterNames.isEmpty || !resources.receives.isEmpty then
+        reject s!"output action '{systemName}.{actionName}' cannot bind or receive authority"
+      if payload == "Unit" then
+        if !outputs.isEmpty || !resources.transfers.isEmpty then
+          reject s!"output action '{systemName}.{actionName}' emits a value on a Unit port"
+      else
+        if outputs.length != 1 then
+          reject s!"output action '{systemName}.{actionName}' does not emit its port payload"
+        let outputType ← lookup capabilities outputs[0]!
+        if (← outputType.getStr?) != payload then
+          reject s!"output action '{systemName}.{actionName}' payload type does not match its port"
+        if resources.transfers != outputs then
+          reject s!"output action '{systemName}.{actionName}' transfer profile does not match its payload"
   let _ ← boolAt action "hidden"
-  let resources ← profile action
   if !subset resources.relies facts || !subset resources.guarantees facts then
     reject s!"action '{systemName}.{actionName}' names an unknown contract fact"
   let guardsJson ← action.getObjVal? "guards"
@@ -198,7 +260,7 @@ private def validateSystem (facts : List String) (name : String) (system : Json)
   let ports ← objectAt system "ports"
   let actions ← objectAt system "actions"
   let observe ← system.getObjVal? "observe"
-  let _ ← strings observe
+  let observations ← strings observe
   for (field, state) in states.toList do
     let stateType ← stringAt state "type"
     if stateType != "Bool" && stateType != "Unit" &&
@@ -207,6 +269,8 @@ private def validateSystem (facts : List String) (name : String) (system : Json)
     let initial ← stringAt state "initial"
     let initialAst ← state.getObjVal? "initial_ast"
     validateTerm facts states stateType initialAst
+    if !(← closedInitializer initialAst) then
+      reject s!"state '{name}.{field}' initializer must be closed in behavior-core-v1"
     if initial != (← renderTerm initialAst) then
       reject s!"state '{name}.{field}' initializer text does not match its AST"
   for (capability, capabilityType) in capabilities.toList do
@@ -218,8 +282,11 @@ private def validateSystem (facts : List String) (name : String) (system : Json)
     if direction != "input" && direction != "output" then
       reject s!"port '{name}.{portName}' has invalid direction"
     let _ ← stringAt port "payload"
+  for observed in observations do
+    if !states.contains observed then
+      reject s!"observation '{name}.{observed}' is not a state field"
   for (actionName, action) in actions.toList do
-    validateAction facts states name actionName action
+    validateAction facts states capabilities ports name actionName action
 
 private def validateConnection (systems : JObject) (connection : Json) : Except String Unit := do
   let leftSystemName ← stringAt connection "left_system"
@@ -239,6 +306,10 @@ private def validateConnection (systems : JObject) (connection : Json) : Except 
   if !((leftDirection == "output" && rightDirection == "input") ||
       (leftDirection == "input" && rightDirection == "output")) then
     reject "connected actions must have complementary directions"
+  let leftPort ← lookup (← objectAt leftSystem "ports") leftActionName
+  let rightPort ← lookup (← objectAt rightSystem "ports") rightActionName
+  if (← stringAt leftPort "payload") != (← stringAt rightPort "payload") then
+    reject "connected actions must have equal payload types"
   let leftResources ← profile leftAction
   let rightResources ← profile rightAction
   let sender := if leftDirection == "output" then leftResources else rightResources
@@ -265,6 +336,14 @@ private def validateComposition
     reject s!"composition '{name}' violates the capability partition"
   let connectionJson ← composition.getObjVal? "connections"
   let connections ← connectionJson.getArr?
+  let endpoints ← connections.toList.mapM fun connection => do
+    pure ((← stringAt connection "left_action"),
+      (← stringAt connection "right_action"))
+  let leftEndpoints := endpoints.map Prod.fst
+  let rightEndpoints := endpoints.map Prod.snd
+  if leftEndpoints.length != leftEndpoints.eraseDups.length ||
+      rightEndpoints.length != rightEndpoints.eraseDups.length then
+    reject s!"composition '{name}' connections must be one-to-one"
   for connection in connections do
     let connectionLeft ← stringAt connection "left_system"
     let connectionRight ← stringAt connection "right_system"
@@ -289,6 +368,15 @@ private def validateRefinement (systems : JObject) (refinement : Json) : Except 
       !abstractStates.all (fun field => mapped.contains field) ||
       mapped.length != mapped.eraseDups.length then
     reject s!"refinement '{concreteName} refines {abstractName}' does not map states bijectively"
+  for (concreteField, abstractFieldJson) in stateMap.toList do
+    let abstractField ← abstractFieldJson.getStr?
+    let concreteDecl ← lookup concreteStateObject concreteField
+    let abstractDecl ← lookup abstractStateObject abstractField
+    let concreteType ← stringAt concreteDecl "type"
+    let abstractType ← stringAt abstractDecl "type"
+    if concreteType != abstractType then
+      reject (s!"refinement '{concreteName} refines {abstractName}' maps " ++
+        s!"incompatible state types '{concreteType}' and '{abstractType}'")
   let hiddenJson ← refinement.getObjVal? "hidden_actions"
   let hidden ← sortedStrings hiddenJson "hidden_actions"
   let concreteActions ← objectAt concrete "actions"
@@ -334,6 +422,8 @@ def decode (json : Json) : Except String Summary := do
   let mut facts := []
   for (enumName, variantsJson) in enums.toList do
     let variants ← sortedStrings variantsJson s!"enum {enumName}"
+    if variants.isEmpty then
+      reject s!"enum '{enumName}' must have at least one constructor"
     facts := facts ++ variants.map fun variant => s!"{enumName}.{variant}"
   let systems ← objectAt json "systems"
   if systems.size == 0 then
@@ -357,5 +447,194 @@ def decode (json : Json) : Except String Summary := do
 
 def parse (input : String) : Except String Summary := do
   decode (← Json.parse input)
+
+inductive Term where
+  | bool (value : Bool)
+  | unit
+  | enumeration (typeName constructor : String)
+  | read (typeName field : String)
+  | not (value : Term)
+  | equal (left right : Term)
+deriving Repr, BEq
+
+structure StateDecl where
+  name : String
+  typeName : String
+  initial : Term
+deriving Repr, BEq
+
+structure Port where
+  name : String
+  direction : Direction
+  payload : String
+deriving Repr, BEq
+
+structure Action where
+  name : String
+  direction : Direction
+  hidden : Bool
+  guards : List Term
+  updates : List (String × Term)
+  resources : Profile
+deriving Repr, BEq
+
+structure System where
+  name : String
+  state : List StateDecl
+  capabilities : List (String × String)
+  ports : List Port
+  actions : List Action
+  observe : List String
+deriving Repr, BEq
+
+structure Connection where
+  leftSystem : String
+  leftAction : String
+  rightSystem : String
+  rightAction : String
+deriving Repr, BEq
+
+structure Composition where
+  name : String
+  left : String
+  right : String
+  connections : List Connection
+deriving Repr, BEq
+
+structure Refinement where
+  concrete : String
+  abstract : String
+  stateMap : List (String × String)
+  hiddenActions : List String
+deriving Repr, BEq
+
+structure Program where
+  summary : Summary
+  enums : List (String × List String)
+  facts : List String
+  systems : List System
+  compositions : List Composition
+  refinements : List Refinement
+deriving Repr
+
+private partial def decodeTerm (term : Json) : Except String Term := do
+  let kind ← stringAt term "kind"
+  match kind with
+  | "bool" => pure (.bool (← boolAt term "value"))
+  | "unit" => pure .unit
+  | "enum" =>
+      pure (.enumeration (← stringAt term "type") (← stringAt term "constructor"))
+  | "read" =>
+      pure (.read (← stringAt term "type") (← stringAt term "field"))
+  | "not" =>
+      pure (.not (← decodeTerm (← term.getObjVal? "value")))
+  | "equal" =>
+      pure (.equal
+        (← decodeTerm (← term.getObjVal? "left"))
+        (← decodeTerm (← term.getObjVal? "right")))
+  | _ => reject s!"cannot construct semantics for unknown term kind '{kind}'"
+
+private def decodeDirection (encoded : String) : Except String Direction :=
+  match encoded with
+  | "internal" => pure .internal
+  | "input" => pure .input
+  | "output" => pure .output
+  | _ => reject s!"cannot construct semantics for direction '{encoded}'"
+
+private def decodeSystem (name : String) (system : Json) : Except String System := do
+  let states ← objectAt system "state"
+  let state ← states.toList.mapM fun (field, declaration) => do
+    pure {
+      name := field
+      typeName := (← stringAt declaration "type")
+      initial := (← decodeTerm (← declaration.getObjVal? "initial_ast"))
+    }
+  let capabilitiesObject ← objectAt system "capabilities"
+  let capabilities ← capabilitiesObject.toList.mapM fun (capability, encodedType) => do
+    pure (capability, ← encodedType.getStr?)
+  let portsObject ← objectAt system "ports"
+  let ports ← portsObject.toList.mapM fun (portName, port) => do
+    pure {
+      name := portName
+      direction := (← decodeDirection (← stringAt port "direction"))
+      payload := (← stringAt port "payload")
+    }
+  let actionsObject ← objectAt system "actions"
+  let actions ← actionsObject.toList.mapM fun (actionName, action) => do
+    let guardJson ← (← action.getObjVal? "guard_ast").getArr?
+    let guards ← guardJson.toList.mapM decodeTerm
+    let updateJson ← objectAt action "update_ast"
+    let updates ← updateJson.toList.mapM fun (field, term) => do
+      pure (field, ← decodeTerm term)
+    pure {
+      name := actionName
+      direction := (← decodeDirection (← stringAt action "direction"))
+      hidden := (← boolAt action "hidden")
+      guards
+      updates
+      resources := (← profile action)
+    }
+  pure {
+    name
+    state
+    capabilities
+    ports
+    actions
+    observe := (← strings (← system.getObjVal? "observe"))
+  }
+
+private def decodeComposition (name : String) (composition : Json) :
+    Except String Composition := do
+  let connectionJson ← (← composition.getObjVal? "connections").getArr?
+  let connections ← connectionJson.toList.mapM fun connection => do
+    pure {
+      leftSystem := (← stringAt connection "left_system")
+      leftAction := (← stringAt connection "left_action")
+      rightSystem := (← stringAt connection "right_system")
+      rightAction := (← stringAt connection "right_action")
+    }
+  pure {
+    name
+    left := (← stringAt composition "left")
+    right := (← stringAt composition "right")
+    connections
+  }
+
+private def decodeRefinement (refinement : Json) : Except String Refinement := do
+  let stateMapObject ← objectAt refinement "state_map"
+  let stateMap ← stateMapObject.toList.mapM fun (concrete, abstract) => do
+    pure (concrete, ← abstract.getStr?)
+  pure {
+    concrete := (← stringAt refinement "concrete")
+    abstract := (← stringAt refinement "abstract")
+    stateMap
+    hiddenActions := (← strings (← refinement.getObjVal? "hidden_actions"))
+  }
+
+/--
+Construct the finite semantic data after the normative decoder has accepted
+the artifact. This is intentionally separate from Summary: downstream Lean
+code receives the actual terms, transitions, resources, wirings, and maps.
+-/
+def decodeProgram (json : Json) : Except String Program := do
+  let summary ← decode json
+  let enumsObject ← objectAt json "enums"
+  let enums ← enumsObject.toList.mapM fun (enumName, variantsJson) => do
+    pure (enumName, ← strings variantsJson)
+  let mut facts := []
+  for (enumName, variants) in enums do
+    facts := facts ++ variants.map fun variant => s!"{enumName}.{variant}"
+  let systemsObject ← objectAt json "systems"
+  let systems ← systemsObject.toList.mapM fun (name, system) =>
+    decodeSystem name system
+  let compositionsObject ← objectAt json "compositions"
+  let compositions ← compositionsObject.toList.mapM fun (name, composition) =>
+    decodeComposition name composition
+  let refinementJson ← (← json.getObjVal? "refinements").getArr?
+  let refinements ← refinementJson.toList.mapM decodeRefinement
+  pure { summary, enums, facts, systems, compositions, refinements }
+
+def parseProgram (input : String) : Except String Program := do
+  decodeProgram (← Json.parse input)
 
 end NMLT.Artifact.BehaviorCore

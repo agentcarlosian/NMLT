@@ -47,8 +47,13 @@ acceptance.
   normative behavior object, product transitions, resource-aware refinement,
   composition premises, and the conditional lifting theorem.
 - `mechanization/lean/NMLT/Artifact/BehaviorCore.lean` decodes and validates
-  the finite artifact envelope. The executable checker also recomputes the
-  exact source digest.
+  the finite artifact envelope into typed terms, systems, actions, profiles,
+  wirings, and refinement maps.
+- `mechanization/lean/NMLT/Artifact/SemanticClosure.lean` enumerates the typed
+  finite states, evaluates artifact terms, constructs the normative `Behavior`
+  objects and their real step relations, decides every premise of the
+  refinement-lifting theorem, and returns a proof-carrying certificate. The
+  executable checker also recomputes the exact source digest.
 
 ## Behavioral core v1
 
@@ -90,8 +95,10 @@ manifests, or verification certificates.
 - `check` and `inspect` are structural.
 - `typecheck` means the Rust frontend accepted the finite surface slice.
 - `elaborate` creates an auditable artifact.
-- `nmlt-artifact-check` means Lean accepted the artifact's finite structural and
-  resource constraints and its source digest is current.
+- `nmlt-artifact-check` means Lean accepted the current source-bound artifact,
+  constructed its finite behaviors, and instantiated the conditional
+  refinement-through-composition theorem. It is not a compiler-correctness
+  claim.
 - `explore` is a bounded reference execution with no verification claim.
 - Theorems are claims about the Lean definitions and their explicit premises.
 

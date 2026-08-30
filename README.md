@@ -14,7 +14,7 @@ prover.
 .nmlt source
   → lossless syntax, resolution, and typed behavioral elaboration (Rust)
   → canonical behavior-core-v1 artifact
-  → artifact decoding and composition/refinement obligations (Lean)
+  → artifact-derived finite behaviors and theorem-premise closure (Lean)
   → optional bounded exploration with no verification claim (Rust)
 ```
 
@@ -69,12 +69,19 @@ with `make reproduce`.
 | `nmlt-core`, `nmlt-hir`, `nmlt-ir`, `nmlt-elaborate`, `nmlt-compile` | Frontend and explicit core production | Auditability through exact source binding and snapshots; no verified compilation theorem |
 | `nmlt-kernel` | Independent validator for the retained typed-elaboration certificate | Formation/type acceptance only; never behavior proof |
 | `NMLT.Behavior.ResourceBehavior` | Normative behavior/product/refinement definitions and theorem | Safety/resource theorem at the stated finite conditional scope |
-| `NMLT.Artifact.BehaviorCore` | Fail-closed artifact decoder and semantic side-condition checks | Acceptance of the exact finite schema; no source-to-core correctness theorem |
+| `NMLT.Artifact.BehaviorCore` | Fail-closed typed decoder for the finite artifact envelope | Acceptance of the exact schema; no source-to-core correctness theorem |
+| `NMLT.Artifact.SemanticClosure` | Constructs finite Lean behaviors from decoded states, terms, actions, resources, wiring, and refinement maps; decides the theorem premises | A proof-carrying instance of the conditional composition theorem for the accepted artifact |
 | `nmlt-eval` | Reference operational exploration | No proof, model-check, or evidence claim |
 
 See [`docs/architecture.md`](docs/architecture.md) for the component boundary
 and [`schemas/behavior-core-v1.schema.json`](schemas/behavior-core-v1.schema.json)
 for the artifact envelope.
+
+`nmlt-artifact-check` is more than a shape validator: after checking the source
+digest, it enumerates the artifact's finite state spaces, constructs the actual
+Lean step relations, checks refinement and both product-formation judgments,
+and obtains the lifted witness through `Certificate.lifted`. This still does
+not verify that Rust translated the source correctly.
 
 ## History
 

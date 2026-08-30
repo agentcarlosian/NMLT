@@ -126,7 +126,7 @@ inductive Direction where
   | internal
   | input
   | output
-deriving DecidableEq
+deriving Repr, BEq, DecidableEq
 
 def Direction.Complementary : Direction → Direction → Prop
   | .input, .output => True

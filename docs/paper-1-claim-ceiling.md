@@ -8,8 +8,8 @@ programming language
 **Normative source fixture:**
 `examples/pivot/visible_resource_sync.nmlt`
 
-**Normative theorem module:**
-`NMLT.Behavior.ResourceBehavior`
+**Normative theorem modules:**
+`NMLT.Behavior.ResourceBehavior` and `NMLT.Artifact.SemanticClosure`
 
 This document controls what Paper 1 may claim. Earlier prose about the detached
 OpenSystem checker, the standalone label-to-resource lift, or a fairness
@@ -38,16 +38,21 @@ for `parallel concrete peer concreteConnection` and
 `parallel abstract peer abstractConnection`; it does not reason through a
 detached label-resource function.
 
-The primary executable instance is
-`NMLT.Examples.VisibleResourceSync.visibleResourceSync_lifts`. It mirrors
-`examples/pivot/visible_resource_sync.nmlt`: a sender and receiver synchronize,
-move one nominal affine `permit`, discharge `Authorized`/`Ready` contracts, and
-compose grades `work=1` and `work=2` into `work=3`.
+The primary executable instance is no longer a hand-mirrored Lean example.
+`NMLT.Artifact.SemanticClosure` decodes
+`examples/pivot/visible_resource_sync.behavior-core-v1.json`, constructs the
+sender, receiver, state map, and two products from the artifact itself, and
+decides the complete premise bundle. `Certificate.lifted` then applies
+`liftParallel` to that dependent certificate. The instance synchronizes the
+sender and receiver, moves one nominal affine `permit`, discharges
+`Authorized`/`Ready` contracts, and composes grades `work=1` and `work=2` into
+`work=3`.
 
 The exact source elaborates to
 `examples/pivot/visible_resource_sync.behavior-core-v1.json`. Lean's artifact
-decoder accepts that source-bound artifact. Rust exploration is illustrative
-only and makes no theorem or model-check claim.
+checker accepts that source-bound artifact only after constructing the finite
+semantics and obtaining the theorem certificate. Rust exploration is
+illustrative only and makes no theorem or model-check claim.
 
 ## Negative controls that may be claimed
 
@@ -91,7 +96,7 @@ The claimed proof artifacts use Lean 4.30.0 and the hand-written modules in the
 active `NMLT` library. The clean gate forbids `sorry`, `sorryAx`, `admit`,
 `native_decide`, and project-declared axioms.
 
-Both `liftParallel` and `visibleResourceSync_lifts` report exactly `[propext]`.
+Both `liftParallel` and `Certificate.lifted` report exactly `[propext]`.
 The approved foundations are documented in
 `mechanization/lean/AXIOMS.md`. No Mathlib or Aeneas dependency is required by
 the active Lean package.

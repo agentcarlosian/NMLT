@@ -9,7 +9,7 @@
 | Declaration | Reported axioms |
 |---|---|
 | NMLT.Behavior.ResourceBehavior.liftParallel | propext |
-| NMLT.Examples.VisibleResourceSync.visibleResourceSync_lifts | propext |
+| NMLT.Artifact.SemanticClosure.Certificate.lifted | propext |
 
 The same gate:
 
@@ -17,6 +17,7 @@ The same gate:
 - accepts the source-bound canonical behavior artifact;
 - rejects a stale source digest;
 - rejects a malformed transfer/receive profile;
+- rejects a structurally valid artifact whose visible steps fail refinement;
 - scans for sorry, sorryAx, admit, native_decide, and project axiom
   declarations.
 

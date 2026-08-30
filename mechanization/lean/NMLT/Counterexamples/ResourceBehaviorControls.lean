@@ -1,9 +1,65 @@
-import NMLT.Examples.VisibleResourceSync
+import NMLT.Behavior.ResourceBehavior
 
 namespace NMLT.Counterexamples.ResourceBehaviorControls
 
 open NMLT.Behavior.ResourceBehavior
-open NMLT.Examples.VisibleResourceSync
+
+inductive SenderAction where | send
+inductive ReceiverAction where | receive
+inductive Capability where | permit
+inductive ContractFact where | authorized | ready
+inductive GradeAtom where | work
+
+def senderProfile (work : Nat) : ResourceProfile Capability ContractFact GradeAtom where
+  requires := fun _ => False
+  consumes := fun _ => False
+  transfers := fun _ => True
+  receives := fun _ => False
+  grade := ⟨fun _ => work⟩
+  relies
+    | .authorized => False
+    | .ready => True
+  guarantees
+    | .authorized => True
+    | .ready => False
+
+def receiverProfile : ResourceProfile Capability ContractFact GradeAtom where
+  requires := fun _ => False
+  consumes := fun _ => False
+  transfers := fun _ => False
+  receives := fun _ => True
+  grade := ⟨fun _ => 2⟩
+  relies
+    | .authorized => True
+    | .ready => False
+  guarantees
+    | .authorized => False
+    | .ready => True
+
+def sender (work : Nat) :
+    Behavior SenderAction Capability ContractFact GradeAtom Bool where
+  State := Bool
+  init := fun state => state = false
+  step := fun before _ after => before = false ∧ after = true
+  observe := id
+  hidden := fun _ => False
+  direction := fun _ => .output
+  payload := fun _ => "Once<Unit>"
+  owns := fun _ => True
+  resources := fun _ => senderProfile work
+
+def receiver : Behavior ReceiverAction Capability ContractFact GradeAtom Bool where
+  State := Bool
+  init := fun state => state = false
+  step := fun before _ after => before = false ∧ after = true
+  observe := id
+  hidden := fun _ => False
+  direction := fun _ => .input
+  payload := fun _ => "Once<Unit>"
+  owns := fun _ => False
+  resources := fun _ => receiverProfile
+
+def connection : SenderAction → ReceiverAction → Prop := fun _ _ => True
 
 def hiddenSender := { sender 1 with hidden := fun _ => True }
 

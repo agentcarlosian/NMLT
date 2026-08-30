@@ -20,9 +20,10 @@ The paper may claim that:
    affine ownership, exact transfer/receive matching, and rely discharge.
 4. Resource refinement preserves authority effects exactly, is pointwise
    grade-monotone, and treats hidden stutter as resource-free.
-5. NMLT.Examples.VisibleResourceSync.visibleResourceSync_lifts instantiates
-   the theorem for the primary source fixture and its canonical
-   behavior-core-v1 artifact.
+5. NMLT.Artifact.SemanticClosure constructs the primary fixture's finite Lean
+   behaviors from its canonical behavior-core-v1 artifact, decides the theorem
+   premises, and applies
+   NMLT.Artifact.SemanticClosure.Certificate.lifted.
 6. The seven controls in
    NMLT.Counterexamples.ResourceBehaviorControls witness failures caused by
    independently omitting the stated premises.
@@ -35,7 +36,8 @@ The paper may claim that:
 Every theorem-level presentation must identify:
 
 - mechanization/lean/NMLT/Behavior/ResourceBehavior.lean
-- mechanization/lean/NMLT/Examples/VisibleResourceSync.lean
+- mechanization/lean/NMLT/Artifact/BehaviorCore.lean
+- mechanization/lean/NMLT/Artifact/SemanticClosure.lean
 - examples/pivot/visible_resource_sync.nmlt
 - examples/pivot/visible_resource_sync.behavior-core-v1.json
 - mechanization/lean/AXIOMS.md
@@ -60,7 +62,8 @@ defined over the unified semantics.
 ## Trusted base
 
 - Lean 4.30.0, pinned by mechanization/lean/lean-toolchain
-- the active hand-written Lean definitions and theorem witnesses
+- the active hand-written Lean definitions, decoder, and finite semantic
+  closure checker
 - Lean standard propext for the two composition declarations
 - documented Quot.sound only in the retained typed-elaboration metatheory
 

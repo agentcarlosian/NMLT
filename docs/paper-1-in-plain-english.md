@@ -22,7 +22,9 @@ The source example is
 `examples/pivot/visible_resource_sync.nmlt`. A concrete sender transfers one
 `permit` to a receiver. Their `Ready` and `Authorized` contracts discharge one
 another, and their grades add to `work=3`. Rust can explore the two resulting
-states, but only Lean supplies the theorem.
+states. Lean decodes that emitted artifact into the real finite behavior model,
+checks the theorem's premises, and supplies the theorem instance; Rust does
+neither.
 
 Seven permanent counterexamples explain the theorem's boundary by breaking one
 premise at a time. Separate source fixtures make sure the compiler reports those

@@ -1,7 +1,8 @@
 % NMLT Paper 1 -- post-pivot draft
 % Normative Lean:
 %   mechanization/lean/NMLT/Behavior/ResourceBehavior.lean
-%   mechanization/lean/NMLT/Examples/VisibleResourceSync.lean
+%   mechanization/lean/NMLT/Artifact/BehaviorCore.lean
+%   mechanization/lean/NMLT/Artifact/SemanticClosure.lean
 % Normative source:
 %   examples/pivot/visible_resource_sync.nmlt
 \documentclass[11pt]{article}
@@ -160,9 +161,11 @@ receiver work is two.  The sender relies on \texttt{Ready} and guarantees
 
 The explicit state refinement is identity.  The concrete visible
 synchronization moves authority from the sender to the receiver, changes the
-receiver's observed bit, and has composed work grade three.  The checked Lean
-instantiation is
-\texttt{NMLT.Examples.VisibleResourceSync.visibleResourceSync\_lifts}.
+  receiver's observed bit, and has composed work grade three.  Lean decodes the
+  canonical artifact into the actual finite behaviors, checks the complete
+  premise bundle, and applies
+  \texttt{NMLT.Artifact.SemanticClosure.Certificate.lifted}; there is no
+  hand-mirrored source example in the proof tree.
 
 \section{Negative controls}
 

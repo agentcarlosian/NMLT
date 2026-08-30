@@ -8,6 +8,6 @@ declared axioms. Its focused theorem audit permits only these Lean foundations:
   reasoning.
 
 `NMLT.Behavior.ResourceBehavior.liftParallel` and
-`NMLT.Examples.VisibleResourceSync.visibleResourceSync_lifts` currently report
-only `propext`. `Classical.choice` and `Lean.trustCompiler` are not approved for
+`NMLT.Artifact.SemanticClosure.Certificate.lifted` currently report only
+`propext`. `Classical.choice` and `Lean.trustCompiler` are not approved for
 these behavioral theorems.
