@@ -154,6 +154,14 @@ impl UntypedFile {
             .into_iter()
             .find(|compose| compose.name.as_ref().map(|n| n.text.as_str()) == Some(name))
     }
+
+    /// Every projected refinement, including refinements nested in a module.
+    #[must_use]
+    pub fn refinements(&self) -> Vec<&UntypedRefinement> {
+        let mut refinements = Vec::new();
+        collect_refinements(&self.declarations, &mut refinements);
+        refinements
+    }
 }
 
 /// One top-level declaration in the complete surface projection.
@@ -165,6 +173,7 @@ pub enum UntypedDeclaration {
     System(UntypedSystem),
     Compose(UntypedCompose),
     Connect(UntypedConnect),
+    Refinement(UntypedRefinement),
     Unsupported(UntypedSurfaceNode),
     Error(UntypedErrorNode),
 }
@@ -180,6 +189,7 @@ impl UntypedDeclaration {
             Self::System(system) => system.span,
             Self::Compose(compose) => compose.span,
             Self::Connect(connect) => connect.span,
+            Self::Refinement(refinement) => refinement.span,
             Self::Unsupported(node) => node.source.span,
             Self::Error(node) => node.source.span,
         }
@@ -333,6 +343,42 @@ pub struct UntypedConnect {
     pub left_action: Option<SpannedText>,
     pub right_system: Option<SpannedText>,
     pub right_action: Option<SpannedText>,
+    pub span: Span,
+}
+
+/// A first-slice refinement declaration with explicit state and hidden-action maps.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UntypedRefinement {
+    pub concrete_system: Option<SpannedText>,
+    pub abstract_system: Option<SpannedText>,
+    pub items: Vec<UntypedRefinementItem>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum UntypedRefinementItem {
+    StateMap(UntypedStateMap),
+    HiddenAction(UntypedObservation),
+    SurfaceOnly(UntypedSurfaceNode),
+    Error(UntypedErrorNode),
+}
+
+impl UntypedRefinementItem {
+    #[must_use]
+    pub const fn span(&self) -> Span {
+        match self {
+            Self::StateMap(mapping) => mapping.span,
+            Self::HiddenAction(observation) => observation.span,
+            Self::SurfaceOnly(node) => node.source.span,
+            Self::Error(node) => node.source.span,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UntypedStateMap {
+    pub concrete_field: Option<SpannedText>,
+    pub abstract_field: Option<SpannedText>,
     pub span: Span,
 }
 
@@ -725,6 +771,7 @@ fn collect_surface_connections<'a>(
             UntypedDeclaration::Import(_)
             | UntypedDeclaration::Enum(_)
             | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Refinement(_)
             | UntypedDeclaration::Unsupported(_)
             | UntypedDeclaration::Error(_) => {}
         }
@@ -771,6 +818,7 @@ fn collect_surface_wires<'a>(
             UntypedDeclaration::Import(_)
             | UntypedDeclaration::Enum(_)
             | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Refinement(_)
             | UntypedDeclaration::Unsupported(_)
             | UntypedDeclaration::Error(_) => {}
         }
@@ -1032,6 +1080,14 @@ pub enum UntypedStatement {
         capability: RawTerm,
         span: Span,
     },
+    Rely {
+        fact: RawTerm,
+        span: Span,
+    },
+    Guarantee {
+        fact: RawTerm,
+        span: Span,
+    },
     SurfaceOnly(UntypedSurfaceNode),
     Error(UntypedErrorNode),
 }
@@ -1184,6 +1240,7 @@ impl Projector {
             }
             SyntaxKind::ComposeDecl => UntypedDeclaration::Compose(self.project_compose(node)),
             SyntaxKind::ConnectDecl => UntypedDeclaration::Connect(self.project_connect(node)),
+            SyntaxKind::RefineDecl => UntypedDeclaration::Refinement(self.project_refinement(node)),
             SyntaxKind::Error => {
                 self.record_recovery(node.span);
                 UntypedDeclaration::Error(error_node(node))
@@ -1258,6 +1315,51 @@ impl Projector {
             left_action: identifier(node.node, node.span.start, 2),
             right_system: identifier(node.node, node.span.start, 3),
             right_action: identifier(node.node, node.span.start, 4),
+            span: node.span,
+        }
+    }
+
+    fn project_refinement(&mut self, node: NodeAt<'_>) -> UntypedRefinement {
+        let children = direct_nodes(node.node, node.span.start);
+        let mut items = Vec::new();
+        if let Some(body) = children
+            .into_iter()
+            .find(|child| child.node.kind() == SyntaxKind::RefineBody)
+        {
+            for child in direct_nodes(body.node, body.span.start) {
+                let item = match child.node.kind() {
+                    SyntaxKind::MapStateDecl => UntypedRefinementItem::StateMap(UntypedStateMap {
+                        concrete_field: identifier(child.node, child.span.start, 2),
+                        abstract_field: identifier(child.node, child.span.start, 3),
+                        span: child.span,
+                    }),
+                    SyntaxKind::HideDecl => {
+                        match self.project_observation(child, ObservationKind::Hide) {
+                            UntypedMember::Observation(observation) => {
+                                UntypedRefinementItem::HiddenAction(observation)
+                            }
+                            _ => unreachable!("observation projection returns an observation"),
+                        }
+                    }
+                    SyntaxKind::Error => {
+                        self.record_recovery(child.span);
+                        UntypedRefinementItem::Error(error_node(child))
+                    }
+                    kind => {
+                        self.issues.push(ProjectionIssue {
+                            kind: ProjectionIssueKind::UnexpectedProjectedNode { kind },
+                            span: child.span,
+                        });
+                        UntypedRefinementItem::SurfaceOnly(surface_node(child))
+                    }
+                };
+                items.push(item);
+            }
+        }
+        UntypedRefinement {
+            concrete_system: identifier(node.node, node.span.start, 1),
+            abstract_system: identifier(node.node, node.span.start, 3),
+            items,
             span: node.span,
         }
     }
@@ -1448,6 +1550,20 @@ impl Projector {
                     span: node.span,
                 },
             ),
+            SyntaxKind::RelyStmt => self.only_expression(expressions, node).map_or_else(
+                UntypedStatement::Error,
+                |fact| UntypedStatement::Rely {
+                    fact,
+                    span: node.span,
+                },
+            ),
+            SyntaxKind::GuaranteeStmt => self.only_expression(expressions, node).map_or_else(
+                UntypedStatement::Error,
+                |fact| UntypedStatement::Guarantee {
+                    fact,
+                    span: node.span,
+                },
+            ),
             SyntaxKind::UpdateStmt => {
                 let mut expressions = expressions.into_iter();
                 let target = expressions.next();
@@ -1615,6 +1731,7 @@ fn collect_systems<'file>(
             | UntypedDeclaration::Enum(_)
             | UntypedDeclaration::Compose(_)
             | UntypedDeclaration::Connect(_)
+            | UntypedDeclaration::Refinement(_)
             | UntypedDeclaration::Unsupported(_)
             | UntypedDeclaration::Error(_) => {}
         }
@@ -1634,6 +1751,28 @@ fn collect_composes<'file>(
             UntypedDeclaration::Import(_)
             | UntypedDeclaration::Enum(_)
             | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Connect(_)
+            | UntypedDeclaration::Refinement(_)
+            | UntypedDeclaration::Unsupported(_)
+            | UntypedDeclaration::Error(_) => {}
+        }
+    }
+}
+
+fn collect_refinements<'file>(
+    declarations: &'file [UntypedDeclaration],
+    refinements: &mut Vec<&'file UntypedRefinement>,
+) {
+    for declaration in declarations {
+        match declaration {
+            UntypedDeclaration::Module(module) => {
+                collect_refinements(&module.declarations, refinements);
+            }
+            UntypedDeclaration::Refinement(refinement) => refinements.push(refinement),
+            UntypedDeclaration::Import(_)
+            | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Compose(_)
             | UntypedDeclaration::Connect(_)
             | UntypedDeclaration::Unsupported(_)
             | UntypedDeclaration::Error(_) => {}
@@ -1714,6 +1853,11 @@ fn collect_m9_declaration_issues(
                 code: "NMLT-M9-CONNECT",
                 feature: "connect declaration (surface wiring only; no elaborator)",
                 span: connect.span,
+            }),
+            UntypedDeclaration::Refinement(refinement) => issues.push(M9SurfaceIssue {
+                code: "NMLT-M9-REFINE",
+                feature: "resource-aware refinement declaration",
+                span: refinement.span,
             }),
             UntypedDeclaration::Unsupported(node) => issues.push(M9SurfaceIssue {
                 code: "NMLT-M9-UNSUPPORTED-DECLARATION",
@@ -1845,6 +1989,16 @@ fn collect_m9_action_issues(action: &UntypedAction, issues: &mut Vec<M9SurfaceIs
             UntypedStatement::Require { .. }
             | UntypedStatement::Emit { .. }
             | UntypedStatement::Consume { .. } => {}
+            UntypedStatement::Rely { span, .. } => issues.push(M9SurfaceIssue {
+                code: "NMLT-M9-RELY",
+                feature: "action rely contract",
+                span: *span,
+            }),
+            UntypedStatement::Guarantee { span, .. } => issues.push(M9SurfaceIssue {
+                code: "NMLT-M9-GUARANTEE",
+                feature: "action guarantee contract",
+                span: *span,
+            }),
         }
     }
 }
@@ -1929,6 +2083,7 @@ const fn is_semantic_node(kind: SyntaxKind) -> bool {
         SyntaxKind::SourceFile
         | SyntaxKind::SystemBody
         | SyntaxKind::ComposeBody
+        | SyntaxKind::RefineBody
         | SyntaxKind::ParameterList
         | SyntaxKind::ActionBody => false,
         SyntaxKind::ModuleDecl
@@ -1952,6 +2107,8 @@ const fn is_semantic_node(kind: SyntaxKind) -> bool {
         | SyntaxKind::UpdateStmt
         | SyntaxKind::EmitStmt
         | SyntaxKind::ConsumeStmt
+        | SyntaxKind::RelyStmt
+        | SyntaxKind::GuaranteeStmt
         | SyntaxKind::SafetyDecl
         | SyntaxKind::TemporalDecl
         | SyntaxKind::ResourceDecl
@@ -1959,6 +2116,8 @@ const fn is_semantic_node(kind: SyntaxKind) -> bool {
         | SyntaxKind::HideDecl
         | SyntaxKind::ComposeDecl
         | SyntaxKind::ConnectDecl
+        | SyntaxKind::RefineDecl
+        | SyntaxKind::MapStateDecl
         | SyntaxKind::TypeExpr
         | SyntaxKind::Expr
         | SyntaxKind::Error => true,
@@ -2038,6 +2197,35 @@ fn census_projected_declaration(
             kind: SyntaxKind::ConnectDecl,
             span: connect.span,
         }),
+        UntypedDeclaration::Refinement(refinement) => {
+            origins.push(SurfaceOrigin {
+                kind: SyntaxKind::RefineDecl,
+                span: refinement.span,
+            });
+            for item in &refinement.items {
+                match item {
+                    UntypedRefinementItem::StateMap(mapping) => origins.push(SurfaceOrigin {
+                        kind: SyntaxKind::MapStateDecl,
+                        span: mapping.span,
+                    }),
+                    UntypedRefinementItem::HiddenAction(observation) => {
+                        origins.push(SurfaceOrigin {
+                            kind: SyntaxKind::HideDecl,
+                            span: observation.span,
+                        });
+                        extend_raw(observation.expression.as_ref(), origins);
+                    }
+                    UntypedRefinementItem::SurfaceOnly(node) => origins.push(SurfaceOrigin {
+                        kind: node.kind,
+                        span: node.source.span,
+                    }),
+                    UntypedRefinementItem::Error(node) => origins.push(SurfaceOrigin {
+                        kind: SyntaxKind::Error,
+                        span: node.source.span,
+                    }),
+                }
+            }
+        }
         UntypedDeclaration::Unsupported(node) => origins.push(SurfaceOrigin {
             kind: node.kind,
             span: node.source.span,
@@ -2184,6 +2372,20 @@ fn census_projected_action(action: &UntypedAction, origins: &mut Vec<SurfaceOrig
                     span: *span,
                 });
                 origins.push(capability.origin);
+            }
+            UntypedStatement::Rely { fact, span } => {
+                origins.push(SurfaceOrigin {
+                    kind: SyntaxKind::RelyStmt,
+                    span: *span,
+                });
+                origins.push(fact.origin);
+            }
+            UntypedStatement::Guarantee { fact, span } => {
+                origins.push(SurfaceOrigin {
+                    kind: SyntaxKind::GuaranteeStmt,
+                    span: *span,
+                });
+                origins.push(fact.origin);
             }
             UntypedStatement::SurfaceOnly(node) => origins.push(SurfaceOrigin {
                 kind: node.kind,
@@ -2350,6 +2552,59 @@ fn valid_location_tokens(tokens: &[crate::Token], source: &str) -> bool {
         return false;
     }
     true
+}
+
+fn observation_names(expression: Option<&RawTerm>) -> Vec<SpannedText> {
+    expression.map(ident_spans_in_term).unwrap_or_default()
+}
+
+fn classify_hide_expression(expression: Option<&RawTerm>) -> (Option<HideSort>, Vec<SpannedText>) {
+    let Some(term) = expression else {
+        return (Some(HideSort::StateFields), Vec::new());
+    };
+    let idents = ident_spans_in_term(term);
+    if idents.first().map(|name| name.text.as_str()) == Some("action") && idents.len() > 1 {
+        (
+            Some(HideSort::Actions),
+            idents.into_iter().skip(1).collect(),
+        )
+    } else {
+        (Some(HideSort::StateFields), idents)
+    }
+}
+
+fn ident_spans_in_term(term: &RawTerm) -> Vec<SpannedText> {
+    let text = &term.source.text;
+    let base = term.source.span.start;
+    let bytes = text.as_bytes();
+    let mut names = Vec::new();
+    let mut index = 0;
+    while index < bytes.len() {
+        let ch = bytes[index];
+        if ch == b',' || ch.is_ascii_whitespace() {
+            index += 1;
+            continue;
+        }
+        if ch.is_ascii_alphabetic() || ch == b'_' {
+            let start = index;
+            index += 1;
+            while index < bytes.len() {
+                let next = bytes[index];
+                if next.is_ascii_alphanumeric() || next == b'_' {
+                    index += 1;
+                } else {
+                    break;
+                }
+            }
+            names.push(SpannedText {
+                text: text[start..index].to_string(),
+                span: Span::new(base + start, base + index),
+            });
+            continue;
+        }
+        index += 1;
+    }
+    names
 }
 
 #[cfg(test)]
@@ -2524,57 +2779,4 @@ mod tests {
             matches!(target, UntypedUpdateTarget::Location { root, .. } if root.text == "missing")
         );
     }
-}
-
-fn observation_names(expression: Option<&RawTerm>) -> Vec<SpannedText> {
-    expression.map(ident_spans_in_term).unwrap_or_default()
-}
-
-fn classify_hide_expression(expression: Option<&RawTerm>) -> (Option<HideSort>, Vec<SpannedText>) {
-    let Some(term) = expression else {
-        return (Some(HideSort::StateFields), Vec::new());
-    };
-    let idents = ident_spans_in_term(term);
-    if idents.first().map(|name| name.text.as_str()) == Some("action") && idents.len() > 1 {
-        (
-            Some(HideSort::Actions),
-            idents.into_iter().skip(1).collect(),
-        )
-    } else {
-        (Some(HideSort::StateFields), idents)
-    }
-}
-
-fn ident_spans_in_term(term: &RawTerm) -> Vec<SpannedText> {
-    let text = &term.source.text;
-    let base = term.source.span.start;
-    let bytes = text.as_bytes();
-    let mut names = Vec::new();
-    let mut index = 0;
-    while index < bytes.len() {
-        let ch = bytes[index];
-        if ch == b',' || ch.is_ascii_whitespace() {
-            index += 1;
-            continue;
-        }
-        if ch.is_ascii_alphabetic() || ch == b'_' {
-            let start = index;
-            index += 1;
-            while index < bytes.len() {
-                let next = bytes[index];
-                if next.is_ascii_alphanumeric() || next == b'_' {
-                    index += 1;
-                } else {
-                    break;
-                }
-            }
-            names.push(SpannedText {
-                text: text[start..index].to_string(),
-                span: Span::new(base + start, base + index),
-            });
-            continue;
-        }
-        index += 1;
-    }
-    names
 }

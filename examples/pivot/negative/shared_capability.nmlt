@@ -1,0 +1,19 @@
+system Left {
+  state bit: Bool = false
+  capability token: Once<Unit>
+  port output ping: Unit
+  action output ping {}
+  observe bit
+}
+
+system Right {
+  state bit: Bool = false
+  capability token: Once<Unit>
+  port input receive: Unit
+  action input receive {}
+  observe bit
+}
+
+compose SharedAuthority {
+  connect Left.ping -> Right.receive
+}

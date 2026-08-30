@@ -1,19 +1,16 @@
 # `nmlt-kernel`
 
-`nmlt-kernel` is the independent M9-006 receiver-side checker. It accepts an
-exact resolved HIR, explicit core, and untrusted certificate; selects the
-frozen M9-v1 ruleset and resource policy; independently recomputes identities;
-checks ordering, uniqueness, coverage, reachability, depth, and limits; and
-reconstructs each typing/formation judgment and aggregate core record.
+`nmlt-kernel` is the retained independent validator for NMLT's typed
+elaboration boundary. It replays the finite M9 formation and typing judgments
+for exact resolved HIR, explicit typed core, and an untrusted elaboration
+certificate. Only successful replay constructs `CheckedProgram`.
 
-Only successful `check` can construct `CheckedProgram`. The core, certificate
-digest, and kernel-profile identity are owned behind private fields. Stable
-`NMLT_KERNEL_*` diagnostics fail closed and never denote property refutation.
+The name is historical. This crate is not the semantic prover, does not define
+behavioral meaning, and cannot issue refinement, safety, liveness, model-check,
+or evidence claims. Normative behavior semantics live in Lean under
+`NMLT.Behavior.ResourceBehavior`; `behavior-core-v1` acceptance belongs to the
+Lean artifact decoder.
 
-This boundary establishes type and formation acceptance for the exact M9-v1
-fragment. It does not establish temporal truth, engine correspondence, or a
-verified source-to-core compiler theorem. M9-008 adds bounded canonical
-certificate decoding and downstream evidence-manifest binding without making
-the decoder an acceptance authority.
-
-The normative contract is [RFC 0013](../../rfcs/0013-source-to-typed-core.md).
+The retained validator exists to keep an independently checked boundary between
+the Rust elaborator and consumers of the ordinary typed core. No
+source-to-Lean compiler-correctness theorem is claimed.

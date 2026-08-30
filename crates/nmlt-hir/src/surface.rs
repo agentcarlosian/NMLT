@@ -101,7 +101,9 @@ fn collect_declarations(declarations: &[UntypedDeclaration], input: &mut ModuleI
                 // Nested or mixed module layouts already carry an M9 surface issue.
                 collect_declarations(&module.declarations, input);
             }
-            UntypedDeclaration::Compose(_) | UntypedDeclaration::Connect(_) => {
+            UntypedDeclaration::Compose(_)
+            | UntypedDeclaration::Connect(_)
+            | UntypedDeclaration::Refinement(_) => {
                 // Surface wiring only. M9 already records NMLT-M9-COMPOSE /
                 // NMLT-M9-CONNECT; they are not named resolver declarations.
             }
@@ -314,7 +316,10 @@ fn collect_action_terms(system_name: &str, action: &UntypedAction, input: &mut M
                 ));
                 consume_index = consume_index.saturating_add(1);
             }
-            UntypedStatement::SurfaceOnly(_) | UntypedStatement::Error(_) => {}
+            UntypedStatement::Rely { .. }
+            | UntypedStatement::Guarantee { .. }
+            | UntypedStatement::SurfaceOnly(_)
+            | UntypedStatement::Error(_) => {}
         }
     }
 }

@@ -1,18 +1,19 @@
-# Paper 1: Hidden Actions Are Not Contextual Silence
+# Paper 1: resource-aware open refinement
 
-Technical paper on weak refinement vs synchronized composition.
+This directory now follows the language-and-mathematics pivot. The earlier
+hidden-silence draft referred to transition modules removed from the active
+project; that historical version remains recoverable from the immutable
+build-week-judge-demo-2026 tag.
 
-- **TeX / PDF:** `main.tex`, `main.pdf`
-- **Lean:** `Core/Transition.lean`, `Counterexamples/CompositionCongruence.lean`, `Behavior/WeakConditionalCongruence.lean`, `Behavior/OpenComposition.lean`
-- **Internal claim ceiling (authors):** `../../docs/paper-1-claim-ceiling.md`
-- **Plain companion (authors):** `../../docs/paper-1-in-plain-english.md`
+- Manuscript: [main.tex](main.tex)
+- Active claim ceiling: [claim-ceiling.md](claim-ceiling.md)
+- Current axiom audit: [axiom-audit-2026-08-30.md](axiom-audit-2026-08-30.md)
+- Normative semantics:
+  [ResourceBehavior.lean](../../mechanization/lean/NMLT/Behavior/ResourceBehavior.lean)
+- Checked source fixture:
+  [visible_resource_sync.nmlt](../../examples/pivot/visible_resource_sync.nmlt)
+- Canonical artifact:
+  [visible_resource_sync.behavior-core-v1.json](../../examples/pivot/visible_resource_sync.behavior-core-v1.json)
 
-## Build
-
-```bash
-cd papers/hidden-silence
-pdflatex main.tex
-pdflatex main.tex
-```
-
-Do not strengthen claims beyond the checked Lean theorems and the claim ceiling.
+Build the manuscript with pdflatex in a disposable output directory. Do not
+commit generated PDFs or auxiliary files.

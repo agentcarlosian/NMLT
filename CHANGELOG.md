@@ -1,141 +1,42 @@
 # Changelog
 
-All notable project changes will be recorded here.
-
-The format follows Keep a Changelog principles. NMLT does not yet make semantic
-versioning compatibility promises.
+NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
-### Added
+### Language and semantics
 
-- First residual C1 *negative*: named Lean `hiddenPing_consume_breaks_resourceRefinement` (`[propext]` only). Observational `WeakRefines` (T1 / T5 small model) does not imply I-CAP consume: hidden ping still refines the step-free abstract sender, but a `token` consume unmatched on the abstract resource profile falsifies `ResourceRefinement` for every `SenderLabel` map. Case 7 of RFC 0008 remains open (no positive I-CAP lift; not I-GRADE / I-FAIR). Executable `nmlt-temporal` control: hidden ping consume is `HiddenActionHasResources` while observation refinement still accepts.
+- Recentered the repository on the `.nmlt` programming language with normative
+  behavior semantics in Lean.
+- Added typed ports, action polarity and payload binding, affine capability
+  transfer, additive grades, contract facts, binary composition, explicit
+  connections, observations, action hiding, and total refinement state maps to
+  the source-to-core path.
+- Added deterministic `behavior-core-v1` with exact source binding, typed term
+  ASTs, action resource profiles, compositions, and refinement witnesses.
+- Added the resource-bearing Lean `Behavior`, real product-step relation,
+  resource-aware weak refinement, conditional `liftParallel` theorem, primary
+  fixture instantiation, and seven permanent premise controls.
+- Added a Lean artifact decoder with source-digest checking and fail-closed
+  resource/contract validation.
+- Added `nmlt-eval` for explicitly non-verifying artifact exploration.
 
-- Paper 1 sketch graphs: hidden ping stutter-expands the one-state abstract obs; a one-wire visible sync-once path stutter-expands (equals) the same visible step. Finite instance via `observation_trace_inclusion`; not a compiler, not C1.
+### CLI and gates
 
-- Paper 1 two-model split: Lean `Receiver` stays non-receptive (VisibleSync still `InputNotReceptive`); OpenSystem-receptive dual `examples/paper1/receptive_receiver.nmlt` (`set bit = true`, no `require`) is accepted by `OpenRefinementCongruenceChecker` with visible ping. Not a replacement, not canonical-v1, not a claim that Lean receiver is receptive or that OpenSystem is the paper small model.
+- Added `elaborate --emit-core` and artifact-based `explore`.
+- Removed `model-check` and `evidence` from the active CLI.
+- Replaced the default gate with Rust formatting, Clippy, compilation, tests,
+  fixture/artifact reproduction, Lean build, no-`sorry` policy, decoder controls,
+  and theorem axiom audits.
+- Removed unused Mathlib and Aeneas dependencies from the active Lean package.
 
-- VisibleSync sketch path: local identity and one-wire product accepted with surface `observe` maps (peer `bit` false→true); OpenSystem congruence still rejects non-receptive Lean `receive`.
+### Removed from the active branch
 
-- Paper 1 boolean-sketch adapter in `nmlt-paper1-sketch`: `BooleanSketch` to
-  `FiniteGraph`/`OpenSystem` (bool values, action names, surface polarities
-  else ping Output / receive Input). Parse+sketch of the Paper 1 fixture
-  reaches `HiddenConnectedAction("ping")`; VisibleSync does not. Sketch
-  fragment + finite checker, not a verified compiler, not source-to-LTS in
-  general. `nmlt-temporal` still has no `nmlt-core` dependency.
+- Contest verifier engines, temporal/OpenSystem checkers, standalone grade
+  analyzer, open Rust kernel, Paper 1 adapter, agent evaluator, certificate
+  tools, benchmark/evidence corpora, comparison harnesses, release scripts, and
+  contest schemas.
 
-- Paper 1 boolean finite-graph *sketch* in `nmlt-core` (`sketch_boolean_system`):
-  reachable Bool assignments with `require ident == true|false` and
-  `set ident = ident` / `set ident = true|false`. Fail-closes on Nat, params,
-  consume, capability, state-field hide, and any statement outside that
-  fragment. Not source-to-LTS; M9 still fail-closes full compile.
-
-- `nmlt-compile` Paper 1 fixture regression: parse+project of
-  `examples/paper1/hidden_ping_receive.nmlt` fail-closes at projection with
-  `NMLT-M9-HIDE-ACTION`, `NMLT-M9-COMPOSE`, `NMLT-M9-CONNECT`, and
-  `NMLT-M9-ACTION-POLARITY`. Not a verified compile.
-- `nmlt-hir` skips surface `compose`/`connect` (M9 fail-closed; not resolver
-  declarations) so the crate compiles against the Paper 1 wiring slice.
-  Polarized `action output ping` is collected as action `ping`, not `output`.
-
-- Optional surface polarity on action decls: `action output ping` /
-  `action input receive` project `UntypedAction.polarity`; bare `action ping`
-  stays `None`. Same keyword-as-identifier rule as `hide action` (`action input {`
-  is named `input` with no polarity). Complementary-wire check uses port
-  polarity if present, else action polarity, else skip. M9 records
-  `NMLT-M9-ACTION-POLARITY` and still fail-closes compose (not an elaborator).
-  Paper 1 fixture annotates ping/receive; `canonical-v1.json` is untouched.
-- Surface complementary-polarity check in `nmlt-core`: `connect` wires whose
-  caller-supplied, `port input`/`port output`, or optional action polarities
-  are both inputs or both outputs are flagged. Bare `action ping` stays
-  unpolarized. M9 compose remains fail-closed (not an elaborator).
-- Named Lean theorem `weakRefines_finite_observation_trace_inclusion` for
-  Paper 1 Corollary 22 (finite observation-trace inclusion / stutter-expansion
-  from `WeakRefines`; axiom-free; not LTL/infinite/fairness/liveness).
-- Finite `nmlt-temporal` helper `observation_trace_inclusion` / `stutter_expands`
-  matching Lean `StutterExpands` on small graphs (kernel regression; not a
-  proof of the Lean lemma).
-- Named Lean theorem `visibleClassification_fails_on_hidden_ping_wire` for
-  Paper 1's visible-classification failure (T3 dual; axiom-free). Local dual
-  `visiblePing_breaks_senderRefinement`.
-- Surface `connect` names lower to `CompositionSpec::from_left_right_wires` so
-  Paper 1's InvalidHiddenPing path can feed `HiddenConnectedAction` without a
-  hand-built spec. Full compose elaborator remains M9 fail-closed; this is not
-  source-to-LTS elaboration.
-
-- Apache-2.0 project governance, research charter, RFC/decision process,
-  architecture, calculus, language, threat-model, and evidence contracts.
-- Ten source-identity-frozen canonical examples and comparative NMLT, TLA+,
-  Quint, and P provider fixtures with explicit validation scopes.
-- Lossless tokens and immutable CST, deterministic recovery, stable diagnostic
-  spans, preservation formatter, declaration/action shells, partial untyped
-  projection, negative controls, and structural CLI views.
-- Typed executable provider slice with explicit frames, affine capability
-  tracking, deterministic bounded BFS, and structured counterexamples.
-- Pinned Lean provider-kernel mechanization for preservation, progress/blocked
-  states, frames, capability use, and property indexing; no full compiler
-  correctness claim.
-- Source-bound provider result reproduction, benchmark integrity validation,
-  canonical evidence readback, and adversarial stale/forged-evidence controls.
-- Finite `always`/eventuality/lasso checking, explicit weak/strong fairness,
-  stuttering/hiding, finite forward-simulation refinement, and three-valued
-  runtime-journal checking with independent evidence replay, including a
-  manually projected provider `NoBlindReplay` observation graph.
-- Finite Boolean VC IR with independent reachability and inductiveness routes,
-  checked witnesses/certificates, SMT-LIB and Lean export protocols,
-  model-test hooks, and fail-closed raw-result composition.
-- Authority-bounded deterministic repair-protocol baseline over three
-  hand-authored held-out fixtures and a source-bound graph linked to a
-  synthetic runtime-drift event; this is not LLM capability evidence.
-- Independent graded-resource experiment for declared cost, privacy, energy,
-  and uncertainty bounds, including unknown-preserving arithmetic, algebra
-  controls, schema-valid evidence, and a Lean-checked mathematical product
-  algebra; the plan analyzer and Rust correspondence remain unverified.
-- Accepted RFC 0013's narrow source-to-typed-core contract, including frozen
-  identity domains, namespaces, resource policy, certificate shape, and
-  Rust/Lean responsibility boundary.
-- Complete ordered surface projection with an independent CST-origin census,
-  explicit unsupported/recovery nodes, stable M9 feature-boundary diagnostics,
-  and regression controls against silent drops and borrowed descendant names.
-- `nmlt-hir` deterministic closed-set module and namespace resolution, stable
-  source/module/definition/node identities, strict ambiguity/shadowing rules,
-  bounded fail-closed inputs, and a canonical adapter from exact bytes through
-  the existing lossless frontend.
-- Completed M9's bounded exact-source route through resolved HIR,
-  identity-bound bidirectional elaboration, structurally validated explicit
-  typed core, independent derivation replay, opaque `CheckedProgram`, provider
-  execution, semantic identity readback, and a narrow Rust/Lean correspondence
-  model.
-- Completed M10's bounded behavior/refinement and certificate seed, including
-  behavior-indexed temporal typing, constructive/classical property families,
-  directed-refinement laws, finite coinductive/up-to certificates, typed
-  uncertainty profiles, proof-complexity metrics, an Rzk experiment, and a
-  narrow checked-core-to-behavior bridge.
-- Added M11-001a's finite open-system safety profile: executable polarity,
-  receptiveness, strict symbolic discharge, synchronous connection and
-  lifted-refinement checks; conservative construction limits; an axiom-free
-  Lean exact-action product-congruence theorem; negative controls; and
-  claim-specific TCB and evidence readback.
-- Added a dated reboot handoff that records the durable branch baseline,
-  assurance nonclaims, local mathematics-archive identity, exact M11-001b
-  continuation scope, and restart validation commands.
-
-### Changed
-
-- Corrected provider suite v2 `NoBlindReplay` from successor-state to
-  current-state enabledness and added a one-shot replay regression with a
-  zero-transition counterexample. The historical-formula side of that control
-  is explicitly limited to the Phase 3 action-step/terminal-stutter profile;
-  RFC 0007 and Phase 4 use universal identity-stutter closure.
-- Updated the execution plan and roadmap to record Phases 0–7 at their exact
-  bounded scopes. The complete gate reproduced from a fresh clone of
-  `e3f7ec6ae2d14ade78183ff78d58f7198cb76858`; a `0.1.0` tag is deliberately
-  deferred while the documented promotion gaps remain.
-- Moved M9 from contract design into source-fed resolution after completing its
-  contract and surface-projection substages. The module/declaration resolver is
-  implemented; raw-term/local-binder `ResolutionMap` coverage remains open, so
-  this does not yet construct `CheckedProgram` or migrate an engine.
-- Advanced the active research focus through completed M9 and M10 bounded gates
-  to M11-001b contract-sound, label-aware open refinement. The parent M11-001
-  remains open, and the M11-001a Rust and Lean representations are explicitly
-  related but non-corresponding.
+The former release remains immutable at tag `build-week-judge-demo-2026`
+(`0417f6e`). The reviewed follow-up resource patch is preserved on
+`codex/quarantine-grok-resource-pack` and is not merged here.

@@ -1,3 +1,0 @@
-system TypeHeldOut {
-  state ready: Bool = 0;
-}

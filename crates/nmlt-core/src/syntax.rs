@@ -263,6 +263,8 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
             self.parse_compose_decl();
         } else if self.at_keyword("connect") {
             self.parse_connect_decl();
+        } else if self.at_keyword("refine") {
+            self.parse_refine_decl();
         } else {
             return false;
         }
@@ -472,6 +474,72 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
         self.finish();
     }
 
+    /// `refine Concrete refines Abstract { map state x -> y; hide action a }`.
+    fn parse_refine_decl(&mut self) {
+        self.start(SyntaxKind::RefineDecl);
+        self.bump();
+        self.expect_identifier("NMLT2017", "expected a concrete system after `refine`");
+        self.bump_inline_trivia();
+        if !self.at_keyword("refines") {
+            self.error_at_current("NMLT2017", "expected `refines` between system names");
+        } else {
+            self.bump();
+        }
+        self.expect_identifier("NMLT2017", "expected an abstract system after `refines`");
+        self.bump_trivia();
+        if !self.at_kind(TokenKind::LeftBrace) {
+            self.error_at_current("NMLT2017", "expected `{` to start refine body");
+            self.parse_line_tail();
+            self.finish();
+            return;
+        }
+
+        self.start(SyntaxKind::RefineBody);
+        self.bump();
+        while !self.at_end() && !self.at_significant_kind(TokenKind::RightBrace) {
+            if self.at_trivia() {
+                self.bump();
+            } else if self.at_keyword("map") {
+                self.parse_state_map_decl();
+            } else if self.at_keyword("hide") {
+                self.parse_observation_decl(SyntaxKind::HideDecl);
+            } else {
+                self.error_and_recover_line(
+                    "NMLT2017",
+                    "expected `map state` or `hide action` in refine body",
+                );
+            }
+        }
+        if self.at_significant_kind(TokenKind::RightBrace) {
+            self.bump_trivia();
+            self.bump();
+        }
+        self.finish();
+        self.finish();
+    }
+
+    fn parse_state_map_decl(&mut self) {
+        self.start(SyntaxKind::MapStateDecl);
+        self.bump();
+        self.bump_inline_trivia();
+        if !self.at_keyword("state") {
+            self.error_at_current("NMLT2018", "expected `state` after `map`");
+        } else {
+            self.bump();
+        }
+        self.expect_identifier("NMLT2018", "expected a concrete state field");
+        self.bump_inline_trivia();
+        if !self.eat_text("->") {
+            self.error_at_current("NMLT2018", "expected `->` in state map");
+        }
+        self.expect_identifier("NMLT2018", "expected an abstract state field");
+        self.bump_inline_trivia();
+        if self.at_statement_terminator() {
+            self.bump();
+        }
+        self.finish();
+    }
+
     fn parse_system_decl(&mut self) {
         let start = self.current_span().start;
         self.start(SyntaxKind::SystemDecl);
@@ -642,6 +710,10 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
                 self.parse_action_statement(SyntaxKind::EmitStmt);
             } else if self.at_keyword("consume") {
                 self.parse_action_statement(SyntaxKind::ConsumeStmt);
+            } else if self.at_keyword("rely") {
+                self.parse_action_statement(SyntaxKind::RelyStmt);
+            } else if self.at_keyword("guarantee") {
+                self.parse_action_statement(SyntaxKind::GuaranteeStmt);
             } else {
                 self.error_and_recover_statement();
             }

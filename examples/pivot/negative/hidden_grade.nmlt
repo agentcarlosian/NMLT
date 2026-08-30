@@ -1,0 +1,15 @@
+system Abstract {
+  state bit: Bool = false
+  observe bit
+}
+
+system Concrete {
+  state bit: Bool = false
+  action tick grade { work: 1 } {}
+  observe bit
+}
+
+refine Concrete refines Abstract {
+  map state bit -> bit
+  hide action tick
+}

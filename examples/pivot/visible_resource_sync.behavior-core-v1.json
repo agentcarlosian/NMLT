@@ -1,0 +1,61 @@
+{
+  "schema": "behavior-core-v1",
+  "source_path": "examples/pivot/visible_resource_sync.nmlt",
+  "source_sha256": "236288dd2466d2e15eb0937c9988d5bf61978093215871cb696f4b43e34053e5",
+  "enums": {
+    "ContractFact": ["Authorized", "Ready"]
+  },
+  "systems": {
+    "AbstractSender": {
+      "state": {
+        "unit": {"type": "Bool", "initial": "false", "initial_ast": {"kind": "bool", "type": "Bool", "value": false}}
+      },
+      "capabilities": {
+        "permit": "Once<Unit>"
+      },
+      "ports": {
+        "send": {"direction": "output", "payload": "Once<Unit>"}
+      },
+      "actions": {
+        "send": {"direction": "output", "hidden": false, "parameters": [], "guards": [], "guard_ast": [], "updates": {}, "update_ast": {}, "outputs": ["permit"], "resources": {"requires": [], "consumes": [], "transfers": ["permit"], "receives": [], "grade": {"work": 2}, "relies": ["ContractFact.Ready"], "guarantees": ["ContractFact.Authorized"]}}
+      },
+      "observe": ["unit"]
+    },
+    "ConcreteSender": {
+      "state": {
+        "unit": {"type": "Bool", "initial": "false", "initial_ast": {"kind": "bool", "type": "Bool", "value": false}}
+      },
+      "capabilities": {
+        "permit": "Once<Unit>"
+      },
+      "ports": {
+        "send": {"direction": "output", "payload": "Once<Unit>"}
+      },
+      "actions": {
+        "send": {"direction": "output", "hidden": false, "parameters": [], "guards": [], "guard_ast": [], "updates": {}, "update_ast": {}, "outputs": ["permit"], "resources": {"requires": [], "consumes": [], "transfers": ["permit"], "receives": [], "grade": {"work": 1}, "relies": ["ContractFact.Ready"], "guarantees": ["ContractFact.Authorized"]}}
+      },
+      "observe": ["unit"]
+    },
+    "Receiver": {
+      "state": {
+        "bit": {"type": "Bool", "initial": "false", "initial_ast": {"kind": "bool", "type": "Bool", "value": false}}
+      },
+      "capabilities": {
+      },
+      "ports": {
+        "receive": {"direction": "input", "payload": "Once<Unit>"}
+      },
+      "actions": {
+        "receive": {"direction": "input", "hidden": false, "parameters": [{"name": "permit", "type": "Once<Unit>"}], "guards": ["bit == false"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "bit"}, "right": {"kind": "bool", "type": "Bool", "value": false}}], "updates": {"bit": "true"}, "update_ast": {"bit": {"kind": "bool", "type": "Bool", "value": true}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": ["permit"], "grade": {"work": 2}, "relies": ["ContractFact.Authorized"], "guarantees": ["ContractFact.Ready"]}}
+      },
+      "observe": ["bit"]
+    }
+  },
+  "compositions": {
+    "AbstractNetwork": {"left": "AbstractSender", "right": "Receiver", "connections": [{"left_system": "AbstractSender", "left_action": "send", "right_system": "Receiver", "right_action": "receive"}]},
+    "ConcreteNetwork": {"left": "ConcreteSender", "right": "Receiver", "connections": [{"left_system": "ConcreteSender", "left_action": "send", "right_system": "Receiver", "right_action": "receive"}]}
+  },
+  "refinements": [
+    {"concrete": "ConcreteSender", "abstract": "AbstractSender", "state_map": {"unit": "unit"}, "hidden_actions": []}
+  ]
+}

@@ -17,11 +17,6 @@ const FIXTURES: &[&str] = &[
     "examples/resources/token_bucket.nmlt",
     "examples/runtime/durable_controller.nmlt",
     "examples/technicus/provider_attempt.nmlt",
-    "benchmarks/seeded-defects/provider-attempt/blind-replay.nmlt",
-    "benchmarks/seeded-defects/provider-attempt/dispatch-before-authorize.nmlt",
-    "benchmarks/seeded-defects/provider-attempt/passing-selection.nmlt",
-    "benchmarks/seeded-defects/provider-attempt/reference.nmlt",
-    "benchmarks/seeded-defects/provider-attempt/response-binding.nmlt",
 ];
 
 fn repository_root() -> PathBuf {
@@ -34,7 +29,7 @@ fn read_fixture(relative_path: &str) -> String {
 }
 
 #[test]
-fn all_canonical_and_benchmark_files_build_lossless_trees() {
+fn all_language_examples_build_lossless_trees() {
     for relative_path in FIXTURES {
         let source = read_fixture(relative_path);
         let parsed = parse_cst(&source);

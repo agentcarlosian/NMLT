@@ -1,0 +1,60 @@
+enum ContractFact {
+  Authorized,
+  Ready,
+}
+
+system AbstractSender {
+  state unit: Bool = false
+  capability permit: Once<Unit>
+  port output send: Once<Unit>
+
+  action output send grade { work: 2 } {
+    rely ContractFact.Ready
+    guarantee ContractFact.Authorized
+    emit permit
+    consume permit
+  }
+
+  observe unit
+}
+
+system ConcreteSender {
+  state unit: Bool = false
+  capability permit: Once<Unit>
+  port output send: Once<Unit>
+
+  action output send grade { work: 1 } {
+    rely ContractFact.Ready
+    guarantee ContractFact.Authorized
+    emit permit
+    consume permit
+  }
+
+  observe unit
+}
+
+system Receiver {
+  state bit: Bool = false
+  port input receive: Once<Unit>
+
+  action input receive(permit: Once<Unit>) grade { work: 2 } {
+    require bit == false
+    rely ContractFact.Authorized
+    guarantee ContractFact.Ready
+    set bit = true
+  }
+
+  observe bit
+}
+
+compose AbstractNetwork {
+  connect AbstractSender.send -> Receiver.receive
+}
+
+compose ConcreteNetwork {
+  connect ConcreteSender.send -> Receiver.receive
+}
+
+refine ConcreteSender refines AbstractSender {
+  map state unit -> unit
+}

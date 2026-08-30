@@ -1,0 +1,21 @@
+system Sender {
+  state unit: Bool = false
+  capability permit: Once<Unit>
+  port output send: Once<Unit>
+  action output send {
+    emit permit
+    consume permit
+  }
+  observe unit
+}
+
+system Receiver {
+  state bit: Bool = false
+  port input receive: Once<Unit>
+  action input receive(other: Once<Unit>) {}
+  observe bit
+}
+
+compose UnmatchedTransfer {
+  connect Sender.send -> Receiver.receive
+}

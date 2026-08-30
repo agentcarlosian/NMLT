@@ -8,9 +8,16 @@
 
 #![forbid(unsafe_code)]
 
+mod behavior;
 mod identity;
 mod model;
 mod validate;
+
+pub use behavior::{
+    BEHAVIOR_CORE_SCHEMA, BehaviorCoreProgram, CoreBehaviorAction, CoreBehaviorBinding,
+    CoreBehaviorState, CoreBehaviorSystem, CoreBehaviorTerm, CoreComposition, CoreConnection,
+    CorePort, CorePortDirection, CoreRefinement, CoreResourceProfile,
+};
 
 pub use identity::{CoreIdentityError, CoreNodeId, CoreProgramId};
 pub use model::{

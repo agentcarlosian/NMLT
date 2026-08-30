@@ -1,1 +1,0 @@
-The initializer of ready has the declared Bool type.
