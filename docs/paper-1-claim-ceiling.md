@@ -104,7 +104,8 @@ Axioms: `[propext]`.
 The remaining conjecture is anything beyond T5:
 
 - IsolationReflects without assuming it (or injectivity) as an extra field;
-- `I-CAP` / `I-GRADE` / `I-FAIR` / `I-RELY`;
+- I-FAIR *positive* / fairness transport (first negative slice below; I-CAP/I-GRADE/I-RELY resource-independence pack frozen);
+- Case 7 remainder: I-FAIR through sync (empty-wiring product pack frozen; VisibleSync I-CAP transfer and I-GRADE through *sync* checked below; T5 ≠ CONDITIONAL-CONGRUENCE);
 - the OpenComposition port/assumption model of T4;
 - a composite hidden/map other than the defaults `compositeHiddenOf` /
   `compositeMapOf`.
@@ -112,6 +113,20 @@ The remaining conjecture is anything beyond T5:
 **Status:** Open. Do not describe T5 as “RFC 0008 CONDITIONAL-CONGRUENCE.”
 
 **First C1 slice (negative; not a lift):** I-CAP is independent of T5. Named lemma `hiddenPing_consume_breaks_resourceRefinement` (`[propext]` only): observational `WeakRefines` (T1 / T5 small model) still holds for hidden ping, but a `token` consume unmatched on the abstract profile falsifies `ResourceRefinement`. Not a positive I-CAP/I-GRADE/I-FAIR theorem; T4 does not imply this.
+
+**Second C1 slice (negative; not a lift):** I-GRADE is independent of T5. Named lemma `hiddenPing_grade_breaks_resourceRefinement` (`[propext]` only): observational `WeakRefines` still holds for hidden ping, but a positive cost atom unmatched by the abstract epsilon (`zero`) profile falsifies `ResourceRefinement.grade`. Not a positive I-GRADE/I-FAIR/I-RELY theorem, not a grade homomorphism through compose; T4 does not imply this.
+
+**Third C1 slice (negative; not a lift):** I-RELY is independent of T5. Named lemma `hiddenPing_rely_breaks_resourceRefinement` (`[propext]` only): observational `WeakRefines` still holds for hidden ping, but an extra `ready` Fact unmatched by the abstract stutter profile falsifies `ResourceRefinement.rely` (refinement must not widen assumptions). Not a positive I-RELY/I-FAIR theorem, not a rely discharge through compose; T4 does not imply this.
+
+**C1 resource-independence pack (frozen):** matching profiles lift; the three fails are independent. Named lemma `hiddenPing_inert_resourceRefinement` (`[propext]` only): if the hidden-ping resource profile matches the abstract stutter (no extra consume, epsilon grade, no extra rely), `ResourceRefinement` holds along `mapPing` while T1 `WeakRefines` still holds. Pack = I-CAP/I-GRADE/I-RELY negatives + inert positive. Local matching is not the compose homomorphism (see Case 7 first slice).
+
+**First C1 I-FAIR slice (negative; not a liveness theorem):** observational `WeakRefines` (T1) permits hidden divergence. Named lemma `hiddenPing_divergence_not_discharged_by_weakRefines` (prefer axiom-free): ConcreteSender takes hidden `ping` at every `Nat` index (`Nat → state` path) and stays at the unique abstract state. Finite observation-trace inclusion still holds on every finite prefix, so T5 does not discharge I-FAIR / RFC 0007 R-DIVERGENCE. Not WF/SF fairness transport, not LTL, not an I-FAIR lift through synchronization.
+
+**C1 Case 7 product resource-independence pack (frozen; not full CONDITIONAL-CONGRUENCE):** Named lemma `liftParallelResources` (`[propext]` only): a left-component `ResourceRefinement` lifts through `NMLT.Core.Transition.parallel` (labels `ParallelLabel` = left | right | sync) under `compositeMapOf` with identical peer resources on both products. `.left`/`.right` keep the originating profile; `.sync` uses `parallelAction` (internalizes transfer/receive). Instantiation `emptyWiring_inert_productResourceRefinement`: T5b EmptyWiringTau product `WeakRefines` plus matching inert profiles yield product `ResourceRefinement` via the lift. Product negatives (same EmptyWiringTau systems still product-WeakRefine; T5 / observation only): `emptyWiring_hiddenConsume_breaks_productResourceRefinement` (extra hidden-tau `token` consume unmatched by the abstract stutter; T5 ⇏ I-CAP through compose); `emptyWiring_hiddenGrade_breaks_productResourceRefinement` (positive cost atom unmatched by abstract epsilon/`zero`; T5 ⇏ I-GRADE through compose; not I-FAIR, not sync); `emptyWiring_hiddenRely_breaks_productResourceRefinement` (extra `ready` Fact unmatched by abstract stutter; T5 ⇏ I-RELY through compose). Pack = inert product positive + consume/grade/rely product negatives. Ceiling: empty wiring, matching or unmatched hidden-left profiles, default `compositeMapOf`. Not I-FAIR, not hidden-connected ping, not OpenComposition T4. T5 ≠ CONDITIONAL-CONGRUENCE.
+
+**C1 Case 7 sync-transfer I-CAP (VisibleSync; not full CONDITIONAL-CONGRUENCE):** Named lemma `visibleSync_unmatchedTransfer_not_synchronizationCompatible` (`[propext]` only): T5a VisibleSync product `WeakRefines` still holds (visible ping wired to Lean `receiver`), but ping transfers `token` unmatched by receive so `SynchronizationCompatible` fails. Product `ResourceRefinement` still holds via `liftParallelResources` because `parallelAction` internalizes (zeros) transfer/receive. Companion: T5 + product `ResourceRefinement` ⇏ I-CAP transfer on sync. Positive control `visibleSync_matchedTransfer_synchronizationCompatible`: matching ping transfer / receive receive is the extra I-CAP premise (instantiates `synchronized_transfer_exact` / `synchronized_rely_discharged`); product `ResourceRefinement` lifts when profiles otherwise match. Optional shared-ownership negative `visibleSync_sharedOwnership_not_capabilityPartition` (both own `token` ⇒ ¬ `CapabilityPartition`; T5 still holds). Ceiling: T5 ⇏ I-CAP transfer on sync. Not hidden ping, not empty-wiring consume, not I-FAIR. Lean `receiver` is not the OpenSystem-receptive dual.
+
+**C1 Case 7 sync-grade I-GRADE (VisibleSync; not full CONDITIONAL-CONGRUENCE):** Named lemma `visibleSync_hiddenGrade_breaks_productResourceRefinement` (`[propext]` only): T5a VisibleSync product `WeakRefines` still holds (visible ping wired to Lean `receiver`), but concrete ping carries `HiddenGrade.pingCost` while receiver and both abstracts are epsilon/`zero`. Product `ResourceRefinement.grade` fails at `.sync ping receive`: `parallelAction` grade is `Grades.parallel` of the two action grades, so concrete parallel cost is not ≤ abstract parallel zero. T5 still holds (observation only). Positive control / named alias `visibleSync_matchedTransfer_syncGrade`: matched-transfer inert epsilon grades already lift via `liftParallelResources`, so the `.sync` grade inequality holds. Ceiling: T5 ⇏ I-GRADE through sync. Not I-FAIR, not unmatched transfer (those lemmas kept). Lean `receiver` is not the OpenSystem-receptive dual.
 
 ### C2 — Hypothesis-independence of individual premises
 Each named premise of T5 is independently indispensable for the *default* lift
@@ -171,7 +186,15 @@ For T1–T5 (and T4 as cited):
   `propext` where applicable; **no** project `sorry`, `sorryAx`, or custom axiom)
 - **Recorded 2026-08-27:** T1/T2/T4 axiom-free; T3/T5/T5a/T5b depend on
   `[propext]` only; visible-classification dual of T3 is axiom-free
-  (see `papers/hidden-silence/axiom-audit-2026-08-27.md`)
+  (see `papers/hidden-silence/axiom-audit-2026-08-27.md`); Case 7 fragment
+  `liftParallelResources` / `emptyWiring_inert_productResourceRefinement` /
+  `emptyWiring_hiddenConsume_breaks_productResourceRefinement` /
+  `emptyWiring_hiddenGrade_breaks_productResourceRefinement` /
+  `emptyWiring_hiddenRely_breaks_productResourceRefinement` /
+  `visibleSync_unmatchedTransfer_not_synchronizationCompatible` /
+  `visibleSync_matchedTransfer_synchronizationCompatible` /
+  `visibleSync_matchedTransfer_syncGrade` /
+  `visibleSync_hiddenGrade_breaks_productResourceRefinement` are `[propext]` only
 - Standard library only (no Mathlib) for these artifacts
 
 Paper must include an axiom-audit sentence and a reproducibility appendix
@@ -244,3 +267,11 @@ appendix for Lean listings.
 | 2026-08-27 | Named finite obs-trace inclusion: `weakRefines_finite_observation_trace_inclusion` |
 | 2026-08-27 | Named Lean vs OpenSystem receiver split (dual fixture is not the small model) |
 | 2026-08-27 | First C1 negative slice: `hiddenPing_consume_breaks_resourceRefinement` (I-CAP independent of T5) |
+| 2026-08-27 | Second C1 negative slice: `hiddenPing_grade_breaks_resourceRefinement` (I-GRADE independent of T5) |
+| 2026-08-27 | Third C1 negative slice: `hiddenPing_rely_breaks_resourceRefinement` (I-RELY independent of T5) |
+| 2026-08-27 | C1 resource-independence pack frozen: `hiddenPing_inert_resourceRefinement` (matching profiles lift; three fails independent; Case 7 compose lift still open; not I-FAIR) |
+| 2026-08-27 | First C1 I-FAIR negative: `hiddenPing_divergence_not_discharged_by_weakRefines` (T1 permits infinite hidden ping; T5 finite prefixes do not discharge; not a liveness theorem; no WF/SF transport; no I-FAIR lift through sync) |
+| 2026-08-27 | C1 Case 7 first slice: `liftParallelResources` small-LTS product resource lift; `emptyWiring_inert_productResourceRefinement`; T5 ⇏ consume-through-compose `emptyWiring_hiddenConsume_breaks_productResourceRefinement`; T5 ≠ CONDITIONAL-CONGRUENCE |
+| 2026-08-27 | C1 Case 7 product pack frozen: inert product positive + consume/grade/rely product negatives (`emptyWiring_hiddenGrade_breaks_productResourceRefinement`, `emptyWiring_hiddenRely_breaks_productResourceRefinement`); remaining open is sync transfer / grades through *sync* / I-FAIR through sync |
+| 2026-08-27 | C1 Case 7 sync-transfer I-CAP: `visibleSync_unmatchedTransfer_not_synchronizationCompatible` (T5 ⇏ I-CAP transfer on sync; product ResourceRefinement still holds); `visibleSync_matchedTransfer_synchronizationCompatible` (matching transfer extra premise); optional `visibleSync_sharedOwnership_not_capabilityPartition`; remaining open was grades through *sync* / I-FAIR through sync |
+| 2026-08-27 | C1 Case 7 sync-grade I-GRADE: `visibleSync_hiddenGrade_breaks_productResourceRefinement` (T5 ⇏ I-GRADE through sync; product ResourceRefinement.grade fails at `.sync ping receive`); named alias `visibleSync_matchedTransfer_syncGrade` (epsilon grades lift the sync inequality); remaining open is I-FAIR through sync |

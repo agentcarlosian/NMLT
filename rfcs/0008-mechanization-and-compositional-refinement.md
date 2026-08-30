@@ -2,7 +2,7 @@
 
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
-- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split)
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split; I-GRADE hidden-ping negative; I-RELY hidden-ping negative; inert hidden-ping resource positive; I-FAIR hidden-ping divergence negative; Case 7 small-LTS product resource homomorphism fragment + T5⇏consume-through-compose; VisibleSync I-CAP transfer independent of T5; VisibleSync I-GRADE through *sync* independent of T5)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -336,13 +336,75 @@ Use `H(c,d) = (R.h(c),d)`.
 **Status 2026-08-27.** Cases 1–6 are checked for the small LTS model of
 `Core/Transition.lean` as `weakConditionalCongruence_safety`, with
 `IsolationReflects` stated separately from `WiringCovered` (necessity:
-`CollidedAbstractWire`). Case 7 (`I-CAP` / `I-GRADE`) remains a proof
-outline, as do fairness and the OpenComposition *weak* hiding story. A
-first C1 *negative* slice is checked:
+`CollidedAbstractWire`). Case 7 is no longer fully open: the small-LTS
+homomorphism fragment `liftParallelResources` (in
+`Behavior/WeakResourceCongruence.lean`) lifts a left-component
+`ResourceRefinement` through `NMLT.Core.Transition.parallel` under
+`compositeMapOf` against a fixed peer resource profile (`ParallelLabel`
+= left | right | sync; `.sync` uses `parallelAction`). Instantiation
+`emptyWiring_inert_productResourceRefinement` is the first *compose*
+resource homomorphism on this small model (T5b EmptyWiringTau + matching
+inert profiles). Product negatives (same empty-wiring systems still
+product-WeakRefine):
+`emptyWiring_hiddenConsume_breaks_productResourceRefinement` (T5 ⇏
+I-CAP consume through compose),
+`emptyWiring_hiddenGrade_breaks_productResourceRefinement` (T5 ⇏ I-GRADE
+through compose; HiddenGrade cost atom unmatched by abstract epsilon),
+`emptyWiring_hiddenRely_breaks_productResourceRefinement` (T5 ⇏ I-RELY
+through compose; extra `ready` Fact unmatched by abstract stutter). The
+inert product positive plus consume/grade/rely product negatives freeze
+the Case 7 product resource-independence pack. Ceiling: empty wiring,
+matching or unmatched hidden-left profiles, default `compositeMapOf`.
+VisibleSync I-CAP *transfer* is now checked independently of T5:
+`visibleSync_unmatchedTransfer_not_synchronizationCompatible` (visible ping
+wired to Lean `receiver`; ping transfers `token` unmatched by receive;
+`SynchronizationCompatible` fails; T5 product `WeakRefines` and product
+`ResourceRefinement` still hold because `parallelAction` zeros
+transfer/receive) and
+`visibleSync_matchedTransfer_synchronizationCompatible` (matching
+transfer/receive is the extra I-CAP premise; instantiates
+`synchronized_transfer_exact` / `synchronized_rely_discharged`). Optional
+shared-ownership negative
+`visibleSync_sharedOwnership_not_capabilityPartition`. VisibleSync
+I-GRADE through *sync* is now checked independently of T5:
+`visibleSync_hiddenGrade_breaks_productResourceRefinement` (visible ping
+wired to Lean `receiver`; concrete ping carries `HiddenGrade.pingCost`
+against receiver/abstract epsilon; product `ResourceRefinement.grade`
+fails at `.sync ping receive` because `parallelAction` grade is
+`Grades.parallel`; T5a product `WeakRefines` still holds) and named
+alias `visibleSync_matchedTransfer_syncGrade` (matching epsilon/`zero`
+grades already lift the `.sync` grade inequality via
+`liftParallelResources`). Full CONDITIONAL-CONGRUENCE remains open
+(I-FAIR through sync), as do
+fairness and the OpenComposition *weak* hiding story. This is not T4
+(`liftOpenProductResources` / `liftResourceAwareParallel` remain the
+mapped OpenComposition model). A first C1 *negative* slice is checked:
 `hiddenPing_consume_breaks_resourceRefinement` shows observational
 `WeakRefines` does not imply resource/capability preservation (I-CAP
-consume). That is not a Case 7 proof, not I-GRADE / I-FAIR, and not a
-claim that T5 is CONDITIONAL-CONGRUENCE. The
+consume). A sibling slice
+`hiddenPing_grade_breaks_resourceRefinement` shows the same for I-GRADE:
+hidden ping still weakly refines, but a positive cost atom unmatched by
+the abstract epsilon profile falsifies `ResourceRefinement.grade`. A
+further sibling slice
+`hiddenPing_rely_breaks_resourceRefinement` shows the same for I-RELY:
+hidden ping still weakly refines, but an extra `ready` Fact unmatched
+by the abstract stutter profile falsifies `ResourceRefinement.rely`
+(refinement must not widen assumptions). Matching profiles *do* lift
+locally: `hiddenPing_inert_resourceRefinement` shows that if the hidden
+ping resource profile matches the abstract stutter (no extra consume,
+epsilon grade, no extra rely), `ResourceRefinement` holds along
+`mapPing` while T1 still holds. The three negatives are independent of
+that matching case. That local pack is not a claim that T5 is
+CONDITIONAL-CONGRUENCE. The I-CAP/I-GRADE/I-RELY negatives plus this
+inert positive freeze the C1 resource-independence pack. A first C1
+I-FAIR *negative* slice is checked:
+`hiddenPing_divergence_not_discharged_by_weakRefines` shows
+observational `WeakRefines` (T1) permits an infinite hidden-ping path
+(`Nat → state`) that stays at the unique abstract state. Finite
+observation-trace inclusion still holds for every finite prefix, so T5
+does not discharge I-FAIR / RFC 0007 R-DIVERGENCE. This is not a
+liveness theorem, not WF/SF fairness transport, and not an I-FAIR lift
+through synchronization. The
 small-model lift must not be inferred from the exact-action theorem, and
 the exact-action theorem must not be inferred from the small-model lift.
 Finite observation-trace inclusion from any `WeakRefines` witness is
@@ -407,7 +469,12 @@ The mechanization program must retain:
 - a variant breaking connection reflection;
 - a variant sharing one affine capability between components;
 - a variant with a nonmonotone or non-homomorphic grade map;
-- a liveness example where infinite hidden steps invalidate progress transport;
+- a liveness example where infinite hidden steps invalidate progress transport (`hiddenPing_divergence_not_discharged_by_weakRefines`; T1 still holds; T5 finite prefixes still included; not a liveness theorem);
+- a variant where T5 product WeakRefines holds but an extra hidden-tau consume falsifies product ResourceRefinement (`emptyWiring_hiddenConsume_breaks_productResourceRefinement`; T5 ⇏ I-CAP through compose);
+- a variant where T5 product WeakRefines holds but a hidden-tau positive cost atom unmatched by abstract epsilon falsifies product ResourceRefinement.grade (`emptyWiring_hiddenGrade_breaks_productResourceRefinement`; T5 ⇏ I-GRADE through compose; not I-FAIR, not sync);
+- a variant where T5 product WeakRefines holds but a hidden-tau extra `ready` Fact unmatched by abstract stutter falsifies product ResourceRefinement.rely (`emptyWiring_hiddenRely_breaks_productResourceRefinement`; T5 ⇏ I-RELY through compose);
+- a variant where T5 VisibleSync product WeakRefines holds but unmatched ping transfer (receive does not receive `token`) falsifies `SynchronizationCompatible` while product ResourceRefinement still holds (`visibleSync_unmatchedTransfer_not_synchronizationCompatible`; T5 ⇏ I-CAP transfer on sync; `parallelAction` zeros transfer);
+- a variant where T5 VisibleSync product WeakRefines holds but a visible ping positive cost atom unmatched by receiver/abstract epsilon falsifies product ResourceRefinement.grade at `.sync ping receive` (`visibleSync_hiddenGrade_breaks_productResourceRefinement`; T5 ⇏ I-GRADE through sync; `parallelAction` = `Grades.parallel`; matching epsilon grades lift as `visibleSync_matchedTransfer_syncGrade`);
 - a theorem file containing `sorry` that the evidence gate rejects.
 
 ## Compatibility
@@ -499,11 +566,17 @@ dependent proof artifacts even if theorem names remain unchanged.
 3. **Done (2026-08-27, small LTS model):** prove the repaired safety theorem
    by the six transition cases (`weakConditionalCongruence_safety`), with
    isolation necessity.
-4. Add capability partition and grade homomorphism structures and proofs.
+4. **Product pack (2026-08-27, small LTS):** `liftParallelResources` lifts left `ResourceRefinement` through `parallel` / `compositeMapOf` with a fixed peer (`WeakResourceCongruence.lean`). Instantiation `emptyWiring_inert_productResourceRefinement`. Product negatives `emptyWiring_hiddenConsume_breaks_productResourceRefinement` (T5 ⇏ I-CAP through compose), `emptyWiring_hiddenGrade_breaks_productResourceRefinement` (T5 ⇏ I-GRADE through compose), `emptyWiring_hiddenRely_breaks_productResourceRefinement` (T5 ⇏ I-RELY through compose). Pack frozen: inert product positive + consume/grade/rely product negatives. **Sync-transfer I-CAP (2026-08-27, VisibleSync):** `visibleSync_unmatchedTransfer_not_synchronizationCompatible` (T5 ⇏ I-CAP transfer on sync; product ResourceRefinement still holds) and `visibleSync_matchedTransfer_synchronizationCompatible` (matching transfer is the extra premise). Optional `visibleSync_sharedOwnership_not_capabilityPartition`. **Sync-grade I-GRADE (2026-08-27, VisibleSync):** `visibleSync_hiddenGrade_breaks_productResourceRefinement` (T5 ⇏ I-GRADE through sync; product ResourceRefinement.grade fails at `.sync ping receive`) and named alias `visibleSync_matchedTransfer_syncGrade` (epsilon grades lift the sync inequality). Remaining: I-FAIR through sync. Not full CONDITIONAL-CONGRUENCE.
 5. **Done (finite only, 2026-08-27):** `weakRefines_finite_observation_trace_inclusion`
    (stutter-expansion of finite observation traces). The Rust helper
    `observation_trace_inclusion` is a small-graph regression, not a proof of
    the lemma. Infinite observation words / LTL / fairness transport remain open.
-6. Add fairness/divergence only after the safety theorem is stable.
+6. **First negative slice (2026-08-27):** `hiddenPing_divergence_not_discharged_by_weakRefines`
+   (T1 permits infinite hidden ping; T5 finite inclusion does not discharge
+   I-FAIR / R-DIVERGENCE). Not a liveness theorem; WF/SF transport and
+   fairness through compose remain open. Case 7 has a small-LTS homomorphism
+   fragment, product resource-independence pack, VisibleSync I-CAP
+   transfer independence, and VisibleSync I-GRADE through *sync*; I-FAIR
+   through sync remains open.
 7. Build a typed-IR correspondence test before attributing Lean theorems to
    compiler output.
