@@ -43,7 +43,7 @@ checks several language invariants that are not all logical dependencies of the
 current lifting proof. The source digest identifies supplied source bytes but
 does not verify Rust elaboration.
 
-Public documentation and papers must preserve those distinctions.
+Public documentation must preserve those distinctions.
 
 ## Next milestones
 

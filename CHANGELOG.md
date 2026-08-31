@@ -36,7 +36,8 @@ NMLT is pre-alpha and does not yet promise compatibility.
 - Distinguished source identification from verified translation,
   product-formation policy from theorem necessity, and conditional step lifting
   from reachability.
-- Removed the generated Paper 1 PDF from version control.
+- Focused the active documentation on the language, its mathematics, and
+  reproducible implementation results.
 
 ### CLI and gates
 
@@ -50,7 +51,7 @@ NMLT is pre-alpha and does not yet promise compatibility.
 ### Removed from the active branch
 
 - Contest verifier engines, temporal/OpenSystem checkers, standalone grade
-  analyzer, open Rust kernel, Paper 1 adapter, agent evaluator, certificate
+  analyzer, open Rust kernel, research sketch adapter, agent evaluator, certificate
   tools, benchmark/evidence corpora, comparison harnesses, release scripts, and
   contest schemas.
 

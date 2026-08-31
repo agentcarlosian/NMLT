@@ -18,8 +18,7 @@ fixtures. Many use surface forms intentionally outside the first finite
 behavioral slice. They are not executable semantic examples and do not inherit
 the Lean theorem.
 
-The pre-pivot Paper 1 and provider examples are historical syntax fixtures.
-The old canonical corpus records frontend breadth, not current verifier or
-model-check support. Current Paper 1
-claims are governed by [`docs/paper-1-claim-ceiling.md`](../docs/paper-1-claim-ceiling.md)
-and use only the pivot source/artifact pair.
+The pre-pivot composition and provider examples are historical syntax fixtures.
+The old canonical corpus records frontend breadth, not current behavioral
+semantics or model-check support. Active semantic claims use only the canonical
+`pivot/` source/artifact pair and the Lean definitions.

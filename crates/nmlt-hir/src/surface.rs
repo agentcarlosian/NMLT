@@ -537,11 +537,11 @@ mod polarized_action_tests {
     }
 
     #[test]
-    fn paper1_fixture_collects_ping_and_receive_not_polarity_words() {
-        let source = include_bytes!("../../../examples/paper1/hidden_ping_receive.nmlt");
+    fn hidden_boundary_fixture_collects_ping_and_receive_not_polarity_words() {
+        let source = include_bytes!("../../../examples/refinement/hidden_connected_action.nmlt");
         let projected = project_source_module(
-            "Paper1",
-            "examples/paper1/hidden_ping_receive.nmlt",
+            "HiddenBoundary",
+            "examples/refinement/hidden_connected_action.nmlt",
             source.as_slice(),
         );
         let mut actions = action_names(&projected);

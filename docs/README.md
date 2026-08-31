@@ -19,8 +19,7 @@ experiments.
 
 ## Semantics and trust
 
-- [Paper 1 in plain English](paper-1-in-plain-english.md)
-- [Paper 1 claim ceiling](paper-1-claim-ceiling.md)
+- [Getting started](getting-started.md)
 - [Threat model](threat-model.md)
 - [Artifact identity and translation boundary](artifact-identity.md)
 - [Lean axiom policy](../mechanization/lean/AXIOMS.md)
@@ -46,16 +45,13 @@ The current normative executable artifacts are:
 - [RFC registry](../rfcs/README.md)
 - [Architecture decisions](decisions/README.md)
 
-## Research method and paper
+## Research method and history
 
 - [Research method](research-method.md)
-- [Paper 1 manuscript directory](../papers/hidden-silence/README.md)
-- [Broader research agenda](full-research-plan.md) — a dated transition
-  document, not the current execution plan
 - [Historical records](history.md)
 - [Public pivot pre-PR review](reviews/public-pivot-pre-pr-2026-08-31.md)
 
 Any dated handoff, reproduction report, completion audit, test report, or
 research note is a historical record. It can explain how the project arrived
 here, but it cannot override the current architecture, roadmap, security
-inventory, or paper claim ceiling.
+inventory, or semantic trust boundary.

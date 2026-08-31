@@ -184,8 +184,8 @@ fn unsupported_unicode_is_retained_and_diagnosed() {
 }
 
 #[test]
-fn paper1_fixture_is_lossless_and_does_not_name_actions_output() {
-    let relative_path = "examples/paper1/hidden_ping_receive.nmlt";
+fn hidden_boundary_fixture_is_lossless_and_does_not_name_actions_output() {
+    let relative_path = "examples/refinement/hidden_connected_action.nmlt";
     let source = read_fixture(relative_path);
     let parsed = parse_cst(&source);
     assert!(
@@ -217,7 +217,7 @@ fn paper1_fixture_is_lossless_and_does_not_name_actions_output() {
                     .name
                     .as_ref()
                     .map(|name| name.text.as_str())
-                    .expect("polarized paper1 actions project a name");
+                    .expect("polarized hidden-boundary actions project a name");
                 assert_ne!(name, "output", "polarity word stolen as action name");
                 assert_ne!(name, "input", "polarity word stolen as action name");
                 names.push((

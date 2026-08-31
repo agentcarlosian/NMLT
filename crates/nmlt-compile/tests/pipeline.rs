@@ -33,12 +33,12 @@ fn unsupported_source_fails_at_the_projection_boundary() {
 }
 
 #[test]
-fn paper1_fixture_parses_and_fail_closes_at_projection() {
+fn hidden_boundary_fixture_parses_and_fail_closes_at_projection() {
     // Honest: parse + project + M9 fail-closed. Not a verified compile.
-    let source = include_bytes!("../../../examples/paper1/hidden_ping_receive.nmlt");
+    let source = include_bytes!("../../../examples/refinement/hidden_connected_action.nmlt");
     let error = compile_single(
-        "Paper1",
-        "examples/paper1/hidden_ping_receive.nmlt",
+        "HiddenBoundary",
+        "examples/refinement/hidden_connected_action.nmlt",
         source.as_slice(),
     )
     .unwrap_err();

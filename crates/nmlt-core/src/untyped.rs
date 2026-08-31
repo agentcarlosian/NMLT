@@ -690,7 +690,7 @@ pub enum ObservationKind {
 pub enum HideSort {
     /// `hide input, channel` — omit state fields from the observation.
     StateFields,
-    /// `hide action ping` — mark labels as refinement-hidden (Paper 1 / RFC 0007).
+    /// `hide action ping` — mark labels as refinement-hidden (RFC 0007).
     Actions,
 }
 

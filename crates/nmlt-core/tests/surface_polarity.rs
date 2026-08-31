@@ -12,12 +12,12 @@ use nmlt_core::{
     surface_action_polarities, surface_declared_polarities, surface_port_polarities, surface_wires,
 };
 
-fn paper1_source() -> String {
+fn hidden_boundary_source() -> String {
     std::fs::read_to_string(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../examples/paper1/hidden_ping_receive.nmlt"
+        "/../../examples/refinement/hidden_connected_action.nmlt"
     ))
-    .expect("paper1 fixture")
+    .expect("hidden-boundary fixture")
 }
 
 fn action_named<'a>(system: &'a nmlt_core::UntypedSystem, name: &str) -> &'a UntypedAction {
@@ -183,8 +183,8 @@ fn action_output_brace_is_named_output_with_no_polarity() {
 }
 
 #[test]
-fn paper1_fixture_has_no_ports_and_action_polarities_from_source() {
-    let projection = project_untyped(&parse_cst(&paper1_source()));
+fn hidden_boundary_fixture_has_no_ports_and_action_polarities_from_source() {
+    let projection = project_untyped(&parse_cst(&hidden_boundary_source()));
     assert!(
         projection.is_structurally_complete(),
         "{:?}",
@@ -266,7 +266,7 @@ fn paper1_fixture_has_no_ports_and_action_polarities_from_source() {
     );
     assert!(
         non_complementary_declared_wires(&projection.file).is_empty(),
-        "Paper 1 InvalidHiddenPing / VisibleSync are output->input: {wires:?}",
+        "InvalidHiddenPing / VisibleSync are output->input: {wires:?}",
         wires = non_complementary_declared_wires(&projection.file)
     );
 
@@ -281,8 +281,8 @@ fn paper1_fixture_has_no_ports_and_action_polarities_from_source() {
 }
 
 #[test]
-fn paper1_explicit_output_input_is_complementary() {
-    let projection = project_untyped(&parse_cst(&paper1_source()));
+fn hidden_boundary_explicit_output_input_is_complementary() {
+    let projection = project_untyped(&parse_cst(&hidden_boundary_source()));
     let mismatches =
         non_complementary_surface_wires(surface_wires(&projection.file), |system, action| {
             match (system, action) {
@@ -300,8 +300,8 @@ fn paper1_explicit_output_input_is_complementary() {
 }
 
 #[test]
-fn paper1_source_polarities_flag_only_synthetic_output_output() {
-    let projection = project_untyped(&parse_cst(&paper1_source()));
+fn hidden_boundary_polarities_flag_only_synthetic_output_output() {
+    let projection = project_untyped(&parse_cst(&hidden_boundary_source()));
     let complementary = non_complementary_declared_wires(&projection.file);
     assert!(
         complementary.is_empty(),
@@ -332,8 +332,8 @@ fn paper1_source_polarities_flag_only_synthetic_output_output() {
 }
 
 #[test]
-fn paper1_explicit_output_output_is_rejected() {
-    let projection = project_untyped(&parse_cst(&paper1_source()));
+fn hidden_boundary_explicit_output_output_is_rejected() {
+    let projection = project_untyped(&parse_cst(&hidden_boundary_source()));
     let mismatches =
         non_complementary_surface_wires(surface_wires(&projection.file), |system, action| {
             match (system, action) {
@@ -358,8 +358,8 @@ fn paper1_explicit_output_output_is_rejected() {
 }
 
 #[test]
-fn paper1_explicit_input_input_is_rejected() {
-    let projection = project_untyped(&parse_cst(&paper1_source()));
+fn hidden_boundary_explicit_input_input_is_rejected() {
+    let projection = project_untyped(&parse_cst(&hidden_boundary_source()));
     let mismatches = non_complementary_surface_wires(surface_wires(&projection.file), |_, _| {
         Some(SurfacePolarity::Input)
     });
@@ -368,7 +368,7 @@ fn paper1_explicit_input_input_is_rejected() {
 
 #[test]
 fn unknown_polarity_is_not_invented_or_flagged() {
-    let projection = project_untyped(&parse_cst(&paper1_source()));
+    let projection = project_untyped(&parse_cst(&hidden_boundary_source()));
     let mismatches =
         non_complementary_surface_wires(surface_wires(&projection.file), |system, action| {
             match (system, action) {

@@ -29,7 +29,8 @@ No reviewer was allowed to modify the worktree.
   reachability.
 - Stated that `ResourceWeakRefinement` has no separate path/trace adequacy theorem.
 - Replaced `_isNecessary` Lean control names with rejection claims and rewrote
-  the paper table so formation failures are not presented as minimality results.
+  the associated claim table so formation failures are not presented as
+  minimality results.
 - Documented the current closed-product interface, peer-hiding, capability-reuse,
   and surface-to-resource-lowering limitations.
 - Rebuilt the active trust inventory and added a gate for links, trusted paths,

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use NMLT in research, please cite this repository."
+title: "NMLT: New Mathematics, Languages, and Techniques"
+type: software
+authors:
+  - family-names: "Carlosian"
+    email: "carlosian@agentmail.to"
+abstract: >-
+  A pre-alpha research project developing candidate mathematical foundations,
+  formal languages, and evidence-directed techniques for trustworthy
+  computation. Its first flagship is the behavior-first NMLT language.
+repository-code: "https://github.com/agentcarlosian/NMLT"
+url: "https://github.com/agentcarlosian/NMLT"
+license: Apache-2.0
+keywords:
+  - programming languages
+  - formal methods
+  - behavioral semantics
+  - Lean
+  - refinement

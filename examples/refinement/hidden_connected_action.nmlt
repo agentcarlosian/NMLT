@@ -1,0 +1,56 @@
+// Surface fixture for hidden-action and composition-boundary checks.
+// This file exercises syntax projection and fail-closed compiler behavior; it
+// does not establish a checked refinement claim or belong to the canonical
+// behavior-core-v1 artifact set.
+
+system AbstractSender {
+  state unit: Bool = false
+
+  // The abstract sender has no ping transition.
+  observe unit
+}
+
+system ConcreteSender {
+  state unit: Bool = false
+
+  action output ping {
+    // The action preserves local state and observation.
+    set unit = unit
+  }
+
+  observe unit
+  hide action ping
+}
+
+system Receiver {
+  // This input is enabled only before the observed bit changes.
+  // See receptive_receiver.nmlt for an input-receptive variant.
+  state bit: Bool = false
+
+  action input receive {
+    require bit == false
+    set bit = true
+  }
+
+  observe bit
+}
+
+system VisibleAbstractSender {
+  state unit: Bool = false
+
+  action output ping {
+    set unit = unit
+  }
+
+  observe unit
+}
+
+// The first composition deliberately connects a hidden action to a peer input.
+// The second keeps the same complementary output-to-input connection visible.
+compose InvalidHiddenPing {
+  connect ConcreteSender.ping -> Receiver.receive
+}
+
+compose VisibleSync {
+  connect VisibleAbstractSender.ping -> Receiver.receive
+}

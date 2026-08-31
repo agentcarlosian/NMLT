@@ -445,8 +445,8 @@ fn parser_depth_cap_bounds_all_recursive_projection_walks() {
 }
 
 #[test]
-fn paper1_polarized_actions_project_ping_not_output_with_exact_coverage() {
-    let source = include_str!("../../../examples/paper1/hidden_ping_receive.nmlt");
+fn hidden_boundary_actions_project_ping_not_output_with_exact_coverage() {
+    let source = include_str!("../../../examples/refinement/hidden_connected_action.nmlt");
     let parsed = parse_cst(source);
     assert!(
         parsed.diagnostics().is_empty(),

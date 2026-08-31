@@ -1,75 +1,39 @@
 # NMLT
 
-**NMLT—New Mathematics, Languages, and Techniques—is a programming-language
-research project developing a new language and its mathematics together.**
+![NMLT — New Mathematics, Languages, and Techniques](.github/assets/nmlt-social-preview.jpg)
 
-NMLT is pre-alpha. It is a research system, not a production verifier, and it
-must not authorize safety-critical, financial, security-critical, or
-irreversible actions.
+[![CI](https://github.com/agentcarlosian/NMLT/actions/workflows/ci.yml/badge.svg)](https://github.com/agentcarlosian/NMLT/actions/workflows/ci.yml)
 
-## Why NMLT
+**NMLT — New Mathematics, Languages, and Techniques — is a research repository
+for trustworthy computation.** It investigates candidate mathematical
+foundations, develops formal languages, and tests evidence-directed techniques.
+Its first flagship language is the **NMLT language**, a behavior-first,
+evidence-carrying programming language inspired by TLA+ and contemporary
+mathematics.
 
-Most languages make values and functions primary, then add concurrency,
-authority, resource use, and proof obligations through separate tools. NMLT
-starts from behavior: which states may change, what a component can observe,
-which boundary actions it may exchange, what authority an action consumes or
-transfers, and which assumptions make composition valid.
+> To truly progress, humanity needs new mathematics, new languages, and new
+> techniques.
 
-The project has two inseparable outputs:
+NMLT is pre-alpha research software. It is not intended to authorize
+safety-critical, financial, security-critical, or irreversible actions.
 
-- a human-facing language for describing open, resource-aware systems; and
-- mechanized mathematics for explaining when those systems compose and refine.
+## NMLT today
+
+The active work develops the language and its mathematics together. Programs
+describe open behaviors, observations, typed boundary actions, affine authority,
+resource grades, and the assumptions and guarantees that make composition
+valid.
 
 Rust implements the lossless frontend, typed elaboration pipeline, canonical
 artifact producer, and a reference explorer. Lean defines the current
-behavioral semantics and checks the theorem premises. Rust is not the semantic
-prover.
+behavioral semantics, checks the theorem premises, and is the semantic authority
+for the current behavioral core.
 
-## A small NMLT program
+The [getting-started guide](docs/getting-started.md) walks through the checked
+sender/receiver program, its refinement, canonical artifact, Lean validation,
+and non-authoritative exploration.
 
-This excerpt is copied from the checked capability-bearing fixture:
-
-```nmlt
-enum ContractFact { Authorized, Ready }
-
-system ConcreteSender {
-  state unit: Bool = false
-  capability permit: Once<Unit>
-  port output send: Once<Unit>
-
-  action output send grade { work: 1 } {
-    rely ContractFact.Ready
-    guarantee ContractFact.Authorized
-    emit permit
-    consume permit
-  }
-
-  observe unit
-}
-
-system Receiver {
-  state bit: Bool = false
-  port input receive: Once<Unit>
-
-  action input receive(permit: Once<Unit>) grade { work: 2 } {
-    require bit == false
-    rely ContractFact.Authorized
-    guarantee ContractFact.Ready
-    set bit = true
-  }
-
-  observe bit
-}
-
-compose ConcreteNetwork {
-  connect ConcreteSender.send -> Receiver.receive
-}
-```
-
-The complete checked example also includes an explicit refinement:
-[`visible_resource_sync.nmlt`](examples/pivot/visible_resource_sync.nmlt).
-
-## Current working slice
+## From source to semantics
 
 ```text
 exact .nmlt bytes
@@ -88,57 +52,11 @@ exact .nmlt bytes
 | Artifact | Canonical `behavior-core-v1` JSON with a source digest, typed terms, action profiles, wiring, and refinement data |
 | Exploration | `nmlt-eval` explores finite artifacts for language design and debugging, always with `assurance: none` |
 
-The source digest identifies the source bytes presented to the Lean checker. The
-checker does not re-run the Rust compiler, so it does not prove that an
-arbitrary artifact was produced from those bytes. The repository gate separately
-reproduces and byte-compares the canonical primary fixture.
-
-### Explicit non-claims
-
-The current repository does **not** establish:
-
-- a verified Rust-to-Lean compiler;
-- existence or reachability of the artifact's dynamic transfer step;
-- preservation of a general open interface by binary product formation;
-- preservation of peer-side hiding, direction, or payload by the current static
-  product;
-- a dynamic behavior initializer, observation, or static/dynamic correspondence
-  theorem;
-- an adequacy theorem connecting `ResourceWeakRefinement` to finite or infinite
-  trace observations;
-- necessity of every product-formation gate for the lifting proof;
-- fairness, divergence, infinite traces, or liveness transport;
-- general composition, arbitrary grade algebras, or infinite state; or
-- proof, model-check, evidence, or runtime authority for the Rust explorer.
-
-## Reproduce the current result
-
-```bash
-cargo run -p nmlt-cli -- typecheck \
-  examples/pivot/visible_resource_sync.nmlt
-
-cargo run -p nmlt-cli -- elaborate \
-  examples/pivot/visible_resource_sync.nmlt \
-  --emit-core /tmp/visible-resource-sync.json
-
-cd mechanization/lean
-lake exe nmlt-artifact-check /tmp/visible-resource-sync.json \
-  ../../examples/pivot/visible_resource_sync.nmlt
-cd ../..
-
-cargo run -p nmlt-cli -- explore \
-  --behavior ConcreteNetwork --max-states 8 \
-  /tmp/visible-resource-sync.json
-```
-
-Use `make ci` for the Rust language gate, `make metatheory` for the Lean gate,
-or `make reproduce` for the full Rust, Lean, and independent NanoDA gate. These
-targets require a POSIX shell, `python3`, GNU core utilities including
-`sha256sum`, Rust 1.94, and the pinned Lean toolchain; Windows development uses
-WSL. The Lean gate rejects unchecked proof placeholders, tests artifact
-mutations, and audits focused theorem dependencies. The full gate additionally
-downloads pinned NanoDA/exporter sources and independently checks every project
-declaration.
+This milestone is finite, binary, and safety-oriented. The source digest
+identifies the source bytes presented to Lean; the repository separately
+reproduces and byte-compares the primary artifact. Detailed semantic boundaries
+are recorded with the active definitions in the
+[current calculus](docs/core-calculus.md).
 
 ## Trust boundary
 
@@ -160,21 +78,14 @@ dependencies in [`mechanization/lean/AXIOMS.md`](mechanization/lean/AXIOMS.md).
 
 - [Project status and roadmap](docs/roadmap.md)
 - [Architecture](docs/architecture.md)
+- [Getting started](docs/getting-started.md)
 - [Language sketch](docs/language-sketch.md)
 - [Current calculus](docs/core-calculus.md)
 - [Manifesto](docs/manifesto.md)
 - [Design principles](docs/design-principles.md)
-- [Paper 1 in plain English](docs/paper-1-in-plain-english.md)
-- [Paper 1 claim ceiling](docs/paper-1-claim-ceiling.md)
+- [Project history](docs/history.md)
+- [Citation metadata](CITATION.cff)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
-
-## History
-
-NMLT previously shipped a contest-oriented collection of bounded verifiers and
-demonstrations. That work remains reproducible from the immutable
-[`build-week-judge-demo-2026`](https://github.com/agentcarlosian/NMLT/tree/build-week-judge-demo-2026)
-tag at commit `0417f6e`. It is a historical release, not the active
-architecture.
 
 NMLT is licensed under Apache-2.0. See [`LICENSE`](LICENSE).

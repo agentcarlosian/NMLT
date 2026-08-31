@@ -5,17 +5,17 @@ use nmlt_core::{
     surface_wired_action_pairs_for_left, surface_wires_in_compose,
 };
 
-fn paper1_source() -> String {
+fn hidden_boundary_source() -> String {
     std::fs::read_to_string(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../examples/paper1/hidden_ping_receive.nmlt"
+        "/../../examples/refinement/hidden_connected_action.nmlt"
     ))
-    .expect("paper1 fixture")
+    .expect("hidden-boundary fixture")
 }
 
 #[test]
 fn hide_action_ping_is_classified_as_action_hiding() {
-    let source = paper1_source();
+    let source = hidden_boundary_source();
     let parsed = parse_cst(&source);
     assert!(
         parsed.diagnostics().is_empty(),
@@ -146,8 +146,8 @@ fn lone_hide_action_identifier_is_a_state_field_named_action() {
 }
 
 #[test]
-fn hidden_wired_actions_flags_paper1_ping_wire() {
-    let source = paper1_source();
+fn hidden_wired_actions_flags_hidden_ping_wire() {
+    let source = hidden_boundary_source();
     let projection = project_untyped(&parse_cst(&source));
     let concrete = projection
         .file
@@ -174,8 +174,8 @@ fn hidden_wired_actions_flags_paper1_ping_wire() {
 }
 
 #[test]
-fn paper1_compose_connect_projects_wiring() {
-    let source = paper1_source();
+fn hidden_boundary_compose_connect_projects_wiring() {
+    let source = hidden_boundary_source();
     let parsed = parse_cst(&source);
     assert!(
         parsed.diagnostics().is_empty(),
@@ -306,8 +306,8 @@ fn top_level_connect_projects_without_compose_wrapper() {
 }
 
 #[test]
-fn paper1_polarized_actions_do_not_change_hide_classification() {
-    let projection = project_untyped(&parse_cst(&paper1_source()));
+fn polarized_actions_do_not_change_hide_classification() {
+    let projection = project_untyped(&parse_cst(&hidden_boundary_source()));
     let concrete = projection
         .file
         .system_named("ConcreteSender")

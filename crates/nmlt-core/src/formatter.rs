@@ -102,8 +102,8 @@ mod tests {
     }
 
     #[test]
-    fn paper1_fixture_is_byte_preserved() {
-        let source = include_str!("../../../examples/paper1/hidden_ping_receive.nmlt");
+    fn hidden_boundary_fixture_is_byte_preserved() {
+        let source = include_str!("../../../examples/refinement/hidden_connected_action.nmlt");
         let once = format_source(source, FormatMode::Preserve);
         let twice = format_source(once.text(), FormatMode::Preserve);
         assert!(once.diagnostics().is_empty(), "{:?}", once.diagnostics());

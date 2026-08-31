@@ -148,7 +148,7 @@ hide input, channel          // omit state fields from V (C06)
 
 hide action ping             // refinement-hidden *label*
                              // legal only if ping is not connected
-                             // (I-NO-HIDDEN-BOUNDARY / Paper 1)
+                             // (I-NO-HIDDEN-BOUNDARY)
 ```
 
 The untyped projection classifies `hide action ping[, q]*` as
@@ -163,7 +163,8 @@ while the executable composition-time I-NO-HIDDEN-BOUNDARY check lives as
 (`nmlt-temporal`), after surface `hide action` lowers to `HideSort::Actions`
 in `nmlt-core`.
 
-Paper 1 fixture: `examples/paper1/hidden_ping_receive.nmlt`.
+Boundary-isolation fixture:
+`examples/refinement/hidden_connected_action.nmlt`.
 
 Optional action polarity uses the same keyword-as-identifier rule:
 `action output ping { ... }` / `action input receive { ... }` project
