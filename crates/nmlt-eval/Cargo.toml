@@ -1,0 +1,14 @@
+[package]
+name = "nmlt-eval"
+description = "Non-verifying reference evaluator for NMLT behavior artifacts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+nmlt-ir = { path = "../nmlt-ir" }
+
+[lints]
+workspace = true

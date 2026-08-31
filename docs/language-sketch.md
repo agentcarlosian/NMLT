@@ -1,93 +1,117 @@
-# Language sketch
+# NMLT language sketch
 
-Status: illustrative design fixture, non-normative.
+Status: implemented finite slice plus clearly marked future direction.
 
-## Surface layers
+## Current surface
 
-The flagship NMLT language is expected to expose four coordinated layers:
-
-1. pure mathematical definitions;
-2. systems, state, events, and actions;
-3. temporal properties, contracts, and refinements;
-4. verification requests and evidence inspection.
-
-## Illustrative syntax
+The primary source fixture demonstrates the surface forms that currently reach
+`behavior-core-v1`:
 
 ```nmlt
-system ProviderAttempt(req: Request) {
-  state phase: Phase = proposed
-  state dispatch_count: Nat = 0
-  state response: Option<Response> = none
+enum ContractFact { Authorized, Ready }
 
-  capability provider_call:
-    Once<Provider, request_hash = hash(req)>
+system Sender {
+  state ready: Bool = true
+  capability permit: Once<Unit>
+  port output send: Once<Unit>
 
-  action authorize {
-    require phase == proposed
-    set phase = authorized
+  action output send grade { work: 1 } {
+    require ready == true
+    rely ContractFact.Ready
+    guarantee ContractFact.Authorized
+    emit permit
+    consume permit
+    set ready = false
   }
 
-  action dispatch {
-    require phase == authorized
-    consume provider_call
-    set phase = dispatched
-    set dispatch_count = dispatch_count + 1
+  observe ready
+}
+
+system Receiver {
+  state accepted: Bool = false
+  port input receive: Once<Unit>
+
+  action input receive(permit: Once<Unit>) grade { work: 2 } {
+    rely ContractFact.Authorized
+    guarantee ContractFact.Ready
+    set accepted = true
   }
 
-  safety DispatchRequiresAuthority =
-    always(dispatch_count > 0 implies authorized_before_dispatch)
+  observe accepted
+}
 
-  temporal NoBlindReplay =
-    always(phase == indeterminate implies not enabled(dispatch))
-
-  refine RuntimeJournal {
-    observe phase, response
-    stutter internal_bookkeeping
-  }
+compose Network {
+  connect Sender.send -> Receiver.receive
 }
 ```
 
-The current lossless frontend recognizes the Phase 1 declaration shells,
-including modules and surface-only data/record/function forms, systems, state,
-actions, `require`, explicit `set` targets, capabilities, properties,
-observations, and hiding. It projects that structure into a complete untyped
-surface artifact while preserving unsupported or recovered nodes explicitly.
-M9 strengthens that boundary into an ordered, origin-censused surface
-projection: modules are not flattened, imports and enums are structured,
-system/action parameters remain distinct, and no semantic CST node may vanish.
-The first M9 feature profile remains intentionally narrower than everything the
-lossless parser recognizes.
-Expression precedence, name resolution, typing, effects, temporal meaning,
-refinement meaning, and general execution remain narrow or deferred; the full
-example above is still an illustrative design fixture rather than an
-end-to-end verified program.
+The first behavioral profile supports:
 
-## Candidate declaration families
+- finite `Bool`, `Unit`, and enum state;
+- total finite initializers and explicit observations;
+- input and output ports with nominal payload types;
+- polarized actions, guards, simultaneous updates, and emitted payloads;
+- affine nominal capabilities with matched transfer and receive;
+- grades as finite maps from named atoms to natural numbers;
+- rely and guarantee atoms from a finite enum;
+- exactly two-component compositions with one-to-one connections;
+- action hiding; and
+- refinement with an explicit total state-field map.
 
-```text
-module, import, data, type, fn, theorem
-system, state, event, port, capability, budget
-action, require, set, emit, consume
-safety, temporal, fair, assume, guarantee
-compose, hide, observe, refine, monitor
-verify, evidence
-```
+Unsupported general composition, infinite domains, partial or higher-order state
+maps, arbitrary grade algebras, and liveness syntax fail at a documented
+frontend boundary rather than receiving an approximate semantics.
 
-## Syntax design constraints
+## Surface versus meaning
 
-- The mathematical core must remain readable without ASCII punctuation noise.
-- State updates must identify every modified location; accidental frame
-  conditions should be statically diagnosable.
-- Nondeterminism, partiality, effects, and assumptions must be explicit.
-- Surface process notation must elaborate to inspectable actions.
-- Verification annotations select methods but cannot alter proposition meaning.
-- Bounds belong to evidence scope, not to the meaning of an unbounded property.
+The lossless parser recognizes more declaration shells than the behavioral
+compiler accepts. Parsing preserves source; it does not assign meaning. The
+implemented semantic route is the finite profile above, emitted as canonical
+`behavior-core-v1` and decoded by Lean.
 
-## Open questions
+The ordinary typed-core route retains additional expression and property forms
+for frontend research. Those forms do not automatically enter the behavioral
+artifact or inherit the Lean composition theorem.
 
-- Whether actions use relational blocks, explicit primed variables, or both.
-- Whether the language is indentation-sensitive.
-- How proof terms and tactics appear at the surface.
-- Whether effect grades are inferred, declared, or mixed.
-- How executable foreign functions expose semantic contracts.
-- Which temporal operators belong to the stable core.
+The first slice lowers authority-related surface forms as follows:
+
+| Surface form | `CoreResourceProfile` field |
+|---|---|
+| `emit c` together with `consume c` on an output action | `transfers = {c}` |
+| `consume c` without emitting it | `consumes = {c}` |
+| `Once<T>` input parameter `c` | `receives = {c}` |
+| `rely Fact.X` / `guarantee Fact.X` | `relies` / `guarantees` |
+| `grade { a: n }` | `grade[a] = n` |
+| `require expression` | transition guard, not `resources.requires` |
+
+There is no source form for `resources.requires` yet. That field is reserved in
+`behavior-core-v1`; current mutation tests exercise its Lean-side validation by
+editing an artifact directly.
+
+## Near-term language work
+
+The next surface and artifact work should support:
+
+- dynamic initial authority and post-receive authority contexts;
+- receive-then-consume and receive-then-transfer programs;
+- a product that preserves remaining open ports and action visibility;
+- artifact-derived step and finite-path witnesses; and
+- more mathematical definitions that can be shared by programs and proofs.
+
+## Later language families
+
+Temporal properties, behavior-indexed fairness, probabilistic and hybrid
+behavior, user-defined grade algebras, proof terms, general code generation,
+and runtime observation remain research proposals. They are not current CLI
+commands or current semantic claims.
+
+## Design constraints
+
+- One surface construct must not acquire different meanings in Rust and Lean.
+- Authority movement, observation, hiding, assumptions, and guarantees remain
+  explicit.
+- Unsupported forms fail rather than silently weakening a program.
+- Artifacts remain inspectable and deterministic.
+- Bounded exploration never becomes an unbounded theorem.
+- Future proof automation may propose evidence; a named checker and exact
+  theorem boundary determine acceptance.

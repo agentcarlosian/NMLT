@@ -1,0 +1,15 @@
+system Abstract {
+  state first: Bool = false
+  state second: Bool = false
+  observe first, second
+}
+
+system Concrete {
+  state first: Bool = false
+  state second: Bool = false
+  observe first, second
+}
+
+refine Concrete refines Abstract {
+  map state first -> first
+}

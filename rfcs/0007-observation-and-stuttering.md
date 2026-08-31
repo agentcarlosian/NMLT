@@ -3,6 +3,7 @@
 - Status: Under review
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
+- Revised: 2026-08-27 (`hide action` + optional `action input|output` polarity + surface `compose`/`connect` wiring; finite stutter-expansion helper)
 - Mathematical-core backlog: `NMLT-P1-104`
 
 ## Summary
@@ -134,6 +135,66 @@ its capability/grade effect satisfies the declared hidden-effect policy
 The first condition is stronger than
 `observe_A(h(s)) = observe_A(h(s'))`. The connected-port condition is required
 by the congruence counterexample in RFC 0008.
+
+### Surface syntax (v1 candidate)
+
+The parser already treats `hide` / `observe` as member declarations whose
+body is an expression of names (RFC 0003 keywords are identifiers until
+the parser classifies them). Two forms must not be conflated:
+
+```text
+observe bit, output          // state-observation projection (V)
+hide input, channel          // omit state fields from V (C06)
+
+hide action ping             // refinement-hidden *label*
+                             // legal only if ping is not connected
+                             // (I-NO-HIDDEN-BOUNDARY)
+```
+
+The untyped projection classifies `hide action ping[, q]*` as
+`HideSort::Actions` (names after the `action` keyword). A hide list
+that does not begin with `action` plus at least one name remains
+`HideSort::StateFields`, so `hide action` alone still hides a state
+field named `action`. Connecting a label that appears in `hide action`
+is a static error at composition time, not a silent composite stutter;
+surface projection still records `NMLT-M9-HIDE-ACTION` as an M9 gap marker,
+while the executable composition-time I-NO-HIDDEN-BOUNDARY check lives as
+`CongruenceIssue::HiddenConnectedAction` inside `OpenRefinementCongruenceChecker`
+(`nmlt-temporal`), after surface `hide action` lowers to `HideSort::Actions`
+in `nmlt-core`.
+
+Boundary-isolation fixture:
+`examples/refinement/hidden_connected_action.nmlt`.
+
+Optional action polarity uses the same keyword-as-identifier rule:
+`action output ping { ... }` / `action input receive { ... }` project
+`UntypedAction.polarity`; `action ping { ... }` stays `None`; `action input {`
+(no following name) is an action named `input` with no polarity. Complementary
+`connect` checks use port polarity if present, else action polarity, else skip
+(`non_complementary_declared_wires`). Polarized action decls are structurally
+complete and still M9-fail-closed (`NMLT-M9-ACTION-POLARITY`); compose is not
+silently opened. The fixture annotates ConcreteSender/VisibleAbstractSender
+`ping` as output and Receiver `receive` as input so that check can run from
+source. Not part of `canonical-v1.json`.
+
+Surface composition wiring (2026-08-27): the lossless frontend recognizes
+
+```text
+compose InvalidHiddenPing {
+  connect ConcreteSender.ping -> Receiver.receive
+}
+```
+
+and file-level `connect Left.action -> Right.action`. Untyped projection
+exposes `UntypedCompose` / `UntypedConnect` plus helpers
+`surface_wires` / `surface_wired_action_pairs_for_left`, so
+`hidden_wired_actions(system, pairs)` can run from declared source wires.
+Those `(left_action, right_action)` names (plus a caller-chosen sync label)
+feed `CompositionSpec::from_left_right_wires` and
+`CongruenceIssue::HiddenConnectedAction`; full elaborator still M9
+fail-closed (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`). This is **not**
+source-to-LTS lowering: finite `OpenSystem` graphs remain hand-built
+fixtures. The fixture is not part of `canonical-v1.json`.
 
 ## 3. Observation projections
 
@@ -358,7 +419,9 @@ requires its own proof.
 1. Mechanize intensional traces, identity stutter, and observation projection.
 2. Prove `approx_st` is an equivalence.
 3. Prove the observation LTL fragment invariant under `approx_st`.
-4. Mechanize safety transport for `R-INIT` through `R-VISIBLE`.
+4. Mechanize safety transport for `R-INIT` through `R-VISIBLE`. Finite
+   `nmlt-temporal::observation_trace_inclusion` / `stutter_expands` is a
+   small-graph regression for the Lean corollary, not a proof of it.
 5. Add divergence and fairness structures before any liveness transport claim.
 6. Preserve uncollapsed intensional traces in evidence and test every negative
    control above.

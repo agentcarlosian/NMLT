@@ -1,5 +1,9 @@
 # NMLT reboot handoff — 2026-07-20
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 ## Repository state
 
 - Repository: `~/NMLT`

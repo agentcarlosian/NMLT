@@ -1,6 +1,6 @@
 # RFC 0009: Finite temporal, refinement, and runtime semantics
 
-- Status: Draft
+- Status: Postponed until unified behavior, reachability, and fairness milestones
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Phase: 4 candidate implementation

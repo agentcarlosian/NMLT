@@ -7,13 +7,7 @@ members = [
     "crates/nmlt-compile",
     "crates/nmlt-elaborate",
     "crates/nmlt-kernel",
-    "crates/nmlt-certificate-tools",
-    "crates/nmlt-engine",
-    "crates/nmlt-temporal",
-    "crates/nmlt-verify",
-    "crates/nmlt-grades",
-    "crates/nmlt-open-kernel",
-    "crates/nmlt-agent",
+    "crates/nmlt-eval",
     "crates/nmlt-cli",
 ]
 default-members = ["crates/nmlt-cli"]
@@ -24,6 +18,10 @@ version = "0.0.1"
 edition = "2024"
 rust-version = "1.85"
 license = "Apache-2.0"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

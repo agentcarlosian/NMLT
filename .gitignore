@@ -2,10 +2,6 @@
 /build/
 /dist/
 **/target/
-**/PGenerated/
-**/PCheckerOutput/
-**/*_TTrace_*.tla
-**/*_TTrace_*.bin
 
 # Local caches and environments
 /.cache/
@@ -23,5 +19,5 @@ __pycache__/
 *.log
 .DS_Store
 
-# Integrity-pinned JavaScript tooling
-/tools/quint/node_modules/
+# Generated documents are never source artifacts.
+**/*.pdf

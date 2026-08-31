@@ -1,7 +1,17 @@
 # Canonical source and evidence identity
 
-Status: normative for identity version 1. Cryptographic identity binds exact
-bytes and declared meaning; filesystem paths and display names are metadata.
+> **Partially active identity specification.** The source, source-set,
+> module-map, HIR, typed-core, elaboration, and canonical-example identities
+> remain normative for the retained language pipeline. The semantic-claim and
+> evidence-manifest sections are a historical pre-pivot design record.
+
+The active behavioral envelope is `behavior-core-v1`. Its source digest
+identifies supplied bytes rather than proving compiler correspondence.
+
+`behavior-core-v1.source_sha256` is a deliberate interoperability exception to
+the domain-separated identities below: it stores lowercase bare SHA-256 of the
+exact source bytes so the Lean checker can compare it with `sha256sum`. It is an
+identifier for the separately supplied bytes, not a proof of elaboration.
 
 ## Encoding primitives
 
@@ -220,7 +230,14 @@ negative control cannot retain the same entry or corpus identity even when the
 source file is unchanged. This is a registry freeze, not a semantic proof or a
 replacement for the typed claim identity below.
 
-## Semantic and claim identity
+## Historical pre-pivot identity design
+
+> **Historical record.** The remaining sections specified the retired verifier
+> and evidence-manifest architecture. They are not normative for the active
+> `behavior-core-v1` pipeline. See [Historical research records](history.md) and
+> [RFC 0004's pivot disposition](../rfcs/0004-artifact-identity.md#pivot-disposition).
+
+### Semantic and claim identity
 
 Once elaboration exists, canonical core IR uses a separately versioned binary
 encoding with explicit tags and lengths. Its identity prefix is
@@ -238,7 +255,7 @@ are provisional handles, not cryptographic claim identities. M9-004 assigns
 unassigned until M9-008 fixes their checked-core, property, and observation
 bindings.
 
-## Evidence identity
+### Evidence identity
 
 Evidence JSON must first satisfy the evidence schema and the I-JSON constraints
 used by RFC 8785. Producers then:
@@ -262,7 +279,7 @@ key identity. No signature or transparency-log format is implemented today.
 Pretty-printed and canonical representations may coexist, but consumers must
 recompute rather than trust the supplied ID.
 
-## Required bindings
+### Required bindings
 
 A verification evidence object is incomplete unless it binds:
 
@@ -292,7 +309,7 @@ bytes. A future remote store needs a separate retrieval/readback protocol.
 Witness references likewise begin with a content identity and may add a
 fragment selecting an item inside the addressed artifact.
 
-## Verification rules
+### Verification rules
 
 - Consumers recompute all reachable identities before promotion.
 - A missing, malformed, stale, or conflicting binding fails closed.

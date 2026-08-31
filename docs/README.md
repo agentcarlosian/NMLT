@@ -1,43 +1,57 @@
 # NMLT documentation
 
-NMLT means **New Mathematics, Languages, and Techniques**. These documents
-distinguish the umbrella research program, its flagship NMLT language, current
-behavior, and research intent.
+NMLT is a programming language and mechanized-mathematics research project.
+These documents distinguish the active architecture from historical verifier
+experiments.
 
-The latest restart point is the
-[2026-07-19 reboot handoff](reboot-handoff-2026-07-19.md). It records the
-durable baseline, current assurance boundary, exact next milestone, validation
-commands, and local research-archive state; `Plan.md` remains authoritative.
+## Start here
 
-## Orientation
+1. [Manifesto](manifesto.md) — why new languages and mathematics belong
+   together
+2. [Project roadmap](roadmap.md) — current result, next dependencies, and
+   deferred work
+3. [Language sketch](language-sketch.md) — implemented finite surface and
+   future direction
+4. [Core calculus](core-calculus.md) — the current Lean semantic objects and
+   their limitations
+5. [Architecture](architecture.md) — Rust/Lean boundary and artifact path
+6. [Design principles](design-principles.md) — project constraints
 
-1. [Manifesto](manifesto.md)
-2. [Design principles](design-principles.md)
-3. [Core calculus](core-calculus.md)
-4. [Language sketch](language-sketch.md)
-5. [Architecture](architecture.md)
-6. [Evidence model](evidence-model.md)
-7. [Research method](research-method.md)
-8. [Roadmap](roadmap.md)
-9. [Phase 0 closeout and Phase 1 completion record](phase-0-closeout.md)
-10. [M9 source-to-typed-core research note](research-notes/source-to-typed-core-and-project-identity-2026-07-19.md)
-11. [M9 contract and resolution follow-up](research-notes/m9-contract-resolution-2026-07-19.md)
-12. [M9 all-reference resolution and explicit-core research note](research-notes/m9-resolution-and-explicit-core-2026-07-19.md)
-13. [M9 bidirectional elaboration research note](research-notes/m9-bidirectional-elaboration-2026-07-19.md)
-14. [M10 behavior, refinement, and certificate research](research-notes/m10-behavior-refinement-and-certificates-2026-07-19.md)
-15. [M11 open-system refinement research](research-notes/m11-open-system-refinement-2026-07-19.md)
-16. [M11 contract-refinement research](research-notes/m11-contract-refinement-2026-07-19.md)
-17. [M11 two-sided congruence implementation note](research-notes/m11-two-sided-congruence-2026-07-19.md)
-18. [Temporal, refinement, and open-system checker](temporal-refinement.md)
-19. [Independent reproduction record](reproduction-2026-07-18.md)
-20. [Reboot handoff and continuation point](reboot-handoff-2026-07-19.md)
+## Semantics and trust
 
-Supporting material includes the [competitor matrix](competitor-matrix.md),
-[glossary](glossary.md), [source corpus](source-corpus.md), and
-[decision records](decisions/README.md). Security and evidence readers should
-also use the [threat model](threat-model.md),
-[artifact identity rules](artifact-identity.md), and the
-[Phase 0 research note](research-notes/phase-0-foundations-2026-07-18.md).
+- [Getting started](getting-started.md)
+- [Threat model](threat-model.md)
+- [Artifact identity and translation boundary](artifact-identity.md)
+- [Lean axiom policy](../mechanization/lean/AXIOMS.md)
+- [Lean package guide](../mechanization/lean/README.md)
 
-Normative status is assigned by accepted RFCs. Documents in this directory are
-research guidance unless an accepted RFC explicitly makes a section normative.
+The current normative executable artifacts are:
+
+- [`behavior-core-v1` schema](../schemas/behavior-core-v1.schema.json);
+- [primary NMLT source](../examples/pivot/visible_resource_sync.nmlt);
+- [canonical primary artifact](../examples/pivot/visible_resource_sync.behavior-core-v1.json);
+- [Lean behavior semantics](../mechanization/lean/NMLT/Behavior/ResourceBehavior.lean);
+- [dynamic authority-world layer](../mechanization/lean/NMLT/Behavior/ResourceWorld.lean); and
+- [artifact semantic closure](../mechanization/lean/NMLT/Artifact/SemanticClosure.lean).
+
+## Language and implementation
+
+- [Source corpus](source-corpus.md) — historical frontend corpus and provenance
+- [Untyped projection](untyped-core-desugaring.md)
+- [Typed executable core](typed-executable-core.md) — retained ordinary
+  typed-core history and boundary
+- [Semantics correspondence](semantics-correspondence.md) — retained M9
+  correspondence scope
+- [RFC registry](../rfcs/README.md)
+- [Architecture decisions](decisions/README.md)
+
+## Research method and history
+
+- [Research method](research-method.md)
+- [Historical records](history.md)
+- [Public pivot pre-PR review](reviews/public-pivot-pre-pr-2026-08-31.md)
+
+Any dated handoff, reproduction report, completion audit, test report, or
+research note is a historical record. It can explain how the project arrived
+here, but it cannot override the current architecture, roadmap, security
+inventory, or semantic trust boundary.

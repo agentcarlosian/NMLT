@@ -10,4 +10,8 @@ The data is not proof by construction. It is copied into freely mutable
 `nmlt-kernel`. Producer identity functions are deliberately not reused by the
 kernel.
 
+These domain-separated elaboration-certificate identities are distinct from
+the bare `source_sha256` field used by `behavior-core-v1` for source-byte
+identification.
+
 The normative contract is [RFC 0013](../../rfcs/0013-source-to-typed-core.md).

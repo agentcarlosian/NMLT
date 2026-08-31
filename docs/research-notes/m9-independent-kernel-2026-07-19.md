@@ -1,5 +1,9 @@
 # M9 independent-kernel research synthesis — 2026-07-19
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](../history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 ## Question
 
 What minimum receiver-side boundary can accept NMLT's typed-core elaboration

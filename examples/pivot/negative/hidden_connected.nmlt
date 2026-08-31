@@ -1,0 +1,20 @@
+system Sender {
+  state unit: Bool = false
+  port output ping: Unit
+  action output ping {}
+  observe unit
+  hide action ping
+}
+
+system Receiver {
+  state bit: Bool = false
+  port input receive: Unit
+  action input receive {
+    set bit = true
+  }
+  observe bit
+}
+
+compose InvalidHiddenBoundary {
+  connect Sender.ping -> Receiver.receive
+}

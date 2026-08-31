@@ -259,6 +259,12 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
             self.parse_enum_decl();
         } else if self.at_keyword("system") {
             self.parse_system_decl();
+        } else if self.at_keyword("compose") {
+            self.parse_compose_decl();
+        } else if self.at_keyword("connect") {
+            self.parse_connect_decl();
+        } else if self.at_keyword("refine") {
+            self.parse_refine_decl();
         } else {
             return false;
         }
@@ -401,6 +407,139 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
         self.finish();
     }
 
+    fn parse_compose_decl(&mut self) {
+        self.start(SyntaxKind::ComposeDecl);
+        self.bump();
+        self.expect_identifier("NMLT2015", "expected a compose name after `compose`");
+        self.bump_trivia();
+        if !self.at_kind(TokenKind::LeftBrace) {
+            self.error_at_current("NMLT2015", "expected `{` to start compose body");
+            self.parse_line_tail();
+            self.finish();
+            return;
+        }
+
+        self.start(SyntaxKind::ComposeBody);
+        self.bump();
+        self.parse_compose_body();
+        self.finish();
+        self.finish();
+    }
+
+    fn parse_compose_body(&mut self) {
+        while !self.at_end() && !self.at_significant_kind(TokenKind::RightBrace) {
+            if self.at_trivia() {
+                self.bump();
+                continue;
+            }
+            if self.at_keyword("connect") {
+                self.parse_connect_decl();
+            } else {
+                self.error_and_recover_line(
+                    "NMLT2015",
+                    "expected a `connect` declaration in compose body",
+                );
+            }
+        }
+        if self.at_significant_kind(TokenKind::RightBrace) {
+            self.bump_trivia();
+            self.bump();
+        }
+    }
+
+    /// `connect Left.action -> Right.action` (top-level or inside `compose`).
+    fn parse_connect_decl(&mut self) {
+        self.start(SyntaxKind::ConnectDecl);
+        self.bump();
+        self.expect_identifier("NMLT2016", "expected a left system name after `connect`");
+        self.bump_inline_trivia();
+        if !self.eat_text(".") {
+            self.error_at_current("NMLT2016", "expected `.` after left system name");
+        }
+        self.expect_identifier("NMLT2016", "expected a left action name");
+        self.bump_inline_trivia();
+        if !self.eat_text("->") {
+            self.error_at_current("NMLT2016", "expected `->` between connected actions");
+        }
+        self.expect_identifier("NMLT2016", "expected a right system name");
+        self.bump_inline_trivia();
+        if !self.eat_text(".") {
+            self.error_at_current("NMLT2016", "expected `.` after right system name");
+        }
+        self.expect_identifier("NMLT2016", "expected a right action name");
+        self.bump_inline_trivia();
+        if self.at_statement_terminator() {
+            self.bump();
+        }
+        self.finish();
+    }
+
+    /// `refine Concrete refines Abstract { map state x -> y; hide action a }`.
+    fn parse_refine_decl(&mut self) {
+        self.start(SyntaxKind::RefineDecl);
+        self.bump();
+        self.expect_identifier("NMLT2017", "expected a concrete system after `refine`");
+        self.bump_inline_trivia();
+        if !self.at_keyword("refines") {
+            self.error_at_current("NMLT2017", "expected `refines` between system names");
+        } else {
+            self.bump();
+        }
+        self.expect_identifier("NMLT2017", "expected an abstract system after `refines`");
+        self.bump_trivia();
+        if !self.at_kind(TokenKind::LeftBrace) {
+            self.error_at_current("NMLT2017", "expected `{` to start refine body");
+            self.parse_line_tail();
+            self.finish();
+            return;
+        }
+
+        self.start(SyntaxKind::RefineBody);
+        self.bump();
+        while !self.at_end() && !self.at_significant_kind(TokenKind::RightBrace) {
+            if self.at_trivia() {
+                self.bump();
+            } else if self.at_keyword("map") {
+                self.parse_state_map_decl();
+            } else if self.at_keyword("hide") {
+                self.parse_observation_decl(SyntaxKind::HideDecl);
+            } else {
+                self.error_and_recover_line(
+                    "NMLT2017",
+                    "expected `map state` or `hide action` in refine body",
+                );
+            }
+        }
+        if self.at_significant_kind(TokenKind::RightBrace) {
+            self.bump_trivia();
+            self.bump();
+        }
+        self.finish();
+        self.finish();
+    }
+
+    fn parse_state_map_decl(&mut self) {
+        self.start(SyntaxKind::MapStateDecl);
+        self.bump();
+        self.bump_inline_trivia();
+        if !self.at_keyword("state") {
+            self.error_at_current("NMLT2018", "expected `state` after `map`");
+        } else {
+            self.bump();
+        }
+        self.expect_identifier("NMLT2018", "expected a concrete state field");
+        self.bump_inline_trivia();
+        if !self.eat_text("->") {
+            self.error_at_current("NMLT2018", "expected `->` in state map");
+        }
+        self.expect_identifier("NMLT2018", "expected an abstract state field");
+        self.bump_inline_trivia();
+        if self.at_statement_terminator() {
+            self.bump();
+        }
+        self.finish();
+    }
+
     fn parse_system_decl(&mut self) {
         let start = self.current_span().start;
         self.start(SyntaxKind::SystemDecl);
@@ -535,6 +674,13 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
     fn parse_action_decl(&mut self) {
         self.start(SyntaxKind::ActionDecl);
         self.bump();
+        self.bump_inline_trivia();
+        // Optional `input`/`output` polarity: same keyword-as-identifier rule as
+        // `hide action name` — only when another identifier (the name) follows.
+        // `action input {` is an action named `input` with no polarity.
+        if self.at_action_polarity_keyword() && self.next_inline_is_identifier() {
+            self.bump();
+        }
         self.expect_identifier("NMLT2002", "expected an action name");
         self.bump_trivia();
         if self.at_kind(TokenKind::LeftParen) {
@@ -564,6 +710,10 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
                 self.parse_action_statement(SyntaxKind::EmitStmt);
             } else if self.at_keyword("consume") {
                 self.parse_action_statement(SyntaxKind::ConsumeStmt);
+            } else if self.at_keyword("rely") {
+                self.parse_action_statement(SyntaxKind::RelyStmt);
+            } else if self.at_keyword("guarantee") {
+                self.parse_action_statement(SyntaxKind::GuaranteeStmt);
             } else {
                 self.error_and_recover_statement();
             }
@@ -1009,6 +1159,30 @@ impl<'source, 'tokens> Parser<'source, 'tokens> {
             && self.current_text() == keyword
     }
 
+    fn at_action_polarity_keyword(&self) -> bool {
+        self.at_keyword("input") || self.at_keyword("output")
+    }
+
+    /// True when the next non-trivia token on this line is an identifier.
+    /// Line breaks do not count: polarity is only recognized beside the name.
+    fn next_inline_is_identifier(&self) -> bool {
+        let mut index = self.cursor + 1;
+        while index < self.tokens.len() {
+            let token = self.tokens[index];
+            if token.kind.is_trivia() {
+                if token.kind == TokenKind::Whitespace
+                    && token.text(self.source).contains(['\r', '\n'])
+                {
+                    return false;
+                }
+                index += 1;
+                continue;
+            }
+            return token.kind == TokenKind::Identifier;
+        }
+        false
+    }
+
     fn at_text(&self, text: &str) -> bool {
         !self.at_end() && self.current_text() == text
     }
@@ -1235,6 +1409,30 @@ mod tests {
         assert_eq!(parsed.root().descendants(SyntaxKind::StateDecl).len(), 1);
         assert_eq!(parsed.root().descendants(SyntaxKind::ActionDecl).len(), 1);
         assert_eq!(parsed.root().descendants(SyntaxKind::SafetyDecl).len(), 1);
+    }
+
+    #[test]
+    fn optional_action_polarity_is_lossless_and_does_not_steal_named_input() {
+        let polarized =
+            "system S { action output ping { set unit = unit } state unit: Bool = false }\n";
+        let parsed = parse_cst(polarized);
+        assert!(
+            parsed.diagnostics().is_empty(),
+            "{:?}",
+            parsed.diagnostics()
+        );
+        assert_eq!(parsed.reconstruct(), polarized);
+        assert_eq!(parsed.root().descendants(SyntaxKind::ActionDecl).len(), 1);
+
+        let named_input =
+            "system S { action input { set unit = unit } state unit: Bool = false }\n";
+        let parsed = parse_cst(named_input);
+        assert!(
+            parsed.diagnostics().is_empty(),
+            "{:?}",
+            parsed.diagnostics()
+        );
+        assert_eq!(parsed.reconstruct(), named_input);
     }
 
     #[test]

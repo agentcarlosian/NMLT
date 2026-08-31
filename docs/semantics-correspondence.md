@@ -1,5 +1,8 @@
 # Rust–Lean semantics correspondence
 
+> Historical retained-typed-core record. It does not describe the current
+> behavioral artifact route or establish Rust-to-Lean compiler correctness.
+
 - Status: checked vectors, not a compiler-correctness theorem
 - Rust implementation: `crates/nmlt-engine`
 - Lean definition: `mechanization/lean/NMLT/Core/TypedCore.lean`
