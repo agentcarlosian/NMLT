@@ -126,7 +126,7 @@ inductive Direction where
   | internal
   | input
   | output
-deriving DecidableEq
+deriving Repr, BEq, DecidableEq
 
 def Direction.Complementary : Direction → Direction → Prop
   | .input, .output => True
@@ -156,6 +156,15 @@ structure SynchronizationCompatible {Capability Fact GradeAtom : Type}
     receiver.transfers capability ↔ sender.receives capability
   senderRely : ∀ fact, sender.relies fact → receiver.guarantees fact
   receiverRely : ∀ fact, receiver.relies fact → sender.guarantees fact
+
+def SynchronizationCompatible.symm
+    {left right : ResourceProfile Capability Fact GradeAtom}
+    (compatible : SynchronizationCompatible left right) :
+    SynchronizationCompatible right left where
+  transfer := compatible.noReverseTransfer
+  noReverseTransfer := compatible.transfer
+  senderRely := compatible.receiverRely
+  receiverRely := compatible.senderRely
 
 structure WiringEquivalent {LeftAction RightAction : Type}
     (concrete abstract : LeftAction → RightAction → Prop) : Prop where

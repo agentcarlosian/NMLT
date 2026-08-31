@@ -10,7 +10,7 @@ exact .nmlt bytes
   → lossless CST and surface projection
   → name resolution and typed elaboration
   → behavior-core-v1 JSON
-  → Lean-defined static behavior semantics
+  → Lean decoding and artifact-derived theorem instance
   → non-authoritative Rust exploration
 ```
 
@@ -33,16 +33,19 @@ explorer. Lean owns the current behavioral definitions and theorem statements.
 
 `NMLT.Behavior.ResourceBehavior` defines finite behaviors, action profiles,
 binary product steps, resource-aware weak refinement, product formation, and a
-conditional static lifting theorem. The primary theorem instance at this
-checkpoint is a hand-written Lean construction.
+conditional static lifting theorem.
 
 `NMLT.Artifact.BehaviorCore` decodes canonical artifact structure and compares
-the declared source digest with supplied source bytes. It does not yet derive
-the behavior or theorem instance from the decoded artifact; that closure is the
-next stack layer.
+the declared source digest with supplied source bytes.
+`NMLT.Artifact.SemanticClosure` reconstructs the finite behaviors,
+compositions, state maps, and refinement witness carried by the primary
+artifact, then instantiates the static lifting theorem. This is semantic
+validation of decoded artifact contents, not a verified Rust elaboration
+theorem.
 
 ## Deliberate limits
 
 This checkpoint makes no compiler-correctness, reachability, infinite-trace,
 fairness, liveness, runtime-attestation, or production-authorization claim.
-Dynamic authority worlds are not part of this static layer.
+Dynamic authority worlds are not part of this static layer, and no dynamic
+semantics-to-static-semantics correspondence is claimed.

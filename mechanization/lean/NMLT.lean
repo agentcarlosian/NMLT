@@ -5,5 +5,5 @@ import NMLT.Metatheory.Soundness
 import NMLT.Correspondence.M9Kernel
 import NMLT.Behavior.ResourceBehavior
 import NMLT.Artifact.BehaviorCore
-import NMLT.Examples.VisibleResourceSync
+import NMLT.Artifact.SemanticClosure
 import NMLT.Counterexamples.ResourceBehaviorControls

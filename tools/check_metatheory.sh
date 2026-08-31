@@ -19,10 +19,12 @@ fi
 artifact="$repo_root/examples/pivot/visible_resource_sync.behavior-core-v1.json"
 stale_artifact="$(mktemp)"
 malformed_artifact="$(mktemp)"
+semantic_mismatch_artifact="$(mktemp)"
 axiom_probe="$(mktemp --suffix=.lean)"
 axiom_log="$(mktemp)"
 cleanup() {
-  rm -f "$stale_artifact" "$malformed_artifact" "$axiom_probe" "$axiom_log"
+  rm -f "$stale_artifact" "$malformed_artifact" "$semantic_mismatch_artifact" \
+    "$axiom_probe" "$axiom_log"
 }
 trap cleanup EXIT
 
@@ -37,11 +39,12 @@ trap cleanup EXIT
     "$repo_root/examples/pivot/visible_resource_sync.nmlt"
 )
 
-python3 - "$artifact" "$stale_artifact" "$malformed_artifact" <<'PY'
+python3 - "$artifact" "$stale_artifact" "$malformed_artifact" \
+  "$semantic_mismatch_artifact" <<'PY'
 import json
 import sys
 
-source, stale_path, malformed_path = sys.argv[1:]
+source, stale_path, malformed_path, semantic_mismatch_path = sys.argv[1:]
 with open(source, encoding="utf-8") as handle:
     value = json.load(handle)
 
@@ -54,6 +57,13 @@ malformed = json.loads(json.dumps(value))
 malformed["systems"]["Receiver"]["actions"]["receive"]["resources"]["receives"] = []
 with open(malformed_path, "w", encoding="utf-8") as handle:
     json.dump(malformed, handle)
+
+semantic_mismatch = json.loads(json.dumps(value))
+abstract_send = semantic_mismatch["systems"]["AbstractSender"]["actions"]["send"]
+abstract_send["guards"] = ["false"]
+abstract_send["guard_ast"] = [{"kind": "bool", "type": "Bool", "value": False}]
+with open(semantic_mismatch_path, "w", encoding="utf-8") as handle:
+    json.dump(semantic_mismatch, handle)
 PY
 
 if (cd "$lean_root" && lake exe nmlt-artifact-check "$stale_artifact" \
@@ -68,10 +78,16 @@ if (cd "$lean_root" && lake exe nmlt-artifact-check "$malformed_artifact" \
   exit 1
 fi
 
+if (cd "$lean_root" && lake exe nmlt-artifact-check "$semantic_mismatch_artifact" \
+    "$repo_root/examples/pivot/visible_resource_sync.nmlt"); then
+  echo "error: Lean accepted a failed visible-step simulation" >&2
+  exit 1
+fi
+
 cat > "$axiom_probe" <<'EOF'
 import NMLT
 #print axioms NMLT.Behavior.ResourceBehavior.liftParallel
-#print axioms NMLT.Examples.VisibleResourceSync.visibleResourceSync_lifts
+#print axioms NMLT.Artifact.SemanticClosure.Certificate.lifted
 EOF
 (
   cd "$lean_root"
@@ -89,4 +105,4 @@ if grep 'depends on axioms:' "$axiom_log" |
   exit 1
 fi
 
-echo "ok: Lean behavior core, decoder controls, no-sorry policy, and axiom audit"
+echo "ok: Lean behavior core, artifact-derived theorem closure, decoder controls, no-sorry policy, and axiom audit"
