@@ -101,6 +101,12 @@ fn collect_declarations(declarations: &[UntypedDeclaration], input: &mut ModuleI
                 // Nested or mixed module layouts already carry an M9 surface issue.
                 collect_declarations(&module.declarations, input);
             }
+            UntypedDeclaration::Compose(_)
+            | UntypedDeclaration::Connect(_)
+            | UntypedDeclaration::Refinement(_) => {
+                // Surface wiring only. M9 already records NMLT-M9-COMPOSE /
+                // NMLT-M9-CONNECT; they are not named resolver declarations.
+            }
             UntypedDeclaration::Unsupported(_) | UntypedDeclaration::Error(_) => {
                 // These nodes remain represented by projection issues. They never
                 // become named resolver declarations.
@@ -310,7 +316,10 @@ fn collect_action_terms(system_name: &str, action: &UntypedAction, input: &mut M
                 ));
                 consume_index = consume_index.saturating_add(1);
             }
-            UntypedStatement::SurfaceOnly(_) | UntypedStatement::Error(_) => {}
+            UntypedStatement::Rely { .. }
+            | UntypedStatement::Guarantee { .. }
+            | UntypedStatement::SurfaceOnly(_)
+            | UntypedStatement::Error(_) => {}
         }
     }
 }
@@ -387,4 +396,176 @@ fn adapt_m9_issue(issue: &M9SurfaceIssue) -> ProjectionIssue {
 
 const fn span(value: Span) -> SourceSpan {
     SourceSpan::new(value.start, value.end)
+}
+
+#[cfg(test)]
+mod polarized_action_tests {
+    use super::project_source_module;
+    use crate::{Namespace, ResolveError, resolve_modules};
+
+    fn action_names(projected: &crate::ProjectedModule) -> Vec<String> {
+        projected
+            .input
+            .declarations
+            .iter()
+            .filter_map(|declaration| {
+                let last = declaration.path.segments.last()?;
+                (last.namespace == Namespace::Action).then_some(last.name.clone())
+            })
+            .collect()
+    }
+
+    fn declaration_names(projected: &crate::ProjectedModule) -> Vec<String> {
+        projected
+            .input
+            .declarations
+            .iter()
+            .filter_map(|declaration| {
+                declaration
+                    .path
+                    .segments
+                    .last()
+                    .map(|last| last.name.clone())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn polarized_action_is_collected_as_ping_not_output() {
+        let source = concat!(
+            "system S {\n",
+            "  state unit: Bool = false\n",
+            "  action output ping { set unit = unit }\n",
+            "}\n",
+        );
+        let projected = project_source_module("Polarized", "src/polarized.nmlt", source.as_bytes());
+        let actions = action_names(&projected);
+        assert_eq!(actions, ["ping"]);
+        assert!(!actions.iter().any(|name| name == "output"));
+        assert!(
+            projected
+                .projection_issues()
+                .iter()
+                .any(|issue| issue.message.contains("NMLT-M9-ACTION-POLARITY")),
+            "{:?}",
+            projected.projection_issues()
+        );
+        assert!(matches!(
+            resolve_modules(vec![projected]),
+            Err(ResolveError::IncompleteProjection { .. })
+        ));
+    }
+
+    #[test]
+    fn polarized_input_action_is_collected_as_receive_not_input() {
+        let source = concat!(
+            "system S {\n",
+            "  state bit: Bool = false\n",
+            "  action input receive { require bit == false set bit = true }\n",
+            "}\n",
+        );
+        let projected =
+            project_source_module("PolarizedIn", "src/polarized_in.nmlt", source.as_bytes());
+        assert_eq!(action_names(&projected), ["receive"]);
+    }
+
+    #[test]
+    fn bare_action_name_is_unchanged() {
+        let source = concat!(
+            "system S {\n",
+            "  state unit: Bool = false\n",
+            "  action ping { set unit = unit }\n",
+            "}\n",
+        );
+        let projected = project_source_module("Bare", "src/bare.nmlt", source.as_bytes());
+        assert_eq!(action_names(&projected), ["ping"]);
+        assert!(
+            projected.projection_issues().is_empty(),
+            "{:?}",
+            projected.projection_issues()
+        );
+        resolve_modules(vec![projected]).unwrap();
+    }
+
+    #[test]
+    fn compose_and_connect_are_not_resolver_declarations() {
+        let source = concat!(
+            "system Left {\n",
+            "  state unit: Bool = false\n",
+            "  action output ping { set unit = unit }\n",
+            "}\n",
+            "system Right {\n",
+            "  state bit: Bool = false\n",
+            "  action input receive { set bit = true }\n",
+            "}\n",
+            "compose Wired {\n",
+            "  connect Left.ping -> Right.receive\n",
+            "}\n",
+            "connect Left.ping -> Right.receive\n",
+        );
+        let projected = project_source_module("Wired", "src/wired.nmlt", source.as_bytes());
+        let names = declaration_names(&projected);
+        assert!(names.contains(&"Left".to_string()));
+        assert!(names.contains(&"Right".to_string()));
+        assert_eq!(action_names(&projected), ["ping", "receive"]);
+        assert!(
+            !names
+                .iter()
+                .any(|name| name == "Wired" || name == "output" || name == "input"),
+            "{names:?}"
+        );
+        assert!(
+            projected
+                .projection_issues()
+                .iter()
+                .any(|issue| issue.message.contains("NMLT-M9-COMPOSE")),
+            "{:?}",
+            projected.projection_issues()
+        );
+        assert!(
+            projected
+                .projection_issues()
+                .iter()
+                .any(|issue| issue.message.contains("NMLT-M9-CONNECT")),
+            "{:?}",
+            projected.projection_issues()
+        );
+        assert!(matches!(
+            resolve_modules(vec![projected]),
+            Err(ResolveError::IncompleteProjection { .. })
+        ));
+    }
+
+    #[test]
+    fn hidden_boundary_fixture_collects_ping_and_receive_not_polarity_words() {
+        let source = include_bytes!("../../../examples/refinement/hidden_connected_action.nmlt");
+        let projected = project_source_module(
+            "HiddenBoundary",
+            "examples/refinement/hidden_connected_action.nmlt",
+            source.as_slice(),
+        );
+        let mut actions = action_names(&projected);
+        actions.sort();
+        assert_eq!(actions, ["ping", "ping", "receive"]);
+        let names = declaration_names(&projected);
+        assert!(
+            !names.iter().any(|name| name == "output"
+                || name == "input"
+                || name == "InvalidHiddenPing"
+                || name == "VisibleSync"),
+            "{names:?}"
+        );
+        assert!(
+            projected
+                .projection_issues()
+                .iter()
+                .any(|issue| issue.message.contains("NMLT-M9-HIDE-ACTION")),
+            "{:?}",
+            projected.projection_issues()
+        );
+        assert!(matches!(
+            resolve_modules(vec![projected]),
+            Err(ResolveError::IncompleteProjection { .. })
+        ));
+    }
 }

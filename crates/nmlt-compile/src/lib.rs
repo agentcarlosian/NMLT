@@ -8,6 +8,10 @@ use nmlt_elaborate::elaborate;
 use nmlt_hir::{ProjectedModule, project_source_module, resolve_modules};
 use nmlt_kernel::{CheckedProgram, RawCertificate, check};
 
+mod behavior;
+
+pub use behavior::{BehaviorDiagnostic, compile_behavior_single};
+
 /// One exact module in the closed compilation source set.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SourceModule {

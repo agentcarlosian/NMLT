@@ -49,7 +49,7 @@ fn supported_slice_elaborates_deterministically_with_complete_root_bindings() {
         hir.modules()
             .values()
             .map(|module| module.hir_roots().len())
-            .sum()
+            .sum::<usize>()
     );
     assert_eq!(
         first.certificate_id().to_string(),

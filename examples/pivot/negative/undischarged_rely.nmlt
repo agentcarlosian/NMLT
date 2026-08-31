@@ -1,0 +1,23 @@
+enum ContractFact {
+  Ready,
+}
+
+system Sender {
+  state bit: Bool = false
+  port output ping: Unit
+  action output ping {
+    rely ContractFact.Ready
+  }
+  observe bit
+}
+
+system Receiver {
+  state bit: Bool = false
+  port input receive: Unit
+  action input receive {}
+  observe bit
+}
+
+compose OpenReliance {
+  connect Sender.ping -> Receiver.receive
+}
