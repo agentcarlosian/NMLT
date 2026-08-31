@@ -38,18 +38,21 @@ maps, and compiler-correctness are not claimed in this milestone.
 The next semantic layer makes affine authority part of transition state rather
 than only an action profile. `NMLT.Behavior.ResourceWorld` defines a shared
 nominal authority world, local consumption, synchronized bidirectional
-transfer, and a dynamic binary-product step. Its first checked theorem shows
+transfer, and a dynamic binary-product step. One checked theorem shows
 that a synchronized transfer starts with sender ownership, ends with receiver
-ownership, and cannot be retained by the sender. A second theorem lifts actual
-synchronized world steps through strengthened resource refinement. The artifact
+ownership, and cannot be retained by the sender. The full one-step dynamic
+lifting result covers isolated visible actions, unchanged peer actions,
+synchronizations, and hidden stuttering. Hidden stuttering is available only
+after proving both mapped control state and the entire authority world are
+unchanged. The artifact
 decoder now derives the concrete product's initial authority world from
 capability declarations. Artifact acceptance also enforces the reverse
 requirement implication needed for dynamic enabledness, so
-`Certificate.liftedSynchronized` applies to synchronized steps of the decoded
-product itself.
+`Certificate.liftedStep` applies to every dynamic step of the decoded product
+itself.
 
-This is an active next-slice boundary: full dynamic lifting for isolated and
-hidden steps, reachability over worlds, and a `behavior-core-v2` encoding are
+This remains a one-step simulation result. Reachability over authority worlds,
+a `behavior-core-v2` encoding of dynamic worlds, and any liveness result are
 not yet claimed by the current Paper 1 result.
 
 ## Try it
@@ -88,7 +91,7 @@ with `make reproduce`.
 | `nmlt-core`, `nmlt-hir`, `nmlt-ir`, `nmlt-elaborate`, `nmlt-compile` | Frontend and explicit core production | Auditability through exact source binding and snapshots; no verified compilation theorem |
 | `nmlt-kernel` | Independent validator for the retained typed-elaboration certificate | Formation/type acceptance only; never behavior proof |
 | `NMLT.Behavior.ResourceBehavior` | Normative behavior/product/refinement definitions and theorem | Safety/resource theorem at the stated finite conditional scope |
-| `NMLT.Behavior.ResourceWorld` | Dynamic nominal ownership and synchronized world transitions | Authority conservation, one-time transfer, and synchronized-step refinement; full world refinement pending |
+| `NMLT.Behavior.ResourceWorld` | Dynamic nominal ownership and resource-bearing product transitions | Authority conservation, one-time transfer, and full one-step dynamic refinement; reachability pending |
 | `NMLT.Artifact.BehaviorCore` | Fail-closed typed decoder for the finite artifact envelope | Acceptance of the exact schema; no source-to-core correctness theorem |
 | `NMLT.Artifact.SemanticClosure` | Constructs finite Lean behaviors from decoded states, terms, actions, resources, wiring, and refinement maps; decides the theorem premises | A proof-carrying instance of the conditional composition theorem for the accepted artifact |
 | `nmlt-eval` | Reference operational exploration | No proof, model-check, or evidence claim |
@@ -100,8 +103,9 @@ for the artifact envelope.
 `nmlt-artifact-check` is more than a shape validator: after checking the source
 digest, it enumerates the artifact's finite state spaces, constructs the actual
 Lean step relations, checks refinement and both product-formation judgments,
-and obtains the lifted witness through `Certificate.lifted`. This still does
-not verify that Rust translated the source correctly.
+and obtains the static and dynamic lifted witnesses through
+`Certificate.lifted` and `Certificate.liftedDynamic`. This still does not verify
+that Rust translated the source correctly.
 
 ## History
 

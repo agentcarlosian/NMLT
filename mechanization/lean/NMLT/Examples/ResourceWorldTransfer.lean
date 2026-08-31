@@ -154,6 +154,11 @@ def receiver : Behavior ReceiverAction Capability ContractFact GradeAtom Bool wh
   owns := fun _ => False
   resources := fun _ => receiverProfile
 
+instance senderHiddenDecidable : DecidablePred sender.hidden := by
+  intro action
+  cases action
+  exact isFalse id
+
 def connection : SenderAction → ReceiverAction → Prop := fun _ _ => True
 
 def productTransfer : ProductStep sender receiver Owner.sender Owner.receiver connection
@@ -267,6 +272,20 @@ def liftedProductTransfer :
       (mapProductState worldRefinement ⟨true, true, after⟩) :=
   liftSynchronized worldRefinement wiring senderReceiverComposable
     abstractSenderReceiverComposable productTransfer
+
+def dynamicProductRefinement :
+    DynamicProductRefinement sender abstractSender receiver
+      Owner.sender Owner.receiver connection connection :=
+  liftProductSteps worldRefinement wiring senderReceiverComposable
+    abstractSenderReceiverComposable
+
+def dynamicallyMatchedProductTransfer :
+    DynamicStepMatch sender abstractSender receiver
+      Owner.sender Owner.receiver connection
+      (dynamicProductRefinement.mapState ⟨false, false, before⟩)
+      (.sync .send .receive)
+      (dynamicProductRefinement.mapState ⟨true, true, after⟩) :=
+  dynamicProductRefinement.matchStep productTransfer
 
 /-- The synchronized product moves `permit` once and the sender cannot retain it. -/
 theorem permit_moves_exactly_once :

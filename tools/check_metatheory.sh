@@ -101,11 +101,17 @@ import NMLT
 #print axioms NMLT.Behavior.ResourceBehavior.liftParallel
 #print axioms NMLT.Artifact.SemanticClosure.Certificate.lifted
 #print axioms NMLT.Artifact.SemanticClosure.Certificate.liftedSynchronized
+#print axioms NMLT.Artifact.SemanticClosure.Certificate.liftedStep
 #print axioms NMLT.Behavior.ResourceWorld.ProductStep.synchronized_left_transfer_moves_once
 #print axioms NMLT.Behavior.ResourceWorld.SyncStep.owner_after_is_explained
+#print axioms NMLT.Behavior.ResourceWorld.LocalStep.world_preserved_of_refines_empty
 #print axioms NMLT.Examples.ResourceWorldTransfer.permit_moves_exactly_once
 #print axioms NMLT.Behavior.ResourceWorld.liftSynchronized
+#print axioms NMLT.Behavior.ResourceWorld.liftProductSteps
+#print axioms NMLT.Examples.ResourceWorldTransfer.dynamicallyMatchedProductTransfer
 #print axioms NMLT.Examples.ResourceWorldTransfer.permit_transfer_lifts_dynamically
+#print axioms NMLT.Counterexamples.ResourceWorldControls.hiddenConsumption_changesWorld
+#print axioms NMLT.Counterexamples.ResourceWorldControls.hiddenConsumption_cannotRefineStutter
 EOF
 (
   cd "$lean_root"

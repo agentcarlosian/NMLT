@@ -50,9 +50,11 @@ acceptance.
   layer: a capability has one optional owner in a shared world; local steps may
   consume but not move boundary authority; synchronized product steps move
   authority between distinct owners and preserve everything unaffected. Its
-  transfer theorem proves the sender cannot retain moved authority, and its
-  first lifting theorem preserves synchronized world steps through a
-  strengthened resource refinement.
+  transfer theorem proves the sender cannot retain moved authority. Its
+  dynamic lifting theorem weakly matches every product-step constructor through
+  strengthened resource refinement: visible local, peer-local, and synchronized
+  transitions remain transitions, while a hidden local step may stutter only
+  when its mapped control state and complete authority world are unchanged.
 - `mechanization/lean/NMLT/Artifact/BehaviorCore.lean` decodes and validates
   the finite artifact envelope into typed terms, systems, actions, profiles,
   wirings, and refinement maps.
@@ -64,11 +66,10 @@ acceptance.
   derives the concrete product's initial authority world and exposes its
   dynamic product-step type. Accepted refinements include the reverse
   requirement implication needed to preserve world-step enabledness, and the
-  dependent certificate exposes `Certificate.liftedSynchronized` for the
+  dependent certificate exposes `Certificate.liftedStep` for every step of the
   decoded product. The original certificate still targets
-  `ResourceBehavior.parallel`; the world layer currently lifts synchronized
-  steps only. Full local/hidden dynamic refinement and world reachability are
-  next results, not current claims.
+  `ResourceBehavior.parallel`; the dynamic witness is a complete one-step
+  simulation, not yet a reachability or trace theorem over authority worlds.
 
 ## Behavioral core v1
 

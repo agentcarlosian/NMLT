@@ -23,3 +23,11 @@ synchronized-step refinement declarations
 the artifact-bound
 `NMLT.Artifact.SemanticClosure.Certificate.liftedSynchronized`, report only
 `propext`.
+
+The complete one-step dynamic declarations
+`NMLT.Behavior.ResourceWorld.liftProductSteps`,
+`NMLT.Examples.ResourceWorldTransfer.dynamicallyMatchedProductTransfer`, and
+`NMLT.Artifact.SemanticClosure.Certificate.liftedStep` also report only
+`propext`. The pointwise hidden-world preservation lemma and the profile-level
+hidden-consumption control report no axioms; the concrete world-change control
+reports only `propext`.

@@ -41,7 +41,7 @@ def main (arguments : List String) : IO UInt32 := do
                       s!"({application.concreteStates}/{application.abstractStates}/" ++
                       s!"{application.peerStates} finite states, " ++
                       s!"{application.initialAuthorities} initial authorities)")
-                    IO.println (s!"dynamic synchronization lifting accepted: " ++
-                      s!"requirements and authority effects preserve enabled world steps")
+                    IO.println (s!"full dynamic product-step lifting accepted: " ++
+                      s!"visible, peer, synchronized, and resource-safe hidden steps")
                   pure 0
   | _ => fail usage
