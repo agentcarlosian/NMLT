@@ -171,6 +171,54 @@ theorem Enabled.toLocalStep
     intro capability notConsumed
     simp [localResult, notConsumed]
 
+namespace LocalStep
+
+/-- Dynamic local effects are preserved by world-aware profile refinement. -/
+theorem refine
+    {actor : Owner}
+    {concrete abstract : ResourceProfile Capability Fact GradeAtom}
+    {before after : AuthorityWorld Capability Owner}
+    (step : LocalStep actor concrete before after)
+    (refines : WorldResourceRefines concrete abstract) :
+    LocalStep actor abstract before after where
+  enabled := step.enabled.refine refines
+  noTransfer := by
+    intro capability transferred
+    exact step.noTransfer capability
+      ((refines.profile.transfers capability).mpr transferred)
+  noReceive := by
+    intro capability received
+    exact step.noReceive capability
+      ((refines.profile.receives capability).mpr received)
+  consumed := by
+    intro capability consumed
+    exact step.consumed capability
+      ((refines.profile.consumes capability).mpr consumed)
+  preserved := by
+    intro capability notConsumedAbstract
+    apply step.preserved capability
+    intro consumedConcrete
+    exact notConsumedAbstract
+      ((refines.profile.consumes capability).mp consumedConcrete)
+
+/--
+A local step whose complete profile refines stutter preserves the entire
+authority world. This is the dynamic premise that makes hidden stuttering
+sound rather than merely a control-state equality.
+-/
+theorem world_preserved_of_refines_empty
+    {actor : Owner}
+    {profile : ResourceProfile Capability Fact GradeAtom}
+    {before after : AuthorityWorld Capability Owner}
+    (step : LocalStep actor profile before after)
+    (stutter : ResourceRefines profile ResourceProfile.empty) :
+    ∀ capability, after.owner capability = before.owner capability := by
+  intro capability
+  exact step.preserved capability (fun consumed =>
+    (stutter.consumes capability).mp consumed)
+
+end LocalStep
+
 def syncResult
     (leftOwner rightOwner : Owner)
     (left right : ResourceProfile Capability Fact GradeAtom)
@@ -485,6 +533,60 @@ def mapProductState
     (state : ProductState concrete peer Owner) : ProductState abstract peer Owner :=
   ⟨refinement.behavior.mapState state.leftState, state.rightState, state.authority⟩
 
+/-- Exact dynamic-state agreement without quotienting a function-valued world. -/
+structure DynamicStateEquivalent
+    {left : Behavior LeftAction Capability Fact GradeAtom LeftObservation}
+    {right : Behavior RightAction Capability Fact GradeAtom RightObservation}
+    {Owner : Type}
+    (before after : ProductState left right Owner) : Prop where
+  leftState : before.leftState = after.leftState
+  rightState : before.rightState = after.rightState
+  authority : ∀ capability,
+    before.authority.owner capability = after.authority.owner capability
+
+/--
+One-step dynamic weak matching: the abstract product either performs the same
+product action, or a hidden left action maps to an unchanged control/resource
+state.
+-/
+inductive DynamicStepMatch
+    {Action PeerAction Capability Fact GradeAtom
+      ConcreteObservation AbstractObservation PeerObservation Owner : Type}
+    (concrete : Behavior Action Capability Fact GradeAtom ConcreteObservation)
+    (abstract : Behavior Action Capability Fact GradeAtom AbstractObservation)
+    (peer : Behavior PeerAction Capability Fact GradeAtom PeerObservation)
+    (leftOwner rightOwner : Owner)
+    (connection : Action → PeerAction → Prop)
+    (before : ProductState abstract peer Owner) :
+    ProductAction Action PeerAction → ProductState abstract peer Owner → Prop where
+  | stutter {leftAction after} :
+      abstract.hidden leftAction →
+      ResourceRefines (concrete.resources leftAction) ResourceProfile.empty →
+      DynamicStateEquivalent before after →
+      DynamicStepMatch concrete abstract peer leftOwner rightOwner connection
+        before (.left leftAction) after
+  | transition {action after} :
+      ProductStep abstract peer leftOwner rightOwner connection
+        before action after →
+      DynamicStepMatch concrete abstract peer leftOwner rightOwner connection
+        before action after
+
+/-- A reusable witness that every concrete dynamic product step weakly matches. -/
+structure DynamicProductRefinement
+    {Action PeerAction Capability Fact GradeAtom
+      ConcreteObservation AbstractObservation PeerObservation Owner : Type}
+    (concrete : Behavior Action Capability Fact GradeAtom ConcreteObservation)
+    (abstract : Behavior Action Capability Fact GradeAtom AbstractObservation)
+    (peer : Behavior PeerAction Capability Fact GradeAtom PeerObservation)
+    (leftOwner rightOwner : Owner)
+    (concreteConnection abstractConnection : Action → PeerAction → Prop) where
+  mapState : ProductState concrete peer Owner → ProductState abstract peer Owner
+  matchStep : ∀ {before action after},
+    ProductStep concrete peer leftOwner rightOwner concreteConnection
+      before action after →
+    DynamicStepMatch concrete abstract peer leftOwner rightOwner abstractConnection
+      (mapState before) action (mapState after)
+
 /--
 The first dynamic lifting result: every synchronized concrete product step has
 an abstract synchronized step with the same peer transition and the same
@@ -527,5 +629,62 @@ theorem liftSynchronized
       exact ProductStep.synchronize abstractConnected abstractStep peerStep
         (worldStep.refineLeft
           (refinement.worldResources leftAction) abstractCompatible)
+
+/--
+Full one-step dynamic lifting for a binary product. Visible isolated steps and
+synchronizations transition in the abstract product, peer-local steps are
+preserved, and hidden concrete steps stutter only after both mapped control
+state and the complete authority world are proved unchanged.
+-/
+def liftProductSteps
+    {concrete : Behavior Action Capability Fact GradeAtom ConcreteObservation}
+    {abstract : Behavior Action Capability Fact GradeAtom AbstractObservation}
+    {peer : Behavior PeerAction Capability Fact GradeAtom PeerObservation}
+    {leftOwner rightOwner : Owner}
+    {concreteConnection abstractConnection : Action → PeerAction → Prop}
+    [DecidablePred concrete.hidden]
+    (refinement : WorldWeakRefinement concrete abstract)
+    (wiring : WiringEquivalent concreteConnection abstractConnection)
+    (concreteComposable : Composable concrete peer concreteConnection)
+    (abstractComposable : Composable abstract peer abstractConnection) :
+    DynamicProductRefinement concrete abstract peer leftOwner rightOwner
+      concreteConnection abstractConnection where
+  mapState := mapProductState refinement
+  matchStep := by
+    intro before action after step
+    cases step with
+    | fromLeft concreteStep isolated worldStep =>
+        rename_i leftBefore leftAfter rightState beforeWorld afterWorld leftAction
+        by_cases hidden : concrete.hidden leftAction
+        · apply DynamicStepMatch.stutter
+          · exact (refinement.behavior.hiddenPreserved leftAction).mp hidden
+          · exact refinement.behavior.hiddenResources leftAction hidden
+          · exact {
+              leftState := refinement.behavior.hiddenStep concreteStep hidden
+              rightState := rfl
+              authority := fun capability =>
+                (worldStep.world_preserved_of_refines_empty
+                  (refinement.behavior.hiddenResources leftAction hidden)
+                  capability).symm
+            }
+        · apply DynamicStepMatch.transition
+          exact ProductStep.fromLeft
+            (refinement.behavior.visibleStep concreteStep hidden)
+            (fun rightAction abstractConnected =>
+              isolated rightAction
+                ((wiring.connected _ _).mpr abstractConnected))
+            (worldStep.refine (refinement.worldResources leftAction))
+    | fromRight peerStep isolated worldStep =>
+        apply DynamicStepMatch.transition
+        exact ProductStep.fromRight peerStep
+          (fun leftAction abstractConnected =>
+            isolated leftAction
+              ((wiring.connected _ _).mpr abstractConnected))
+          worldStep
+    | synchronize connected concreteStep peerStep worldStep =>
+        apply DynamicStepMatch.transition
+        exact liftSynchronized refinement wiring concreteComposable
+          abstractComposable
+          (ProductStep.synchronize connected concreteStep peerStep worldStep)
 
 end NMLT.Behavior.ResourceWorld

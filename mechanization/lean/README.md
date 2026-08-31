@@ -17,7 +17,8 @@ compiler theorem connects Rust elaboration to these definitions.
 - `NMLT.Artifact.CheckMain` checks artifact structure and compares its declared
   source digest with supplied source bytes.
 - `NMLT.Behavior.ResourceWorld` defines explicit authority worlds, local and
-  synchronized world steps, and conditional synchronized-step lifting.
+  synchronized world steps, their complete product-step relation, and
+  conditional lifting across that relation.
 - `NMLT.Counterexamples.ResourceWorldControls` checks that hidden consumption
   changes the world and cannot refine empty stutter.
 - `NMLT.Examples.ResourceWorldTransfer` witnesses exact one-time authority

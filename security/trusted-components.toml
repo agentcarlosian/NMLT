@@ -1,4 +1,4 @@
-manifest_version = "2.0.0-dynamic-sync"
+manifest_version = "2.0.0-dynamic-product"
 status = "pre-alpha"
 reviewed = "2026-08-31"
 
@@ -47,7 +47,7 @@ paths = [
   "mechanization/lean/NMLT/Counterexamples/ResourceWorldControls.lean",
   "mechanization/lean/NMLT/Examples/ResourceWorldTransfer.lean",
 ]
-role = "static behavior semantics plus separate affine authority-world steps, conditional synchronized lifting, and controls"
+role = "static behavior semantics plus separate affine authority-world product steps, conditional full step lifting, and controls"
 claim_ceiling = "checked conditional declarations only; no step existence, reachability, or static/dynamic equivalence"
 
 [[components]]

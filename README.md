@@ -11,7 +11,7 @@ refinement.
 NMLT is pre-alpha research software. It must not authorize safety-critical,
 financial, security-critical, or irreversible actions.
 
-## Dynamic affine resource worlds
+## Full dynamic product-step lifting
 
 This checkpoint replaces the former contest verifier suite with one finite,
 resource-aware language path:
@@ -38,8 +38,9 @@ verified Rust-to-Lean compiler claim is made.
 The dynamic layer records each declared capability as owned by one component
 or vacant. Lean proves that a compatible synchronized transfer moves authority
 exactly once and that hidden consumption changes the world rather than
-refining empty stutter. The primary artifact instantiates the conditional
-synchronized-step lifting result.
+refining empty stutter. The primary artifact instantiates conditional lifting
+for synchronized steps and for the complete local-or-synchronized product-step
+relation.
 
 The static product semantics and authority-world semantics remain distinct at
 this checkpoint, with no equivalence theorem between them. The lifting result

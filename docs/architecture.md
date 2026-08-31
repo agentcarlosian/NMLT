@@ -45,10 +45,10 @@ validation of decoded artifact contents, not a verified Rust elaboration
 theorem.
 
 `NMLT.Behavior.ResourceWorld` is a separate dynamic layer. It makes capability
-ownership and vacancy explicit, defines local and synchronized world steps,
-and proves conditional synchronized-step lifting with exact one-time transfer.
-The artifact-derived certificate instantiates that result for the primary
-fixture.
+ownership and vacancy explicit, defines local, synchronized, and full product
+world steps, and proves conditional product-step lifting with exact one-time
+transfer. The artifact-derived certificate instantiates that result for the
+primary fixture.
 
 ## Deliberate limits
 
@@ -56,4 +56,4 @@ This checkpoint makes no compiler-correctness, step-existence, reachability,
 infinite-trace, fairness, liveness, runtime-attestation, or
 production-authorization claim. Static product steps and dynamic
 authority-world steps are separate layers; no correspondence theorem between
-them is claimed. Full product-step lifting arrives in the next stack layer.
+them is claimed.

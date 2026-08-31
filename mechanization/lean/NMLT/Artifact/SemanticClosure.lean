@@ -540,7 +540,7 @@ structure ApplicationSummary where
   concreteStates : Nat
   abstractStates : Nat
   peerStates : Nat
-  initialAuthorities : Nat
+  declaredCapabilities : Nat
 deriving Repr
 
 def applicationSummary (application : Application) : ApplicationSummary := {
@@ -552,7 +552,7 @@ def applicationSummary (application : Application) : ApplicationSummary := {
   concreteStates := (stateSpace application.program application.concrete).length
   abstractStates := (stateSpace application.program application.abstract).length
   peerStates := (stateSpace application.program application.peer).length
-  initialAuthorities :=
+  declaredCapabilities :=
     application.concrete.capabilities.length + application.peer.capabilities.length
 }
 
@@ -1276,6 +1276,34 @@ theorem Certificate.liftedSynchronized
       (mapProductState certificate.worldRefinement after) :=
   liftSynchronized certificate.worldRefinement certificate.wiring
     certificate.concreteComposition certificate.abstractComposition step
+
+/--
+The decoded certificate carries the complete one-step dynamic product
+simulation, including isolated visible transitions, peer transitions,
+synchronization, and resource-safe hidden stuttering.
+-/
+def Certificate.liftedDynamic
+    {application : Application} (certificate : Certificate application) :
+    DynamicProductRefinement
+      (concreteBehavior application) (abstractBehavior application)
+      (peerBehavior application) BinaryOwner.component BinaryOwner.peer
+      application.concreteConnection application.abstractConnection :=
+  liftProductSteps certificate.worldRefinement certificate.wiring
+    certificate.concreteComposition certificate.abstractComposition
+
+theorem Certificate.liftedStep
+    {application : Application} (certificate : Certificate application)
+    {before after : DynamicConcreteState application}
+    {action : ProductAction
+      (ActionIndex application) (PeerActionIndex application)}
+    (step : DynamicConcreteStep application before action after) :
+    DynamicStepMatch
+      (concreteBehavior application)
+      (abstractBehavior application) (peerBehavior application)
+      BinaryOwner.component BinaryOwner.peer application.abstractConnection
+      (mapProductState certificate.worldRefinement before) action
+      (mapProductState certificate.worldRefinement after) :=
+  certificate.liftedDynamic.matchStep step
 
 def certify (application : Application) : Except String (Certificate application) :=
   if _worldRequirements : WorldRequirementConditions application then
