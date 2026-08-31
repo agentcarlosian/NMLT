@@ -1,4 +1,4 @@
-manifest_version = "2.0.0-static-closure"
+manifest_version = "2.0.0-dynamic-sync"
 status = "pre-alpha"
 reviewed = "2026-08-31"
 
@@ -20,7 +20,7 @@ forbidden_claims = [
   "semantic verification from parsing or Rust type acceptance",
   "compiler correctness from a matching source digest",
   "unbounded proof from finite exploration",
-  "reachability, fairness, or liveness from the static lifting theorem",
+  "step existence, reachability, fairness, or liveness from conditional lifting",
   "production authorization by any pre-alpha NMLT result",
 ]
 
@@ -39,13 +39,16 @@ role = "lossless parsing, resolution, typed formation, and artifact production"
 claim_ceiling = "implementation acceptance and reproducibility only"
 
 [[components]]
-name = "lean_static_behavior"
+name = "lean_behavior_semantics"
 paths = [
   "mechanization/lean/NMLT/Behavior/ResourceBehavior.lean",
+  "mechanization/lean/NMLT/Behavior/ResourceWorld.lean",
   "mechanization/lean/NMLT/Counterexamples/ResourceBehaviorControls.lean",
+  "mechanization/lean/NMLT/Counterexamples/ResourceWorldControls.lean",
+  "mechanization/lean/NMLT/Examples/ResourceWorldTransfer.lean",
 ]
-role = "static behavioral definitions, conditional lifting, and controls"
-claim_ceiling = "the checked Lean declarations under their explicit premises"
+role = "static behavior semantics plus separate affine authority-world steps, conditional synchronized lifting, and controls"
+claim_ceiling = "checked conditional declarations only; no step existence, reachability, or static/dynamic equivalence"
 
 [[components]]
 name = "artifact_decoder"

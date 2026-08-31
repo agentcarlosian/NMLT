@@ -4,6 +4,9 @@ import NMLT.Typing.Judgments
 import NMLT.Metatheory.Soundness
 import NMLT.Correspondence.M9Kernel
 import NMLT.Behavior.ResourceBehavior
+import NMLT.Behavior.ResourceWorld
 import NMLT.Artifact.BehaviorCore
 import NMLT.Artifact.SemanticClosure
+import NMLT.Examples.ResourceWorldTransfer
 import NMLT.Counterexamples.ResourceBehaviorControls
+import NMLT.Counterexamples.ResourceWorldControls

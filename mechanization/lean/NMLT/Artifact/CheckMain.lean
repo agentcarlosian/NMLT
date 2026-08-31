@@ -39,6 +39,9 @@ def main (arguments : List String) : IO UInt32 := do
                       s!"{application.concrete} refines {application.abstract} " ++
                       s!"through {application.peer} " ++
                       s!"({application.concreteStates}/{application.abstractStates}/" ++
-                      s!"{application.peerStates} finite states)")
+                      s!"{application.peerStates} finite states, " ++
+                      s!"{application.initialAuthorities} initial authorities)")
+                    IO.println (s!"dynamic synchronization lifting accepted: " ++
+                      s!"requirements and authority effects preserve enabled world steps")
                   pure 0
   | _ => fail usage
