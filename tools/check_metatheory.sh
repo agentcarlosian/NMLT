@@ -20,11 +20,12 @@ artifact="$repo_root/examples/pivot/visible_resource_sync.behavior-core-v1.json"
 stale_artifact="$(mktemp)"
 malformed_artifact="$(mktemp)"
 semantic_mismatch_artifact="$(mktemp)"
+world_requirement_artifact="$(mktemp)"
 axiom_probe="$(mktemp --suffix=.lean)"
 axiom_log="$(mktemp)"
 cleanup() {
   rm -f "$stale_artifact" "$malformed_artifact" "$semantic_mismatch_artifact" \
-    "$axiom_probe" "$axiom_log"
+    "$world_requirement_artifact" "$axiom_probe" "$axiom_log"
 }
 trap cleanup EXIT
 
@@ -40,11 +41,11 @@ trap cleanup EXIT
 )
 
 python3 - "$artifact" "$stale_artifact" "$malformed_artifact" \
-  "$semantic_mismatch_artifact" <<'PY'
+  "$semantic_mismatch_artifact" "$world_requirement_artifact" <<'PY'
 import json
 import sys
 
-source, stale_path, malformed_path, semantic_mismatch_path = sys.argv[1:]
+source, stale_path, malformed_path, semantic_mismatch_path, world_requirement_path = sys.argv[1:]
 with open(source, encoding="utf-8") as handle:
     value = json.load(handle)
 
@@ -64,6 +65,11 @@ abstract_send["guards"] = ["false"]
 abstract_send["guard_ast"] = [{"kind": "bool", "type": "Bool", "value": False}]
 with open(semantic_mismatch_path, "w", encoding="utf-8") as handle:
     json.dump(semantic_mismatch, handle)
+
+world_requirement = json.loads(json.dumps(value))
+world_requirement["systems"]["AbstractSender"]["actions"]["send"]["resources"]["requires"] = ["permit"]
+with open(world_requirement_path, "w", encoding="utf-8") as handle:
+    json.dump(world_requirement, handle)
 PY
 
 if (cd "$lean_root" && lake exe nmlt-artifact-check "$stale_artifact" \
@@ -84,10 +90,22 @@ if (cd "$lean_root" && lake exe nmlt-artifact-check "$semantic_mismatch_artifact
   exit 1
 fi
 
+if (cd "$lean_root" && lake exe nmlt-artifact-check "$world_requirement_artifact" \
+    "$repo_root/examples/pivot/visible_resource_sync.nmlt"); then
+  echo "error: Lean accepted a refinement that does not preserve world-step enabledness" >&2
+  exit 1
+fi
+
 cat > "$axiom_probe" <<'EOF'
 import NMLT
 #print axioms NMLT.Behavior.ResourceBehavior.liftParallel
 #print axioms NMLT.Artifact.SemanticClosure.Certificate.lifted
+#print axioms NMLT.Artifact.SemanticClosure.Certificate.liftedSynchronized
+#print axioms NMLT.Behavior.ResourceWorld.ProductStep.synchronized_left_transfer_moves_once
+#print axioms NMLT.Behavior.ResourceWorld.SyncStep.owner_after_is_explained
+#print axioms NMLT.Examples.ResourceWorldTransfer.permit_moves_exactly_once
+#print axioms NMLT.Behavior.ResourceWorld.liftSynchronized
+#print axioms NMLT.Examples.ResourceWorldTransfer.permit_transfer_lifts_dynamically
 EOF
 (
   cd "$lean_root"

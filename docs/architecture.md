@@ -46,6 +46,13 @@ acceptance.
 - `mechanization/lean/NMLT/Behavior/ResourceBehavior.lean` defines the
   normative behavior object, product transitions, resource-aware refinement,
   composition premises, and the conditional lifting theorem.
+- `mechanization/lean/NMLT/Behavior/ResourceWorld.lean` is the next dynamic
+  layer: a capability has one optional owner in a shared world; local steps may
+  consume but not move boundary authority; synchronized product steps move
+  authority between distinct owners and preserve everything unaffected. Its
+  transfer theorem proves the sender cannot retain moved authority, and its
+  first lifting theorem preserves synchronized world steps through a
+  strengthened resource refinement.
 - `mechanization/lean/NMLT/Artifact/BehaviorCore.lean` decodes and validates
   the finite artifact envelope into typed terms, systems, actions, profiles,
   wirings, and refinement maps.
@@ -53,7 +60,15 @@ acceptance.
   finite states, evaluates artifact terms, constructs the normative `Behavior`
   objects and their real step relations, decides every premise of the
   refinement-lifting theorem, and returns a proof-carrying certificate. The
-  executable checker also recomputes the exact source digest.
+  executable checker also recomputes the exact source digest. It additionally
+  derives the concrete product's initial authority world and exposes its
+  dynamic product-step type. Accepted refinements include the reverse
+  requirement implication needed to preserve world-step enabledness, and the
+  dependent certificate exposes `Certificate.liftedSynchronized` for the
+  decoded product. The original certificate still targets
+  `ResourceBehavior.parallel`; the world layer currently lifts synchronized
+  steps only. Full local/hidden dynamic refinement and world reachability are
+  next results, not current claims.
 
 ## Behavioral core v1
 
