@@ -4,10 +4,12 @@
 
 The current checkpoint protects narrow statements about exact source bytes,
 Rust formation/type acceptance, deterministic artifact encoding, Lean-checked
-static theorem declarations, and non-authoritative finite exploration.
+static theorem declarations, conditional affine authority-world step lifting,
+and non-authoritative finite exploration.
 
 It does not protect a claim that Rust elaboration is verified, that a decoded
-artifact was correctly produced from its named source, or that finite
+artifact was correctly produced from its named source, that the conditional
+dynamic theorem proves step existence or reachability, or that finite
 exploration proves unbounded behavior.
 
 ## Primary attacker stories

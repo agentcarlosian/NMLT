@@ -11,7 +11,7 @@ refinement.
 NMLT is pre-alpha research software. It must not authorize safety-critical,
 financial, security-critical, or irreversible actions.
 
-## Artifact-derived semantic closure
+## Full dynamic product-step lifting
 
 This checkpoint replaces the former contest verifier suite with one finite,
 resource-aware language path:
@@ -21,6 +21,7 @@ resource-aware language path:
   → lossless syntax, resolution, and typed elaboration       Rust
   → deterministic behavior-core-v1 artifact                 Rust
   → artifact-derived behavior and conditional refinement   Lean
+  → affine authority-world transition witnesses            Lean
   → bounded operational inspection, assurance: none         Rust
 ```
 
@@ -34,9 +35,17 @@ identification, reconstructs the finite behavior objects and refinement
 witnesses carried by the primary artifact, and instantiates that theorem. No
 verified Rust-to-Lean compiler claim is made.
 
-Dynamic authority worlds are not part of this checkpoint. The theorem is a
-conditional safety result; it does not establish reachability, fairness, or
-liveness.
+The dynamic layer records each declared capability as owned by one component
+or vacant. Lean proves that a compatible synchronized transfer moves authority
+exactly once and that hidden consumption changes the world rather than
+refining empty stutter. The primary artifact instantiates conditional lifting
+for synchronized steps and for the complete local-or-synchronized product-step
+relation.
+
+The static product semantics and authority-world semantics remain distinct at
+this checkpoint, with no equivalence theorem between them. The lifting result
+is conditional; it does not establish step existence, reachability, fairness,
+or liveness.
 
 Rust exploration is a language-design aid and always reports `assurance: none`.
 

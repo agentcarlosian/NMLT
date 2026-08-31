@@ -39,6 +39,9 @@ def main (arguments : List String) : IO UInt32 := do
                       s!"{application.concrete} refines {application.abstract} " ++
                       s!"through {application.peer} " ++
                       s!"({application.concreteStates}/{application.abstractStates}/" ++
-                      s!"{application.peerStates} finite states)")
+                      s!"{application.peerStates} finite states, " ++
+                      s!"{application.declaredCapabilities} declared component capabilities)")
+                    IO.println (s!"conditional dynamic step-lifting witness constructed: " ++
+                      s!"step existence and reachability are not checked")
                   pure 0
   | _ => fail usage

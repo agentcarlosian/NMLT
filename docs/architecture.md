@@ -11,6 +11,7 @@ exact .nmlt bytes
   → name resolution and typed elaboration
   → behavior-core-v1 JSON
   → Lean decoding and artifact-derived theorem instance
+  → affine authority-world synchronization witness
   → non-authoritative Rust exploration
 ```
 
@@ -43,9 +44,16 @@ artifact, then instantiates the static lifting theorem. This is semantic
 validation of decoded artifact contents, not a verified Rust elaboration
 theorem.
 
+`NMLT.Behavior.ResourceWorld` is a separate dynamic layer. It makes capability
+ownership and vacancy explicit, defines local, synchronized, and full product
+world steps, and proves conditional product-step lifting with exact one-time
+transfer. The artifact-derived certificate instantiates that result for the
+primary fixture.
+
 ## Deliberate limits
 
-This checkpoint makes no compiler-correctness, reachability, infinite-trace,
-fairness, liveness, runtime-attestation, or production-authorization claim.
-Dynamic authority worlds are not part of this static layer, and no dynamic
-semantics-to-static-semantics correspondence is claimed.
+This checkpoint makes no compiler-correctness, step-existence, reachability,
+infinite-trace, fairness, liveness, runtime-attestation, or
+production-authorization claim. Static product steps and dynamic
+authority-world steps are separate layers; no correspondence theorem between
+them is claimed.

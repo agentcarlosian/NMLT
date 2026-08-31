@@ -20,9 +20,11 @@ attacker stories in [`docs/threat-model.md`](docs/threat-model.md).
 
 Rust parses, resolves, types, and emits deterministic artifacts, but it is not
 the semantic prover. The retained `nmlt-kernel` checks ordinary typed
-elaboration only. Lean defines the current static behavior semantics and its
-conditional composition/refinement theorem. The Rust evaluator makes no proof,
-model-checking, evidence, runtime-authority, or production-safety claim.
+elaboration only. Lean defines the current static behavior semantics and a
+separate affine authority-world layer with conditional full product-step
+lifting. No theorem here establishes step existence, reachability, or an
+equivalence between those two semantic layers. The Rust evaluator makes no
+proof, model-checking, evidence, runtime-authority, or production-safety claim.
 
 Source digests establish byte identity only. They do not establish authorship,
 freshness, provenance, or correctness of Rust elaboration.

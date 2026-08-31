@@ -16,10 +16,22 @@ compiler theorem connects Rust elaboration to these definitions.
   state maps, and the conditional theorem instance from decoded artifact data.
 - `NMLT.Artifact.CheckMain` checks artifact structure and compares its declared
   source digest with supplied source bytes.
+- `NMLT.Behavior.ResourceWorld` defines explicit authority worlds, local and
+  synchronized world steps, their complete product-step relation, and
+  conditional lifting across that relation.
+- `NMLT.Counterexamples.ResourceWorldControls` checks that hidden consumption
+  changes the world and cannot refine empty stutter.
+- `NMLT.Examples.ResourceWorldTransfer` witnesses exact one-time authority
+  transfer for the primary finite design.
 
 The decoder and semantic-closure layer validate the artifact's own semantic
 contents. They do not prove that Rust elaboration correctly translated the
 identified source.
+
+The static product semantics and dynamic authority-world semantics are
+separate definitions at this checkpoint. No projection or equivalence theorem
+connects them, and the dynamic lifting theorem assumes a concrete step rather
+than proving one exists or is reachable.
 
 ## Build and audit
 
@@ -31,7 +43,7 @@ make metatheory
 
 The gate builds the package, rejects unchecked placeholders, checks stale,
 malformed, and semantically inconsistent artifacts fail closed, and audits the
-focused static theorem axioms.
+focused static and authority-world theorem axioms.
 The approved focused dependencies are `propext` and, where explicitly shown,
 `Quot.sound`.
 

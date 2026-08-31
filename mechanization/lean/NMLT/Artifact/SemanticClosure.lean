@@ -1,8 +1,10 @@
 import NMLT.Artifact.BehaviorCore
+import NMLT.Behavior.ResourceWorld
 
 namespace NMLT.Artifact.SemanticClosure
 
 open NMLT.Behavior.ResourceBehavior
+open NMLT.Behavior.ResourceWorld
 open NMLT.Artifact.BehaviorCore
 
 inductive Value where
@@ -538,6 +540,7 @@ structure ApplicationSummary where
   concreteStates : Nat
   abstractStates : Nat
   peerStates : Nat
+  declaredCapabilities : Nat
 deriving Repr
 
 def applicationSummary (application : Application) : ApplicationSummary := {
@@ -549,6 +552,8 @@ def applicationSummary (application : Application) : ApplicationSummary := {
   concreteStates := (stateSpace application.program application.concrete).length
   abstractStates := (stateSpace application.program application.abstract).length
   peerStates := (stateSpace application.program application.peer).length
+  declaredCapabilities :=
+    application.concrete.capabilities.length + application.peer.capabilities.length
 }
 
 abbrev CapabilityIndex (application : Application) :=
@@ -572,6 +577,25 @@ abbrev ConcreteStateIndex (application : Application) :=
 abbrev AbstractStateIndex (application : Application) :=
   Fin ((stateSpace application.program application.abstract).length + 1)
 
+inductive BinaryOwner where
+  | component
+  | peer
+deriving Repr, BEq, DecidableEq
+
+/-- Initial authority for the decoded concrete product, derived from declarations. -/
+def initialAuthorityWorld (application : Application) :
+    AuthorityWorld (CapabilityIndex application) BinaryOwner where
+  owner := fun capability =>
+    match nameAt? (capabilityNames application.program) capability with
+    | some name =>
+        if (application.concrete.capabilities.map Prod.fst).contains name then
+          some .component
+        else if (application.peer.capabilities.map Prod.fst).contains name then
+          some .peer
+        else
+          none
+    | none => none
+
 abbrev concreteBehavior (application : Application) :=
   toBehavior application.program application.concrete
     (actionNames application) application.refinement.hiddenActions
@@ -583,6 +607,15 @@ abbrev abstractBehavior (application : Application) :=
 abbrev peerBehavior (application : Application) :=
   toBehavior application.program application.peer
     (peerActionNames application) []
+
+abbrev DynamicConcreteState (application : Application) :=
+  NMLT.Behavior.ResourceWorld.ProductState
+    (concreteBehavior application) (peerBehavior application) BinaryOwner
+
+abbrev DynamicConcreteStep (application : Application) :=
+  NMLT.Behavior.ResourceWorld.ProductStep
+    (concreteBehavior application) (peerBehavior application)
+    BinaryOwner.component BinaryOwner.peer application.concreteConnection
 
 structure ProfileConditions
     (application : Application)
@@ -964,6 +997,55 @@ def RefinementConditions.toResourceWeakRefinement
   hiddenResources := fun action hidden =>
     (conditions.hiddenResources action hidden).toResourceRefines
 
+/-- Reverse requirement preservation needed when profiles enable world steps. -/
+structure WorldRequirementConditions (application : Application) : Prop where
+  requiresBack : ∀ (action : ActionIndex application)
+      (capability : CapabilityIndex application),
+    ((abstractBehavior application).resources action).requires capability →
+    ((concreteBehavior application).resources action).requires capability
+
+instance worldRequirementConditionsDecidable (application : Application) :
+    Decidable (WorldRequirementConditions application) := by
+  letI (action : ActionIndex application) (capability : CapabilityIndex application) :
+      Decidable (
+        ((abstractBehavior application).resources action).requires capability →
+        ((concreteBehavior application).resources action).requires capability) := by
+    if abstractRequires :
+        ((abstractBehavior application).resources action).requires capability then
+      if concreteRequires :
+          ((concreteBehavior application).resources action).requires capability then
+        exact isTrue fun _ => concreteRequires
+      else exact isFalse fun implication =>
+        concreteRequires (implication abstractRequires)
+    else exact isTrue fun required => False.elim (abstractRequires required)
+  letI (action : ActionIndex application) :
+      Decidable (∀ capability : CapabilityIndex application,
+        ((abstractBehavior application).resources action).requires capability →
+        ((concreteBehavior application).resources action).requires capability) :=
+    Nat.decidableForallFin _
+  letI : Decidable (∀ action : ActionIndex application,
+      ∀ capability : CapabilityIndex application,
+        ((abstractBehavior application).resources action).requires capability →
+        ((concreteBehavior application).resources action).requires capability) :=
+    Nat.decidableForallFin _
+  if requiresBack : ∀ action capability,
+      ((abstractBehavior application).resources action).requires capability →
+      ((concreteBehavior application).resources action).requires capability then
+    exact isTrue { requiresBack }
+  else exact isFalse fun conditions => requiresBack conditions.requiresBack
+
+def WorldRequirementConditions.toWorldWeakRefinement
+    {application : Application}
+    (requirements : WorldRequirementConditions application)
+    (refinement : RefinementConditions application) :
+    WorldWeakRefinement
+      (concreteBehavior application) (abstractBehavior application) where
+  behavior := refinement.toResourceWeakRefinement
+  worldResources := fun action => {
+    profile := (refinement.resources action).toResourceRefines
+    requiresBack := requirements.requiresBack action
+  }
+
 structure WiringConditions (application : Application) : Prop where
   connected : ∀ left right,
     application.concreteConnection left right ↔
@@ -1108,6 +1190,7 @@ def CompositionConditions.toComposable
 
 structure ApplicationConditions (application : Application) : Prop where
   refinement : RefinementConditions application
+  worldRequirements : WorldRequirementConditions application
   wiring : WiringConditions application
   concreteComposition :
     CompositionConditions application application.concrete
@@ -1119,26 +1202,33 @@ structure ApplicationConditions (application : Application) : Prop where
 instance applicationConditionsDecidable (application : Application) :
     Decidable (ApplicationConditions application) := by
   if refinement : RefinementConditions application then
-    if wiring : WiringConditions application then
-      if concreteComposition :
-          CompositionConditions application application.concrete
-            application.refinement.hiddenActions application.concreteConnection then
-        if abstractComposition :
-            CompositionConditions application application.abstract
-              application.refinement.hiddenActions application.abstractConnection then
-          exact isTrue {
-            refinement, wiring, concreteComposition, abstractComposition
-          }
+    if worldRequirements : WorldRequirementConditions application then
+      if wiring : WiringConditions application then
+        if concreteComposition :
+            CompositionConditions application application.concrete
+              application.refinement.hiddenActions application.concreteConnection then
+          if abstractComposition :
+              CompositionConditions application application.abstract
+                application.refinement.hiddenActions application.abstractConnection then
+            exact isTrue {
+              refinement, worldRequirements, wiring,
+              concreteComposition, abstractComposition
+            }
+          else exact isFalse fun conditions =>
+            abstractComposition conditions.abstractComposition
         else exact isFalse fun conditions =>
-          abstractComposition conditions.abstractComposition
-      else exact isFalse fun conditions =>
-        concreteComposition conditions.concreteComposition
-    else exact isFalse fun conditions => wiring conditions.wiring
+          concreteComposition conditions.concreteComposition
+      else exact isFalse fun conditions => wiring conditions.wiring
+    else exact isFalse fun conditions =>
+      worldRequirements conditions.worldRequirements
   else exact isFalse fun conditions => refinement conditions.refinement
 
 structure Certificate (application : Application) where
   refinement :
     ResourceWeakRefinement
+      (concreteBehavior application) (abstractBehavior application)
+  worldRefinement :
+    WorldWeakRefinement
       (concreteBehavior application) (abstractBehavior application)
   wiring :
     WiringEquivalent application.concreteConnection
@@ -1154,6 +1244,8 @@ def ApplicationConditions.toCertificate
     {application : Application}
     (conditions : ApplicationConditions application) : Certificate application where
   refinement := conditions.refinement.toResourceWeakRefinement
+  worldRefinement :=
+    conditions.worldRequirements.toWorldWeakRefinement conditions.refinement
   wiring := conditions.wiring.toEquivalent
   concreteComposition := conditions.concreteComposition.toComposable
   abstractComposition := conditions.abstractComposition.toComposable
@@ -1169,11 +1261,60 @@ theorem Certificate.lifted
   liftParallel certificate.refinement certificate.wiring
     certificate.concreteComposition certificate.abstractComposition
 
+theorem Certificate.liftedSynchronized
+    {application : Application} (certificate : Certificate application)
+    {before after : DynamicConcreteState application}
+    {leftAction : ActionIndex application}
+    {rightAction : PeerActionIndex application}
+    (step : DynamicConcreteStep application before
+      (.sync leftAction rightAction) after) :
+    NMLT.Behavior.ResourceWorld.ProductStep
+      (abstractBehavior application) (peerBehavior application)
+      BinaryOwner.component BinaryOwner.peer application.abstractConnection
+      (mapProductState certificate.worldRefinement before)
+      (.sync leftAction rightAction)
+      (mapProductState certificate.worldRefinement after) :=
+  liftSynchronized certificate.worldRefinement certificate.wiring
+    certificate.concreteComposition certificate.abstractComposition step
+
+/--
+The decoded certificate carries the complete one-step dynamic product
+simulation, including isolated visible transitions, peer transitions,
+synchronization, and resource-safe hidden stuttering.
+-/
+def Certificate.liftedDynamic
+    {application : Application} (certificate : Certificate application) :
+    DynamicProductRefinement
+      (concreteBehavior application) (abstractBehavior application)
+      (peerBehavior application) BinaryOwner.component BinaryOwner.peer
+      application.concreteConnection application.abstractConnection :=
+  liftProductSteps certificate.worldRefinement certificate.wiring
+    certificate.concreteComposition certificate.abstractComposition
+
+theorem Certificate.liftedStep
+    {application : Application} (certificate : Certificate application)
+    {before after : DynamicConcreteState application}
+    {action : ProductAction
+      (ActionIndex application) (PeerActionIndex application)}
+    (step : DynamicConcreteStep application before action after) :
+    DynamicStepMatch
+      (concreteBehavior application)
+      (abstractBehavior application) (peerBehavior application)
+      BinaryOwner.component BinaryOwner.peer application.abstractConnection
+      (mapProductState certificate.worldRefinement before) action
+      (mapProductState certificate.worldRefinement after) :=
+  certificate.liftedDynamic.matchStep step
+
 def certify (application : Application) : Except String (Certificate application) :=
-  if conditions : ApplicationConditions application then
-    pure conditions.toCertificate
+  if _worldRequirements : WorldRequirementConditions application then
+    if conditions : ApplicationConditions application then
+      pure conditions.toCertificate
+    else
+      throw s!"artifact theorem application failed for '{application.refinement.concrete} refines {application.refinement.abstract}'"
   else
-    throw s!"artifact theorem application failed for '{application.refinement.concrete} refines {application.refinement.abstract}'"
+    throw (s!"artifact dynamic refinement failed for " ++
+      s!"'{application.refinement.concrete} refines {application.refinement.abstract}': " ++
+      "abstract requirements are not preserved by concrete world-step enabledness")
 
 structure ClosureSummary where
   program : Summary
