@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact metatheory ci reproduce
+.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda ci reproduce
 
 help:
 	@echo "NMLT language-and-mathematics targets"
@@ -9,7 +9,9 @@ help:
 	@echo "  test              Run all Rust tests"
 	@echo "  behavior-fixtures Check the positive and boundary-specific source fixtures"
 	@echo "  behavior-artifact Reproduce and non-verifyingly explore behavior-core-v1"
+	@echo "  public-surface    Check public links, trust inventory, and repository hygiene"
 	@echo "  metatheory        Build Lean, audit axioms, and decode the matching-source artifact"
+	@echo "  nanoda            Independently check all NMLT Lean declarations"
 	@echo "  ci                Run the Rust language gate"
 	@echo "  reproduce         Run the complete Rust and Lean gate"
 
@@ -38,9 +40,15 @@ behavior-artifact:
 		cargo run --quiet -p nmlt-cli -- explore --behavior ConcreteNetwork --max-states 8 "$$artifact" | \
 		grep -F "permit: ConcreteSender -> Receiver"
 
+public-surface:
+	python3 tools/check_public_surface.py
+
 metatheory:
 	./tools/check_metatheory.sh
 
-ci: fmt-check check lint test behavior-artifact
+nanoda:
+	./tools/check_nanoda.sh mechanization/lean NMLT
 
-reproduce: ci metatheory
+ci: fmt-check check lint test behavior-artifact public-surface
+
+reproduce: ci metatheory nanoda

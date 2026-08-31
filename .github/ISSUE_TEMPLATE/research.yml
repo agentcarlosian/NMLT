@@ -1,5 +1,5 @@
 name: Research proposal
-description: Propose a language, semantics, verification, or research direction.
+description: Propose a language, semantics, mathematics, or research direction.
 title: "research: "
 labels: [research]
 body:
@@ -19,7 +19,7 @@ body:
   - type: textarea
     id: evidence
     attributes:
-      label: Existing evidence and primary sources
+      label: Existing results and primary sources
     validations:
       required: true
   - type: textarea

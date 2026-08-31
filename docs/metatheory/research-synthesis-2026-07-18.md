@@ -1,5 +1,9 @@
 # Research synthesis: Phase 1 mathematical core
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](../history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 Historical scope note: this synthesis records the 2026-07-18 Phase-1 state.
 M11 added a bounded exact-action open-composition theorem on 2026-07-19; see
 [RFC 0008](../../rfcs/0008-mechanization-and-compositional-refinement.md) and

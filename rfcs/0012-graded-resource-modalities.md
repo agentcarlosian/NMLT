@@ -1,6 +1,6 @@
 # RFC 0012: Conservative graded-resource modalities
 
-- Status: Experimental
+- Status: Postponed experiment; current core uses named natural-number grades
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Phase: 7 independent research extension
@@ -204,7 +204,7 @@ distributivity statement extends to nonempty finite choices. It deliberately
 does not include the empty join: `0` is also the sequencing identity, not an
 annihilator.
 
-[`NMLT/Grades/Algebra.lean`](../mechanization/lean/NMLT/Grades/Algebra.lean)
+[`NMLT/Grades/Algebra.lean`](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/mechanization/lean/NMLT/Grades/Algebra.lean)
 mechanizes one family-homogeneous mathematical product in Lean 4.30.0. It proves saturated
 uncertainty addition and the product identity, associativity, commutativity,
 choice, order, monotonicity, binary/nonempty-finite distributivity, and Boolean

@@ -1,5 +1,9 @@
 # M9 Completion Audit — 2026-07-19
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 M9 closes the narrow source-to-typed-core vertical slice. It does not claim a
 verified Rust compiler, temporal truth, unbounded verification, or production
 runtime safety.

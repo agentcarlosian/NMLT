@@ -1,5 +1,9 @@
 # Phase 0 closeout and Phase 1 completion record
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 - Closed: 2026-07-18
 - Phase 1 started: 2026-07-18
 - Phase 1 bounded frontend gate completed: 2026-07-18

@@ -1,9 +1,8 @@
 # Examples
 
-The active typed semantic slice currently lives under
-[`pivot/`](pivot/). The directory name records the transition and will
-be replaced with durable `getting-started`, `open-systems`, and
-`negative-controls` paths before the public stack is finalized.
+The active typed semantic fixtures live under [`pivot/`](pivot/). The directory
+name records the architectural pivot that established `behavior-core-v1`; it is
+the durable fixture path for this pre-alpha artifact version.
 
 - [`visible_resource_sync.nmlt`](pivot/visible_resource_sync.nmlt) is the
   primary positive source.
