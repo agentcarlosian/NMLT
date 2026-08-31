@@ -1,6 +1,7 @@
-import NMLT.Artifact.BehaviorCore
+import NMLT.Artifact.SemanticClosure
 
 open NMLT.Artifact.BehaviorCore
+open NMLT.Artifact.SemanticClosure
 
 private def usage : String :=
   "usage: nmlt-artifact-check <behavior-core-v1.json> <source.nmlt>"
@@ -13,9 +14,9 @@ def main (arguments : List String) : IO UInt32 := do
   match arguments with
   | [artifactPath, sourcePath] =>
       let artifact ← IO.FS.readFile artifactPath
-      match parse artifact with
+      match parseProgram artifact with
       | .error message => fail message
-      | .ok summary =>
+      | .ok program =>
           let hash ← IO.Process.output {
             cmd := "sha256sum"
             args := #[sourcePath]
@@ -24,10 +25,20 @@ def main (arguments : List String) : IO UInt32 := do
             fail s!"could not hash source: {hash.stderr.trimAscii}"
           else
             let actual := (hash.stdout.splitOn " ").head?.getD ""
-            if actual != summary.sourceSha256 then
-              fail s!"stale source digest: artifact has {summary.sourceSha256}, source has {actual}"
+            if actual != program.summary.sourceSha256 then
+              fail s!"stale source digest: artifact has {program.summary.sourceSha256}, source has {actual}"
             else
-              IO.println (s!"accepted behavior-core-v1: {summary.systems} systems, " ++
-                s!"{summary.compositions} compositions, {summary.refinements} refinements")
-              pure 0
+              match close program with
+              | .error message => fail message
+              | .ok closure =>
+                  IO.println (s!"accepted behavior-core-v1: {closure.program.systems} systems, " ++
+                    s!"{closure.program.compositions} compositions, " ++
+                    s!"{closure.program.refinements} refinements")
+                  for application in closure.applications do
+                    IO.println (s!"theorem application accepted: " ++
+                      s!"{application.concrete} refines {application.abstract} " ++
+                      s!"through {application.peer} " ++
+                      s!"({application.concreteStates}/{application.abstractStates}/" ++
+                      s!"{application.peerStates} finite states)")
+                  pure 0
   | _ => fail usage

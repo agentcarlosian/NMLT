@@ -11,7 +11,7 @@ refinement.
 NMLT is pre-alpha research software. It must not authorize safety-critical,
 financial, security-critical, or irreversible actions.
 
-## Static vertical slice
+## Artifact-derived semantic closure
 
 This checkpoint replaces the former contest verifier suite with one finite,
 resource-aware language path:
@@ -20,7 +20,7 @@ resource-aware language path:
 .nmlt source
   → lossless syntax, resolution, and typed elaboration       Rust
   → deterministic behavior-core-v1 artifact                 Rust
-  → resource-bearing behavior and conditional refinement    Lean
+  → artifact-derived behavior and conditional refinement   Lean
   → bounded operational inspection, assurance: none         Rust
 ```
 
@@ -29,10 +29,14 @@ named natural-number grades, nominal rely/guarantee facts, binary composition,
 observations, hiding, and explicit finite-state refinement maps.
 
 Lean defines the static behavioral semantics and proves the current conditional
-composition theorem. A hand-written Lean instance checks the same primary
-sender/receiver design. The artifact decoder at this checkpoint validates
-canonical shape and source identification; artifact-derived theorem instances
-arrive in the next stack layer. No verified Rust-to-Lean compiler claim is made.
+composition theorem. The Lean decoder validates canonical structure and source
+identification, reconstructs the finite behavior objects and refinement
+witnesses carried by the primary artifact, and instantiates that theorem. No
+verified Rust-to-Lean compiler claim is made.
+
+Dynamic authority worlds are not part of this checkpoint. The theorem is a
+conditional safety result; it does not establish reachability, fairness, or
+liveness.
 
 Rust exploration is a language-design aid and always reports `assurance: none`.
 

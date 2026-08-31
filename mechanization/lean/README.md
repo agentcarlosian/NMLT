@@ -11,14 +11,15 @@ compiler theorem connects Rust elaboration to these definitions.
   and the conditional static lifting theorem.
 - `NMLT.Counterexamples.ResourceBehaviorControls` contains permanent controls
   for failed product and hidden-step conditions.
-- `NMLT.Examples.VisibleResourceSync` is the hand-written theorem instance for
-  the primary sender/receiver design at this checkpoint.
 - `NMLT.Artifact.BehaviorCore` decodes canonical `behavior-core-v1` structure.
+- `NMLT.Artifact.SemanticClosure` reconstructs finite behaviors, compositions,
+  state maps, and the conditional theorem instance from decoded artifact data.
 - `NMLT.Artifact.CheckMain` checks artifact structure and compares its declared
   source digest with supplied source bytes.
 
-The decoder does not yet derive the behavior or theorem witness from artifact
-contents. That semantic closure is the next stack layer.
+The decoder and semantic-closure layer validate the artifact's own semantic
+contents. They do not prove that Rust elaboration correctly translated the
+identified source.
 
 ## Build and audit
 
@@ -28,8 +29,9 @@ From the repository root:
 make metatheory
 ```
 
-The gate builds the package, rejects unchecked placeholders, checks stale and
-malformed artifacts fail closed, and audits the focused static theorem axioms.
+The gate builds the package, rejects unchecked placeholders, checks stale,
+malformed, and semantically inconsistent artifacts fail closed, and audits the
+focused static theorem axioms.
 The approved focused dependencies are `propext` and, where explicitly shown,
 `Quot.sound`.
 

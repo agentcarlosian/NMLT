@@ -1,4 +1,4 @@
-manifest_version = "2.0.0-static"
+manifest_version = "2.0.0-static-closure"
 status = "pre-alpha"
 reviewed = "2026-08-31"
 
@@ -43,7 +43,6 @@ name = "lean_static_behavior"
 paths = [
   "mechanization/lean/NMLT/Behavior/ResourceBehavior.lean",
   "mechanization/lean/NMLT/Counterexamples/ResourceBehaviorControls.lean",
-  "mechanization/lean/NMLT/Examples/VisibleResourceSync.lean",
 ]
 role = "static behavioral definitions, conditional lifting, and controls"
 claim_ceiling = "the checked Lean declarations under their explicit premises"
@@ -52,10 +51,11 @@ claim_ceiling = "the checked Lean declarations under their explicit premises"
 name = "artifact_decoder"
 paths = [
   "mechanization/lean/NMLT/Artifact/BehaviorCore.lean",
+  "mechanization/lean/NMLT/Artifact/SemanticClosure.lean",
   "mechanization/lean/NMLT/Artifact/CheckMain.lean",
 ]
-role = "canonical structure decoding and source-byte identification"
-claim_ceiling = "decoded shape and digest equality, not verified translation"
+role = "canonical decoding, source-byte identification, and artifact-derived static theorem construction"
+claim_ceiling = "decoded semantics and checked theorem instance, not verified source translation"
 
 [[components]]
 name = "reference_explorer"
