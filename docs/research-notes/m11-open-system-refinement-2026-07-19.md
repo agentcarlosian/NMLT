@@ -1,5 +1,9 @@
 # M11 open-system refinement research
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](../history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 Date: 2026-07-19
 
 Researcher: Carlosian <carlosian@agentmail.to>, with AI-assisted retrieval and
@@ -138,7 +142,7 @@ M11-001a may be reported complete only when:
   an exact-semantics broken-wiring negative control, and RFC 0008's original
   unconditional hidden-synchronization counterexample; and
 - the trusted-component inventory and the claim-specific
-  [M11 evidence manifest](../../benchmarks/results/open-composition/m11-001a-evidence.json)
+  [M11 evidence manifest](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/benchmarks/results/open-composition/m11-001a-evidence.json)
   bind the exact theorem handles, controls, sources, checkers, Lean toolchain,
   and audited axiom sets.
 

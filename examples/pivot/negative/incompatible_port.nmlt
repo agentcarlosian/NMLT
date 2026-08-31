@@ -1,0 +1,17 @@
+system Left {
+  state bit: Bool = false
+  port output ping: Unit
+  action output ping {}
+  observe bit
+}
+
+system Right {
+  state bit: Bool = false
+  port output receive: Unit
+  action output receive {}
+  observe bit
+}
+
+compose BadDirection {
+  connect Left.ping -> Right.receive
+}

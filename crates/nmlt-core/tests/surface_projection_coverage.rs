@@ -1,6 +1,6 @@
 use nmlt_core::{
-    BindingKind, UntypedDeclaration, UntypedEnumItem, UntypedMember, UntypedParameterItem,
-    UntypedStatement, parse_cst, project_untyped,
+    BindingKind, SurfacePolarity, UntypedDeclaration, UntypedEnumItem, UntypedMember,
+    UntypedParameterItem, UntypedStatement, parse_cst, project_untyped,
 };
 
 fn nested_modules(depth: usize) -> String {
@@ -442,4 +442,55 @@ fn parser_depth_cap_bounds_all_recursive_projection_walks() {
         issue.kind,
         nmlt_core::ProjectionIssueKind::SyntaxDiagnostic { code: "NMLT2014" }
     )));
+}
+
+#[test]
+fn hidden_boundary_actions_project_ping_not_output_with_exact_coverage() {
+    let source = include_str!("../../../examples/refinement/hidden_connected_action.nmlt");
+    let parsed = parse_cst(source);
+    assert!(
+        parsed.diagnostics().is_empty(),
+        "{:?}",
+        parsed.diagnostics()
+    );
+    let projection = project_untyped(&parsed);
+    assert!(
+        projection.is_structurally_complete(),
+        "{:?}",
+        projection.issues
+    );
+    assert!(projection.coverage.is_exact());
+    assert_eq!(projection.coverage.expected, projection.coverage.projected);
+
+    let concrete = projection
+        .file
+        .system_named("ConcreteSender")
+        .expect("ConcreteSender");
+    let ping = concrete
+        .members
+        .iter()
+        .find_map(|member| match member {
+            UntypedMember::Action(action) => Some(action),
+            _ => None,
+        })
+        .expect("ping");
+    assert_eq!(ping.name.as_ref().unwrap().text, "ping");
+    assert_ne!(ping.name.as_ref().unwrap().text, "output");
+    assert_eq!(ping.polarity, Some(SurfacePolarity::Output));
+
+    let receiver = projection.file.system_named("Receiver").expect("Receiver");
+    let receive = receiver
+        .members
+        .iter()
+        .find_map(|member| match member {
+            UntypedMember::Action(action) => Some(action),
+            _ => None,
+        })
+        .expect("receive");
+    assert_eq!(receive.name.as_ref().unwrap().text, "receive");
+    assert_ne!(receive.name.as_ref().unwrap().text, "input");
+    assert_eq!(receive.polarity, Some(SurfacePolarity::Input));
+
+    assert!(projection.file.compose_named("InvalidHiddenPing").is_some());
+    assert!(projection.file.compose_named("VisibleSync").is_some());
 }

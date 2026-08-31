@@ -1,5 +1,9 @@
 # Phase 1 mathematical-core decisions
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](../history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 - Scope: `NMLT-P1-102` through `NMLT-P1-106`
 - Decision date: 2026-07-18
 - Status: candidate rules under review; one conjecture mechanically refuted

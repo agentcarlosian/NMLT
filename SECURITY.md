@@ -1,35 +1,58 @@
-# Security Policy
+# Security policy
 
-The flagship NMLT language and its research tooling are pre-alpha and have no
-supported production release. Do not use them to authorize safety-critical,
-security-critical, financial, or irreversible effects.
+NMLT is pre-alpha programming-language and mathematics research. It has no
+supported production release and must not be used to authorize
+safety-critical, security-critical, financial, or irreversible effects.
 
-## Reporting
+## Reporting a vulnerability
 
-Do not disclose an exploitable vulnerability in a public issue. If a hosted
-repository supports private security advisories, use that channel. Until a
-private reporting channel is configured, contact a maintainer through a
-previously agreed private channel.
+Do not disclose an exploitable vulnerability in a public issue.
 
-Include the affected revision, impact, reproduction conditions, trust boundary,
-and whether the result is proven, observed, suspected, or indeterminate. Never
-include credentials, private data, or destructive proof-of-concept payloads.
+1. Prefer a private GitHub security advisory for the repository.
+2. If that is unavailable, email the maintainer at
+   [carlosian@agentmail.to](mailto:carlosian@agentmail.to).
 
-## Trusted computing base
+Include the affected revision, impact, minimal reproduction conditions, the
+trust boundary crossed, and whether the result is proven, observed, suspected,
+or indeterminate. Never send credentials, private source, or destructive
+payloads.
 
-The pre-alpha, claim-specific trusted computing base is defined in
-[`security/trusted-components.toml`](security/trusted-components.toml), and its
-boundaries and attacker stories are documented in
-[`docs/threat-model.md`](docs/threat-model.md). Current code includes the
-lossless frontend, a typed/bounded provider engine, finite temporal and
-refinement checks, a finite VC/certificate checker, an authority-bounded
-deterministic repair evaluation, and a graded-resource prototype. Each has a
-separate claim profile and `result_ceiling`; none authorizes external effects.
+## Current security boundary
 
-Current assurance artifacts bind exact source/source-set, engine, executable,
-toolchain, configuration, and content-addressed trusted-component identities
-where their profile requires them. These digests establish byte identity, not
-authorship or freshness: NMLT has no signing, transparency-log, reproducible
-bootstrap, or runtime-attestation claim. Semantic or release changes must
-update the claim-specific inventory and obtain the reviews required by
-`GOVERNANCE.md`.
+The active repository contains:
+
+- a Rust lossless frontend, resolver, typed IR, elaborator, and retained
+  typed-elaboration validator;
+- a Rust producer for canonical `behavior-core-v1` artifacts;
+- Lean definitions, artifact decoding, finite semantic construction, and
+  conditional composition/refinement theorems;
+- a Rust bounded explorer with no verification authority; and
+- CI gates for Rust, Lean, artifact mutations, unchecked proof placeholders,
+  and focused theorem dependencies.
+
+It does not contain the former active temporal checker, finite VC verifier,
+agentic repair evaluator, standalone grade analyzer, evidence-manifest system,
+or contest release workflow. Those systems are historical and recoverable from
+the `build-week-judge-demo-2026` tag.
+
+The current trusted-component inventory is
+[`security/trusted-components.toml`](security/trusted-components.toml).
+The active attacker stories and residual trust are documented in
+[`docs/threat-model.md`](docs/threat-model.md).
+
+## Important limitations
+
+- Rust-to-Lean translation is not verified.
+- A source digest identifies supplied source bytes; it does not prove that an
+  arbitrary artifact was compiled from them.
+- The Rust explorer cannot issue a proof, model-check, evidence, or runtime
+  authorization claim.
+- The dynamic Lean result is conditional one-step lifting, not reachability or
+  liveness.
+- Digests provide byte identity, not authorship, freshness, signing, or
+  transparency.
+- The host, toolchain bootstrap, dependencies, runner image, linker, and
+  filesystem remain trusted.
+
+Any report that raises a result above those limits is a security-relevant claim
+integrity issue even when it does not create conventional memory corruption.

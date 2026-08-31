@@ -93,6 +93,7 @@ readonly CONSTANT_LIST="${NANODA_TEMP_DIR}/checked-constants.txt"
 readonly LIST_SCRIPT="${NANODA_TEMP_DIR}/ListConstants.lean"
 cat > "${LIST_SCRIPT}" <<EOF
 import ${MODULE_NAME}
+import Lean.Meta.Basic
 open Lean
 run_meta do
   let env ← getEnv
@@ -121,9 +122,9 @@ echo "Export bytes: $(wc -c < "${EXPORT_FILE}")"
 echo "Export lines: $(wc -l < "${EXPORT_FILE}")"
 
 if [[ "${NANODA_ALLOW_SORRY:-false}" == "true" ]]; then
-  readonly PERMITTED_AXIOMS='["propext", "Classical.choice", "Quot.sound", "Lean.trustCompiler", "sorryAx"]'
+  readonly PERMITTED_AXIOMS='["propext", "Quot.sound", "Classical.choice", "sorryAx"]'
 else
-  readonly PERMITTED_AXIOMS='["propext", "Classical.choice", "Quot.sound", "Lean.trustCompiler"]'
+  readonly PERMITTED_AXIOMS='["propext", "Quot.sound", "Classical.choice"]'
 fi
 
 {
@@ -131,7 +132,7 @@ fi
   echo '  "export_file_path": "environment.ndjson",'
   echo '  "use_stdin": false,'
   echo "  \"permitted_axioms\": ${PERMITTED_AXIOMS},"
-  echo '  "unpermitted_axiom_hard_error": false,'
+  echo '  "unpermitted_axiom_hard_error": true,'
   echo '  "unsafe_permit_all_axioms": false,'
   echo '  "nat_extension": true,'
   echo '  "string_extension": true,'

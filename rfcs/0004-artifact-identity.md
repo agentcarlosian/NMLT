@@ -1,15 +1,24 @@
 # RFC 0004: Canonical artifact identity
 
-- Status: Accepted
+- Status: Partially superseded by the language-and-mathematics pivot
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 
-## Decision
+## Pivot disposition
 
-Adopt the versioned, domain-separated SHA-256 source, source-set, semantic,
-claim, configuration, engine, and evidence identities specified in
-`docs/artifact-identity.md`. Evidence JSON is canonicalized with RFC 8785 after
-removing identity and signature fields.
+The exact-byte source, source-set, module-map, HIR, typed-core, elaboration,
+and canonical-example identities remain active for the retained language
+pipeline. The semantic-claim, configuration, engine, and evidence-manifest
+identities are superseded design history. `behavior-core-v1.source_sha256` is
+a documented interoperability exception used only to identify the separately
+supplied source bytes.
+
+## Original decision
+
+The pre-pivot architecture adopted the versioned, domain-separated SHA-256
+source, source-set, semantic, claim, configuration, engine, and evidence
+identities specified in `docs/artifact-identity.md`. Evidence JSON was
+canonicalized with RFC 8785 after removing identity and signature fields.
 
 ## Rationale
 

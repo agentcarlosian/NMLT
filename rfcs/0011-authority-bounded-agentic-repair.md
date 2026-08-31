@@ -1,6 +1,6 @@
 # RFC 0011: Authority-bounded agentic formalization and repair
 
-- Status: Under review
+- Status: Postponed research track
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 

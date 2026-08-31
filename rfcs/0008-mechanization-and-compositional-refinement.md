@@ -1,7 +1,8 @@
 # RFC 0008: Lean mechanization and compositional refinement
 
-- Status: Under review
+- Status: Superseded; retained as pre-pivot research input
 - Authors: Carlosian <carlosian@agentmail.to>
+- Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split)
 - Created: 2026-07-18
 - Mathematical-core backlog: `NMLT-P1-105`, `NMLT-P1-106`
 
@@ -177,19 +178,23 @@ A || D:
 If the composite synchronization remains hidden, the refinement rule requires
 the mapped composite states to be equal. Observation preservation then implies
 `(false,false) = (false,true)`, a contradiction. If it is visible, the abstract
-composite has no matching step. Either classification fails.
+composite has no matching step. Either classification fails; both readings
+are named checked theorems.
 
 The checked Lean theorems are:
 
 ```text
 senderRefinement          : WeakRefines C A ...
 concreteSynchronization  : Step_(C||D) <unit,false> sync <unit,true>
-noCompositeRefinement    : not Nonempty(WeakRefines (C||D) (A||D) ...)
+noCompositeRefinement    : not Nonempty(WeakRefines (C||D) (A||D) compositeHidden id)
+visibleClassification_fails_on_hidden_ping_wire
+                          : not Nonempty(WeakRefines (C||D) (A||D) compositeVisible id)
 ```
 
-`lake build` on Lean 4.30.0 checks all three. `#print axioms` reports no custom
-axiom or `sorryAx`; the negative theorem uses Lean's standard `propext` axiom,
-which is part of the selected foundational TCB and is reported explicitly.
+`lake build` on Lean 4.30.0 checks all four. `#print axioms` reports no custom
+axiom or `sorryAx`; `noCompositeRefinement` uses Lean's standard `propext`
+axiom, which is part of the selected foundational TCB and is reported
+explicitly. The visible-classification theorem is axiom-free.
 
 ## 4. Diagnosis
 
@@ -328,9 +333,24 @@ Use `H(c,d) = (R.h(c),d)`.
 7. **Capability and grade side facts:** `I-CAP` proves disjointness/transfer;
    `I-GRADE` proves the composite grade inequality.
 
-This case split remains a proof outline for weak hiding, label mapping,
-capabilities, and grades. It must not be inferred from the checked bounded
-exact-action theorem.
+**Status 2026-08-27.** Cases 1–6 are checked for the small LTS model of
+`Core/Transition.lean` as `weakConditionalCongruence_safety`, with
+`IsolationReflects` stated separately from `WiringCovered` (necessity:
+`CollidedAbstractWire`). Case 7 (`I-CAP` / `I-GRADE`) remains a proof
+outline, as do fairness and the OpenComposition *weak* hiding story. A
+first C1 *negative* slice is checked:
+`hiddenPing_consume_breaks_resourceRefinement` shows observational
+`WeakRefines` does not imply resource/capability preservation (I-CAP
+consume). That is not a Case 7 proof, not I-GRADE / I-FAIR, and not a
+claim that T5 is CONDITIONAL-CONGRUENCE. The
+small-model lift must not be inferred from the exact-action theorem, and
+the exact-action theorem must not be inferred from the small-model lift.
+Finite observation-trace inclusion from any `WeakRefines` witness is
+`weakRefines_finite_observation_trace_inclusion` (stutter-expansion of
+finite traces only; not infinite words, LTL, fairness, or liveness).
+`nmlt-temporal::observation_trace_inclusion` is a finite-graph regression
+that the checker agrees with that corollary on small paths; it is not a
+proof of the Lean lemma.
 
 ## 7. Mechanization gates
 
@@ -347,9 +367,10 @@ An NMLT theorem is reportable as `proved` only when:
 
 ## Evidence consequences
 
-The current artifacts support both a checked **refutation** of unconditional
-congruence and a checked bounded exact-action safety theorem. They do not
-support:
+The current artifacts support a checked **refutation** of unconditional
+congruence, a checked **small-model weak safety lift** under
+`I-NO-HIDDEN-BOUNDARY` + `WiringCovered` + `IsolationReflects`, and a
+checked bounded exact-action safety theorem. They do not support:
 
 - congruence of the full weak/refinement-and-resource rule;
 - soundness of RFC 0001 as a whole;
@@ -362,7 +383,7 @@ set, theorem name, and whether the result is the counterexample or the bounded
 positive theorem. The Rust finite instance checker uses related but nonidentical
 interfaces and contracts; passing it is not a Lean/Rust correspondence proof.
 The machine-readable
-[`m11-001a-evidence.json`](../benchmarks/results/open-composition/m11-001a-evidence.json)
+[`m11-001a-evidence.json`](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/benchmarks/results/open-composition/m11-001a-evidence.json)
 and `tools/check_open_composition_evidence.py` bind the exact source set,
 theorem/control handles, toolchain, checkers, TCB inventory, and observed axiom
 output. Its positive controls include a nonidentity state map and a real
@@ -376,7 +397,13 @@ separate control.
 The mechanization program must retain:
 
 - the checked hidden-synchronization counterexample;
-- a variant omitting `I-NO-HIDDEN-BOUNDARY`, for which congruence remains false;
+- the checked visible-classification failure on the same systems
+  (`visibleClassification_fails_on_hidden_ping_wire`; local dual
+  `visiblePing_breaks_senderRefinement`);
+- a variant omitting `I-NO-HIDDEN-BOUNDARY`, for which congruence remains false
+  (ping/receive; `pingReceive_violates_noHiddenBoundary`);
+- a variant with `WiringCovered` but not `IsolationReflects`
+  (`CollidedAbstractWire`);
 - a variant breaking connection reflection;
 - a variant sharing one affine capability between components;
 - a variant with a nonmonotone or non-homomorphic grade map;
@@ -445,10 +472,38 @@ dependent proof artifacts even if theorem names remain unchanged.
 
 1. Keep the checked counterexample permanently as a regression test.
 2. Encode ports, direction, connection maps, and `I-NO-HIDDEN-BOUNDARY`.
-3. Prove the repaired safety theorem by the six transition cases above.
+   Surface progress (2026-08-27): `compose` / `connect` parse and project in
+   `nmlt-core`; surface connect names can be fed to `HiddenConnectedAction`
+   via `CompositionSpec::from_left_right_wires`. Full elaborator still M9
+   fail-closed (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`); this is not
+   source-to-LTS elaboration. A historical boolean sketch exists in `nmlt-core`
+   (`sketch_boolean_system`); it is not source-to-LTS, and M9 still
+   fail-closes full compile. A retired research adapter connected those
+   sketches to `FiniteGraph`/`OpenSystem` so the hidden-boundary fixture reached
+   `HiddenConnectedAction` through the finite checker; this is a sketch
+   fragment plus instance check, not a verified compiler or source-to-LTS
+   in general. Two fixtures, not a replacement: Lean `Receiver`
+   (`require bit == false`) is not input-receptive at bit=true, so
+   OpenRefinementCongruenceChecker rejects VisibleSync with
+   `InputNotReceptive` while the Lean-style one-wire sketch product still
+   refines; `examples/refinement/receptive_receiver.nmlt` enables `receive` in
+   every reachable assignment (`set bit = true`, no require) and the same
+   checker accepts visible ping. Do not treat the Lean receiver as
+   receptive, or OpenSystem as that small model. Surface
+   complementary-polarity check: `nmlt-core`
+   flags `connect` wires whose caller-supplied, `port input`/`port output`, or
+   optional `action input`/`action output` polarities are both inputs or both
+   outputs (port wins if both name the endpoint). Bare `action ping` stays
+   unpolarized. M9 records `NMLT-M9-ACTION-POLARITY` and still fail-closes
+   compose; this is not an elaborator.
+3. **Done (2026-08-27, small LTS model):** prove the repaired safety theorem
+   by the six transition cases (`weakConditionalCongruence_safety`), with
+   isolation necessity.
 4. Add capability partition and grade homomorphism structures and proofs.
-5. Define finite prefixes and infinite observation words; then prove
-   stuttering safety transport.
+5. **Done (finite only, 2026-08-27):** `weakRefines_finite_observation_trace_inclusion`
+   (stutter-expansion of finite observation traces). The Rust helper
+   `observation_trace_inclusion` is a small-graph regression, not a proof of
+   the lemma. Infinite observation words / LTL / fairness transport remain open.
 6. Add fairness/divergence only after the safety theorem is stable.
 7. Build a typed-IR correspondence test before attributing Lean theorems to
    compiler output.

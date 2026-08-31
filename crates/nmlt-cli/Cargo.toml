@@ -14,8 +14,8 @@ path = "src/main.rs"
 [dependencies]
 nmlt-compile = { path = "../nmlt-compile" }
 nmlt-core = { path = "../nmlt-core" }
-nmlt-engine = { path = "../nmlt-engine" }
-nmlt-kernel = { path = "../nmlt-kernel" }
+nmlt-eval = { path = "../nmlt-eval" }
+nmlt-ir = { path = "../nmlt-ir" }
 
 [lints]
 workspace = true

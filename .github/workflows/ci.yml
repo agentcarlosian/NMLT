@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -32,20 +32,20 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      # External checker builds stay outside NMLT's Rust workspace so Cargo
-      # cannot treat helper checkouts as nested workspace members.
+      - name: Install Rust toolchain for independent NanoDA checker
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      # Keep dependency state outside the source checkout. This also makes the
+      # Lean gate independent of any developer-local .lake directory.
       - name: Stage Lean package outside Rust workspace
         id: stage_lean
         run: |
           lean_package_dir="$(mktemp -d "${RUNNER_TEMP}/nmlt-lean.XXXXXX")"
           cp -a mechanization/lean/. "${lean_package_dir}/"
-          # Mathlib's cache tool requires the fully-qualified toolchain name,
-          # while the repository pins the bare version in its evidence graph.
-          # Qualify it in the staged copy only.
           printf 'leanprover/lean4:%s\n' "$(cat mechanization/lean/lean-toolchain)" > "${lean_package_dir}/lean-toolchain"
           echo "path=${lean_package_dir}" >> "${GITHUB_OUTPUT}"
 
@@ -55,13 +55,13 @@ jobs:
           lake-package-directory: ${{ steps.stage_lean.outputs.path }}
           build: true
           nanoda: false
-          use-mathlib-cache: true
+          use-mathlib-cache: false
           use-github-cache: true
 
-      - name: Independently check Lean artifacts with pinned nanoda
+      - name: Independently check Lean declarations with pinned nanoda
         env:
           NANODA_ALLOW_SORRY: "false"
         run: ./tools/check_nanoda.sh "${{ steps.stage_lean.outputs.path }}" NMLT
 
-      - name: Enforce metatheory source policy
+      - name: Check theorem axioms and matching-source artifact decoding
         run: ./tools/check_metatheory.sh "${{ steps.stage_lean.outputs.path }}"
