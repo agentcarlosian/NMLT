@@ -1,0 +1,28 @@
+// Input-receptive companion to hidden_connected_action.nmlt.
+// This file remains a surface and compatibility fixture rather than a
+// canonical behavior-core-v1 example.
+
+system VisibleAbstractSender {
+  state unit: Bool = false
+
+  action output ping {
+    set unit = unit
+  }
+
+  observe unit
+}
+
+system ReceptiveReceiver {
+  state bit: Bool = false
+
+  // With no guard, receive remains enabled after bit becomes true.
+  action input receive {
+    set bit = true
+  }
+
+  observe bit
+}
+
+compose VisibleSyncReceptive {
+  connect VisibleAbstractSender.ping -> ReceptiveReceiver.receive
+}

@@ -78,4 +78,36 @@ mod tests {
         assert_eq!(formatted.text(), source);
         assert!(!formatted.diagnostics().is_empty());
     }
+
+    #[test]
+    fn polarized_actions_and_compose_are_byte_preserved() {
+        let source = concat!(
+            "system Left {\n",
+            "  action output ping { set unit = unit }\n",
+            "  state unit: Bool = false\n",
+            "  hide action ping\n",
+            "}\n",
+            "system Right {\n",
+            "  action input receive { set bit = true }\n",
+            "  state bit: Bool = false\n",
+            "}\n",
+            "compose Wired { connect Left.ping -> Right.receive }\n",
+        );
+        let once = format_source(source, FormatMode::Preserve);
+        let twice = format_source(once.text(), FormatMode::Preserve);
+        assert!(once.diagnostics().is_empty(), "{:?}", once.diagnostics());
+        assert_eq!(once.text(), source);
+        assert_eq!(twice.text(), once.text());
+        assert_eq!(twice.diagnostics(), once.diagnostics());
+    }
+
+    #[test]
+    fn hidden_boundary_fixture_is_byte_preserved() {
+        let source = include_str!("../../../examples/refinement/hidden_connected_action.nmlt");
+        let once = format_source(source, FormatMode::Preserve);
+        let twice = format_source(once.text(), FormatMode::Preserve);
+        assert!(once.diagnostics().is_empty(), "{:?}", once.diagnostics());
+        assert_eq!(once.text(), source);
+        assert_eq!(twice.text(), once.text());
+    }
 }

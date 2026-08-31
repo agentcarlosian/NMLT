@@ -1,6 +1,6 @@
 [package]
 name = "nmlt-compile"
-description = "Integrated exact-source to kernel-checked program driver for NMLT"
+description = "NMLT compiler driver and behavior-core-v1 artifact producer"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,8 +8,10 @@ license.workspace = true
 publish = false
 
 [dependencies]
+nmlt-core = { path = "../nmlt-core" }
 nmlt-elaborate = { path = "../nmlt-elaborate" }
 nmlt-hir = { path = "../nmlt-hir" }
+nmlt-ir = { path = "../nmlt-ir" }
 nmlt-kernel = { path = "../nmlt-kernel" }
 
 [lints]

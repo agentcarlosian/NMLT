@@ -60,6 +60,20 @@ impl UntypedProjection {
     /// An empty result means only that projection was exact and that no
     /// explicitly excluded surface construct was present. Raw types and
     /// expressions still require parsing, resolution, and elaboration.
+    /// Fully projected `connect` endpoints as
+    /// `(left_system, left_action, right_system, right_action)`.
+    /// Incomplete names are skipped. This is not composition elaboration.
+    #[must_use]
+    pub fn surface_endpoint_wires(&self) -> Vec<(&str, &str, &str, &str)> {
+        surface_endpoint_wires(&self.file)
+    }
+
+    /// `(left_action, right_action)` for wires whose left system is `left_system`.
+    #[must_use]
+    pub fn wired_action_pairs_for_left(&self, left_system: &str) -> Vec<(&str, &str)> {
+        surface_wired_action_pairs_for_left(&self.file, left_system)
+    }
+
     #[must_use]
     pub fn m9_surface_issues(&self) -> Vec<M9SurfaceIssue> {
         let mut issues = Vec::new();
@@ -122,6 +136,32 @@ impl UntypedFile {
         collect_systems(&self.declarations, &mut systems);
         systems
     }
+
+    /// First system whose projected name is `name`.
+    #[must_use]
+    pub fn system_named(&self, name: &str) -> Option<&UntypedSystem> {
+        self.systems()
+            .into_iter()
+            .find(|system| system.name.as_ref().map(|n| n.text.as_str()) == Some(name))
+    }
+
+    /// First `compose` whose projected name is `name`, including nested modules.
+    #[must_use]
+    pub fn compose_named(&self, name: &str) -> Option<&UntypedCompose> {
+        let mut composes = Vec::new();
+        collect_composes(&self.declarations, &mut composes);
+        composes
+            .into_iter()
+            .find(|compose| compose.name.as_ref().map(|n| n.text.as_str()) == Some(name))
+    }
+
+    /// Every projected refinement, including refinements nested in a module.
+    #[must_use]
+    pub fn refinements(&self) -> Vec<&UntypedRefinement> {
+        let mut refinements = Vec::new();
+        collect_refinements(&self.declarations, &mut refinements);
+        refinements
+    }
 }
 
 /// One top-level declaration in the complete surface projection.
@@ -131,6 +171,9 @@ pub enum UntypedDeclaration {
     Import(UntypedImport),
     Enum(UntypedEnum),
     System(UntypedSystem),
+    Compose(UntypedCompose),
+    Connect(UntypedConnect),
+    Refinement(UntypedRefinement),
     Unsupported(UntypedSurfaceNode),
     Error(UntypedErrorNode),
 }
@@ -144,6 +187,9 @@ impl UntypedDeclaration {
             Self::Import(import) => import.span,
             Self::Enum(enumeration) => enumeration.span,
             Self::System(system) => system.span,
+            Self::Compose(compose) => compose.span,
+            Self::Connect(connect) => connect.span,
+            Self::Refinement(refinement) => refinement.span,
             Self::Unsupported(node) => node.source.span,
             Self::Error(node) => node.source.span,
         }
@@ -244,6 +290,274 @@ impl UntypedSystem {
     }
 }
 
+/// Top-level `compose Name { connect ... }` surface form.
+///
+/// This lossless frontend records the endpoint names. Semantic validation and
+/// core construction occur in downstream compiler layers.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UntypedCompose {
+    pub name: Option<SpannedText>,
+    pub span: Span,
+    pub connections: Vec<UntypedComposeItem>,
+}
+
+impl UntypedCompose {
+    pub fn supported_connections(&self) -> impl Iterator<Item = &UntypedConnect> {
+        self.connections
+            .iter()
+            .filter_map(UntypedComposeItem::as_connect)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum UntypedComposeItem {
+    Connect(UntypedConnect),
+    SurfaceOnly(UntypedSurfaceNode),
+    Error(UntypedErrorNode),
+}
+
+impl UntypedComposeItem {
+    #[must_use]
+    pub const fn span(&self) -> Span {
+        match self {
+            Self::Connect(connect) => connect.span,
+            Self::SurfaceOnly(node) => node.source.span,
+            Self::Error(node) => node.source.span,
+        }
+    }
+
+    #[must_use]
+    pub const fn as_connect(&self) -> Option<&UntypedConnect> {
+        match self {
+            Self::Connect(connect) => Some(connect),
+            Self::SurfaceOnly(_) | Self::Error(_) => None,
+        }
+    }
+}
+
+/// `connect Left.action -> Right.action` (file-level or inside `compose`).
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UntypedConnect {
+    pub left_system: Option<SpannedText>,
+    pub left_action: Option<SpannedText>,
+    pub right_system: Option<SpannedText>,
+    pub right_action: Option<SpannedText>,
+    pub span: Span,
+}
+
+/// A first-slice refinement declaration with explicit state and hidden-action maps.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UntypedRefinement {
+    pub concrete_system: Option<SpannedText>,
+    pub abstract_system: Option<SpannedText>,
+    pub items: Vec<UntypedRefinementItem>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum UntypedRefinementItem {
+    StateMap(UntypedStateMap),
+    HiddenAction(UntypedObservation),
+    SurfaceOnly(UntypedSurfaceNode),
+    Error(UntypedErrorNode),
+}
+
+impl UntypedRefinementItem {
+    #[must_use]
+    pub const fn span(&self) -> Span {
+        match self {
+            Self::StateMap(mapping) => mapping.span,
+            Self::HiddenAction(observation) => observation.span,
+            Self::SurfaceOnly(node) => node.source.span,
+            Self::Error(node) => node.source.span,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UntypedStateMap {
+    pub concrete_field: Option<SpannedText>,
+    pub abstract_field: Option<SpannedText>,
+    pub span: Span,
+}
+
+impl UntypedConnect {
+    /// `(left_action, right_action)` when both action names projected.
+    #[must_use]
+    pub fn action_pair(&self) -> Option<(&str, &str)> {
+        Some((
+            self.left_action.as_ref()?.text.as_str(),
+            self.right_action.as_ref()?.text.as_str(),
+        ))
+    }
+}
+
+/// One projected `connect`, with optional enclosing `compose` name.
+///
+/// Endpoints are `None` when a name failed to project. This is a name-level
+/// view of surface wiring, not an executable composition.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SurfaceWire<'a> {
+    pub compose_name: Option<&'a str>,
+    pub left_system: Option<&'a str>,
+    pub left_action: Option<&'a str>,
+    pub right_system: Option<&'a str>,
+    pub right_action: Option<&'a str>,
+}
+
+impl<'a> SurfaceWire<'a> {
+    fn from_connect(compose_name: Option<&'a str>, connect: &'a UntypedConnect) -> Self {
+        Self {
+            compose_name,
+            left_system: connect.left_system.as_ref().map(|n| n.text.as_str()),
+            left_action: connect.left_action.as_ref().map(|n| n.text.as_str()),
+            right_system: connect.right_system.as_ref().map(|n| n.text.as_str()),
+            right_action: connect.right_action.as_ref().map(|n| n.text.as_str()),
+        }
+    }
+
+    /// Fully projected `Left.action -> Right.action` endpoints.
+    #[must_use]
+    pub fn endpoints(self) -> Option<(&'a str, &'a str, &'a str, &'a str)> {
+        Some((
+            self.left_system?,
+            self.left_action?,
+            self.right_system?,
+            self.right_action?,
+        ))
+    }
+
+    /// `(left_action, right_action)` when both action names projected.
+    #[must_use]
+    pub fn action_pair(self) -> Option<(&'a str, &'a str)> {
+        Some((self.left_action?, self.right_action?))
+    }
+
+    /// Port-declared polarity of the left endpoint, if a same-named `port` exists.
+    ///
+    /// Port-only: action `input`/`output` keywords are ignored here. Use
+    /// [`Self::left_declared_polarity`] to fall back to [`UntypedAction::polarity`].
+    #[must_use]
+    pub fn left_port_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        port_polarity(file.system_named(self.left_system?)?, self.left_action?)
+    }
+
+    /// Port-declared polarity of the right endpoint, if a same-named `port` exists.
+    #[must_use]
+    pub fn right_port_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        port_polarity(file.system_named(self.right_system?)?, self.right_action?)
+    }
+
+    /// Action-declared polarity of the left endpoint, if the named action has one.
+    #[must_use]
+    pub fn left_action_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        action_polarity(file.system_named(self.left_system?)?, self.left_action?)
+    }
+
+    /// Action-declared polarity of the right endpoint, if the named action has one.
+    #[must_use]
+    pub fn right_action_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        action_polarity(file.system_named(self.right_system?)?, self.right_action?)
+    }
+
+    /// Port polarity if present, else action polarity, else unknown. Never invented.
+    #[must_use]
+    pub fn left_declared_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        declared_polarity(file.system_named(self.left_system?)?, self.left_action?)
+    }
+
+    /// Port polarity if present, else action polarity, else unknown. Never invented.
+    #[must_use]
+    pub fn right_declared_polarity(self, file: &UntypedFile) -> Option<SurfacePolarity> {
+        declared_polarity(file.system_named(self.right_system?)?, self.right_action?)
+    }
+
+    /// `(left, right)` port polarities. `None` on either side is unknown, not invented.
+    #[must_use]
+    pub fn port_polarities(
+        self,
+        file: &UntypedFile,
+    ) -> (Option<SurfacePolarity>, Option<SurfacePolarity>) {
+        (
+            self.left_port_polarity(file),
+            self.right_port_polarity(file),
+        )
+    }
+
+    /// `(left, right)` declared polarities: port wins, else action, else unknown.
+    #[must_use]
+    pub fn declared_polarities(
+        self,
+        file: &UntypedFile,
+    ) -> (Option<SurfacePolarity>, Option<SurfacePolarity>) {
+        (
+            self.left_declared_polarity(file),
+            self.right_declared_polarity(file),
+        )
+    }
+
+    /// True only when both endpoints have a known port polarity and they are not complementary.
+    ///
+    /// Unknown polarities (no same-named `port`) are not mismatches. Action polarities
+    /// are ignored here; see [`Self::has_non_complementary_declared_polarities`].
+    /// This is a surface name check, not elaboration.
+    #[must_use]
+    pub fn has_non_complementary_port_polarities(self, file: &UntypedFile) -> bool {
+        match self.port_polarities(file) {
+            (Some(left), Some(right)) => !left.is_complementary_to(right),
+            _ => false,
+        }
+    }
+
+    /// True only when both endpoints have a known declared polarity and they are not complementary.
+    ///
+    /// Rule: port polarity if present, else action polarity, else skip. Missing
+    /// polarities are not mismatches. Surface name check, not elaboration.
+    #[must_use]
+    pub fn has_non_complementary_declared_polarities(self, file: &UntypedFile) -> bool {
+        match self.declared_polarities(file) {
+            (Some(left), Some(right)) => !left.is_complementary_to(right),
+            _ => false,
+        }
+    }
+}
+
+/// Declared surface input/output polarity. Not inferred from action bodies.
+///
+/// Sources, in lookup order used by [`declared_polarity`]:
+/// - a same-named `port input` / `port output` member ([`UntypedPort::direction`]);
+/// - optional `action input name` / `action output name` ([`UntypedAction::polarity`]);
+/// - caller-supplied polarities keyed by `(system, name)`.
+///
+/// Bare `action ping { ... }` stays [`None`] — polarity is never invented. This
+/// type is not an executable composition interface.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum SurfacePolarity {
+    Input,
+    Output,
+}
+
+impl SurfacePolarity {
+    /// Parse a port direction token. Only `input` and `output` are recognized.
+    #[must_use]
+    pub fn from_direction_text(text: &str) -> Option<Self> {
+        match text {
+            "input" => Some(Self::Input),
+            "output" => Some(Self::Output),
+            _ => None,
+        }
+    }
+
+    /// One input and one output. Input-input and output-output are not complementary.
+    #[must_use]
+    pub const fn is_complementary_to(self, other: Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::Input, Self::Output) | (Self::Output, Self::Input)
+        )
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BindingKind {
     Const,
@@ -261,12 +575,26 @@ pub struct UntypedBinding {
     pub span: Span,
 }
 
+/// `port input name: T` / `port output name: T`.
+///
+/// [`Self::direction`] is the identifier after `port` (`input` or `output` when well-formed).
+/// Port polarity wins over [`UntypedAction::polarity`] when both name the same endpoint.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UntypedPort {
     pub direction: Option<SpannedText>,
     pub name: Option<SpannedText>,
     pub declared_type: Option<RawTerm>,
     pub span: Span,
+}
+
+impl UntypedPort {
+    /// `input`/`output` polarity from [`Self::direction`], if that token is one of those words.
+    #[must_use]
+    pub fn polarity(&self) -> Option<SurfacePolarity> {
+        self.direction
+            .as_ref()
+            .and_then(|direction| SurfacePolarity::from_direction_text(direction.text.as_str()))
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -305,9 +633,19 @@ impl UntypedParameterItem {
     }
 }
 
+/// Surface `action name ... { ... }` or optional `action input|output name ... { ... }`.
+///
+/// [`Self::polarity`] is [`Some`] only when the parser saw `input`/`output` *and*
+/// another identifier (the name). `action ping { ... }` and `action input { ... }`
+/// (name `input`, no following name) stay [`None`]. `in`/`out` are not recognized.
+/// Complementary-polarity checks for `connect` use this field, same-named
+/// [`UntypedPort`] members (port wins), or caller-supplied maps — they do not
+/// invent polarity from action bodies.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UntypedAction {
     pub name: Option<SpannedText>,
+    /// `Some` only for `action input name` / `action output name`. Not inferred.
+    pub polarity: Option<SurfacePolarity>,
     /// Every direct parameter-list node in source order.
     pub parameters: Vec<UntypedParameterItem>,
     pub grade: Option<SpannedText>,
@@ -346,11 +684,349 @@ pub enum ObservationKind {
     Hide,
 }
 
+/// What a `hide` declaration conceals. `observe` does not use this.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum HideSort {
+    /// `hide input, channel` — omit state fields from the observation.
+    StateFields,
+    /// `hide action ping` — mark labels as refinement-hidden (RFC 0007).
+    Actions,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UntypedObservation {
     pub kind: ObservationKind,
+    pub hide_sort: Option<HideSort>,
+    pub names: Vec<SpannedText>,
     pub expression: Option<RawTerm>,
     pub span: Span,
+}
+
+impl UntypedObservation {
+    #[must_use]
+    pub fn hides_actions(&self) -> bool {
+        self.kind == ObservationKind::Hide && self.hide_sort == Some(HideSort::Actions)
+    }
+}
+
+/// Collect action labels named by every `hide action ...` in a system.
+#[must_use]
+pub fn hidden_action_names(system: &UntypedSystem) -> Vec<&str> {
+    system
+        .members
+        .iter()
+        .filter_map(|member| match member {
+            UntypedMember::Observation(observation) if observation.hides_actions() => {
+                Some(observation)
+            }
+            _ => None,
+        })
+        .flat_map(|observation| observation.names.iter().map(|name| name.text.as_str()))
+        .collect()
+}
+
+/// Left-action names that violate I-NO-HIDDEN-BOUNDARY given explicit wires.
+/// `connections` are `(left_action, right_action)` pairs; only left is checked.
+#[must_use]
+pub fn hidden_wired_actions<'a>(
+    system: &'a UntypedSystem,
+    connections: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> Vec<&'a str> {
+    let hidden: HashSet<&str> = hidden_action_names(system).into_iter().collect();
+    let mut out = Vec::new();
+    for (left, _) in connections {
+        if hidden.contains(left) && !out.contains(&left) {
+            out.push(left);
+        }
+    }
+    out
+}
+
+/// Every projected `connect` in source order (file-level and inside `compose`).
+#[must_use]
+pub fn surface_connections(file: &UntypedFile) -> Vec<&UntypedConnect> {
+    let mut out = Vec::new();
+    collect_surface_connections(&file.declarations, &mut out);
+    out
+}
+
+fn collect_surface_connections<'a>(
+    declarations: &'a [UntypedDeclaration],
+    out: &mut Vec<&'a UntypedConnect>,
+) {
+    for declaration in declarations {
+        match declaration {
+            UntypedDeclaration::Module(module) => {
+                collect_surface_connections(&module.declarations, out);
+            }
+            UntypedDeclaration::Compose(compose) => {
+                for item in &compose.connections {
+                    if let UntypedComposeItem::Connect(connect) = item {
+                        out.push(connect);
+                    }
+                }
+            }
+            UntypedDeclaration::Connect(connect) => out.push(connect),
+            UntypedDeclaration::Import(_)
+            | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Refinement(_)
+            | UntypedDeclaration::Unsupported(_)
+            | UntypedDeclaration::Error(_) => {}
+        }
+    }
+}
+
+/// `(left_action, right_action)` pairs from surface `connect` declarations.
+#[must_use]
+pub fn surface_wired_action_pairs(file: &UntypedFile) -> Vec<(&str, &str)> {
+    surface_connections(file)
+        .into_iter()
+        .filter_map(UntypedConnect::action_pair)
+        .collect()
+}
+
+/// Every projected `connect` with optional enclosing `compose` name, source order.
+#[must_use]
+pub fn surface_wires(file: &UntypedFile) -> Vec<SurfaceWire<'_>> {
+    let mut out = Vec::new();
+    collect_surface_wires(&file.declarations, &mut out);
+    out
+}
+
+fn collect_surface_wires<'a>(
+    declarations: &'a [UntypedDeclaration],
+    out: &mut Vec<SurfaceWire<'a>>,
+) {
+    for declaration in declarations {
+        match declaration {
+            UntypedDeclaration::Module(module) => {
+                collect_surface_wires(&module.declarations, out);
+            }
+            UntypedDeclaration::Compose(compose) => {
+                let name = compose.name.as_ref().map(|n| n.text.as_str());
+                for item in &compose.connections {
+                    if let UntypedComposeItem::Connect(connect) = item {
+                        out.push(SurfaceWire::from_connect(name, connect));
+                    }
+                }
+            }
+            UntypedDeclaration::Connect(connect) => {
+                out.push(SurfaceWire::from_connect(None, connect));
+            }
+            UntypedDeclaration::Import(_)
+            | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Refinement(_)
+            | UntypedDeclaration::Unsupported(_)
+            | UntypedDeclaration::Error(_) => {}
+        }
+    }
+}
+
+/// Fully projected `(left_system, left_action, right_system, right_action)` wires.
+#[must_use]
+pub fn surface_endpoint_wires(file: &UntypedFile) -> Vec<(&str, &str, &str, &str)> {
+    surface_wires(file)
+        .into_iter()
+        .filter_map(SurfaceWire::endpoints)
+        .collect()
+}
+
+/// Endpoint 4-tuples whose left system is `left_system`.
+#[must_use]
+pub fn surface_endpoint_wires_for_left<'a>(
+    file: &'a UntypedFile,
+    left_system: &str,
+) -> Vec<(&'a str, &'a str, &'a str, &'a str)> {
+    surface_wires(file)
+        .into_iter()
+        .filter(|wire| wire.left_system == Some(left_system))
+        .filter_map(SurfaceWire::endpoints)
+        .collect()
+}
+
+/// `(left_action, right_action)` for wires whose left system is `left_system`.
+#[must_use]
+pub fn surface_wired_action_pairs_for_left<'a>(
+    file: &'a UntypedFile,
+    left_system: &str,
+) -> Vec<(&'a str, &'a str)> {
+    surface_wires(file)
+        .into_iter()
+        .filter(|wire| wire.left_system == Some(left_system))
+        .filter_map(SurfaceWire::action_pair)
+        .collect()
+}
+
+/// Wires inside a named `compose` declaration.
+#[must_use]
+pub fn surface_wires_in_compose<'a>(
+    file: &'a UntypedFile,
+    compose_name: &str,
+) -> Vec<SurfaceWire<'a>> {
+    surface_wires(file)
+        .into_iter()
+        .filter(|wire| wire.compose_name == Some(compose_name))
+        .collect()
+}
+
+/// Port-declared polarity of `name` on `system`, if a matching `port` exists.
+///
+/// Looks at [`UntypedPort::direction`] only. Action polarities are ignored here;
+/// see [`action_polarity`] and [`declared_polarity`].
+#[must_use]
+pub fn port_polarity(system: &UntypedSystem, name: &str) -> Option<SurfacePolarity> {
+    system.members.iter().find_map(|member| match member {
+        UntypedMember::Port(port) if port.name.as_ref().map(|n| n.text.as_str()) == Some(name) => {
+            port.polarity()
+        }
+        _ => None,
+    })
+}
+
+/// Action-declared polarity of `name` on `system`, if that action has one.
+///
+/// Reads [`UntypedAction::polarity`] only. `action ping { ... }` yields [`None`].
+#[must_use]
+pub fn action_polarity(system: &UntypedSystem, name: &str) -> Option<SurfacePolarity> {
+    system.members.iter().find_map(|member| match member {
+        UntypedMember::Action(action)
+            if action.name.as_ref().map(|n| n.text.as_str()) == Some(name) =>
+        {
+            action.polarity
+        }
+        _ => None,
+    })
+}
+
+/// Port polarity if present, else action polarity, else unknown.
+///
+/// Never inferred from action bodies. A same-named port wins when both exist.
+#[must_use]
+pub fn declared_polarity(system: &UntypedSystem, name: &str) -> Option<SurfacePolarity> {
+    port_polarity(system, name).or_else(|| action_polarity(system, name))
+}
+
+/// `(system, port_name)` polarities from every well-formed `port input` / `port output`.
+///
+/// Action polarities are not included; see [`surface_action_polarities`].
+#[must_use]
+pub fn surface_port_polarities(file: &UntypedFile) -> BTreeMap<(String, String), SurfacePolarity> {
+    let mut out = BTreeMap::new();
+    for system in file.systems() {
+        let Some(system_name) = system.name.as_ref() else {
+            continue;
+        };
+        for member in &system.members {
+            if let UntypedMember::Port(port) = member {
+                let Some(port_name) = port.name.as_ref() else {
+                    continue;
+                };
+                if let Some(polarity) = port.polarity() {
+                    out.insert((system_name.text.clone(), port_name.text.clone()), polarity);
+                }
+            }
+        }
+    }
+    out
+}
+
+/// `(system, action_name)` polarities from every `action input|output name`.
+///
+/// Bare `action ping` contributes nothing. Ports are not included.
+#[must_use]
+pub fn surface_action_polarities(
+    file: &UntypedFile,
+) -> BTreeMap<(String, String), SurfacePolarity> {
+    let mut out = BTreeMap::new();
+    for system in file.systems() {
+        let Some(system_name) = system.name.as_ref() else {
+            continue;
+        };
+        for member in &system.members {
+            if let UntypedMember::Action(action) = member {
+                let Some(action_name) = action.name.as_ref() else {
+                    continue;
+                };
+                if let Some(polarity) = action.polarity {
+                    out.insert(
+                        (system_name.text.clone(), action_name.text.clone()),
+                        polarity,
+                    );
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Declared polarities: action map, then port map overwrites (port wins).
+#[must_use]
+pub fn surface_declared_polarities(
+    file: &UntypedFile,
+) -> BTreeMap<(String, String), SurfacePolarity> {
+    let mut out = surface_action_polarities(file);
+    out.extend(surface_port_polarities(file));
+    out
+}
+
+/// Wires whose caller-supplied polarities are both known and not complementary.
+///
+/// `polarity(system, name)` should return [`SurfacePolarity`] when the caller
+/// knows one (from a test, a later elaborator, [`port_polarity`], or
+/// [`action_polarity`]). Missing polarities are skipped — this helper does
+/// **not** invent in/out from action bodies. Input-input and output-output
+/// wires are returned. Surface name check only; M9 still fail-closes compose
+/// (`NMLT-M9-COMPOSE` / `NMLT-M9-CONNECT`) and polarized actions
+/// (`NMLT-M9-ACTION-POLARITY`).
+#[must_use]
+pub fn non_complementary_surface_wires<'a, F>(
+    wires: impl IntoIterator<Item = SurfaceWire<'a>>,
+    mut polarity: F,
+) -> Vec<SurfaceWire<'a>>
+where
+    F: FnMut(&str, &str) -> Option<SurfacePolarity>,
+{
+    let mut out = Vec::new();
+    for wire in wires {
+        let Some((left_system, left_action, right_system, right_action)) = wire.endpoints() else {
+            continue;
+        };
+        match (
+            polarity(left_system, left_action),
+            polarity(right_system, right_action),
+        ) {
+            (Some(left), Some(right)) if !left.is_complementary_to(right) => out.push(wire),
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Complementary-polarity mismatches using `port input` / `port output` as the source.
+///
+/// Endpoints without a same-named port are skipped, even if the action has
+/// polarity. Use [`non_complementary_declared_wires`] to fall back to actions.
+/// Not composition elaboration.
+#[must_use]
+pub fn non_complementary_port_wires(file: &UntypedFile) -> Vec<SurfaceWire<'_>> {
+    non_complementary_surface_wires(surface_wires(file), |system, name| {
+        file.system_named(system)
+            .and_then(|system| port_polarity(system, name))
+    })
+}
+
+/// Complementary-polarity mismatches using declared polarities.
+///
+/// Lookup: port polarity if present, else action polarity, else skip. Bare
+/// `action ping` is unknown. Not composition elaboration.
+#[must_use]
+pub fn non_complementary_declared_wires(file: &UntypedFile) -> Vec<SurfaceWire<'_>> {
+    non_complementary_surface_wires(surface_wires(file), |system, name| {
+        file.system_named(system)
+            .and_then(|system| declared_polarity(system, name))
+    })
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -401,6 +1077,14 @@ pub enum UntypedStatement {
     },
     Consume {
         capability: RawTerm,
+        span: Span,
+    },
+    Rely {
+        fact: RawTerm,
+        span: Span,
+    },
+    Guarantee {
+        fact: RawTerm,
         span: Span,
     },
     SurfaceOnly(UntypedSurfaceNode),
@@ -553,6 +1237,9 @@ impl Projector {
             SyntaxKind::SystemDecl => {
                 UntypedDeclaration::System(self.project_system(node.node, node.span.start))
             }
+            SyntaxKind::ComposeDecl => UntypedDeclaration::Compose(self.project_compose(node)),
+            SyntaxKind::ConnectDecl => UntypedDeclaration::Connect(self.project_connect(node)),
+            SyntaxKind::RefineDecl => UntypedDeclaration::Refinement(self.project_refinement(node)),
             SyntaxKind::Error => {
                 self.record_recovery(node.span);
                 UntypedDeclaration::Error(error_node(node))
@@ -582,6 +1269,96 @@ impl Projector {
     fn project_import(&mut self, node: NodeAt<'_>) -> UntypedImport {
         UntypedImport {
             module: identifier(node.node, node.span.start, 1),
+            span: node.span,
+        }
+    }
+
+    fn project_compose(&mut self, node: NodeAt<'_>) -> UntypedCompose {
+        let children = direct_nodes(node.node, node.span.start);
+        let mut connections = Vec::new();
+        if let Some(body) = children
+            .into_iter()
+            .find(|child| child.node.kind() == SyntaxKind::ComposeBody)
+        {
+            for child in direct_nodes(body.node, body.span.start) {
+                let item = match child.node.kind() {
+                    SyntaxKind::ConnectDecl => {
+                        UntypedComposeItem::Connect(self.project_connect(child))
+                    }
+                    SyntaxKind::Error => {
+                        self.record_recovery(child.span);
+                        UntypedComposeItem::Error(error_node(child))
+                    }
+                    kind => {
+                        self.issues.push(ProjectionIssue {
+                            kind: ProjectionIssueKind::UnexpectedProjectedNode { kind },
+                            span: child.span,
+                        });
+                        UntypedComposeItem::SurfaceOnly(surface_node(child))
+                    }
+                };
+                connections.push(item);
+            }
+        }
+        UntypedCompose {
+            name: identifier(node.node, node.span.start, 1),
+            span: node.span,
+            connections,
+        }
+    }
+
+    fn project_connect(&mut self, node: NodeAt<'_>) -> UntypedConnect {
+        // Identifier tokens: connect, left_system, left_action, right_system, right_action
+        UntypedConnect {
+            left_system: identifier(node.node, node.span.start, 1),
+            left_action: identifier(node.node, node.span.start, 2),
+            right_system: identifier(node.node, node.span.start, 3),
+            right_action: identifier(node.node, node.span.start, 4),
+            span: node.span,
+        }
+    }
+
+    fn project_refinement(&mut self, node: NodeAt<'_>) -> UntypedRefinement {
+        let children = direct_nodes(node.node, node.span.start);
+        let mut items = Vec::new();
+        if let Some(body) = children
+            .into_iter()
+            .find(|child| child.node.kind() == SyntaxKind::RefineBody)
+        {
+            for child in direct_nodes(body.node, body.span.start) {
+                let item = match child.node.kind() {
+                    SyntaxKind::MapStateDecl => UntypedRefinementItem::StateMap(UntypedStateMap {
+                        concrete_field: identifier(child.node, child.span.start, 2),
+                        abstract_field: identifier(child.node, child.span.start, 3),
+                        span: child.span,
+                    }),
+                    SyntaxKind::HideDecl => {
+                        match self.project_observation(child, ObservationKind::Hide) {
+                            UntypedMember::Observation(observation) => {
+                                UntypedRefinementItem::HiddenAction(observation)
+                            }
+                            _ => unreachable!("observation projection returns an observation"),
+                        }
+                    }
+                    SyntaxKind::Error => {
+                        self.record_recovery(child.span);
+                        UntypedRefinementItem::Error(error_node(child))
+                    }
+                    kind => {
+                        self.issues.push(ProjectionIssue {
+                            kind: ProjectionIssueKind::UnexpectedProjectedNode { kind },
+                            span: child.span,
+                        });
+                        UntypedRefinementItem::SurfaceOnly(surface_node(child))
+                    }
+                };
+                items.push(item);
+            }
+        }
+        UntypedRefinement {
+            concrete_system: identifier(node.node, node.span.start, 1),
+            abstract_system: identifier(node.node, node.span.start, 3),
+            items,
             span: node.span,
         }
     }
@@ -733,8 +1510,10 @@ impl Projector {
                     .map(|statement| self.project_statement(statement))
                     .collect()
             });
+        let (name, polarity) = action_name_and_polarity(node.node, node.span.start);
         UntypedMember::Action(UntypedAction {
-            name: identifier(node.node, node.span.start, 1),
+            name,
+            polarity,
             parameters,
             grade,
             statements,
@@ -767,6 +1546,20 @@ impl Projector {
                 UntypedStatement::Error,
                 |capability| UntypedStatement::Consume {
                     capability,
+                    span: node.span,
+                },
+            ),
+            SyntaxKind::RelyStmt => self.only_expression(expressions, node).map_or_else(
+                UntypedStatement::Error,
+                |fact| UntypedStatement::Rely {
+                    fact,
+                    span: node.span,
+                },
+            ),
+            SyntaxKind::GuaranteeStmt => self.only_expression(expressions, node).map_or_else(
+                UntypedStatement::Error,
+                |fact| UntypedStatement::Guarantee {
+                    fact,
                     span: node.span,
                 },
             ),
@@ -874,9 +1667,16 @@ impl Projector {
 
     fn project_observation(&mut self, node: NodeAt<'_>, kind: ObservationKind) -> UntypedMember {
         let children = direct_nodes(node.node, node.span.start);
+        let expression = raw_child(&children, SyntaxKind::Expr);
+        let (hide_sort, names) = match kind {
+            ObservationKind::Hide => classify_hide_expression(expression.as_ref()),
+            ObservationKind::Observe => (None, observation_names(expression.as_ref())),
+        };
         UntypedMember::Observation(UntypedObservation {
             kind,
-            expression: raw_child(&children, SyntaxKind::Expr),
+            hide_sort,
+            names,
+            expression,
             span: node.span,
         })
     }
@@ -928,6 +1728,51 @@ fn collect_systems<'file>(
             UntypedDeclaration::System(system) => systems.push(system),
             UntypedDeclaration::Import(_)
             | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::Compose(_)
+            | UntypedDeclaration::Connect(_)
+            | UntypedDeclaration::Refinement(_)
+            | UntypedDeclaration::Unsupported(_)
+            | UntypedDeclaration::Error(_) => {}
+        }
+    }
+}
+
+fn collect_composes<'file>(
+    declarations: &'file [UntypedDeclaration],
+    composes: &mut Vec<&'file UntypedCompose>,
+) {
+    for declaration in declarations {
+        match declaration {
+            UntypedDeclaration::Module(module) => {
+                collect_composes(&module.declarations, composes);
+            }
+            UntypedDeclaration::Compose(compose) => composes.push(compose),
+            UntypedDeclaration::Import(_)
+            | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Connect(_)
+            | UntypedDeclaration::Refinement(_)
+            | UntypedDeclaration::Unsupported(_)
+            | UntypedDeclaration::Error(_) => {}
+        }
+    }
+}
+
+fn collect_refinements<'file>(
+    declarations: &'file [UntypedDeclaration],
+    refinements: &mut Vec<&'file UntypedRefinement>,
+) {
+    for declaration in declarations {
+        match declaration {
+            UntypedDeclaration::Module(module) => {
+                collect_refinements(&module.declarations, refinements);
+            }
+            UntypedDeclaration::Refinement(refinement) => refinements.push(refinement),
+            UntypedDeclaration::Import(_)
+            | UntypedDeclaration::Enum(_)
+            | UntypedDeclaration::System(_)
+            | UntypedDeclaration::Compose(_)
+            | UntypedDeclaration::Connect(_)
             | UntypedDeclaration::Unsupported(_)
             | UntypedDeclaration::Error(_) => {}
         }
@@ -981,6 +1826,38 @@ fn collect_m9_declaration_issues(
             }
             UntypedDeclaration::Enum(_) => {}
             UntypedDeclaration::System(system) => collect_m9_system_issues(system, issues),
+            UntypedDeclaration::Compose(compose) => {
+                issues.push(M9SurfaceIssue {
+                    code: "NMLT-M9-COMPOSE",
+                    feature: "compose declaration (surface wiring only; no elaborator)",
+                    span: compose.span,
+                });
+                for item in &compose.connections {
+                    if let UntypedComposeItem::Connect(connect) = item {
+                        issues.push(M9SurfaceIssue {
+                            code: "NMLT-M9-CONNECT",
+                            feature: "connect declaration (surface wiring only; no elaborator)",
+                            span: connect.span,
+                        });
+                    } else {
+                        issues.push(M9SurfaceIssue {
+                            code: "NMLT-M9-SURFACE-INCOMPLETE",
+                            feature: "recovered or unsupported compose member",
+                            span: item.span(),
+                        });
+                    }
+                }
+            }
+            UntypedDeclaration::Connect(connect) => issues.push(M9SurfaceIssue {
+                code: "NMLT-M9-CONNECT",
+                feature: "connect declaration (surface wiring only; no elaborator)",
+                span: connect.span,
+            }),
+            UntypedDeclaration::Refinement(refinement) => issues.push(M9SurfaceIssue {
+                code: "NMLT-M9-REFINE",
+                feature: "resource-aware refinement declaration",
+                span: refinement.span,
+            }),
             UntypedDeclaration::Unsupported(node) => issues.push(M9SurfaceIssue {
                 code: "NMLT-M9-UNSUPPORTED-DECLARATION",
                 feature: unsupported_declaration_name(node.kind),
@@ -1035,11 +1912,19 @@ fn collect_m9_system_issues(system: &UntypedSystem, issues: &mut Vec<M9SurfaceIs
             }
             UntypedMember::Observation(observation) => {
                 if observation.kind == ObservationKind::Hide {
-                    issues.push(M9SurfaceIssue {
-                        code: "NMLT-M9-HIDING",
-                        feature: "hiding declaration",
-                        span: observation.span,
-                    });
+                    if observation.hides_actions() {
+                        issues.push(M9SurfaceIssue {
+                            code: "NMLT-M9-HIDE-ACTION",
+                            feature: "hide action (refinement-hidden label)",
+                            span: observation.span,
+                        });
+                    } else {
+                        issues.push(M9SurfaceIssue {
+                            code: "NMLT-M9-HIDING",
+                            feature: "hiding declaration",
+                            span: observation.span,
+                        });
+                    }
                 }
             }
             UntypedMember::SurfaceOnly(node) => issues.push(M9SurfaceIssue {
@@ -1057,6 +1942,13 @@ fn collect_m9_system_issues(system: &UntypedSystem, issues: &mut Vec<M9SurfaceIs
 }
 
 fn collect_m9_action_issues(action: &UntypedAction, issues: &mut Vec<M9SurfaceIssue>) {
+    if action.polarity.is_some() {
+        issues.push(M9SurfaceIssue {
+            code: "NMLT-M9-ACTION-POLARITY",
+            feature: "action input/output polarity",
+            span: action.span,
+        });
+    }
     if let Some(grade) = &action.grade {
         issues.push(M9SurfaceIssue {
             code: "NMLT-M9-ACTION-GRADE",
@@ -1096,6 +1988,16 @@ fn collect_m9_action_issues(action: &UntypedAction, issues: &mut Vec<M9SurfaceIs
             UntypedStatement::Require { .. }
             | UntypedStatement::Emit { .. }
             | UntypedStatement::Consume { .. } => {}
+            UntypedStatement::Rely { span, .. } => issues.push(M9SurfaceIssue {
+                code: "NMLT-M9-RELY",
+                feature: "action rely contract",
+                span: *span,
+            }),
+            UntypedStatement::Guarantee { span, .. } => issues.push(M9SurfaceIssue {
+                code: "NMLT-M9-GUARANTEE",
+                feature: "action guarantee contract",
+                span: *span,
+            }),
         }
     }
 }
@@ -1179,6 +2081,8 @@ const fn is_semantic_node(kind: SyntaxKind) -> bool {
     match kind {
         SyntaxKind::SourceFile
         | SyntaxKind::SystemBody
+        | SyntaxKind::ComposeBody
+        | SyntaxKind::RefineBody
         | SyntaxKind::ParameterList
         | SyntaxKind::ActionBody => false,
         SyntaxKind::ModuleDecl
@@ -1202,11 +2106,17 @@ const fn is_semantic_node(kind: SyntaxKind) -> bool {
         | SyntaxKind::UpdateStmt
         | SyntaxKind::EmitStmt
         | SyntaxKind::ConsumeStmt
+        | SyntaxKind::RelyStmt
+        | SyntaxKind::GuaranteeStmt
         | SyntaxKind::SafetyDecl
         | SyntaxKind::TemporalDecl
         | SyntaxKind::ResourceDecl
         | SyntaxKind::ObserveDecl
         | SyntaxKind::HideDecl
+        | SyntaxKind::ComposeDecl
+        | SyntaxKind::ConnectDecl
+        | SyntaxKind::RefineDecl
+        | SyntaxKind::MapStateDecl
         | SyntaxKind::TypeExpr
         | SyntaxKind::Expr
         | SyntaxKind::Error => true,
@@ -1260,6 +2170,61 @@ fn census_projected_declaration(
             }
         }
         UntypedDeclaration::System(system) => census_projected_system(system, origins),
+        UntypedDeclaration::Compose(compose) => {
+            origins.push(SurfaceOrigin {
+                kind: SyntaxKind::ComposeDecl,
+                span: compose.span,
+            });
+            for item in &compose.connections {
+                match item {
+                    UntypedComposeItem::Connect(connect) => origins.push(SurfaceOrigin {
+                        kind: SyntaxKind::ConnectDecl,
+                        span: connect.span,
+                    }),
+                    UntypedComposeItem::SurfaceOnly(node) => origins.push(SurfaceOrigin {
+                        kind: node.kind,
+                        span: node.source.span,
+                    }),
+                    UntypedComposeItem::Error(node) => origins.push(SurfaceOrigin {
+                        kind: SyntaxKind::Error,
+                        span: node.source.span,
+                    }),
+                }
+            }
+        }
+        UntypedDeclaration::Connect(connect) => origins.push(SurfaceOrigin {
+            kind: SyntaxKind::ConnectDecl,
+            span: connect.span,
+        }),
+        UntypedDeclaration::Refinement(refinement) => {
+            origins.push(SurfaceOrigin {
+                kind: SyntaxKind::RefineDecl,
+                span: refinement.span,
+            });
+            for item in &refinement.items {
+                match item {
+                    UntypedRefinementItem::StateMap(mapping) => origins.push(SurfaceOrigin {
+                        kind: SyntaxKind::MapStateDecl,
+                        span: mapping.span,
+                    }),
+                    UntypedRefinementItem::HiddenAction(observation) => {
+                        origins.push(SurfaceOrigin {
+                            kind: SyntaxKind::HideDecl,
+                            span: observation.span,
+                        });
+                        extend_raw(observation.expression.as_ref(), origins);
+                    }
+                    UntypedRefinementItem::SurfaceOnly(node) => origins.push(SurfaceOrigin {
+                        kind: node.kind,
+                        span: node.source.span,
+                    }),
+                    UntypedRefinementItem::Error(node) => origins.push(SurfaceOrigin {
+                        kind: SyntaxKind::Error,
+                        span: node.source.span,
+                    }),
+                }
+            }
+        }
         UntypedDeclaration::Unsupported(node) => origins.push(SurfaceOrigin {
             kind: node.kind,
             span: node.source.span,
@@ -1407,6 +2372,20 @@ fn census_projected_action(action: &UntypedAction, origins: &mut Vec<SurfaceOrig
                 });
                 origins.push(capability.origin);
             }
+            UntypedStatement::Rely { fact, span } => {
+                origins.push(SurfaceOrigin {
+                    kind: SyntaxKind::RelyStmt,
+                    span: *span,
+                });
+                origins.push(fact.origin);
+            }
+            UntypedStatement::Guarantee { fact, span } => {
+                origins.push(SurfaceOrigin {
+                    kind: SyntaxKind::GuaranteeStmt,
+                    span: *span,
+                });
+                origins.push(fact.origin);
+            }
             UntypedStatement::SurfaceOnly(node) => origins.push(SurfaceOrigin {
                 kind: node.kind,
                 span: node.source.span,
@@ -1438,6 +2417,24 @@ fn direct_nodes(node: &GreenNode, base: usize) -> Vec<NodeAt<'_>> {
         offset += child.text_len();
     }
     nodes
+}
+
+fn action_name_and_polarity(
+    node: &GreenNode,
+    base: usize,
+) -> (Option<SpannedText>, Option<SurfacePolarity>) {
+    let first = identifier(node, base, 1);
+    let second = identifier(node, base, 2);
+    match (first, second) {
+        (Some(direction), Some(name)) => {
+            if let Some(polarity) = SurfacePolarity::from_direction_text(&direction.text) {
+                (Some(name), Some(polarity))
+            } else {
+                (Some(direction), None)
+            }
+        }
+        (name, _) => (name, None),
+    }
 }
 
 fn identifier(node: &GreenNode, base: usize, index: usize) -> Option<SpannedText> {
@@ -1554,6 +2551,59 @@ fn valid_location_tokens(tokens: &[crate::Token], source: &str) -> bool {
         return false;
     }
     true
+}
+
+fn observation_names(expression: Option<&RawTerm>) -> Vec<SpannedText> {
+    expression.map(ident_spans_in_term).unwrap_or_default()
+}
+
+fn classify_hide_expression(expression: Option<&RawTerm>) -> (Option<HideSort>, Vec<SpannedText>) {
+    let Some(term) = expression else {
+        return (Some(HideSort::StateFields), Vec::new());
+    };
+    let idents = ident_spans_in_term(term);
+    if idents.first().map(|name| name.text.as_str()) == Some("action") && idents.len() > 1 {
+        (
+            Some(HideSort::Actions),
+            idents.into_iter().skip(1).collect(),
+        )
+    } else {
+        (Some(HideSort::StateFields), idents)
+    }
+}
+
+fn ident_spans_in_term(term: &RawTerm) -> Vec<SpannedText> {
+    let text = &term.source.text;
+    let base = term.source.span.start;
+    let bytes = text.as_bytes();
+    let mut names = Vec::new();
+    let mut index = 0;
+    while index < bytes.len() {
+        let ch = bytes[index];
+        if ch == b',' || ch.is_ascii_whitespace() {
+            index += 1;
+            continue;
+        }
+        if ch.is_ascii_alphabetic() || ch == b'_' {
+            let start = index;
+            index += 1;
+            while index < bytes.len() {
+                let next = bytes[index];
+                if next.is_ascii_alphanumeric() || next == b'_' {
+                    index += 1;
+                } else {
+                    break;
+                }
+            }
+            names.push(SpannedText {
+                text: text[start..index].to_string(),
+                span: Span::new(base + start, base + index),
+            });
+            continue;
+        }
+        index += 1;
+    }
+    names
 }
 
 #[cfg(test)]

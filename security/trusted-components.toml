@@ -1,611 +1,64 @@
-manifest_version = "1.14.0"
+manifest_version = "2.0.0-static"
 status = "pre-alpha"
-reviewed = "2026-07-19"
-identity_requirement = "Every assurance manifest binds the exact source/source set, engine source set and executable, and each relied-on component by a content address; generic, graded, and M11 metatheory evidence also bind the exact bytes of this inventory, which names roles but is not itself a digest ledger."
+reviewed = "2026-08-31"
 
 outside_tcb = [
-  "examples, intent prose, benchmark expectations, dashboards, and visual renderers",
-  "AI-generated repair candidates and the nmlt-agent deterministic assistant baseline",
-  "fuzzers, mutation generators, proof search, and test counts",
-  "TLC, Quint, P, SMT solvers, and proof-assistant stdout unless a narrower trusted checker validates a certificate for the exact obligation",
-  "nmlt-verify reachability, induction, SMT, and proof-return producers when a checked certificate or replayed witness is the accepted basis",
-  "nmlt-certificate-tools simplification and metrics; every transformed certificate remains subject to nmlt-kernel replay",
-  "Rzk directed-refinement experiments, including their typechecker output",
-  "runtime events and traces before the declared observation/refinement adapter checks them",
+  "examples and explanatory prose",
+  "the nmlt-eval reference explorer and its state counts",
+  "proof search, fuzzers, mutation generators, and test counts",
 ]
 
 residual_trust = [
-  "host CPU, memory, kernel, filesystem, process isolation, clocks, and SHA-256 implementation",
-  "GitHub-hosted ubuntu-latest runner image and network delivery are not content-pinned",
-  "rustup/elan and language release download/bootstrap chains are version-pinned but their installed binaries are not yet recorded by digest in this repository",
-  "Python 3 and its standard library are supplied by the runner and are not version- or binary-digest-pinned",
-  "Cargo/Lean dependency acquisition, linker, system libraries, and build environment are not yet reproducibly attested",
-  "local content addresses establish byte identity, not authorship, freshness, signing, or transparency-log inclusion",
-  "no verified compiler theorem connects the Rust executable frontend/IR to the Lean metatheory",
+  "host CPU, memory, kernel, filesystem, and process isolation",
+  "Rust and Lean bootstrap and compiler toolchains",
+  "SHA-256 and operating-system process execution",
+  "GitHub-hosted runner images and dependency delivery",
+  "no verified compiler theorem connects Rust elaboration to Lean semantics",
 ]
 
 forbidden_claims = [
-  "semantic verification from structural parsing",
+  "semantic verification from parsing or Rust type acceptance",
+  "compiler correctness from a matching source digest",
   "unbounded proof from finite exploration",
-  "proof acceptance from solver status, proof-assistant stdout, or an unchecked/non-content-addressed certificate",
-  "safe automatic replay after an indeterminate external effect",
+  "reachability, fairness, or liveness from the static lifting theorem",
   "production authorization by any pre-alpha NMLT result",
-  "signing, provenance, or transparency from an unsigned digest-only manifest",
-]
-
-[[claim_profiles]]
-name = "structural_acceptance"
-result_ceiling = "unknown"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "nmlt_core.frontend",
-  "nmlt_core.diagnostic",
-  "nmlt_core.evidence_scaffold",
-  "nmlt_cli",
-  "build.ci_release",
-]
-
-[[claim_profiles]]
-name = "canonical_source_identity_reference"
-result_ceiling = "identity_only"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.python3",
-  "crypto.sha256",
-  "tools.canonical_examples",
-  "docs.artifact_identity",
-]
-
-[[claim_profiles]]
-name = "m9_resolved_hir_and_structural_core"
-result_ceiling = "resolved_hir_or_structurally_typed_core_only_no_elaboration_or_checked_program_claim"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "crypto.sha256",
-  "nmlt_core.frontend",
-  "nmlt_core.surface_projection",
-  "nmlt_hir.identity",
-  "nmlt_hir.resolver",
-  "nmlt_ir.structural_core",
-  "build.ci_release",
-]
-
-[[claim_profiles]]
-name = "m9_elaborated_core_producer"
-result_ceiling = "elaborator_produced_typed_core_and_derivation_only_no_kernel_acceptance_or_checked_program_claim"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "crypto.sha256",
-  "nmlt_core.frontend",
-  "nmlt_core.surface_projection",
-  "nmlt_hir.identity",
-  "nmlt_hir.resolver",
-  "nmlt_ir.structural_core",
-  "nmlt_elaborate.producer",
-  "build.ci_release",
-]
-
-[[claim_profiles]]
-name = "m9_kernel_checked_core"
-result_ceiling = "type_checked_for_exact_m9_v1_fragment_only_no_temporal_truth_engine_correspondence_or_compiler_correctness_claim"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "crypto.sha256",
-  "nmlt_core.frontend",
-  "nmlt_core.surface_projection",
-  "nmlt_hir.identity",
-  "nmlt_hir.resolver",
-  "nmlt_ir.structural_core",
-  "nmlt_certificate.syntax",
-  "nmlt_kernel.checker",
-  "build.ci_release",
-]
-
-[[claim_profiles]]
-name = "typed_bounded_model_check"
-result_ceiling = "model_checked_or_refuted"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "nmlt_core.frontend",
-  "nmlt_core.surface_projection",
-  "nmlt_hir.identity",
-  "nmlt_hir.resolver",
-  "nmlt_ir.structural_core",
-  "nmlt_certificate.syntax",
-  "nmlt_kernel.checker",
-  "nmlt_compile.driver",
-  "nmlt_engine.semantic_kernel",
-  "nmlt_engine.explicit_state",
-  "tools.model_result_checker",
-  "tools.evidence_checker",
-  "crypto.sha256",
-]
-
-[[claim_profiles]]
-name = "temporal_refinement_and_runtime_trace"
-result_ceiling = "model_checked_refuted_or_monitored"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "nmlt_temporal.kernel",
-  "tools.temporal_evidence_checker",
-  "crypto.sha256",
-]
-
-[[claim_profiles]]
-name = "checked_finite_verification_condition"
-result_ceiling = "proved_for_exact_finite_vc_only"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "nmlt_verify.vc_kernel",
-  "nmlt_verify.certificate_checker",
-  "nmlt_verify.result_normalizer",
-  "tools.multi_engine_evidence_checker",
-  "crypto.sha256",
-]
-
-[[claim_profiles]]
-name = "agentic_repair_evaluation"
-result_ceiling = "tested"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "nmlt_agent.authority_kernel",
-  "nmlt_agent.evaluation_harness",
-  "tools.agentic_evidence_checker",
-  "tools.benchmark_integrity_checker",
-  "crypto.sha256",
-]
-
-[[claim_profiles]]
-name = "graded_resource_analysis"
-result_ceiling = "model_checked_or_refuted"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "nmlt_grades.kernel",
-  "tools.graded_evidence_checker",
-  "crypto.sha256",
-]
-
-[[claim_profiles]]
-name = "lean_metatheory"
-result_ceiling = "proved_for_the_checked_lean_statements_only"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.lean",
-  "ci.lean_action",
-  "nmlt_lean.statements",
-  "lean.kernel_and_nanoda",
-  "tools.metatheory_policy_checker",
-]
-
-[[claim_profiles]]
-name = "m11_open_composition_metatheory"
-result_ceiling = "proved_for_m11_001a_exact_action_open_composition_statements_only"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.lean",
-  "toolchain.python3",
-  "crypto.sha256",
-  "ci.lean_action",
-  "nmlt_lean.open_composition_statements",
-  "lean.kernel_and_nanoda",
-  "tools.metatheory_policy_checker",
-  "tools.open_composition_evidence_checker",
-]
-
-[[claim_profiles]]
-name = "m11_open_refinement_metatheory"
-result_ceiling = "proved_for_m11_001b_finite_contract_open_refinement_statements_only"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "toolchain.lean",
-  "toolchain.python3",
-  "crypto.sha256",
-  "ci.lean_action",
-  "nmlt_temporal.kernel",
-  "nmlt_lean.open_refinement_statements",
-  "lean.kernel_and_nanoda",
-  "tools.metatheory_policy_checker",
-  "tools.open_refinement_evidence_checker",
-]
-
-[[claim_profiles]]
-name = "m11_two_sided_open_congruence"
-result_ceiling = "finite_resource_aware_two_sided_instance_and_table_reference_checked_no_verified_rust_extraction_theorem"
-trusted = [
-  "host.hardware_os_filesystem",
-  "toolchain.rust",
-  "toolchain.lean",
-  "toolchain.python3",
-  "crypto.sha256",
-  "ci.lean_action",
-  "nmlt_temporal.kernel",
-  "nmlt_grades.kernel",
-  "nmlt_lean.open_composition_statements",
-  "lean.kernel_and_nanoda",
-  "tools.metatheory_policy_checker",
-  "tools.open_congruence_evidence_checker",
 ]
 
 [[components]]
-id = "host.hardware_os_filesystem"
-paths = []
-role = "Read exact bytes and execute trusted code; a compromised host can forge all local evidence."
-
-[[components]]
-id = "crypto.sha256"
-paths = []
-role = "SHA-256 collision/second-preimage resistance and the host implementations used by Rust/Python are trusted for v1 identity."
-
-[[components]]
-id = "toolchain.rust"
-paths = ["rust-toolchain.toml", "Cargo.lock"]
-version = "1.94.0"
-role = "Compile the Rust workspace. The version declaration is exact; bootstrap binaries and system linker remain residual trust."
-
-[[components]]
-id = "toolchain.lean"
+name = "rust_language_pipeline"
 paths = [
-  "mechanization/lean/lean-toolchain",
-  "mechanization/lean/lakefile.toml",
-  "mechanization/lean/lake-manifest.json",
+  "crates/nmlt-core",
+  "crates/nmlt-hir",
+  "crates/nmlt-ir",
+  "crates/nmlt-elaborate",
+  "crates/nmlt-compile",
+  "crates/nmlt-kernel",
+  "crates/nmlt-cli",
 ]
-version = "v4.30.0"
-role = "Compile Lean statements and proofs. Downloaded tool binaries are not yet recorded by digest."
+role = "lossless parsing, resolution, typed formation, and artifact production"
+claim_ceiling = "implementation acceptance and reproducibility only"
 
 [[components]]
-id = "toolchain.python3"
-paths = []
-role = "Execute the standard-library-only identity and evidence checkers; runtime binary and stdlib are runner-supplied residual trust."
-
-[[components]]
-id = "ci.checkout_action"
-paths = [".github/workflows/ci.yml"]
-version = "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
-role = "Fetch the repository in CI at the documented v4.2.2 action commit."
-
-[[components]]
-id = "ci.lean_action"
-paths = [".github/workflows/ci.yml"]
-version = "leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9"
-role = "Install the declared Lean toolchain and build the Lake package under the documented v1.5.0 action commit; its mutable built-in NanoDA path is disabled."
-
-[[components]]
-id = "lean.kernel_and_nanoda"
-paths = ["tools/check_nanoda.sh"]
-version = "Lean v4.30.0; lean4export@a3e35a584f59b390667db7269cd37fca8575e4bf; nanoda_lib@f58f2f6d535e189a40fcb02ede8eb95f97a92d37; Rust 1.94.0"
-role = "Use the Lean kernel and a separately built NanoDA checker over the exported environment. Exporter, checker, Rust, and configuration sources are pinned; downloaded and locally built binary digests are not yet persisted."
-
-[[components]]
-id = "nmlt_core.frontend"
+name = "lean_static_behavior"
 paths = [
-  "crates/nmlt-core/src/lexer.rs",
-  "crates/nmlt-core/src/cst.rs",
-  "crates/nmlt-core/src/syntax.rs",
+  "mechanization/lean/NMLT/Behavior/ResourceBehavior.lean",
+  "mechanization/lean/NMLT/Counterexamples/ResourceBehaviorControls.lean",
+  "mechanization/lean/NMLT/Examples/VisibleResourceSync.lean",
 ]
-role = "Lossless lexing, immutable CST construction, recovery, and structural recognition."
+role = "static behavioral definitions, conditional lifting, and controls"
+claim_ceiling = "the checked Lean declarations under their explicit premises"
 
 [[components]]
-id = "nmlt_core.diagnostic"
-paths = ["crates/nmlt-core/src/diagnostic.rs"]
-role = "Stable diagnostic classification and byte-span rendering."
-
-[[components]]
-id = "nmlt_core.surface_projection"
-paths = ["crates/nmlt-core/src/untyped.rs"]
-role = "Project the lossless CST into ordered explicit surface nodes, enforce exact semantic-origin coverage, and classify the first M9 syntax feature boundary."
-
-[[components]]
-id = "nmlt_hir.identity"
+name = "artifact_decoder"
 paths = [
-  "crates/nmlt-hir/src/identity.rs",
-  "crates/nmlt-hir/src/hir.rs",
-  "crates/nmlt-hir/src/model.rs",
+  "mechanization/lean/NMLT/Artifact/BehaviorCore.lean",
+  "mechanization/lean/NMLT/Artifact/CheckMain.lean",
 ]
-role = "Construct exact source-set, logical-module-map, canonical-surface, module, full typed definition-path, semantic-node, and resolved-program identities."
+role = "canonical structure decoding and source-byte identification"
+claim_ceiling = "decoded shape and digest equality, not verified translation"
 
 [[components]]
-id = "nmlt_hir.resolver"
-paths = [
-  "crates/nmlt-hir/src/resolve_terms.rs",
-  "crates/nmlt-hir/src/resolver.rs",
-  "crates/nmlt-hir/src/surface.rs",
-  "crates/nmlt-hir/src/term.rs",
-]
-role = "Adapt the lossless projection into named resolver input, validate the closed source/module set, parse admitted raw terms, assign owner-derived locals, resolve every reference, and replay exact spelling, candidate selection, graph closure, and ResolutionMap bijection. Resolver and replay share this trusted crate."
-
-[[components]]
-id = "nmlt_ir.structural_core"
-paths = [
-  "crates/nmlt-ir/src/identity.rs",
-  "crates/nmlt-ir/src/lib.rs",
-  "crates/nmlt-ir/src/model.rs",
-  "crates/nmlt-ir/src/validate.rs",
-]
-role = "Define canonical explicit typed core and reject malformed annotations, indices, scopes, graphs, frames, integers, identities, and resource excess. This component does not check HIR-to-core elaboration correspondence."
-
-[[components]]
-id = "nmlt_elaborate.producer"
-paths = [
-  "crates/nmlt-elaborate/src/elaborate.rs",
-  "crates/nmlt-elaborate/src/lib.rs",
-  "crates/nmlt-certificate/src/identity.rs",
-]
-role = "Bidirectionally elaborate exact resolved HIR into structurally validated typed core and produce a canonical derivation DAG. This producer is trusted only for the producer profile, is outside the kernel-accepted profile, and cannot issue CheckedProgram."
-
-[[components]]
-id = "nmlt_certificate.syntax"
-paths = [
-  "crates/nmlt-certificate/src/lib.rs",
-  "crates/nmlt-certificate/src/model.rs",
-  "crates/nmlt-kernel/src/input.rs",
-  "crates/nmlt-kernel/src/wire.rs",
-]
-role = "Define in-memory and canonical byte certificate data accepted as untrusted input; the decoder checks domains, tags, lengths, counts, and policy bounds before allocation, but only the kernel can confer acceptance."
-
-[[components]]
-id = "nmlt_kernel.checker"
-paths = [
-  "crates/nmlt-kernel/src/check.rs",
-  "crates/nmlt-kernel/src/identity.rs",
-  "crates/nmlt-kernel/src/lib.rs",
-]
-role = "Independently select rules/policy, recompute identities, validate graph/resource/coverage invariants, reconstruct frozen M9-v1 judgments and aggregate core, and exclusively construct CheckedProgram. It does not call the elaborator or trust producer identity calculations."
-
-[[components]]
-id = "nmlt_compile.driver"
-paths = [
-  "crates/nmlt-compile/src/lib.rs",
-  "crates/nmlt-compile/Cargo.toml",
-]
-role = "Drive the only promoted source-to-CheckedProgram route and preserve stable stage-specific diagnostics; it is orchestration, not an additional acceptance authority."
-
-[[components]]
-id = "nmlt_core.evidence_scaffold"
-paths = ["crates/nmlt-core/src/evidence.rs", "schemas/evidence-manifest.schema.json"]
-role = "Emit only legacy structural unknown scaffolds and define the generic manifest shape."
-
-[[components]]
-id = "nmlt_cli"
-paths = ["crates/nmlt-cli/src/main.rs"]
-role = "Route frontend, type-check, and model-check commands without raising a method's result ceiling."
-
-[[components]]
-id = "nmlt_engine.semantic_kernel"
-paths = [
-  "crates/nmlt-engine/src/ast.rs",
-  "crates/nmlt-engine/src/checked.rs",
-  "crates/nmlt-engine/src/types.rs",
-]
-role = "Adapt only opaque kernel-accepted CheckedProgram values into the finite engine model, enforce explicit adapter limits, and retain the complete semantic identity binding. It performs no source parsing, name resolution, or type inference."
-
-[[components]]
-id = "nmlt_engine.explicit_state"
-paths = ["crates/nmlt-engine/src/model.rs"]
-role = "Evaluate simultaneous updates and classify deterministic finite exploration, bounds, and counterexamples."
-
-[[components]]
-id = "nmlt_temporal.kernel"
-paths = [
-  "crates/nmlt-temporal/src/certificate.rs",
-  "crates/nmlt-temporal/src/graph.rs",
-  "crates/nmlt-temporal/src/temporal.rs",
-  "crates/nmlt-temporal/src/observation.rs",
-  "crates/nmlt-temporal/src/open.rs",
-  "crates/nmlt-temporal/src/open_contract.rs",
-  "crates/nmlt-temporal/src/open_refinement.rs",
-  "crates/nmlt-temporal/src/open_congruence.rs",
-  "crates/nmlt-temporal/src/open_encoding.rs",
-  "crates/nmlt-temporal/src/open_resources.rs",
-  "crates/nmlt-temporal/src/refinement.rs",
-  "crates/nmlt-temporal/src/runtime.rs",
-]
-role = "Construct finite graphs/lassos, interpret explicit fairness and hiding, check finite simulation and state/transition/work-bounded strict open-system composition plus resource-aware two-sided congruence instances, emit canonical finite-table encodings, and classify supplied traces. Work items bound explicit module loops, not wall-clock or byte costs. Open composition remains safety-only; the Lean table checker is a reference checker, not verified Rust extraction."
-
-[[components]]
-id = "nmlt_verify.vc_kernel"
-paths = ["crates/nmlt-verify/src/ir.rs", "crates/nmlt-verify/src/identity.rs"]
-role = "Validate and identify the finite verification condition and evaluate its closed Boolean expressions."
-
-[[components]]
-id = "nmlt_verify.certificate_checker"
-paths = ["crates/nmlt-verify/src/certificate.rs"]
-role = "Reconstruct and check the exact finite invariant certificate obligation."
-
-[[components]]
-id = "nmlt_verify.result_normalizer"
-paths = ["crates/nmlt-verify/src/evidence.rs"]
-role = "Replay witnesses, reject stale/disagreeing returns, and cap results unless a certificate is accepted."
-
-[[components]]
-id = "nmlt_agent.authority_kernel"
-paths = [
-  "crates/nmlt-agent/src/authority.rs",
-  "crates/nmlt-agent/src/artifact.rs",
-  "crates/nmlt-agent/src/digest.rs",
-  "crates/nmlt-agent/src/graph.rs",
-]
-role = "Bind protected artifacts/spans and reject repairs outside declared edit authority."
-
-[[components]]
-id = "nmlt_agent.evaluation_harness"
-paths = [
-  "crates/nmlt-agent/src/evaluation.rs",
-  "crates/nmlt-agent/src/feedback.rs",
-  "crates/nmlt-agent/src/bin/evaluate.rs",
-]
-role = "Apply deterministic evaluation policy and report repair metrics; it does not establish semantic proof."
-
-[[components]]
-id = "nmlt_grades.kernel"
-paths = [
-  "crates/nmlt-grades/src/algebra.rs",
-  "crates/nmlt-grades/src/parser.rs",
-  "crates/nmlt-grades/src/checker.rs",
-]
-role = "Interpret product grades with explicit uncertainty certificate families, reject mixed-family composition, and check declared finite resource budgets."
-
-[[components]]
-id = "nmlt_lean.statements"
-paths = [
-  "mechanization/lean/NMLT.lean",
-  "mechanization/lean/NMLT/Behavior/Coinductive.lean",
-  "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
-  "mechanization/lean/NMLT/Behavior/OpenMappedCongruence.lean",
-  "mechanization/lean/NMLT/Behavior/OpenResourceCongruence.lean",
-  "mechanization/lean/NMLT/Behavior/OpenEncodingCorrespondence.lean",
-  "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean",
-  "mechanization/lean/NMLT/Behavior/OpenKernelReadback.lean",
-  "mechanization/lean/NMLT/Behavior/OpenSourceReadback.lean",
-  "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
-  "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Types.lean",
-  "mechanization/lean/NMLT/Behavior/OpenRefinement.lean",
-  "mechanization/lean/NMLT/Behavior/Refinement.lean",
-  "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
-  "mechanization/lean/NMLT/Core/TypedCore.lean",
-  "mechanization/lean/NMLT/Core/Transition.lean",
-  "mechanization/lean/NMLT/Core/Provider.lean",
-  "mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean",
-  "mechanization/lean/NMLT/Correspondence/M9Kernel.lean",
-  "mechanization/lean/NMLT/Correspondence/M10Behavior.lean",
-  "mechanization/lean/NMLT/Grades/Algebra.lean",
-  "mechanization/lean/NMLT/Typing/Judgments.lean",
-  "mechanization/lean/NMLT/Metatheory/Soundness.lean",
-]
-role = "Definitions and theorem statements whose exact compiled proof terms are accepted; scope does not extend to Rust correspondence."
-
-[[components]]
-id = "nmlt_lean.open_composition_statements"
-paths = [
-  "mechanization/lean/NMLT.lean",
-  "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
-  "mechanization/lean/NMLT/Behavior/OpenMappedCongruence.lean",
-  "mechanization/lean/NMLT/Behavior/OpenResourceCongruence.lean",
-  "mechanization/lean/NMLT/Behavior/OpenEncodingCorrespondence.lean",
-  "mechanization/lean/NMLT/Grades/Algebra.lean",
-  "mechanization/lean/NMLT/Behavior/Refinement.lean",
-  "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
-  "mechanization/lean/NMLT/Core/Transition.lean",
-  "mechanization/lean/NMLT/Counterexamples/CompositionCongruence.lean",
-]
-role = "Exact M11 open-composition and mapped/resource congruence definitions, including all structural product-action cases and the proof-carrying canonical-certificate contract; no verified Rust extraction theorem is claimed."
-
-[[components]]
-id = "nmlt_lean.open_refinement_statements"
-paths = [
-  "mechanization/lean/NMLT.lean",
-  "mechanization/lean/NMLT/Behavior/OpenRefinement.lean",
-  "mechanization/lean/NMLT/Behavior/OpenComposition.lean",
-  "mechanization/lean/NMLT/Behavior/Refinement.lean",
-  "mechanization/lean/NMLT/Behavior/TemporalTyping.lean",
-]
-role = "Exact M11-001b finite-predicate, payload-identity, variance, identity, and composition statements; product congruence and Rust correspondence are excluded."
-
-[[components]]
-id = "tools.canonical_examples"
-paths = ["tools/canonical_examples.py"]
-role = "Reference calculation and readback of exact source/source-set identity."
-
-[[components]]
-id = "docs.artifact_identity"
-paths = ["docs/artifact-identity.md"]
-role = "Normative v1 domain separation, canonicalization subset, and identity contract."
-
-[[components]]
-id = "tools.benchmark_integrity_checker"
-paths = [
-  "tools/validate_benchmark_integrity.py",
-  "schemas/benchmark-suite-v1.schema.json",
-  "schemas/benchmark-result-v1.schema.json",
-]
-role = "Validate frozen intent/property/witness/result bindings and schema subsets."
-
-[[components]]
-id = "tools.model_result_checker"
-paths = [
-  "tools/check_model_reports.py",
-  "schemas/model-check-report.schema.json",
-  "schemas/benchmark-result-v1.schema.json",
-]
-role = "Rebuild/run the bounded engine, bind executable/source/configuration identities, and independently read back result reports."
-
-[[components]]
-id = "tools.evidence_checker"
-paths = [
-  "tools/check_evidence.py",
-  "schemas/evidence-manifest.schema.json",
-  "tools/validate_benchmark_integrity.py",
-]
-role = "Recompute manifest/source bindings and reject missing engine, TCB, bounds, witness, and certificate requirements."
-
-[[components]]
-id = "tools.temporal_evidence_checker"
-paths = ["tools/check_temporal_evidence.py", "schemas/temporal-evidence-v1.schema.json"]
-role = "Rebuild and read back finite temporal, refinement, and runtime evidence."
-
-[[components]]
-id = "tools.multi_engine_evidence_checker"
-paths = ["tools/check_multi_engine_evidence.py", "schemas/multi-engine-evidence-v1.schema.json"]
-role = "Read back independent raw routes, checked certificates, disagreement policy, and exact engine bindings."
-
-[[components]]
-id = "tools.agentic_evidence_checker"
-paths = ["tools/check_phase6_evidence.py", "schemas/phase6-evidence-graph-v1.schema.json"]
-role = "Rebuild/read back the authority-bounded repair evaluation and its exact runtime-drift artifact edge."
-
-[[components]]
-id = "tools.graded_evidence_checker"
-paths = ["tools/check_graded_evidence.py", "schemas/graded-evidence-v1.schema.json"]
-role = "Rebuild/read back graded-resource results, adversarial controls, and exact separately checked Lean algebra bindings."
-
-[[components]]
-id = "tools.metatheory_policy_checker"
-paths = ["tools/check_metatheory.sh"]
-role = "Reject forbidden proof placeholders, invoke the pinned Lean build, and pass its axiom audit to the claim-specific evidence checker; the shell and host tools remain trusted."
-
-[[components]]
-id = "tools.open_composition_evidence_checker"
-paths = [
-  "tools/check_open_composition_evidence.py",
-  "schemas/open-composition-evidence-v1.schema.json",
-  "tools/validate_benchmark_integrity.py",
-]
-role = "Recompute the exact M11 open-composition source and manifest identities, require the frozen theorem/control handles and limitations, and match their declared axiom sets against pinned Lean build output."
-
-[[components]]
-id = "tools.open_refinement_evidence_checker"
-paths = [
-  "tools/check_open_refinement_evidence.py",
-  "schemas/open-refinement-evidence-v1.schema.json",
-  "tools/validate_benchmark_integrity.py",
-]
-role = "Recompute exact M11-001b Rust/Lean source and manifest identities, require finite-contract theorem and executable control handles, and reject nonempty or missing axiom audits."
-
-[[components]]
-id = "tools.open_congruence_evidence_checker"
-paths = [
-  "tools/check_open_congruence_evidence.py",
-  "tools/check_m11_congruence_correspondence.py",
-  "schemas/open-congruence-evidence-v1.schema.json",
-  "mechanization/vectors/m11-open-congruence-v1.json",
-  "crates/nmlt-open-kernel/src/lib.rs",
-  "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Types.lean",
-  "mechanization/lean/NMLT/Behavior/OpenKernelGenerated/Funs.lean",
-  "mechanization/lean/NMLT/Behavior/OpenKernelExecution.lean",
-  "tools/validate_benchmark_integrity.py",
-]
-role = "Recompute exact M11-001c congruence source, all-case resource theorem, canonical-certificate contract, pinned Aeneas-generated execution theorem, dictionary-readback specification, controls, vector, and limitations; the rich encoder and Rust readback implementation remain outside verified extraction."
-
-[[components]]
-id = "build.ci_release"
-paths = ["Makefile", "Cargo.toml", "Cargo.lock", ".github/workflows/ci.yml"]
-role = "Compose repository gates with least-privilege CI. This is not yet a reproducible or signed release pipeline."
+name = "reference_explorer"
+paths = ["crates/nmlt-eval"]
+role = "bounded operational inspection"
+claim_ceiling = "none"

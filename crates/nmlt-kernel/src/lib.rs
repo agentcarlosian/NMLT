@@ -1,8 +1,9 @@
-//! Independent checking of NMLT elaboration certificates.
+//! Independent validation of NMLT typed-elaboration certificates.
 //!
 //! This crate does not call the producer. It reconstructs the frozen M9-v1
 //! judgments from exact resolved HIR, typed core, and untrusted certificate
-//! data. Only successful checking can construct [`CheckedProgram`].
+//! data. Only successful checking can construct [`CheckedProgram`]. It is not
+//! the behavioral semantics or a semantic prover; those live in Lean.
 
 #![forbid(unsafe_code)]
 

@@ -1,4 +1,0 @@
-system InvalidInitializer {
-  state count: Nat = false
-  safety Nonnegative = always(count >= 0)
-}

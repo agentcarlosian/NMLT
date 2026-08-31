@@ -31,3 +31,28 @@ fn unsupported_source_fails_at_the_projection_boundary() {
     assert_eq!(error.stage(), CompileStage::Projection);
     assert!(error.to_string().starts_with("NMLT_COMPILE_PROJECTION:"));
 }
+
+#[test]
+fn hidden_boundary_fixture_parses_and_fail_closes_at_projection() {
+    // Honest: parse + project + M9 fail-closed. Not a verified compile.
+    let source = include_bytes!("../../../examples/refinement/hidden_connected_action.nmlt");
+    let error = compile_single(
+        "HiddenBoundary",
+        "examples/refinement/hidden_connected_action.nmlt",
+        source.as_slice(),
+    )
+    .unwrap_err();
+    assert_eq!(error.stage(), CompileStage::Projection);
+    let detail = error.to_string();
+    for code in [
+        "NMLT-M9-HIDE-ACTION",
+        "NMLT-M9-COMPOSE",
+        "NMLT-M9-CONNECT",
+        "NMLT-M9-ACTION-POLARITY",
+    ] {
+        assert!(
+            detail.contains(code),
+            "expected {code} in fail-closed projection, got {detail}"
+        );
+    }
+}

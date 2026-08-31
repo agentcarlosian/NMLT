@@ -1,6 +1,6 @@
 [package]
 name = "nmlt-core"
-description = "Shared structural syntax, diagnostics, and evidence types for NMLT"
+description = "Lossless syntax, structural projection, and diagnostics for NMLT"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

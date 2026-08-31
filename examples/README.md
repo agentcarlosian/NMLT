@@ -1,13 +1,24 @@
 # Examples
 
-Examples are design fixtures for proposed NMLT syntax. The current frontend
-checks only top-level `system Name { ... }` structure and balanced delimiters.
-It does not type-check or verify the declarations inside a system.
+The active typed semantic slice currently lives under
+[`pivot/`](pivot/). The directory name records the transition and will
+be replaced with durable `getting-started`, `open-systems`, and
+`negative-controls` paths before the public stack is finalized.
 
-The ten-file v1 corpus, intended claims, and negative controls are frozen in
-[`CANONICAL.md`](CANONICAL.md) and [`canonical-v1.json`](canonical-v1.json).
-Run `python3 tools/canonical_examples.py` from the repository root to verify
-that all exact source identities still match.
+- [`visible_resource_sync.nmlt`](pivot/visible_resource_sync.nmlt) is the
+  primary positive source.
+- [`visible_resource_sync.behavior-core-v1.json`](pivot/visible_resource_sync.behavior-core-v1.json)
+  is its exact canonical artifact.
+- [`pivot/negative/`](pivot/negative/) contains boundary-specific rejection
+  controls for wiring, ownership, transfer, hidden resources, contract
+  discharge, port compatibility, hidden state change, and refinement maps.
 
-Every example should eventually include intended claims, negative controls,
-expected evidence class, and a concrete implementation or trace mapping.
+The other directories are retained language-design and lossless-frontend
+fixtures. Many use surface forms intentionally outside the first finite
+behavioral slice. They are not executable semantic examples and do not inherit
+the Lean theorem.
+
+The pre-pivot composition and provider examples are historical syntax fixtures.
+The old canonical corpus records frontend breadth, not current behavioral
+semantics or model-check support. Active semantic claims use only the canonical
+`pivot/` source/artifact pair and the Lean definitions.

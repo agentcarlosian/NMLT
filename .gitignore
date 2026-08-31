@@ -25,3 +25,10 @@ __pycache__/
 
 # Integrity-pinned JavaScript tooling
 /tools/quint/node_modules/
+
+# Paper build intermediates and local layout previews
+papers/**/*.aux
+papers/**/*.out
+papers/**/*.log
+**/*.pdf
+papers/**/preview-*.png

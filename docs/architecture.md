@@ -1,148 +1,48 @@
 # Architecture
 
-## Pipeline
+## Current checkpoint
+
+NMLT develops the language and its mathematics together. This stack layer has
+one promoted finite path:
 
 ```text
-source
-  → lossless syntax tree
-  → name and module resolution
-  → typed behavioral core
-  → verification-condition and transition-system IRs
-  → backend adapters
-  → checked evidence or structured witnesses
-  → optional execution, tests, monitors, and trace refinement
+exact .nmlt bytes
+  → lossless CST and surface projection
+  → name resolution and typed elaboration
+  → behavior-core-v1 JSON
+  → Lean-defined static behavior semantics
+  → non-authoritative Rust exploration
 ```
 
-No downstream stage may upgrade the assurance class produced by an upstream
-stage. A backend adapter translates results; it does not reinterpret bounded
-evidence as proof.
+Rust owns the language frontend, typed IR, artifact production, and reference
+explorer. Lean owns the current behavioral definitions and theorem statements.
 
-This is the intended integrated pipeline. The current research slices do not
-yet form a verified end-to-end compiler: finite temporal graphs and the Phase 5
-VC are constructed through explicit fixture code or a documented manual
-projection, and the graded experiment uses its own `.nmltg` input.
+## Rust boundary
 
-M9 makes the source-to-typed-core prefix the active integration boundary:
-complete surface projection, deterministic resolution into `nmlt-hir`,
-bidirectional elaboration with an inspectable derivation, and independent
-validation in `nmlt-kernel` before an engine receives `CheckedProgram`. See
-[RFC 0013](../rfcs/0013-source-to-typed-core.md).
+- `nmlt-core` preserves exact syntax and projects explicit surface structure.
+- `nmlt-hir`, `nmlt-elaborate`, and `nmlt-ir` resolve and type the supported
+  language fragment.
+- `nmlt-kernel` remains an ordinary typed-elaboration validator; it does not
+  prove behavioral claims.
+- `nmlt-compile` attaches complete resource profiles to typed actions and emits
+  canonical `behavior-core-v1` data.
+- `nmlt-eval` explores finite artifacts with `assurance: none`.
+- `nmlt-cli` exposes structural checks, typing, elaboration, and exploration.
 
-## Implemented components
+## Lean boundary
 
-- `nmlt-core`: lossless tokens/CST, recovering declaration parser, stable
-  diagnostics, preservation formatter, ordered and origin-censused complete
-  surface projection, explicit M9 surface-feature diagnostics, and structural
-  evidence types.
-- `nmlt-hir`: the canonical `nmlt-core`-to-resolver adapter, closed acyclic
-  imports, typed declaration namespaces, direct-import lookup, stable semantic
-  identities and locals, source-derived expression/type HIR, a complete
-  `ResolutionMap`, exact-spelling candidate replay, opaque source-bound
-  inputs/results, and bounded fail-closed resolution.
-- `nmlt-ir`: span-free explicit typed terms, system-indexed state/temporal
-  propositions, exact action update/frame partitions, canonical integer and
-  core identities, and structural graph/type/resource validation. It does not
-  establish correspondence to HIR and cannot construct `CheckedProgram`.
-- `nmlt-elaborate`: bidirectional resolved-HIR elaboration, exact action/frame
-  reconstruction, system-indexed formula formation, explicit insertions, and
-  a canonical identity-bound derivation DAG with complete root/origin coverage.
-  It is an untrusted producer for the kernel-accepted profile and cannot
-  construct `CheckedProgram`.
-- `nmlt-certificate`: neutral certificate syntax and producer-side canonical
-  identity construction. Its producer utilities do not decide acceptance.
-- `nmlt-kernel`: independent identity, graph, resource, rule, and aggregate
-  core replay plus bounded canonical certificate decoding. Its private fields
-  make successful `check` the only route to `CheckedProgram`.
-- `nmlt-compile`: the stable staged driver from exact source modules through
-  projection, resolution, elaboration, and kernel acceptance.
-- `nmlt-engine`: a checked-core adapter and deterministic explicit-state
-  exploration with structured counterexamples. It has no source parser or
-  public unchecked model constructor.
-- `nmlt-temporal`: canonical finite graphs, `always`/eventuality/lasso checking,
-  weak and strong action fairness, stuttering/observation utilities, finite
-  forward-simulation refinement, and three-valued journal conformance. Its
-  provider graph is a manually audited observation projection, not compiler
-  output.
-- `nmlt-verify`: finite Boolean VC IR, independent reachability and
-  inductiveness evaluators, checked witnesses/certificates, SMT-LIB and Lean
-  export protocols, model-test hooks, and fail-closed evidence composition.
-- `nmlt-agent`: protected-artifact/edit-authority rules and a deterministic
-  localized-repair protocol baseline. It is not an LLM evaluation.
-- `nmlt-grades`: an independent annotated-plan experiment for product grades
-  over cost, privacy, energy, and uncertainty. It is not integrated into the
-  NMLT typed core; its matching standalone mathematical algebra is checked in
-  Lean without a verified Rust extraction or analyzer correspondence.
-- `nmlt-cli`: workspace command-line entry point.
+`NMLT.Behavior.ResourceBehavior` defines finite behaviors, action profiles,
+binary product steps, resource-aware weak refinement, product formation, and a
+conditional static lifting theorem. The primary theorem instance at this
+checkpoint is a hand-written Lean construction.
 
-## Active and planned boundaries
+`NMLT.Artifact.BehaviorCore` decodes canonical artifact structure and compares
+the declared source digest with supplied source bytes. It does not yet derive
+the behavior or theorem instance from the decoded artifact; that closure is the
+next stack layer.
 
-- Completed M9 elaboration (M9-005): exact resolved-HIR obligations connect to
-  `nmlt-ir` nodes through a canonical bidirectional derivation artifact.
-- Completed M9 `nmlt-kernel` (M9-006): independent typed-core elaboration
-  checker with fail-closed diagnostics and a sealed checked-program boundary.
-- Completed M9 integration (M9-007–010): exclusive `CheckedProgram` engine
-  entry, complete semantic evidence bindings, an extrinsic Lean reference
-  checker/correspondence model, and canonical/negative-control reproduction.
-- Future separation of `nmlt-engine` into stable transition and model-checking
-  boundaries once the first executable slice has more than one consumer.
-- Future solver integration behind the existing SMT-LIB request protocol, with
-  an accepted proof-certificate return format.
-- Future verified elaboration into the finite graph and VC IRs.
-- Future deployed-runtime adapters, journal attestation, monitor generation,
-  and trace-refinement integration.
-- Future `nmlt-lsp`: editor protocol implementation.
+## Deliberate limits
 
-Crates are added only when a real boundary exists; empty architectural crates
-are deliberately avoided.
-
-## Trusted boundaries
-
-The intended trusted core includes the formal kernel, evidence decoder, and the
-minimal code needed to bind a checked artifact to its exact source and engine
-identity. The current claim-specific boundary also includes each Rust checker,
-its independent Python readback harness where used, the pinned toolchain, and
-the explicitly listed platform/runtime dependencies. See the
-[threat model](threat-model.md) for the inventory and attack stories.
-
-Solvers, tactics, parsers, generators, and AI systems may sit outside a future
-smaller core when their output is independently checkable. That architecture
-is a target, not a claim that every current producer has already been removed
-from the TCB.
-
-Backends without independently checkable certificates require an explicit
-external-trust entry in their evidence manifests.
-
-## Intermediate representations
-
-NMLT should not force every backend to consume the same low-level encoding.
-Two initial IR families are expected:
-
-- a transition-system IR for initialization, actions, observations, fairness,
-  and traces;
-- a verification-condition IR for logical obligations, assumptions, scopes,
-  and proof dependencies.
-
-The intended design derives both from the typed behavioral core and retains
-stable source spans. Today, the provider engine has a contextual typed slice,
-while the Phase 4 finite graph and Phase 5 finite Boolean VC evidence explicitly
-record their manual/fixture construction. Source-to-IR correctness is not
-claimed.
-
-## Current implementation
-
-The workspace keeps assurance classes separate:
-
-| Boundary | Positive result at the implemented scope | Explicit ceiling |
-|---|---|---|
-| Lossless frontend | parse/format round trip or `syntax_accepted` | no semantic assurance |
-| Typed provider core | provider-slice type acceptance and checked Rust/Lean correspondence vector | no full compiler-correctness theorem |
-| Provider BFS | `model_checked` after frontier exhaustion within frozen bounds, or replayable `refuted` | never `proved` |
-| Finite temporal graph | finite `always`/fair-lasso acceptance or refutation, simulation acceptance, or finite-prefix journal verdict | no compiler-derived general temporal language, infinite-state, or liveness-refinement proof |
-| Finite VC | `model_checked` reachability and `proved` for an accepted finite-invariant certificate | proof applies to the exact VC only |
-| Repair protocol | fixture-stage completion after authority checks and isolated recheck | deterministic baseline, not general agent evidence |
-| Graded plan | `within_budget`, `exceeded`, or `unknown` under trusted annotations; proved laws for the standalone Lean algebra | no typed-core, Rust-correspondence, or physical/privacy soundness claim |
-
-Persisted artifacts bind their exact subjects, configurations, implementation
-source sets, executables/toolchains, controls, and residual gaps as defined by
-their schemas. The standalone `evidence` command remains a structural
-`unknown` scaffold; it is not silently upgraded by any semantic engine.
+This checkpoint makes no compiler-correctness, reachability, infinite-trace,
+fairness, liveness, runtime-attestation, or production-authorization claim.
+Dynamic authority worlds are not part of this static layer.

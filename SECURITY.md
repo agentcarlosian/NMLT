@@ -1,35 +1,28 @@
 # Security Policy
 
-The flagship NMLT language and its research tooling are pre-alpha and have no
-supported production release. Do not use them to authorize safety-critical,
-security-critical, financial, or irreversible effects.
+NMLT is pre-alpha research software with no supported production release. Do
+not use it to authorize safety-critical, financial, security-critical, or
+irreversible effects.
 
 ## Reporting
 
-Do not disclose an exploitable vulnerability in a public issue. If a hosted
-repository supports private security advisories, use that channel. Until a
-private reporting channel is configured, contact a maintainer through a
-previously agreed private channel.
-
-Include the affected revision, impact, reproduction conditions, trust boundary,
-and whether the result is proven, observed, suspected, or indeterminate. Never
+Do not disclose an exploitable vulnerability in a public issue. Use GitHub's
+private security-advisory channel when available. Include the affected
+revision, impact, reproduction conditions, relevant trust boundary, and
+whether the result is proven, observed, suspected, or indeterminate. Never
 include credentials, private data, or destructive proof-of-concept payloads.
 
-## Trusted computing base
+## Current boundary
 
-The pre-alpha, claim-specific trusted computing base is defined in
-[`security/trusted-components.toml`](security/trusted-components.toml), and its
-boundaries and attacker stories are documented in
-[`docs/threat-model.md`](docs/threat-model.md). Current code includes the
-lossless frontend, a typed/bounded provider engine, finite temporal and
-refinement checks, a finite VC/certificate checker, an authority-bounded
-deterministic repair evaluation, and a graded-resource prototype. Each has a
-separate claim profile and `result_ceiling`; none authorizes external effects.
+The active trusted-component inventory is
+[`security/trusted-components.toml`](security/trusted-components.toml), with
+attacker stories in [`docs/threat-model.md`](docs/threat-model.md).
 
-Current assurance artifacts bind exact source/source-set, engine, executable,
-toolchain, configuration, and content-addressed trusted-component identities
-where their profile requires them. These digests establish byte identity, not
-authorship or freshness: NMLT has no signing, transparency-log, reproducible
-bootstrap, or runtime-attestation claim. Semantic or release changes must
-update the claim-specific inventory and obtain the reviews required by
-`GOVERNANCE.md`.
+Rust parses, resolves, types, and emits deterministic artifacts, but it is not
+the semantic prover. The retained `nmlt-kernel` checks ordinary typed
+elaboration only. Lean defines the current static behavior semantics and its
+conditional composition/refinement theorem. The Rust evaluator makes no proof,
+model-checking, evidence, runtime-authority, or production-safety claim.
+
+Source digests establish byte identity only. They do not establish authorship,
+freshness, provenance, or correctness of Rust elaboration.
