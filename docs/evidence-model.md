@@ -1,5 +1,8 @@
 # Evidence model
 
+> Historical pre-pivot design record. The active workspace no longer contains
+> the evidence-manifest schema, checker, or CLI workflow described below.
+
 NMLT treats verification results as typed artifacts rather than presentation
 badges.
 

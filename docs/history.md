@@ -3,7 +3,7 @@
 These documents preserve the path to the current language-and-mathematics
 pivot. They describe earlier architectures and may name files, crates,
 evidence manifests, or commands that no longer exist on the active branch.
-Use the preserved
+Use the immutable
 [`build-week-judge-demo-2026`](https://github.com/agentcarlosian/NMLT/tree/build-week-judge-demo-2026)
 tag when reproducing that system.
 
@@ -26,5 +26,5 @@ claims remain scoped to the definitions and revisions they cite.
 ## Superseded active documents
 
 The old evidence-manifest system is retained as design history in
-[`evidence-model.md`](evidence-model.md). The current CLI and active workspace
-do not emit or check those manifests.
+[`evidence-model.md`](evidence-model.md). The current CLI and active
+workspace do not emit or check those manifests.

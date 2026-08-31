@@ -6,9 +6,9 @@
 
 <!-- Describe the smallest relevant change. -->
 
-## Evidence
+## Validation
 
-<!-- Tests, proofs, model checks, structured witnesses, or explicitly unknown evidence. -->
+<!-- Rust/Lean gates, exact artifacts, theorem handles, and independent reviews. -->
 
 ## Negative controls
 
@@ -17,6 +17,11 @@
 ## Assumptions and residual gaps
 
 <!-- State what remains trusted, bounded, unknown, or deferred. -->
+
+## Claim-language audit
+
+<!-- Distinguish Rust acceptance, Lean acceptance, source identification,
+translation correctness, formation policy, and theorem dependencies. -->
 
 ## RFC or decision
 

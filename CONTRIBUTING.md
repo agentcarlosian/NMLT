@@ -1,8 +1,8 @@
 # Contributing to NMLT
 
 NMLT — New Mathematics, Languages, and Techniques — separates research claims,
-flagship-language decisions, and implementation work so that an attractive
-prototype cannot silently outrun its evidence.
+language decisions, checked mathematics, and implementation work so that an
+attractive prototype cannot silently outrun its definitions and validation.
 
 ## Contribution license
 
@@ -16,13 +16,13 @@ stage.
 ## Before changing the language
 
 Use an RFC for any change to syntax, typing, semantics, trusted components,
-evidence classes, backend interpretation, or compatibility. Small corrections,
+artifact interpretation, or compatibility. Small corrections,
 tests, documentation fixes, and implementation work under an accepted RFC do
 not require a new RFC.
 
 1. Copy `rfcs/0000-template.md` to the next available number.
 2. State the problem and non-goals before proposing syntax.
-3. Define static and dynamic semantics, verification consequences, failure
+3. Define static and dynamic semantics, theorem consequences, failure
    modes, and migration impact.
 4. Include at least one positive example and one semantic negative control.
 5. Record unresolved questions instead of hiding them in implementation notes.
@@ -31,15 +31,21 @@ not require a new RFC.
 
 ```bash
 make fmt
-make ci
+make reproduce
 ```
+
+`make reproduce` runs the Rust language gate and Lean metatheory gate.
+Contributors changing only Rust may use `make ci` while iterating, but a
+semantic or publication-ready change must pass the complete gate.
 
 Changes should preserve these rules:
 
 - parsing is not verification;
-- bounded checking states its bounds;
-- `unknown` and `indeterminate` are never promoted to success;
-- counterexamples remain structured data;
+- Rust acceptance is not reported as Lean acceptance;
+- bounded exploration always reports `assurance: none`;
+- source identification is not described as verified translation;
+- product-formation policy is distinguished from demonstrated theorem
+  dependencies;
 - trusted specifications are not weakened merely to make an implementation
   pass;
 - generated code, proof automation, and LLM output remain outside the trusted
@@ -47,9 +53,15 @@ Changes should preserve these rules:
 
 ## Pull requests
 
-Keep each pull request focused. Describe the claim being changed, the evidence
-used to evaluate it, negative controls, residual gaps, and relevant RFC or
-decision record. Do not combine a semantics change with an unrelated refactor.
+Keep each pull request focused. Describe the definition or claim being changed,
+the validation used to evaluate it, negative controls, residual gaps, and
+relevant RFC or decision record. Do not combine a semantics change with an
+unrelated refactor.
+
+Changes to the Lean behavior core or artifact trust boundary should receive an
+independent adversarial review. Publication stacks should also receive a
+cross-family review before push; if that review is unavailable, record it as an
+open gate rather than silently omitting it.
 
 ## Commits
 

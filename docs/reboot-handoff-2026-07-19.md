@@ -1,5 +1,9 @@
 # Reboot handoff — 2026-07-19
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 Captured at 2026-07-19T18:04:59-05:00 for Carlosian
 <carlosian@agentmail.to>. This is a non-normative continuation record. The
 execution gates in [`Plan.md`](../Plan.md), accepted RFCs, schemas, and checked
@@ -107,13 +111,13 @@ correspondence between the executable checker and Lean statement.
 ## Important files
 
 - [`Plan.md`](../Plan.md) — authoritative milestone gates and open items
-- [`crates/nmlt-temporal/src/open.rs`](../crates/nmlt-temporal/src/open.rs) —
+- [`crates/nmlt-temporal/src/open.rs`](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/crates/nmlt-temporal/src/open.rs) —
   executable M11-001a profile
-- [`OpenComposition.lean`](../mechanization/lean/NMLT/Behavior/OpenComposition.lean)
+- [`OpenComposition.lean`](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/mechanization/lean/NMLT/Behavior/OpenComposition.lean)
   — checked structural results and controls
 - [M11 research note](research-notes/m11-open-system-refinement-2026-07-19.md)
   — sources, frozen semantics, and nonclaims
-- [M11 evidence manifest](../benchmarks/results/open-composition/m11-001a-evidence.json)
+- [M11 evidence manifest](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/benchmarks/results/open-composition/m11-001a-evidence.json)
   — exact machine-readable claim and identity
 - [`docs/threat-model.md`](threat-model.md) and
   [`security/trusted-components.toml`](../security/trusted-components.toml) —

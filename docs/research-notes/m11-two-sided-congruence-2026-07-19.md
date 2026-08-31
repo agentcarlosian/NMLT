@@ -1,5 +1,9 @@
 # M11 two-sided open-congruence implementation note
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](../history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 Date: 2026-07-19
 
 Scope: the finite safety core implemented toward M11-001c.
@@ -62,7 +66,7 @@ and resource variance, authority narrowing, and whole wiring. The eleven shared
 controls bind the executable checks and Lean handles. This is a proof-carrying
 canonical-certificate boundary, but the Rust encoder and validator are not
 verified extraction. The
-[claim-specific evidence](../../benchmarks/results/open-congruence/m11-001c-evidence.json)
+[claim-specific evidence](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/benchmarks/results/open-congruence/m11-001c-evidence.json)
 records `verified_implementation_theorem = false` for that reason.
 
 ## Negative controls

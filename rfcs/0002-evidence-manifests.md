@@ -1,6 +1,6 @@
 # RFC 0002: Evidence manifests
 
-- Status: Draft
+- Status: Superseded by the 2026-08-31 language-and-mathematics pivot
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 

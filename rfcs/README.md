@@ -3,6 +3,11 @@
 RFCs are the normative path for language, semantics, evidence, trusted-core,
 and compatibility decisions.
 
+The 2026-08-31 public pivot is recorded in
+[`docs/decisions/0004-language-mathematics-pivot.md`](../docs/decisions/0004-language-mathematics-pivot.md).
+Pre-pivot RFCs remain useful research records, but only Accepted proposals that
+are compatible with that decision describe the active architecture.
+
 ## Statuses
 
 - Draft
@@ -32,15 +37,15 @@ evidence.
 | RFC | Title | Status |
 |---|---|---|
 | 0001 | Behavior types | Under review |
-| 0002 | Evidence manifests | Draft |
+| 0002 | Evidence manifests | Superseded by pivot |
 | 0003 | Lexical grammar v1 | Accepted |
-| 0004 | Canonical artifact identity | Accepted |
+| 0004 | Canonical artifact identity | Partially superseded; language identities retained |
 | 0005 | State and action typing v1 | Under review |
 | 0006 | Explicit affine capabilities v1 | Under review |
 | 0007 | Observation and stuttering semantics v1 | Under review |
-| 0008 | Lean mechanization and compositional refinement | Under review |
-| 0009 | Finite temporal, refinement, and runtime semantics | Draft |
-| 0010 | Multiple verification engines and checked evidence composition | Draft |
-| 0011 | Authority-bounded agentic formalization and repair | Under review |
-| 0012 | Conservative graded-resource modalities | Experimental |
+| 0008 | Lean mechanization and compositional refinement | Superseded; rewrite required |
+| 0009 | Finite temporal, refinement, and runtime semantics | Postponed |
+| 0010 | Multiple verification engines and checked evidence composition | Withdrawn from active architecture |
+| 0011 | Authority-bounded agentic formalization and repair | Postponed |
+| 0012 | Conservative graded-resource modalities | Postponed experiment |
 | 0013 | Integrated source-to-typed-core contract | Accepted |

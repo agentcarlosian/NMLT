@@ -1,5 +1,9 @@
 # Independent reproduction record — 2026-07-18
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 - Result: passed at the bounded pre-alpha scope
 - Reproduced implementation revision: `e3f7ec6ae2d14ade78183ff78d58f7198cb76858`
 - Checkout method: `git clone --no-local` into a newly created temporary

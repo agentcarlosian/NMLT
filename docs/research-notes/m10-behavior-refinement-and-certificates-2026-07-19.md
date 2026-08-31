@@ -1,5 +1,9 @@
 # M10 behavior, refinement, and certificate research
 
+> **Historical record.** This page describes the pre-pivot architecture. See
+> [Historical research records](../history.md) and the preserved
+> [Build Week snapshot](https://github.com/agentcarlosian/NMLT/tree/0417f6e16ad64f92f79002293f54fd705c1dbc80).
+
 Date: 2026-07-19
 
 This note records the evidence used to begin the seven post-M9 research

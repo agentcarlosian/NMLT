@@ -1,67 +1,232 @@
-manifest_version = "2.0.0-dynamic-product"
+manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-08-31"
+scope = "Active NMLT language-and-mathematics pivot only"
 
-outside_tcb = [
-  "examples and explanatory prose",
-  "the nmlt-eval reference explorer and its state counts",
-  "proof search, fuzzers, mutation generators, and test counts",
+forbidden_claims = [
+  "semantic verification from parsing or Rust typechecking",
+  "verified source translation from a source digest",
+  "proof or model checking from nmlt-eval exploration",
+  "dynamic step existence or reachability from conditional step lifting",
+  "general open-interface preservation by the current closed binary product",
+  "liveness or fairness transport from the current safety theorem",
+  "production authorization by any current NMLT output",
 ]
 
 residual_trust = [
-  "host CPU, memory, kernel, filesystem, and process isolation",
-  "Rust and Lean bootstrap and compiler toolchains",
-  "SHA-256 and operating-system process execution",
-  "GitHub-hosted runner images and dependency delivery",
-  "no verified compiler theorem connects Rust elaboration to Lean semantics",
+  "host CPU, memory, kernel, filesystem, process isolation, and SHA-256 implementation",
+  "Rust and Lean bootstrap and downloaded tool binaries",
+  "Cargo and Lake dependency delivery, linker, and system libraries",
+  "GitHub-hosted runner images and network delivery",
+  "correctness of hand-written Lean definitions relative to intended NMLT meaning",
+  "maintainer review and private reporting channels",
 ]
 
-forbidden_claims = [
-  "semantic verification from parsing or Rust type acceptance",
-  "compiler correctness from a matching source digest",
-  "unbounded proof from finite exploration",
-  "step existence, reachability, fairness, or liveness from conditional lifting",
-  "production authorization by any pre-alpha NMLT result",
+[[claim_profiles]]
+name = "rust_frontend_acceptance"
+ceiling = "structural, resolution, typing, or retained elaboration-validation result only"
+trusted_components = [
+  "toolchain.rust",
+  "rust.frontend",
+  "rust.hir",
+  "rust.ir",
+  "rust.elaborator",
+  "rust.elaboration_validator",
+  "rust.compiler_driver",
+  "rust.cli",
+]
+
+[[claim_profiles]]
+name = "behavior_artifact_reproducibility"
+ceiling = "byte equality for the committed primary fixture only"
+trusted_components = [
+  "toolchain.rust",
+  "rust.behavior_compiler",
+  "rust.cli",
+  "artifact.schema",
+  "build.gates",
+]
+
+[[claim_profiles]]
+name = "lean_artifact_semantics"
+ceiling = "checked Lean statements for the supplied decoded artifact; no verified Rust translation"
+trusted_components = [
+  "toolchain.lean",
+  "lean.behavior_semantics",
+  "lean.artifact_decoder",
+  "lean.semantic_closure",
+  "lean.kernel_audit",
+  "build.gates",
+]
+
+[[claim_profiles]]
+name = "rust_reference_exploration"
+ceiling = "assurance none"
+trusted_components = [
+  "toolchain.rust",
+  "rust.evaluator",
+  "rust.cli",
+]
+
+[[claim_profiles]]
+name = "retained_elaboration_metatheory"
+ceiling = "the checked Lean statements for the retained ordinary typed-elaboration model; no Rust correspondence beyond those statements"
+trusted_components = [
+  "toolchain.lean",
+  "lean.retained_metatheory",
+  "lean.kernel_audit",
+  "build.gates",
 ]
 
 [[components]]
-name = "rust_language_pipeline"
+id = "toolchain.rust"
+paths = ["rust-toolchain.toml", "Cargo.lock"]
+role = "Compile the active Rust workspace; bootstrap and system toolchain remain residual trust."
+
+[[components]]
+id = "toolchain.lean"
 paths = [
-  "crates/nmlt-core",
-  "crates/nmlt-hir",
-  "crates/nmlt-ir",
-  "crates/nmlt-elaborate",
-  "crates/nmlt-compile",
-  "crates/nmlt-kernel",
-  "crates/nmlt-cli",
+  "mechanization/lean/lean-toolchain",
+  "mechanization/lean/lakefile.toml",
+  "mechanization/lean/lake-manifest.json",
 ]
-role = "lossless parsing, resolution, typed formation, and artifact production"
-claim_ceiling = "implementation acceptance and reproducibility only"
+role = "Compile and kernel-check the active Lean package."
 
 [[components]]
-name = "lean_behavior_semantics"
+id = "rust.frontend"
+paths = [
+  "crates/nmlt-core/src/lexer.rs",
+  "crates/nmlt-core/src/cst.rs",
+  "crates/nmlt-core/src/syntax.rs",
+  "crates/nmlt-core/src/untyped.rs",
+  "crates/nmlt-core/src/diagnostic.rs",
+]
+role = "Preserve exact source bytes, construct syntax, project recognized forms, and report diagnostics."
+
+[[components]]
+id = "rust.hir"
+paths = [
+  "crates/nmlt-hir/src/hir.rs",
+  "crates/nmlt-hir/src/identity.rs",
+  "crates/nmlt-hir/src/model.rs",
+  "crates/nmlt-hir/src/resolver.rs",
+  "crates/nmlt-hir/src/resolve_terms.rs",
+  "crates/nmlt-hir/src/surface.rs",
+  "crates/nmlt-hir/src/term.rs",
+]
+role = "Resolve the closed source set and construct exact named HIR."
+
+[[components]]
+id = "rust.ir"
+paths = [
+  "crates/nmlt-ir/src/model.rs",
+  "crates/nmlt-ir/src/validate.rs",
+  "crates/nmlt-ir/src/behavior.rs",
+]
+role = "Define and validate ordinary typed core and first-class behavioral IR."
+
+[[components]]
+id = "rust.elaborator"
+paths = [
+  "crates/nmlt-elaborate/src/elaborate.rs",
+  "crates/nmlt-elaborate/src/model.rs",
+  "crates/nmlt-certificate/src/model.rs",
+]
+role = "Produce the retained typed-core elaboration and its untrusted replay data."
+
+[[components]]
+id = "rust.elaboration_validator"
+paths = [
+  "crates/nmlt-kernel/src/check.rs",
+  "crates/nmlt-kernel/src/input.rs",
+  "crates/nmlt-kernel/src/wire.rs",
+]
+role = "Replay the retained ordinary typed-elaboration boundary; not a behavior prover."
+
+[[components]]
+id = "rust.compiler_driver"
+paths = ["crates/nmlt-compile/src/lib.rs"]
+role = "Coordinate source processing and retained typed-core validation."
+
+[[components]]
+id = "rust.behavior_compiler"
+paths = ["crates/nmlt-compile/src/behavior.rs"]
+role = "Compile the supported finite behavior surface to behavior-core-v1."
+
+[[components]]
+id = "rust.evaluator"
+paths = ["crates/nmlt-eval/src/lib.rs"]
+role = "Explore canonical artifacts with assurance none."
+
+[[components]]
+id = "rust.cli"
+paths = ["crates/nmlt-cli/src/main.rs"]
+role = "Route frontend, artifact, and exploration commands without raising their claim ceilings."
+
+[[components]]
+id = "artifact.schema"
+paths = [
+  "schemas/behavior-core-v1.schema.json",
+  "examples/pivot/visible_resource_sync.nmlt",
+  "examples/pivot/visible_resource_sync.behavior-core-v1.json",
+]
+role = "Define and instantiate the current finite artifact envelope."
+
+[[components]]
+id = "lean.behavior_semantics"
 paths = [
   "mechanization/lean/NMLT/Behavior/ResourceBehavior.lean",
   "mechanization/lean/NMLT/Behavior/ResourceWorld.lean",
+  "mechanization/lean/NMLT/Examples/ResourceWorldTransfer.lean",
   "mechanization/lean/NMLT/Counterexamples/ResourceBehaviorControls.lean",
   "mechanization/lean/NMLT/Counterexamples/ResourceWorldControls.lean",
-  "mechanization/lean/NMLT/Examples/ResourceWorldTransfer.lean",
 ]
-role = "static behavior semantics plus separate affine authority-world product steps, conditional full step lifting, and controls"
-claim_ceiling = "checked conditional declarations only; no step existence, reachability, or static/dynamic equivalence"
+role = "Define current static behavior semantics and auxiliary dynamic authority-world semantics."
 
 [[components]]
-name = "artifact_decoder"
+id = "lean.retained_metatheory"
 paths = [
-  "mechanization/lean/NMLT/Artifact/BehaviorCore.lean",
+  "mechanization/lean/NMLT.lean",
+  "mechanization/lean/NMLT/Core/Transition.lean",
+  "mechanization/lean/NMLT/Core/TypedCore.lean",
+  "mechanization/lean/NMLT/Typing/Judgments.lean",
+  "mechanization/lean/NMLT/Metatheory/Soundness.lean",
+  "mechanization/lean/NMLT/Correspondence/M9Kernel.lean",
+]
+role = "Retain and kernel-check the ordinary typed-elaboration definitions and theorems; not behavioral semantics or verified compilation."
+
+[[components]]
+id = "lean.artifact_decoder"
+paths = ["mechanization/lean/NMLT/Artifact/BehaviorCore.lean"]
+role = "Decode and validate the finite artifact envelope."
+
+[[components]]
+id = "lean.semantic_closure"
+paths = [
   "mechanization/lean/NMLT/Artifact/SemanticClosure.lean",
   "mechanization/lean/NMLT/Artifact/CheckMain.lean",
 ]
-role = "canonical decoding, source-byte identification, and artifact-derived static theorem construction"
-claim_ceiling = "decoded semantics and checked theorem instance, not verified source translation"
+role = "Construct finite behaviors, decide premises, and build conditional theorem witnesses."
 
 [[components]]
-name = "reference_explorer"
-paths = ["crates/nmlt-eval"]
-role = "bounded operational inspection"
-claim_ceiling = "none"
+id = "lean.kernel_audit"
+paths = [
+  "mechanization/lean/AXIOMS.md",
+  "tools/check_metatheory.sh",
+  "tools/check_nanoda.sh",
+]
+role = "Reject unchecked placeholders and audit focused theorem dependencies."
+
+[[components]]
+id = "build.gates"
+paths = [
+  "Cargo.toml",
+  "Makefile",
+  ".github/workflows/ci.yml",
+]
+role = "Compose Rust, artifact-reproduction, and Lean checks; not a reproducible or signed release pipeline."
+
+[[components]]
+id = "repository.hygiene"
+paths = ["tools/check_public_surface.py", ".gitignore"]
+role = "Reject stale public links, missing trust-inventory paths, removed active component names, and tracked PDF output."
