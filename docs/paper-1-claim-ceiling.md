@@ -1,110 +1,111 @@
 # Paper 1 claim ceiling
 
-**Working theme:** Resource-aware contextual refinement for an open
-programming language
+**Working theme:** Resource-aware weak refinement for a finite programming
+language core
 
-**Status:** active post-pivot ceiling
+**Status:** active post-pivot ceiling; the manuscript is not submission-ready
 
-**Normative source fixture:**
-`examples/pivot/visible_resource_sync.nmlt`
+This file is the single claim ceiling for the Paper 1 directory.
 
-**Normative theorem modules:**
-`NMLT.Behavior.ResourceBehavior` and `NMLT.Artifact.SemanticClosure`
+## Claims currently allowed
 
-This document controls what Paper 1 may claim. Earlier prose about the detached
-OpenSystem checker, the standalone label-to-resource lift, or a fairness
-counterexample is historical and must not be submitted under this ceiling.
+1. NMLT defines a finite resource-bearing `Behavior` in Lean with state,
+   initialization, transition, observation, action visibility, port
+   annotations, declared capability ownership, grades, and rely/guarantee
+   profiles.
+2. `ResourceBehavior.parallel` has actual left, right, and synchronized
+   step constructors.
+3. `Composable` is the current language product-formation judgment. It
+   checks wiring, visibility, direction/payload agreement, declared ownership
+   partition, matched transfer/receive, and rely discharge.
+4. `ResourceWeakRefinement` attaches state/observation maps,
+   hidden/visible step conditions, resource refinement, and concrete
+   hidden-profile compatibility to stutter.
+5. `liftParallel` is a checked conditional theorem over the actual
+   static product-step relation.
+6. `SemanticClosure` constructs finite behaviors from a decoded
+   `behavior-core-v1` artifact, decides the repository's formation and
+   refinement bundle, and constructs `Certificate.lifted`.
+7. The Rust gate regenerates the committed primary artifact byte-for-byte, and
+   the Rust explorer displays a two-state synchronization with total grade
+   `work=3` and a one-time transfer as non-authoritative inspection.
+8. The separate hand-written Lean `ResourceWorldTransfer` example
+   constructs an actual dynamic synchronization and proves its exact ownership
+   change.
+9. `ResourceWorld.liftProductSteps` gives conditional one-step dynamic
+   lifting for local, peer, synchronized, and resource-compatible hidden steps.
 
-## Contribution that may be claimed
+## Required qualifications
 
-NMLT defines one resource-bearing open behavior semantics in Lean and proves a
-conditional binary-composition theorem over its actual product transition
-relation. A concrete resource-aware weak refinement lifts through composition
-when:
+- The static product and dynamic authority-world product are distinct semantic
+  layers. No correspondence theorem currently unifies them.
+- The static product is a closed binary construction for the current fixture,
+  not a general open-interface-preserving operator. It does not preserve
+  peer-side hiding, direction, or payload on product actions.
+- The dynamic layer has no behavior-level initializer or observation, and the
+  static and dynamic layers have no correspondence theorem.
+- `ResourceWeakRefinement` has no separate path/trace adequacy theorem. The
+  checked result is closure of the defined one-step relation under product.
+- The theorem does not use every field of the bundled product-formation
+  judgments. The formation controls demonstrate rejection of malformed
+  products; they do not prove logical necessity or minimality of every premise.
+- The artifact source digest identifies the separately supplied source bytes.
+  Lean does not re-run Rust elaboration. Byte-for-byte compiler reproduction is
+  established only by the repository fixture gate.
+- `Certificate.liftedStep` maps any supplied dynamic step; it does not
+  prove that the decoded initial state admits such a step or that the step is
+  reachable.
+- Received authority is not yet available to later receiver actions.
+- Consumption can vacate authority. Claims should say ownership uniqueness,
+  no fabrication under the encoded rules, and explained changes—not authority
+  conservation.
 
-- the complete wiring relation is preserved;
-- connected actions are not hidden;
-- directions and payloads are compatible;
-- component ownership is an affine capability partition;
-- synchronized transfer and receive profiles match exactly;
-- concrete grades pointwise refine abstract grades and product grades add;
-- synchronized reliance is discharged by the peer guarantee; and
-- every hidden concrete step maps to equal abstract state and its complete
-  resource profile refines stutter.
+## What the controls establish
 
-The theorem is
-`NMLT.Behavior.ResourceBehavior.liftParallel`. It constructs a lifted witness
-for `parallel concrete peer concreteConnection` and
-`parallel abstract peer abstractConnection`; it does not reason through a
-detached label-resource function.
+`ResourceBehaviorControls` and the negative source fixtures separately
+exercise:
 
-The primary executable instance is no longer a hand-mirrored Lean example.
-`NMLT.Artifact.SemanticClosure` decodes
-`examples/pivot/visible_resource_sync.behavior-core-v1.json`, constructs the
-sender, receiver, state map, and two products from the artifact itself, and
-decides the complete premise bundle. `Certificate.lifted` then applies
-`liftParallel` to that dependent certificate. The instance synchronizes the
-sender and receiver, moves one nominal affine `permit`, discharges
-`Authorized`/`Ready` contracts, and composes grades `work=1` and `work=2` into
-`work=3`.
+- hidden connected boundaries;
+- incomplete wiring preservation;
+- shared declared capability ownership;
+- unmatched transfer and receive;
+- nonmonotone grades;
+- undischarged reliance;
+- hidden resource effects; and
+- incomplete state maps and incompatible ports.
 
-The exact source elaborates to
-`examples/pivot/visible_resource_sync.behavior-core-v1.json`. Lean's artifact
-checker accepts that source-bound artifact only after constructing the finite
-semantics and obtaining the theorem certificate. Rust exploration is
-illustrative only and makes no theorem or model-check claim.
-
-## Negative controls that may be claimed
-
-`NMLT.Counterexamples.ResourceBehaviorControls` contains permanent theorems
-showing concrete failures when the following premises are independently
-omitted:
-
-1. hidden-boundary isolation;
-2. whole-wiring preservation;
-3. capability partition;
-4. exact transfer/receive matching;
-5. pointwise grade preservation;
-6. rely discharge; and
-7. hidden-step resource compatibility.
-
-The corresponding `.nmlt` fixtures test distinct compiler diagnostics. These
-controls establish necessity for the encoded lifting construction and examples;
-they do not claim model-universal minimality.
+They establish that the current formation/refinement definitions and compiler
+reject those cases. Do not describe all of them as countermodels to weakened
+congruence theorems.
 
 ## Required non-claims
 
-Paper 1 must state all of the following:
+Paper 1 must not claim:
 
-- No fairness field or behavior-indexed fairness theorem exists in this core
-  version.
-- No liveness, divergence, or infinite-trace property is transported.
-- `HiddenDivergence` is quarantined and is not yet a fairness counterexample.
-- The Rust frontend is not verified against the Lean semantics. Exact snapshots
-  and source digests provide auditability, not compiler correctness.
-- `nmlt-eval` is a bounded reference evaluator, not a prover or model checker.
-- The theorem is finite, binary, and safety/resource scoped.
-- No general composition, user-defined grade algebra, higher-order state map,
-  probabilistic behavior, hybrid behavior, code generation, or runtime
-  attestation result is claimed.
-- The project is a pre-alpha language research system, not a complete verified
-  programming language.
+- verified Rust-to-Lean compilation;
+- source/artifact correspondence for arbitrary accepted artifacts;
+- one unified static/dynamic behavior semantics;
+- general open-system interface preservation;
+- dynamic initialization or observation;
+- path/trace adequacy of the refinement relation;
+- theorem-premise minimality;
+- artifact-derived dynamic step existence or reachability;
+- fairness, divergence, infinite traces, or liveness transport;
+- reusable post-receive authority;
+- arbitrary composition, grade algebras, or infinite state;
+- proof or model-check authority for `nmlt-eval`; or
+- production readiness.
 
-## Trusted boundary and axiom report
+## Required artifacts
 
-The claimed proof artifacts use Lean 4.30.0 and the hand-written modules in the
-active `NMLT` library. The clean gate forbids `sorry`, `sorryAx`, `admit`,
-`native_decide`, and project-declared axioms.
+- `mechanization/lean/NMLT/Behavior/ResourceBehavior.lean`
+- `mechanization/lean/NMLT/Behavior/ResourceWorld.lean`
+- `mechanization/lean/NMLT/Artifact/BehaviorCore.lean`
+- `mechanization/lean/NMLT/Artifact/SemanticClosure.lean`
+- `examples/pivot/visible_resource_sync.nmlt`
+- `examples/pivot/visible_resource_sync.behavior-core-v1.json`
+- `mechanization/lean/AXIOMS.md`
 
-Both `liftParallel` and `Certificate.lifted` report exactly `[propext]`.
-The approved foundations are documented in
-`mechanization/lean/AXIOMS.md`. No Mathlib or Aeneas dependency is required by
-the active Lean package.
-
-## Publication gate
-
-The current TeX draft predates this pivot and is not submission-ready. Before a
-paper tag is cut, its theorem names, figures, examples, and reproducibility
-appendix must cite only the unified theorem, the primary source/artifact pair,
-and the active controls above. The quarantined branch and historical release
-may be discussed as provenance, not as current proof evidence.
+The paper gate must run the complete Rust/Lean reproduction, pass the focused
+axiom audit, contain no generated PDF in Git, and receive independent semantic
+and cross-family critical review.

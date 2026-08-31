@@ -1,4 +1,8 @@
-# Canonical example corpus v1
+# Historical canonical frontend corpus
+
+> This July 2026 corpus remains authoritative for lossless frontend coverage
+> and design provenance only. Its old verifier/model-checker oracle column is a
+> historical plan; removed engines are not part of the active workspace.
 
 Status: non-authoritative human-readable summary of the corpus frozen on
 2026-07-18. The sole machine-readable authority is

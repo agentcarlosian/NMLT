@@ -30,4 +30,5 @@ __pycache__/
 papers/**/*.aux
 papers/**/*.out
 papers/**/*.log
+**/*.pdf
 papers/**/preview-*.png

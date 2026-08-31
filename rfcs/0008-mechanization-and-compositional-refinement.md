@@ -1,6 +1,6 @@
 # RFC 0008: Lean mechanization and compositional refinement
 
-- Status: Under review
+- Status: Superseded; retained as pre-pivot research input
 - Authors: Carlosian <carlosian@agentmail.to>
 - Revised: 2026-08-27 (finite observation-trace inclusion named; surface complementary polarity including optional action polarity; boolean-sketch adapter to HiddenConnectedAction; Lean vs OpenSystem receiver split)
 - Created: 2026-07-18
@@ -383,7 +383,7 @@ set, theorem name, and whether the result is the counterexample or the bounded
 positive theorem. The Rust finite instance checker uses related but nonidentical
 interfaces and contracts; passing it is not a Lean/Rust correspondence proof.
 The machine-readable
-[`m11-001a-evidence.json`](../benchmarks/results/open-composition/m11-001a-evidence.json)
+[`m11-001a-evidence.json`](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/benchmarks/results/open-composition/m11-001a-evidence.json)
 and `tools/check_open_composition_evidence.py` bind the exact source set,
 theorem/control handles, toolchain, checkers, TCB inventory, and observed axiom
 output. Its positive controls include a nonidentity state map and a real

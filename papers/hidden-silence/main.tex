@@ -29,6 +29,12 @@
 \begin{document}
 \maketitle
 
+\paragraph{Draft status.}
+This manuscript is a working research draft.  The Lean declarations and the
+repository's current claim ceiling are authoritative when prose here is
+incomplete.  In particular, the current development does not establish
+minimality or logical necessity of every product-formation field.
+
 \begin{abstract}
 \nmlt{} is a pre-alpha programming language for expressing finite open
 behaviors with typed ports, affine capabilities, additive grades, and
@@ -37,8 +43,9 @@ Lean~4; Rust supplies a lossless frontend, typed elaboration, a deterministic
 semantic artifact, and a non-authoritative reference explorer.
 
 We define resource-aware weak refinement directly over the step relation of a
-single behavior object and prove that it lifts through binary composition when
-the wiring is preserved and both products are well formed.  Product formation
+single static behavior object and prove that it lifts through the current
+binary composition when the wiring is preserved and both products are admitted
+by the formation judgment.  Product formation
 requires complementary port directions and equal payloads, excludes connected
 hidden actions, partitions affine authority, matches transfer and receive
 profiles exactly, and discharges synchronized relies with peer guarantees.
@@ -46,6 +53,14 @@ Refinement preserves capability effects, is pointwise monotone in additive
 grades, and requires every hidden step to refine the resource-free stutter
 profile.  The theorem is instantiated by one source program that transfers a
 nominal capability exactly once while accumulating a nonzero grade.
+
+The current static product closes synchronized actions and does not yet preserve
+a general open product interface.  A separate dynamic resource-world layer
+tracks authority movement for supplied product steps; the artifact certificate
+does not establish step existence or reachability.
+No path, trace, or reachability adequacy theorem has yet been proved for the
+resource-weak-refinement relation.  The result establishes closure of the
+defined one-step relation under the current product.
 
 This result is safety-oriented.  It does not state or transport fairness,
 infinite-trace, divergence, or liveness properties, and it does not constitute
@@ -112,7 +127,7 @@ exist.  Its resource profile is the parallel combination of the two actual
 action profiles, so the theorem cannot substitute a detached
 label-to-resource interpretation.
 
-A formed product establishes:
+A product admitted by the current formation judgment establishes:
 \begin{enumerate}
   \item complementary input/output directions and equal typed payloads;
   \item no connected hidden action;
@@ -122,6 +137,9 @@ A formed product establishes:
 \end{enumerate}
 Wiring equivalence preserves and reflects the complete binary connection
 relation.  It therefore preserves isolation as well as synchronization.
+The formation judgment is also the language boundary for several invariants.
+The current lifting proof does not consume every field of that judgment, so no
+minimality or per-field necessity result is claimed.
 
 \section{Resource-aware weak refinement}
 
@@ -159,26 +177,35 @@ matching input.  Sender work grades are two and one, respectively, while
 receiver work is two.  The sender relies on \texttt{Ready} and guarantees
 \texttt{Authorized}; the receiver supplies the dual contract.
 
-The explicit state refinement is identity.  The concrete visible
-synchronization moves authority from the sender to the receiver, changes the
-  receiver's observed bit, and has composed work grade three.  Lean decodes the
+The explicit state refinement is identity.  Rust exploration of the concrete
+visible synchronization moves authority from the sender to the receiver,
+changes the receiver's observed bit, and reports composed work grade three.
+Lean decodes the
   canonical artifact into the actual finite behaviors, checks the complete
   premise bundle, and applies
   \texttt{NMLT.Artifact.SemanticClosure.Certificate.lifted}; there is no
   hand-mirrored source example in the proof tree.
 
+The dynamic theorem
+\texttt{NMLT.Artifact.SemanticClosure.Certificate.liftedStep} maps any supplied
+concrete dynamic product step to a matching abstract one.  It is conditional on
+that step; the present artifact checker does not derive an initial step or prove
+reachability.  The static pair-state behavior and the dynamic resource-world
+state are related operationally by design but do not yet have a proved
+correspondence theorem.
+
 \section{Negative controls}
 
-Permanent controls show that the theorem cannot simply drop each of the
-following obligations:
+Permanent controls independently violate each of the following formation or
+refinement obligations:
 \begin{center}
 \begin{tabular}{ll}
 \toprule
-Omitted obligation & Witnessed failure\\
+Violated obligation & Rejected configuration\\
 \midrule
 hidden-boundary isolation & a hidden action remains connected\\
-whole-wiring preservation & an isolated step becomes synchronized\\
-capability partition & both components own the same authority\\
+whole-wiring preservation & the two connection relations disagree\\
+capability partition & two ownership predicates contain the same authority\\
 transfer matching & transfer lacks a matching receive\\
 grade preservation & concrete work exceeds abstract work\\
 rely discharge & the peer omits a required guarantee\\
@@ -192,6 +219,8 @@ separate diagnostics for hidden consumption, hidden nonzero grade, hidden
 extra reliance, incompatible ports, undischarged reliance, shared ownership,
 unmatched transfer, and incomplete state maps.  None is accepted merely by a
 generic hidden-action rejection.
+The controls establish distinct rejected boundaries.  They do not prove that
+every field is logically necessary for every possible congruence statement.
 
 \section{Trusted base and claim ceiling}
 

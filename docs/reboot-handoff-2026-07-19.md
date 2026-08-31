@@ -107,13 +107,13 @@ correspondence between the executable checker and Lean statement.
 ## Important files
 
 - [`Plan.md`](../Plan.md) — authoritative milestone gates and open items
-- [`crates/nmlt-temporal/src/open.rs`](../crates/nmlt-temporal/src/open.rs) —
+- [`crates/nmlt-temporal/src/open.rs`](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/crates/nmlt-temporal/src/open.rs) —
   executable M11-001a profile
-- [`OpenComposition.lean`](../mechanization/lean/NMLT/Behavior/OpenComposition.lean)
+- [`OpenComposition.lean`](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/mechanization/lean/NMLT/Behavior/OpenComposition.lean)
   — checked structural results and controls
 - [M11 research note](research-notes/m11-open-system-refinement-2026-07-19.md)
   — sources, frozen semantics, and nonclaims
-- [M11 evidence manifest](../benchmarks/results/open-composition/m11-001a-evidence.json)
+- [M11 evidence manifest](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/benchmarks/results/open-composition/m11-001a-evidence.json)
   — exact machine-readable claim and identity
 - [`docs/threat-model.md`](threat-model.md) and
   [`security/trusted-components.toml`](../security/trusted-components.toml) —

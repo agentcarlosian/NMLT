@@ -62,7 +62,7 @@ and resource variance, authority narrowing, and whole wiring. The eleven shared
 controls bind the executable checks and Lean handles. This is a proof-carrying
 canonical-certificate boundary, but the Rust encoder and validator are not
 verified extraction. The
-[claim-specific evidence](../../benchmarks/results/open-congruence/m11-001c-evidence.json)
+[claim-specific evidence](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/benchmarks/results/open-congruence/m11-001c-evidence.json)
 records `verified_implementation_theorem = false` for that reason.
 
 ## Negative controls

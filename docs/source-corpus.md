@@ -82,7 +82,7 @@ Accordingly, the independently re-encoded provider-attempt benchmark binds the
 MIT artifact, not an inferred Apache license choice. Its release-relevant
 source paths, hashes, license, and older frozen upstream revision
 `a6802d9e13500113d096f4f66f806d0dc26248fc` are recorded in
-[`benchmarks/provider-attempt/provenance.json`](../benchmarks/provider-attempt/provenance.json).
+[`benchmarks/provider-attempt/provenance.json`](https://github.com/agentcarlosian/NMLT/blob/build-week-judge-demo-2026/benchmarks/provider-attempt/provenance.json).
 The mutable checkout's current revision does not silently replace that frozen
 benchmark identity.
 

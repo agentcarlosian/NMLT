@@ -14,7 +14,8 @@
 The same gate:
 
 - builds the complete active Lean target;
-- accepts the source-bound canonical behavior artifact;
+- accepts the canonical behavior artifact and confirms its asserted digest
+  matches the separately supplied source bytes;
 - rejects a stale source digest;
 - rejects a malformed transfer/receive profile;
 - rejects a structurally valid artifact whose visible steps fail refinement;
@@ -24,3 +25,7 @@ The same gate:
 The retained M9 elaboration-validation metatheory reports propext and, for
 quotient-based declarations, Quot.sound. Those declarations are not used to
 claim verified compilation of the new behavior artifact.
+
+Later dynamic declarations and the live allowlist are audited in
+`mechanization/lean/AXIOMS.md`. This dated report does not supersede that
+file.

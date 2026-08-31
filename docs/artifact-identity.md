@@ -1,7 +1,17 @@
 # Canonical source and evidence identity
 
+> Mixed-status document. Exact-byte source and canonical identity principles
+> remain design input; sections about removed evidence manifests are historical.
+> The active behavioral envelope is `behavior-core-v1`, and its source digest
+> identifies supplied bytes rather than proving compiler correspondence.
+
 Status: normative for identity version 1. Cryptographic identity binds exact
 bytes and declared meaning; filesystem paths and display names are metadata.
+
+`behavior-core-v1.source_sha256` is a deliberate interoperability exception to
+the domain-separated identities below: it stores lowercase bare SHA-256 of the
+exact source bytes so the Lean checker can compare it with `sha256sum`. It is an
+identifier for the separately supplied bytes, not a proof of elaboration.
 
 ## Encoding primitives
 

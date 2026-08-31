@@ -36,7 +36,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install Rust toolchain for artifact reproduction
+      - name: Install Rust toolchain for independent NanoDA checker
         run: rustup toolchain install 1.94.0 --profile minimal
 
       # Keep dependency state outside the source checkout. This also makes the

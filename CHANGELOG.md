@@ -12,14 +12,31 @@ NMLT is pre-alpha and does not yet promise compatibility.
   transfer, additive grades, contract facts, binary composition, explicit
   connections, observations, action hiding, and total refinement state maps to
   the source-to-core path.
-- Added deterministic `behavior-core-v1` with exact source binding, typed term
+- Added deterministic `behavior-core-v1` with exact source-digest identification, typed term
   ASTs, action resource profiles, compositions, and refinement witnesses.
 - Added the resource-bearing Lean `Behavior`, real product-step relation,
   resource-aware weak refinement, conditional `liftParallel` theorem, primary
-  fixture instantiation, and seven permanent premise controls.
+  fixture instantiation, and seven permanent boundary controls.
 - Added a Lean artifact decoder with source-digest checking and fail-closed
   resource/contract validation.
 - Added `nmlt-eval` for explicitly non-verifying artifact exploration.
+- Added a dynamic affine authority-world layer with local consumption,
+  synchronized transfer, ownership uniqueness, and explained world changes.
+- Added conditional one-step dynamic lifting for visible local, peer,
+  synchronized, and resource-compatible hidden steps.
+- Attached the conditional dynamic witness to decoded artifact certificates;
+  step existence and reachability remain unclaimed.
+
+### Public project surface
+
+- Reframed the repository around a new programming language and its
+  mechanized mathematics.
+- Rebuilt the active security policy, threat model, trusted-component
+  inventory, roadmap, Lean guide, contribution guidance, and claim ceiling.
+- Distinguished source identification from verified translation,
+  product-formation policy from theorem necessity, and conditional step lifting
+  from reachability.
+- Removed the generated Paper 1 PDF from version control.
 
 ### CLI and gates
 
@@ -38,5 +55,5 @@ NMLT is pre-alpha and does not yet promise compatibility.
   contest schemas.
 
 The former release remains immutable at tag `build-week-judge-demo-2026`
-(`0417f6e`). The reviewed follow-up resource patch is preserved on
-`codex/quarantine-grok-resource-pack` and is not merged here.
+(`0417f6e`). A reviewed follow-up resource experiment was kept in a local
+quarantine snapshot and is not part of the active project.

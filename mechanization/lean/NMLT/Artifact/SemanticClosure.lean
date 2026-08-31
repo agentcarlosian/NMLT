@@ -540,7 +540,7 @@ structure ApplicationSummary where
   concreteStates : Nat
   abstractStates : Nat
   peerStates : Nat
-  initialAuthorities : Nat
+  declaredCapabilities : Nat
 deriving Repr
 
 def applicationSummary (application : Application) : ApplicationSummary := {
@@ -552,7 +552,7 @@ def applicationSummary (application : Application) : ApplicationSummary := {
   concreteStates := (stateSpace application.program application.concrete).length
   abstractStates := (stateSpace application.program application.abstract).length
   peerStates := (stateSpace application.program application.peer).length
-  initialAuthorities :=
+  declaredCapabilities :=
     application.concrete.capabilities.length + application.peer.capabilities.length
 }
 

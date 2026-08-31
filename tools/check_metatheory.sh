@@ -123,4 +123,10 @@ if grep -Eq 'sorryAx|Classical.choice|Lean.trustCompiler' "$axiom_log"; then
   exit 1
 fi
 
+if grep 'depends on axioms:' "$axiom_log" |
+    grep -Ev 'axioms: \[(propext|Quot.sound|propext, Quot.sound)\]$'; then
+  echo "error: focused behavior theorem exceeds the approved axiom allowlist" >&2
+  exit 1
+fi
+
 echo "ok: Lean behavior core, artifact-derived theorem closure, decoder controls, no-sorry policy, and axiom audit"

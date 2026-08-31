@@ -10,6 +10,13 @@ insertion path. This allows elaboration to insert explicit coercion or
 state-predicate nodes without losing the exact source origin. `CoreProgramId`
 binds the resolved-HIR identity and the canonical span-free core encoding.
 
+The crate also owns the first-class finite behavioral IR:
+`CorePort`, `CoreResourceProfile`, `CoreAction`,
+`CoreComposition`, and `CoreRefinement`. Resource profiles are
+attached during typed elaboration and are not reconstructed by the evaluator.
+Its canonical JSON decoder rejects duplicate identities, malformed ordering,
+and inconsistent resource entries.
+
 `CoreProgram::new` checks structural typing, graph closure and reachability,
 owner and system agreement, integer canonicality, action frames, local scope,
 and resource ceilings. It does **not** certify that the core faithfully

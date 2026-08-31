@@ -1,8 +1,12 @@
 # NMLT Full Research Plan
 
-**Date:** 2026-08-27  
-**Repo snapshot:** `0417f6e` (main; Build Week judge sprint merged)  
-**Author of plan:** research collaborator notes for Carlosian / sus magi  
+> Dated transition document based on the Build Week repository snapshot. It is
+> retained for research provenance and does not override the active
+> [`Plan.md`](../Plan.md), [roadmap](roadmap.md), or architecture.
+
+**Date:** 2026-08-27
+**Repo snapshot:** `0417f6e` (main; Build Week judge sprint merged)
+**Author of plan:** research collaborator notes for Carlosian / sus magi
 **Intent:** Map the full potential of NMLT as a formal language and mathematical research program, with a publishable near-term paper and a multi-year horizon. This is not a Build Week redo plan.
 
 ---
@@ -30,7 +34,7 @@ NMLT is three coupled bets:
 
 The Build Week Rust verifier and C-to-Rust vignette were a *submission wrapper* around (3), built after the fact so judges had something to click. They are not the program. The program is (1)+(2), with (3) as method.
 
-Working taste for the next year: **one falsifiable theorem at a time, one language slice that can state it, one paper that does not overclaim.** The three-day Codex sprint built an institution. The next phase is slower on purpose.
+Working taste for the next year: **one falsifiable theorem at a time, one language slice that can state it, one paper that does not overclaim.** The three-day assisted research sprint built an institution. The next phase is slower on purpose.
 
 ---
 
@@ -78,12 +82,12 @@ RFC 0001 §4 still states a compose rule whose “hidden synchronization → sil
 
 The field already has:
 
-- TLA+ / Quint — stuttering, refinement maps, executable specs  
-- I/O automata — receptiveness, compositional traces  
-- Linear / affine types — non-duplicable authority  
-- Graded modal types (Granule et al.) — resource algebras  
-- Session types — protocol composition and (increasingly) liveness  
-- Small checkers / proof-carrying code — untrusted search, trusted kernel  
+- TLA+ / Quint — stuttering, refinement maps, executable specs
+- I/O automata — receptiveness, compositional traces
+- Linear / affine types — non-duplicable authority
+- Graded modal types (Granule et al.) — resource algebras
+- Session types — protocol composition and (increasingly) liveness
+- Small checkers / proof-carrying code — untrusted search, trusted kernel
 
 **Combining them is not automatically new mathematics.** The combination pays rent only where the ingredients *disagree*.
 
@@ -144,7 +148,7 @@ Only after grades survive hiding and composition in a way that is not “Granule
 ## 4. Paper track (near-term, from what exists)
 
 ### Paper 1 — “Hidden Actions Are Not Contextual Silence”
-**Status:** Writable now; strengthen while writing.  
+**Status:** Writable now; strengthen while writing.
 **Venue shape:** CONCUR / CAV (tools+theory short) / CPP / ITP / JLAMP-style journal later. Start as a tight conference paper.
 
 **Contribution triad:**
@@ -161,10 +165,10 @@ Only after grades survive hiding and composition in a way that is not “Granule
 - Optional: 2-page comparison table vs I/O automata implementation relations and TLA refinement mappings.
 
 **Writing order (do not wait for M11-001c extraction):**
-1. Fix RFC 0001 so it no longer states the refuted rule.  
-2. Freeze theorem statements and example in a `papers/hidden-silence/` (or Overleaf) with claim ceilings.  
-3. Prove or clearly demarcate remaining weak-case obligations as “conjecture / future work.”  
-4. Related work pass: Lynch I/O automata, Lamport stuttering, Abadi–Lamport refinement mappings, recent MPST liveness in Rocq.  
+1. Fix RFC 0001 so it no longer states the refuted rule.
+2. Freeze theorem statements and example in a `papers/hidden-silence/` (or Overleaf) with claim ceilings.
+3. Prove or clearly demarcate remaining weak-case obligations as “conjecture / future work.”
+4. Related work pass: Lynch I/O automata, Lamport stuttering, Abadi–Lamport refinement mappings, recent MPST liveness in Rocq.
 5. Submit when the counterexample + strong repair + necessity story is tight — even if weak congruence is still open.
 
 **Success:** reviewers can re-check Lean; they understand why the tempting rule fails; they see what is still open.
@@ -183,9 +187,9 @@ Only if Orbit D produces a crisp theorem (e.g. erasure soundness for a usable fr
 ## 5. Mathematical roadmap (Orbit A in detail)
 
 ### Phase M-A0 — Hygiene (1–2 weeks)
-- [ ] Revise RFC 0001 composition/hiding to match RFC 0008 diagnosis.  
-- [ ] Add a permanent “refuted candidate” subsection pointing at `noCompositeRefinement`.  
-- [ ] Ensure README/Plan do not describe unconditional congruence as a goal without the interface premises.  
+- [ ] Revise RFC 0001 composition/hiding to match RFC 0008 diagnosis.
+- [ ] Add a permanent “refuted candidate” subsection pointing at `noCompositeRefinement`.
+- [ ] Ensure README/Plan do not describe unconditional congruence as a goal without the interface premises.
 - [ ] Tag a research snapshot: `research-composition-v0` (Lean + RFCs only; ignore judge demo).
 
 ### Phase M-A1 — Weak safety congruence (3–6 months) ★ main quest
@@ -201,22 +205,22 @@ lift(R, id) : (C || D) refines (A || D)
 ```
 
 Order inside M-A1:
-1. Encode ports, directions, connection maps, `I-NO-HIDDEN-BOUNDARY` on the *weak* model (not only strong/exact-action).  
-2. Case split on hidden left / visible left / peer / sync (outline already in RFC 0008 §6).  
-3. Necessity suite: omit each premise → counterexample (extend `Counterexamples/`).  
+1. Encode ports, directions, connection maps, `I-NO-HIDDEN-BOUNDARY` on the *weak* model (not only strong/exact-action).
+2. Case split on hidden left / visible left / peer / sync (outline already in RFC 0008 §6).
+3. Necessity suite: omit each premise → counterexample (extend `Counterexamples/`).
 4. Optional grades/capabilities **after** the pure interface theorem is stable.
 
 **Do not** block M-A1 on Charon equality-soundness or verified encoder extraction. That is systems debt from the M11-001c branch, not the semantic theorem.
 
 ### Phase M-A2 — Authority and grades through composition (after M-A1)
-- Affine capability partition and transfer under sync (`I-CAP`).  
-- Grade homomorphism (`I-GRADE`).  
-- Negative controls: shared capability; nonmonotone grade map.  
+- Affine capability partition and transfer under sync (`I-CAP`).
+- Grade homomorphism (`I-GRADE`).
+- Negative controls: shared capability; nonmonotone grade map.
 - Connect to RFC 0006 / 0012 only as much as the theorem needs.
 
 ### Phase M-A3 — Fairness and divergence (after M-A2)
-- Hidden infinite stutter vs progress.  
-- Fairness transport obligations (`I-FAIR`).  
+- Hidden infinite stutter vs progress.
+- Fairness transport obligations (`I-FAIR`).
 - Keep liveness out of safety papers. Study Rocq MPST liveness mechanization as methodology, not as a reason to switch provers unless Lean coinduction becomes the bottleneck.
 
 ### Phase M-A4 — Correspondence (selective)
@@ -229,30 +233,30 @@ Only prove Rust↔Lean correspondence for definitions that Paper 1–3 cite. Pre
 Goal: **the language you mean is the language the checker and Lean talk about.**
 
 ### L0 — Single source of truth for the fragment (now)
-- Document the M9 supported fragment on one page (steal from RFC 0013 §“Initial supported fragment”).  
-- Mark every example as `executable` | `syntax-only` | `aspirational`.  
+- Document the M9 supported fragment on one page (steal from RFC 0013 §“Initial supported fragment”).
+- Mark every example as `executable` | `syntax-only` | `aspirational`.
 - Fix stale comments (e.g. mutant files saying result is `unknown` when `model-check` refutes).
 
 ### L1 — Promote design fixtures through M9 (1–3 months)
 Make these elaborate + typecheck + (where finite) model-check:
-- `capability` / `consume` / `Once<_>` as in `provider_attempt.nmlt`  
-- `observe`  
-- richer `Phase` enums already used in fixtures  
+- `capability` / `consume` / `Once<_>` as in `provider_attempt.nmlt`
+- `observe`
+- richer `Phase` enums already used in fixtures
 
 Until `examples/technicus/provider_attempt.nmlt` is executable, the flagship example is a poster.
 
 ### L2 — Open systems in the surface (parallel to M-A1)
-- `port`, `assume`, `guarantee`, `compose` (see `trust_chain.nmlt` sketch).  
-- Elaboration into the open-system structures Lean already has.  
+- `port`, `assume`, `guarantee`, `compose` (see `trust_chain.nmlt` sketch).
+- Elaboration into the open-system structures Lean already has.
 - A surface rendering of the ping/receive counterexample as regression syntax.
 
 ### L3 — `refine` and observation maps (after L2)
-- Refinement declarations that produce checkable witnesses (even if only strong/finite first).  
+- Refinement declarations that produce checkable witnesses (even if only strong/finite first).
 - Property transport only with explicit maps (RFC 0001 already requires this).
 
 ### L4 — Usability without abandoning honesty
-- `nmlt fmt`, basic LSP later.  
-- Diagnostics that point at failed interface premises (“hidden label `ping` is connected”) — this turns the math into a language feature.  
+- `nmlt fmt`, basic LSP later.
+- Diagnostics that point at failed interface premises (“hidden label `ping` is connected”) — this turns the math into a language feature.
 - Still no claim of C/Rust parsing.
 
 **Language success metric:** a second person can write an open system in `.nmlt`, compose it, and either get a counterexample in the style of Paper 1 or a bounded refinement certificate — without reading Plan.md.
@@ -263,9 +267,9 @@ Until `examples/technicus/provider_attempt.nmlt` is executable, the flagship exa
 
 Keep this thin but sharp.
 
-- Freeze an **Evidence Kernel** note: constructors, promotion vetoes, identity tuple (source, ruleset, engine, bounds).  
-- Every theorem in Orbit A gets an evidence manifest (you already do this for M11 — generalize the pattern, reduce the markdown sprawl).  
-- Mutant discipline stays mandatory for any “validated slice.”  
+- Freeze an **Evidence Kernel** note: constructors, promotion vetoes, identity tuple (source, ruleset, engine, bounds).
+- Every theorem in Orbit A gets an evidence manifest (you already do this for M11 — generalize the pattern, reduce the markdown sprawl).
+- Mutant discipline stays mandatory for any “validated slice.”
 - Agentic repair (`nmlt-agent`) stays a **method demo**, not a research headline, until Orbit B is real.
 
 ---
@@ -279,7 +283,7 @@ Keep this thin but sharp.
 | 2–3 yr | Fairness/divergence story; maybe constructive temporal fragment; second domain case study (consensus, MCP tool auth, webhook replay) | M-A3, Orbit D seed |
 | 3–5 yr | Graded behaviors with *semantic* grades (not annotation products); optional runtime monitors; external users | Orbit E only if A+B solid |
 
-**Full potential is not “replace TLA+ and Lean.”**  
+**Full potential is not “replace TLA+ and Lean.”**
 Full potential is: **the first practical type theory where open behavioral refinement, linear authority, and typed evidence are one judgment family, and false composition principles are kernel-rejected.**
 
 ---
@@ -301,24 +305,24 @@ Full potential is: **the first practical type theory where open behavioral refin
 ## 10. 30 / 90 / 365 day plan
 
 ### Next 30 days
-1. RFC 0001 repair + changelog entry.  
-2. Paper 1 outline + theorem/claim ceiling doc (2–3 pages).  
-3. Label all examples executable vs syntax-only.  
-4. Re-check Lean metatheory gate on a clean machine; pin axiom dumps for the counterexample and `compositionCongruence`.  
-5. Decide venue target and deadline.  
+1. RFC 0001 repair + changelog entry.
+2. Paper 1 outline + theorem/claim ceiling doc (2–3 pages).
+3. Label all examples executable vs syntax-only.
+4. Re-check Lean metatheory gate on a clean machine; pin axiom dumps for the counterexample and `compositionCongruence`.
+5. Decide venue target and deadline.
 6. Optional: surface syntax sketch of ping/receive as `.nmlt` regression (even if not fully elaborated yet).
 
 ### Next 90 days
-1. Paper 1 first complete draft.  
-2. M-A1 underway: weak model + `I-NO-HIDDEN-BOUNDARY` encoded; at least one new necessity counterexample.  
-3. L1 started: `provider_attempt.nmlt` on the checked pipeline (or a documented subset with an explicit feature ladder).  
+1. Paper 1 first complete draft.
+2. M-A1 underway: weak model + `I-NO-HIDDEN-BOUNDARY` encoded; at least one new necessity counterexample.
+3. L1 started: `provider_attempt.nmlt` on the checked pipeline (or a documented subset with an explicit feature ladder).
 4. Collapse stale handoffs into one `docs/RESEARCH_STATUS.md` pointing at this plan.
 
 ### Next 365 days
-1. Paper 1 submitted and revised.  
-2. M-A1 complete or honestly reduced with a new checked obstruction (either outcome is research progress).  
-3. Paper 2 drafted.  
-4. Language slice L2 usable for open composition examples.  
+1. Paper 1 submitted and revised.
+2. M-A1 complete or honestly reduced with a new checked obstruction (either outcome is research progress).
+3. Paper 2 drafted.
+4. Language slice L2 usable for open composition examples.
 5. One external case study chosen and begun (not provider-attempt).
 
 ---
@@ -326,19 +330,19 @@ Full potential is: **the first practical type theory where open behavioral refin
 ## 11. Operating method (keep what worked in 3 days, drop what did not)
 
 **Keep:**
-- Intent capsule → reference → mutants → witness → independent replay.  
-- `#print axioms` / no `sorry` policy.  
-- Negative controls as permanent artifacts.  
+- Intent capsule → reference → mutants → witness → independent replay.
+- `#print axioms` / no `sorry` policy.
+- Negative controls as permanent artifacts.
 - Explicit residual gaps in every claim.
 
 **Drop:**
-- Parallel invention of seven “complete” phases in one weekend.  
-- Latin/manifesto-first public framing when talking to mathematicians (use it in the thesis statement, not as the abstract).  
-- Treating Codex output as architecture; it remains a search tool.
+- Parallel invention of seven “complete” phases in one weekend.
+- Latin/manifesto-first public framing when talking to mathematicians (use it in the thesis statement, not as the abstract).
+- Treating generated output as architecture; it remains a search tool.
 
 **Cadence:**
-- Weekly: one theorem obligation or one language obligation, not both as “almost done.”  
-- Monthly: rewrite the claim ceiling for Paper 1.  
+- Weekly: one theorem obligation or one language obligation, not both as “almost done.”
+- Monthly: rewrite the claim ceiling for Paper 1.
 - After any failed proof: either a counterexample file or a revised RFC — never an axiom.
 
 ---
@@ -360,16 +364,16 @@ Full potential is: **the first practical type theory where open behavioral refin
 
 You are succeeding if, in twelve months:
 
-1. A stranger can re-check a Lean counterexample that changes how they write hiding+composition rules.  
-2. RFC 0001 no longer contradicts the kernel.  
-3. At least one positive conditional congruence theorem is stated at the strength you claim, no more.  
-4. The flagship `.nmlt` example is executable, not a poster.  
+1. A stranger can re-check a Lean counterexample that changes how they write hiding+composition rules.
+2. RFC 0001 no longer contradicts the kernel.
+3. At least one positive conditional congruence theorem is stated at the strength you claim, no more.
+4. The flagship `.nmlt` example is executable, not a poster.
 5. You have not accumulated three new “bounded seeds” that nobody outside the repo can name.
 
 You are failing if:
 
-- Plan.md grows and theorem count for Orbit A does not.  
-- Evidence JSON outpaces proofs.  
+- Plan.md grows and theorem count for Orbit A does not.
+- Evidence JSON outpaces proofs.
 - The next public artifact is another demo of a 9-state missing guard.
 
 ---
@@ -378,8 +382,8 @@ You are failing if:
 
 **Do this next, before more code:**
 
-1. Patch RFC 0001 composition section.  
-2. Create `docs/paper-1-claim-ceiling.md` with the exact theorems, non-theorems, and figure list for “Hidden Actions Are Not Contextual Silence.”  
+1. Patch RFC 0001 composition section.
+2. Create `docs/paper-1-claim-ceiling.md` with the exact theorems, non-theorems, and figure list for “Hidden Actions Are Not Contextual Silence.”
 3. Start the paper TeX with the counterexample as Section 2 (not the related work as Section 2).
 
 The full potential is large. The way to reach it is to let this one disagreement with the literature finish becoming a theorem, a language construct, and a citation — in that order.

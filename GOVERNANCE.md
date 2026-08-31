@@ -45,7 +45,11 @@ postponed RFC remains a research lead and is not an implied commitment.
 
 ## Changes to the trusted core
 
-Changes to type checking, proof checking, evidence classification, refinement,
-or backend result interpretation require two independent reviews once the
-project has more than one maintainer. Until then, they require an RFC plus a
-written decision record.
+Changes to type checking, Lean semantic authority, artifact interpretation,
+refinement, or assurance wording require two independent reviews once the
+project has more than one maintainer. Until then, they require an RFC or
+written decision record plus a recorded adversarial review.
+
+The public language-and-mathematics pivot is recorded in
+[decision 0004](docs/decisions/0004-language-mathematics-pivot.md). Historical
+Build Week documents do not override that decision.

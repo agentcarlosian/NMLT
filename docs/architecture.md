@@ -1,128 +1,137 @@
 # Architecture
 
-## One language, one behavioral meaning
+## Direction
 
-NMLT has one active semantic path:
+NMLT is organized around one language pipeline and Lean-owned behavioral
+semantics:
 
 ```text
 exact .nmlt bytes
   │
   ├─ lossless CST and surface projection       nmlt-core
-  ├─ resolved names and typed terms           nmlt-hir / nmlt-elaborate
-  ├─ first-class ports, actions, resources    nmlt-ir
-  ├─ deterministic behavior-core-v1           nmlt-compile
+  ├─ resolved names and typed terms            nmlt-hir / nmlt-elaborate
+  ├─ first-class behavioral IR                 nmlt-ir
+  ├─ deterministic behavior-core-v1            nmlt-compile
   │       │
-  │       ├─ normative decode and semantics      Lean
+  │       ├─ finite decode and semantics         Lean
   │       └─ non-verifying operational view      nmlt-eval
   │
-  └─ exact SHA-256 source binding
+  └─ SHA-256 identification of exact source bytes
 ```
 
-The Rust artifact producer is intentionally outside the proof boundary. A
-byte-for-byte snapshot and source digest make its output inspectable; they do
-not prove compilation correctness. Lean decodes the artifact and owns semantic
-acceptance.
+The Rust producer is outside the Lean proof boundary. A digest identifies the
+source bytes supplied alongside an artifact; it does not show that Rust
+translated those bytes into that artifact. The repository's primary fixture has
+an additional reproducibility check: Rust regenerates it and CI requires
+byte-for-byte equality.
 
-## Active components
+## Active Rust components
 
-- `nmlt-core` preserves every source byte, recovers syntax, projects the
-  behavioral forms, and produces stable syntax diagnostics.
-- `nmlt-hir` resolves names and retains stable source identities.
-- `nmlt-ir` contains the ordinary typed core plus the first-class behavioral
-  objects: `CorePort`, `CoreResourceProfile`, `CoreComposition`, and
-  `CoreRefinement`. Resource profiles live on actions and are never inferred by
-  an evaluator backend.
-- `nmlt-elaborate` and `nmlt-certificate` produce inspectable typed-elaboration
-  derivations for the retained compiler-validation boundary.
-- `nmlt-kernel` independently replays that typed-elaboration boundary. Despite
-  its historical name, it is not NMLT's behavior prover and cannot authorize a
-  theorem claim.
-- `nmlt-compile` drives the exact source-to-core path and emits
-  `behavior-core-v1`.
-- `nmlt-eval` explores a canonical artifact for debugging and language design.
-  Its results always carry an assurance level of `none`.
-- `nmlt-cli` exposes `check`, `inspect`, `tokens`, `typecheck`, `elaborate`, and
-  `explore`.
-- `mechanization/lean/NMLT/Behavior/ResourceBehavior.lean` defines the
-  normative behavior object, product transitions, resource-aware refinement,
-  composition premises, and the conditional lifting theorem.
-- `mechanization/lean/NMLT/Behavior/ResourceWorld.lean` is the next dynamic
-  layer: a capability has one optional owner in a shared world; local steps may
-  consume but not move boundary authority; synchronized product steps move
-  authority between distinct owners and preserve everything unaffected. Its
-  transfer theorem proves the sender cannot retain moved authority. Its
-  dynamic lifting theorem weakly matches every product-step constructor through
-  strengthened resource refinement: visible local, peer-local, and synchronized
-  transitions remain transitions, while a hidden local step may stutter only
-  when its mapped control state and complete authority world are unchanged.
-- `mechanization/lean/NMLT/Artifact/BehaviorCore.lean` decodes and validates
-  the finite artifact envelope into typed terms, systems, actions, profiles,
-  wirings, and refinement maps.
-- `mechanization/lean/NMLT/Artifact/SemanticClosure.lean` enumerates the typed
-  finite states, evaluates artifact terms, constructs the normative `Behavior`
-  objects and their real step relations, decides every premise of the
-  refinement-lifting theorem, and returns a proof-carrying certificate. The
-  executable checker also recomputes the exact source digest. It additionally
-  derives the concrete product's initial authority world and exposes its
-  dynamic product-step type. Accepted refinements include the reverse
-  requirement implication needed to preserve world-step enabledness, and the
-  dependent certificate exposes `Certificate.liftedStep` for every step of the
-  decoded product. The original certificate still targets
-  `ResourceBehavior.parallel`; the dynamic witness is a complete one-step
-  simulation, not yet a reachability or trace theorem over authority worlds.
+- `nmlt-core` preserves every source byte, constructs the CST, recovers
+  syntax, and projects recognized declarations with stable diagnostics.
+- `nmlt-hir` resolves names and retains source-derived identities.
+- `nmlt-ir` contains the ordinary typed core and first-class
+  `CorePort`, `CoreResourceProfile`, `CoreComposition`, and
+  `CoreRefinement` objects. Resource profiles live on actions.
+- `nmlt-elaborate` and `nmlt-certificate` produce inspectable
+  derivations for the retained ordinary typed-core boundary.
+- `nmlt-kernel` independently replays that boundary. Its historical
+  name does not make it the behavior prover.
+- `nmlt-compile` drives the supported source routes and emits
+  `behavior-core-v1` for the finite behavioral profile.
+- `nmlt-eval` performs bounded reference exploration with
+  `assurance: none`.
+- `nmlt-cli` exposes `check`, `inspect`, `tokens`,
+  `typecheck`, `elaborate`, and `explore`.
 
-## Behavioral core v1
+## Active Lean components
 
-A behavior contains state, an initial predicate, a step relation, observations,
-action direction and payload, hidden-action classification, owned capabilities,
-and a complete resource profile for every action. A resource profile contains
-required, consumed, transferred, and received authority; an additive grade;
-and rely/guarantee facts.
+- `NMLT.Behavior.ResourceBehavior` defines the current `Behavior`,
+  resource profiles, static binary product, product-formation judgment,
+  resource-aware weak refinement, and conditional `liftParallel` theorem.
+- `NMLT.Behavior.ResourceWorld` defines optional nominal ownership,
+  enabled local/synchronized effects, a dynamic product state/step relation,
+  exact transfer properties, and conditional one-step dynamic lifting.
+- `NMLT.Artifact.BehaviorCore` decodes and validates the finite JSON
+  envelope.
+- `NMLT.Artifact.SemanticClosure` enumerates finite states, interprets
+  decoded terms, constructs behaviors, decides theorem premises, and returns
+  static and dynamic conditional witnesses.
+- `NMLT.Counterexamples` contains product-formation and resource-world
+  controls.
 
-Binary products are formed only when:
+Lean checks the definitions and theorems it is given. It does not prove that
+the Rust compiler produced a faithful translation, that a source model matches
+an unstated human intention, or that an artifact step exists unless such a
+witness is constructed.
 
-1. wiring is complete and preserved;
+## Two current state layers
+
+The repository does not yet have one fully unified resource-bearing behavior:
+
+1. `ResourceBehavior.parallel` uses a pair of component control states
+   and attaches resource profiles to actions.
+2. `ResourceWorld.ProductStep` adds a shared dynamic authority world.
+
+The artifact certificate carries related refinements for both layers, but
+there is no projection/correspondence theorem between their product steps.
+The dynamic layer also lacks a behavior-level initializer and observation.
+
+This is the immediate architectural gap. Until it is closed, “one semantic
+path” means one promoted source/artifact route into Lean—not that the two
+product-state definitions have already been proved identical.
+
+## Product formation and theorem premises
+
+Static binary products are admitted only when:
+
+1. the complete wiring relation is preserved;
 2. connected actions are visible, direction-compatible, and payload-compatible;
-3. component capability ownership is disjoint;
-4. transfer and receive sets match exactly in both directions; and
-5. every synchronized reliance is guaranteed by its peer.
+3. declared component capability ownership is disjoint;
+4. transfer and receive profiles match in both directions; and
+5. every synchronized reliance is discharged by its peer guarantee.
 
-The product step relation has real left, right, and synchronized constructors.
-Synchronized resources add grades, discharge peer reliances, combine
-guarantees, and internalize the matched transfer. Hiding changes observability,
-not resource meaning.
+These are current language formation rules. The existing lifting theorem uses
+only a subset of the bundled formation evidence. The controls demonstrate that
+each malformed product violates its named rule; they do not yet establish that
+each rule is logically necessary for every possible congruence theorem.
 
-Resource-aware weak refinement carries explicit state and observation maps,
-visible-step simulation, hidden-state equality, pointwise resource refinement,
-and complete hidden-step compatibility with stutter. `liftParallel` proves that
-this witness lifts through binary composition when both products are formed
-and the whole wiring relation is preserved.
+## Product interface limitation
 
-Permanent Lean controls show why the theorem cannot drop hidden-boundary
-isolation, whole-wiring preservation, capability partition, transfer matching,
-grade monotonicity, rely discharge, or hidden-step resource compatibility.
-Source fixtures separately exercise the corresponding compiler boundaries.
+The current static product is suitable for the closed two-component fixture,
+but it is not a general open-system constructor. It marks product actions
+internal, assigns a unit payload to the product action, and does not preserve
+peer-side hidden classification for isolated right actions. General
+open-interface preservation is therefore a future result, not a current claim.
+
+## Dynamic authority limitation
+
+The dynamic layer represents one owner or vacancy per capability. It proves
+unique ownership, prevents isolated boundary transfer, and explains
+synchronized ownership changes. Consumption intentionally vacates a
+capability, so the accurate property is uniqueness/no fabrication plus
+explained changes—not conservation.
+
+The current source checker also treats received authority as an action-local
+receive profile. It does not yet make that capability available to a later
+receiver action. Reusable affine continuation belongs to the reachability
+milestone.
 
 ## Assurance vocabulary
 
-The active CLI deliberately does not emit `proved`, `model_checked`, evidence
-manifests, or verification certificates.
-
-- `check` and `inspect` are structural.
-- `typecheck` means the Rust frontend accepted the finite surface slice.
-- `elaborate` creates an auditable artifact.
-- `nmlt-artifact-check` means Lean accepted the current source-bound artifact,
-  constructed its finite behaviors, and instantiated the conditional
-  refinement-through-composition theorem. It is not a compiler-correctness
-  claim.
-- `explore` is a bounded reference execution with no verification claim.
-- Theorems are claims about the Lean definitions and their explicit premises.
+- `check` and `inspect` report structural frontend results.
+- `typecheck` reports Rust frontend acceptance; Lean is not invoked.
+- `elaborate` emits an inspectable artifact that still requires
+  separate Lean checking.
+- `nmlt-artifact-check` validates and interprets the supplied artifact,
+  compares its asserted digest to supplied source bytes, and constructs
+  conditional theorem witnesses. It does not recompile source.
+- `explore` is bounded reference execution with no assurance claim.
+- Theorems are claims about exact Lean statements and explicit premises.
 
 ## Deferred boundaries
 
-The first version has no fairness fields and transports no liveness property.
-Infinite traces, behavior-indexed fairness, probabilistic and hybrid behavior,
-user-defined grade algebras, higher-order or partial state maps, general
-composition, code generation, runtime attestation, and a verified compiler are
-future work. Unsupported constructs fail with stable typed diagnostics rather
-than being assigned an approximate meaning.
+Fairness, divergence, infinite traces, liveness transport, arbitrary
+composition, probabilistic and hybrid behavior, user-defined grade algebras,
+higher-order state maps, verified compilation, code generation, runtime
+attestation, and production assurance remain deferred.

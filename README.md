@@ -1,67 +1,121 @@
 # NMLT
 
-NMLT—New Mathematics, Languages, and Techniques—is a pre-alpha programming
-language research project. Its central experiment is to design a language and
-new compositional mathematics together: programs elaborate into an explicit
-behavioral core, and Lean defines the normative semantics of that core.
+**NMLT—New Mathematics, Languages, and Techniques—is a programming-language
+research project developing a new language and its mathematics together.**
 
-Rust is the language frontend and reference evaluator. It is not the semantic
+NMLT is pre-alpha. It is a research system, not a production verifier, and it
+must not authorize safety-critical, financial, security-critical, or
+irreversible actions.
+
+## Why NMLT
+
+Most languages make values and functions primary, then add concurrency,
+authority, resource use, and proof obligations through separate tools. NMLT
+starts from behavior: which states may change, what a component can observe,
+which boundary actions it may exchange, what authority an action consumes or
+transfers, and which assumptions make composition valid.
+
+The project has two inseparable outputs:
+
+- a human-facing language for describing open, resource-aware systems; and
+- mechanized mathematics for explaining when those systems compose and refine.
+
+Rust implements the lossless frontend, typed elaboration pipeline, canonical
+artifact producer, and a reference explorer. Lean defines the current
+behavioral semantics and checks the theorem premises. Rust is not the semantic
 prover.
 
-## Current vertical slice
+## A small NMLT program
 
-```text
-.nmlt source
-  → lossless syntax, resolution, and typed behavioral elaboration (Rust)
-  → canonical behavior-core-v1 artifact
-  → artifact-derived finite behaviors and theorem-premise closure (Lean)
-  → optional bounded exploration with no verification claim (Rust)
+This excerpt is copied from the checked capability-bearing fixture:
+
+```nmlt
+enum ContractFact { Authorized, Ready }
+
+system ConcreteSender {
+  state unit: Bool = false
+  capability permit: Once<Unit>
+  port output send: Once<Unit>
+
+  action output send grade { work: 1 } {
+    rely ContractFact.Ready
+    guarantee ContractFact.Authorized
+    emit permit
+    consume permit
+  }
+
+  observe unit
+}
+
+system Receiver {
+  state bit: Bool = false
+  port input receive: Once<Unit>
+
+  action input receive(permit: Once<Unit>) grade { work: 2 } {
+    require bit == false
+    rely ContractFact.Authorized
+    guarantee ContractFact.Ready
+    set bit = true
+  }
+
+  observe bit
+}
+
+compose ConcreteNetwork {
+  connect ConcreteSender.send -> Receiver.receive
+}
 ```
 
-The first slice is deliberately finite, binary, and safety-oriented. It has:
+The complete checked example also includes an explicit refinement:
+[`visible_resource_sync.nmlt`](examples/pivot/visible_resource_sync.nmlt).
 
-- finite `Bool`, `Unit`, and enum state with explicit observations;
-- typed input/output ports and one-to-one binary connections;
-- affine nominal capabilities with exact transfer/receive matching;
-- named natural-number grades with pointwise addition and refinement order;
-- nominal rely/guarantee facts discharged at synchronization;
-- explicit refinement state maps and hidden actions; and
-- a Lean theorem lifting resource-aware weak refinement through actual product
-  transitions under wiring, isolation, ownership, transfer, grade, and contract
-  premises.
+## Current working slice
 
-Fairness, liveness, infinite traces, general grade algebras, arbitrary state
-maps, and compiler-correctness are not claimed in this milestone.
+```text
+exact .nmlt bytes
+  → lossless syntax, resolution, and typed elaboration       Rust
+  → deterministic behavior-core-v1 artifact                 Rust
+  → finite behavior construction and premise checking       Lean
+  → conditional composition/refinement witnesses            Lean
+  → bounded operational inspection, assurance: none         Rust
+```
 
-## Resource-world development
+| Area | Current status |
+|---|---|
+| Language | Finite `Bool`, `Unit`, and enum state; observations; typed input/output ports; affine capabilities; named natural-number grades; nominal rely/guarantee facts; binary wiring; explicit state maps |
+| Static semantics | A resource-bearing `Behavior`, binary product steps, resource-aware weak refinement, and a conditional lifting theorem in Lean |
+| Dynamic authority | An additional Lean authority-world layer proves unique ownership changes and conditional one-step lifting; it is not yet integrated into the single `Behavior` object or a reachability theorem |
+| Artifact | Canonical `behavior-core-v1` JSON with a source digest, typed terms, action profiles, wiring, and refinement data |
+| Exploration | `nmlt-eval` explores finite artifacts for language design and debugging, always with `assurance: none` |
 
-The next semantic layer makes affine authority part of transition state rather
-than only an action profile. `NMLT.Behavior.ResourceWorld` defines a shared
-nominal authority world, local consumption, synchronized bidirectional
-transfer, and a dynamic binary-product step. One checked theorem shows
-that a synchronized transfer starts with sender ownership, ends with receiver
-ownership, and cannot be retained by the sender. The full one-step dynamic
-lifting result covers isolated visible actions, unchanged peer actions,
-synchronizations, and hidden stuttering. Hidden stuttering is available only
-after proving both mapped control state and the entire authority world are
-unchanged. The artifact
-decoder now derives the concrete product's initial authority world from
-capability declarations. Artifact acceptance also enforces the reverse
-requirement implication needed for dynamic enabledness, so
-`Certificate.liftedStep` applies to every dynamic step of the decoded product
-itself.
+The source digest identifies the source bytes presented to the Lean checker. The
+checker does not re-run the Rust compiler, so it does not prove that an
+arbitrary artifact was produced from those bytes. The repository gate separately
+reproduces and byte-compares the canonical primary fixture.
 
-This remains a one-step simulation result. Reachability over authority worlds,
-a `behavior-core-v2` encoding of dynamic worlds, and any liveness result are
-not yet claimed by the current Paper 1 result.
+### Explicit non-claims
 
-## Try it
+The current repository does **not** establish:
 
-The primary fixture is
-[`examples/pivot/visible_resource_sync.nmlt`](examples/pivot/visible_resource_sync.nmlt).
+- a verified Rust-to-Lean compiler;
+- existence or reachability of the artifact's dynamic transfer step;
+- preservation of a general open interface by binary product formation;
+- preservation of peer-side hiding, direction, or payload by the current static
+  product;
+- a dynamic behavior initializer, observation, or static/dynamic correspondence
+  theorem;
+- an adequacy theorem connecting `ResourceWeakRefinement` to finite or infinite
+  trace observations;
+- necessity of every product-formation gate for the lifting proof;
+- fairness, divergence, infinite traces, or liveness transport;
+- general composition, arbitrary grade algebras, or infinite state; or
+- proof, model-check, evidence, or runtime authority for the Rust explorer.
+
+## Reproduce the current result
 
 ```bash
-cargo run -p nmlt-cli -- typecheck examples/pivot/visible_resource_sync.nmlt
+cargo run -p nmlt-cli -- typecheck \
+  examples/pivot/visible_resource_sync.nmlt
 
 cargo run -p nmlt-cli -- elaborate \
   examples/pivot/visible_resource_sync.nmlt \
@@ -77,43 +131,50 @@ cargo run -p nmlt-cli -- explore \
   /tmp/visible-resource-sync.json
 ```
 
-Exploration prints `assurance: none`. In the positive fixture it shows the
-receiver state change, one-time `permit` transfer, and the synchronized
-`work=3` grade.
-
-Run the Rust gate with `make ci`, the Lean gate with `make metatheory`, or both
-with `make reproduce`.
+Use `make ci` for the Rust language gate, `make metatheory` for the Lean gate,
+or `make reproduce` for the full Rust, Lean, and independent NanoDA gate. These
+targets require a POSIX shell, `python3`, GNU core utilities including
+`sha256sum`, Rust 1.94, and the pinned Lean toolchain; Windows development uses
+WSL. The Lean gate rejects unchecked proof placeholders, tests artifact
+mutations, and audits focused theorem dependencies. The full gate additionally
+downloads pinned NanoDA/exporter sources and independently checks every project
+declaration.
 
 ## Trust boundary
 
 | Component | Role | Claim ceiling |
 |---|---|---|
-| `nmlt-core`, `nmlt-hir`, `nmlt-ir`, `nmlt-elaborate`, `nmlt-compile` | Frontend and explicit core production | Auditability through exact source binding and snapshots; no verified compilation theorem |
-| `nmlt-kernel` | Independent validator for the retained typed-elaboration certificate | Formation/type acceptance only; never behavior proof |
-| `NMLT.Behavior.ResourceBehavior` | Normative behavior/product/refinement definitions and theorem | Safety/resource theorem at the stated finite conditional scope |
-| `NMLT.Behavior.ResourceWorld` | Dynamic nominal ownership and resource-bearing product transitions | Authority conservation, one-time transfer, and full one-step dynamic refinement; reachability pending |
-| `NMLT.Artifact.BehaviorCore` | Fail-closed typed decoder for the finite artifact envelope | Acceptance of the exact schema; no source-to-core correctness theorem |
-| `NMLT.Artifact.SemanticClosure` | Constructs finite Lean behaviors from decoded states, terms, actions, resources, wiring, and refinement maps; decides the theorem premises | A proof-carrying instance of the conditional composition theorem for the accepted artifact |
-| `nmlt-eval` | Reference operational exploration | No proof, model-check, or evidence claim |
+| Rust frontend and compiler crates | Parse, resolve, type, and emit inspectable core data | Implementation acceptance and reproducibility; no compiler-correctness theorem |
+| `nmlt-kernel` | Replay the retained ordinary typed-elaboration certificate | Formation/type acceptance only; never behavioral proof |
+| `NMLT.Behavior.ResourceBehavior` | Define the current behavior and static product/refinement theorem | The checked Lean statements under their explicit premises |
+| `NMLT.Behavior.ResourceWorld` | Model dynamic nominal authority and one-step product simulation | Ownership uniqueness, explained effects, and conditional one-step lifting; no reachability or liveness |
+| Lean artifact modules | Decode finite artifacts, construct behaviors, and decide theorem premises | Acceptance of the decoded artifact semantics; no verified source translation |
+| `nmlt-eval` | Reference operational exploration | No proof or verification claim |
 
-See [`docs/architecture.md`](docs/architecture.md) for the component boundary
-and [`schemas/behavior-core-v1.schema.json`](schemas/behavior-core-v1.schema.json)
-for the artifact envelope.
+The precise active inventory is in
+[`security/trusted-components.toml`](security/trusted-components.toml), with
+attacker stories in [`docs/threat-model.md`](docs/threat-model.md) and theorem
+dependencies in [`mechanization/lean/AXIOMS.md`](mechanization/lean/AXIOMS.md).
 
-`nmlt-artifact-check` is more than a shape validator: after checking the source
-digest, it enumerates the artifact's finite state spaces, constructs the actual
-Lean step relations, checks refinement and both product-formation judgments,
-and obtains the static and dynamic lifted witnesses through
-`Certificate.lifted` and `Certificate.liftedDynamic`. This still does not verify
-that Rust translated the source correctly.
+## Research map
+
+- [Project status and roadmap](docs/roadmap.md)
+- [Architecture](docs/architecture.md)
+- [Language sketch](docs/language-sketch.md)
+- [Current calculus](docs/core-calculus.md)
+- [Manifesto](docs/manifesto.md)
+- [Design principles](docs/design-principles.md)
+- [Paper 1 in plain English](docs/paper-1-in-plain-english.md)
+- [Paper 1 claim ceiling](docs/paper-1-claim-ceiling.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
 ## History
 
-The former contest-oriented verifier remains reproducible from the immutable
+NMLT previously shipped a contest-oriented collection of bounded verifiers and
+demonstrations. That work remains reproducible from the immutable
 [`build-week-judge-demo-2026`](https://github.com/agentcarlosian/NMLT/tree/build-week-judge-demo-2026)
-tag at commit `0417f6e`. It is historical work, not part of the active language
-architecture or default gate. The reviewed post-event resource experiment is
-preserved separately on `codex/quarantine-grok-resource-pack`; it is not merged
-into this branch.
+tag at commit `0417f6e`. It is a historical release, not the active
+architecture.
 
 NMLT is licensed under Apache-2.0. See [`LICENSE`](LICENSE).

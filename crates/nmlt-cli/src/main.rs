@@ -17,7 +17,7 @@ Usage:\n\
   nmlt tokens <file>                                     Print the lossless token stream\n\
   nmlt typecheck <file>                                  Elaborate the finite behavior slice\n\
   nmlt elaborate <file> --emit-core <artifact.json>      Emit behavior-core-v1\n\
-  nmlt explore --behavior <name> --max-states <n> <core.json> Explore an accepted artifact\n\
+  nmlt explore --behavior <name> --max-states <n> <core.json> Explore a canonical artifact\n\
   nmlt version                                           Print the frontend version\n\
   nmlt help                                              Show this help\n\n\
 Lean defines NMLT's normative behavior semantics. Exploration is not verification.\n";
@@ -70,7 +70,7 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
                 artifact.compositions.len(),
                 artifact.refinements.len()
             );
-            println!("semantic_authority: Lean");
+            println!("semantic_authority: Lean not invoked; Rust frontend acceptance only");
             Ok(())
         }
         "elaborate" => {
@@ -84,7 +84,7 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
                 output.display(),
                 artifact.schema
             );
-            println!("semantic_authority: Lean artifact checker");
+            println!("semantic_authority: requires separate Lean artifact checking");
             Ok(())
         }
         "explore" => {

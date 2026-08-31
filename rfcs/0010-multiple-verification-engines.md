@@ -1,6 +1,6 @@
 # RFC 0010: Multiple verification engines and checked evidence composition
 
-- Status: Draft
+- Status: Withdrawn from the active language architecture
 - Authors: Carlosian <carlosian@agentmail.to>
 - Created: 2026-07-18
 - Phase: 5

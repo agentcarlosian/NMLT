@@ -1,5 +1,8 @@
 # Typed executable core
 
+> Historical retained-typed-core record. The provider engine described below
+> is not part of the active workspace; current behavior semantics live in Lean.
+
 - Status: implemented research fragment
 - Rust boundary: `crates/nmlt-engine`
 - Mathematical contract: RFCs 0005–0007

@@ -1,114 +1,106 @@
-# Core calculus sketch
+# Current behavioral calculus
 
-Status: explanatory companion to the mechanizable candidate in RFC 0001.
+Status: explanatory guide to the active Lean definitions. The Lean source is
+normative when this overview is incomplete.
 
-RFC 0001 is authoritative where this overview and the candidate rules differ.
+## Behavior
 
-## Objective
-
-The NMLT kernel should be small enough to mechanize while expressive enough to
-represent typed transition systems, temporal claims, resource-sensitive
-actions, composition, and refinement evidence.
-
-## Candidate judgments
+The current finite behavioral object is parameterized by action, capability,
+contract-fact, grade-atom, and observation types. It contains:
 
 ```text
-Γ ⊢ e : A                         value typing
-Γ ; Δ ⊢ a : Action S E ▷ g       action typing with linear context and grade
-Γ ⊢ B : Behavior S O             behavior formation
-Γ ⊢ φ : Property B               property formation
-Γ ⊢ r : Refines B₁ B₂ via obs    refinement evidence
-Γ ⊢ ev : Evidence φ scope        verification evidence
+State
+init       : State → Prop
+step       : State → Action → State → Prop
+observe    : State → Observation
+hidden     : Action → Prop
+direction  : Action → Direction
+payload    : Action → String
+owns       : Capability → Prop
+resources  : Action → ResourceProfile
 ```
 
-`Γ` contains unrestricted mathematical values. `Δ` contains affine or linear
-capabilities. `g` is drawn from an explicit resource algebra and describes
-quantitative effect information.
+A resource profile records required, consumed, transferred, and received
+capabilities; a pointwise natural-number grade; and relied-upon and guaranteed
+contract atoms.
 
-## Values
+## Static binary product
 
-The initial value layer should contain total functions, sums, products,
-records, finite sets, finite maps, relations, natural and integer arithmetic,
-and propositions. Partiality must be represented explicitly rather than hidden
-inside evaluation failure.
+`ResourceBehavior.parallel` uses pairs of component control states. Its
+step relation has left-local, right-local, and synchronized constructors.
+Connected boundary actions synchronize; isolated actions interleave.
+Synchronized resource profiles add grades and erase outward transfer/receive
+fields. `Composable` separately requires those fields to match before a product
+is admitted; `parallel` itself does not validate that premise.
 
-## State and actions
+`Composable` is a product-formation judgment. It checks complementary
+directions, equal payload identities, absence of hidden connected boundaries,
+disjoint declared capability ownership, exact transfer/receive agreement, and
+rely/guarantee discharge.
 
-A state type `S` defines snapshots. An action relates a pre-state, input event,
-post-state, output event, and resource grade. Nondeterminism is semantic rather
-than an unspecified implementation accident.
+The present `liftParallel` proof does not use every field of
+`Composable`. Those fields are language/product-formation gates, not all
+demonstrated necessary hypotheses of the lifting lemma. The permanent controls
+show that malformed products fail their respective formation rules; they do
+not yet provide countermodels to every weakened theorem statement.
 
-One candidate interpretation is:
+## Resource-aware weak refinement
 
-```text
-Action S E O g ≅ S × E → Relation (S × O × g)
-```
+The current refinement object contains:
 
-The exact representation remains an RFC question because it affects
-composition, probability, symbolic checking, and executable elaboration.
+- an explicit state map and observation map;
+- initial-state and observation preservation;
+- equality of hidden-action classification;
+- mapped equality for hidden control-state steps;
+- visible-step simulation;
+- pointwise resource-profile refinement; and
+- compatibility of a concrete hidden profile with empty stutter.
 
-## Behaviors and time
+The static theorem lifts that witness through binary product when wiring is
+preserved and the required visibility condition is available.
 
-A behavior contains initial states and a stuttering-closed transition relation.
-Infinite traces require guarded or otherwise productive coinduction. Temporal
-operators are indexed by a behavior so properties cannot accidentally mix
-incompatible state spaces or observations.
+No finite-path, trace, or reachability adequacy theorem has yet been proved for
+`ResourceWeakRefinement`. The current result establishes that the defined
+one-step relation is closed under the current binary product, not that it
+already entails a separate observational trace semantics.
 
-The v1 temporal layer should cover:
+## Dynamic authority worlds
 
-- invariant safety;
-- eventuality and leads-to;
-- weak and strong fairness;
-- hiding and observation;
-- stuttering-invariant refinement.
+`ResourceWorld` adds a shared function from each nominal capability to
+an optional owner. Local steps may consume authority but cannot transfer it
+without synchronization. Synchronized steps may consume or transfer authority
+exactly once and preserve every unaffected capability.
 
-## Resources, effects, and authority
+The dynamic one-step theorem covers:
 
-Grades should be parameterized by an algebra rather than hard-coded to natural
-numbers. Candidate instances include call counts, latency bounds, monetary
-cost, privacy exposure, retry rights, and trust provenance.
+- visible left-local transitions;
+- peer-local transitions;
+- synchronizations; and
+- hidden left-local stuttering when the complete concrete resource profile
+  refines empty and every capability owner is pointwise unchanged.
 
-Linear capabilities represent authority that may not be duplicated. An
-external effect can consume a hash-bound capability and yield either terminal
-evidence or an indeterminate effect record.
+This dynamic layer currently defines a second `ProductState` and
+`ProductStep`. It is not itself a `Behavior`, and no theorem yet
+identifies it with the static product. Unifying those layers is the next
+semantic milestone.
 
-## Composition
+## Artifact closure
 
-Open systems expose typed input and output ports plus assumptions and
-guarantees. Composition must check port compatibility, grade composition,
-authority flow, and assumption discharge.
+The Lean decoder accepts the finite JSON envelope, constructs states, terms,
+actions, profiles, wiring, and refinement maps, then decides the premises used
+to build static and dynamic conditional witnesses.
 
-Required metatheoretic target:
+The source digest proves only that the separately supplied source bytes match
+the digest written in the artifact. The checker does not re-elaborate source.
+The repository gate provides a narrower reproducibility check for the committed
+fixture by regenerating and byte-comparing its artifact.
 
-> Well-typed composition preserves well-typedness, and accepted local claims
-> are preserved only when their declared compatibility conditions hold.
+The dynamic certificate maps any supplied concrete dynamic step to an abstract
+match. It does not yet construct a step from the decoded initial state or prove
+reachability.
 
-## Refinement
+## Deferred calculus
 
-A refinement object contains:
-
-- an observation or state mapping;
-- hidden variables;
-- permitted stuttering;
-- environment assumptions;
-- the property class preserved;
-- evidence and its scope.
-
-Refinement should be reflexive, transitive, and congruent under validated
-composition. These are proof obligations, not assumed implementation facts.
-
-## Metatheory gates
-
-Before freezing the kernel, mechanize at least:
-
-1. decidability of the selected static fragment;
-2. preservation for executable steps;
-3. progress or an explicit characterization of blocked states;
-4. productivity of infinite behaviors;
-5. grade soundness for the selected resource models;
-6. refinement reflexivity and transitivity;
-7. compositional preservation under stated conditions;
-8. soundness of accepted evidence constructors.
-
-Full cubical equality, differential dynamics, and probability are later
-extensions. They must not be axiomatized into v1 merely to make examples type.
+The active calculus does not contain fairness, infinite traces, liveness
+transport, probabilistic or hybrid behavior, arbitrary grade algebras, general
+n-ary composition, or compiler correctness.
