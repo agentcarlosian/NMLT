@@ -1,14 +1,14 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-09-06"
-scope = "Active NMLT language-and-mathematics pivot and R0 reference workflows"
+scope = "Active NMLT language-and-mathematics pivot, R0 reference workflows, and R1 finite v2 execution"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
   "verified source translation from a source digest",
   "proof or model checking from nmlt-eval exploration",
   "dynamic step existence or reachability from conditional step lifting",
-  "general open-interface preservation by the current closed binary product",
+  "general open-interface preservation by the retained v1 closed binary product",
   "liveness or fairness transport from the current safety theorem",
   "production authorization by any current NMLT output",
 ]
@@ -38,7 +38,7 @@ trusted_components = [
 
 [[claim_profiles]]
 name = "behavior_artifact_reproducibility"
-ceiling = "byte equality for the committed primary fixture only"
+ceiling = "byte equality for the explicitly gated v1/v2 fixtures and execution witnesses only"
 trusted_components = [
   "toolchain.rust",
   "rust.behavior_compiler",
@@ -86,6 +86,40 @@ trusted_components = [
   "reference.r0_baselines",
   "build.gates",
 ]
+
+[[claim_profiles]]
+name = "unified_resource_model"
+ceiling = "checked R1 dynamic-behavior, conditional simulation, and finite-path statements plus constructed nested examples; no general runtime correspondence"
+trusted_components = [
+  "toolchain.lean",
+  "lean.resource_dynamics",
+  "lean.behavior_semantics",
+  "lean.kernel_audit",
+  "build.gates",
+]
+
+[[claim_profiles]]
+name = "decoded_finite_execution"
+ceiling = "supplied v2 finite binary paths accepted against the decoded initializer and unified steps, ownership/path theorems, and scoped initial synchronized refinement; no verified source translation, arbitrary trace transport, or host execution theorem"
+trusted_components = ["toolchain.lean", "lean.artifact_decoder", "lean.semantic_closure", "lean.resource_dynamics", "lean.execution", "lean.kernel_audit", "build.gates"]
+
+[[components]]
+id = "lean.execution"
+paths = [
+  "mechanization/lean/NMLT/Artifact/FiniteAuthority.lean",
+  "mechanization/lean/NMLT/Artifact/ExecutionClosure.lean",
+  "mechanization/lean/NMLT/Artifact/ExecutionWitness.lean",
+  "mechanization/lean/NMLT/Artifact/ExecutionLift.lean",
+]
+role = "Independently derive v2 ownership maps, interpret and decide unified finite steps, construct initialized path certificates and scoped initial refinement witnesses; the compiled Lean decoder/evaluator remains a runtime trust dependency."
+
+[[components]]
+id = "lean.resource_dynamics"
+paths = [
+  "mechanization/lean/NMLT/Behavior/ResourceDynamics.lean",
+  "mechanization/lean/NMLT/Examples/NestedResourceDynamics.lean",
+]
+role = "Combine control state and shared authority, preserve leaf effects through binary composition, and prove scoped simulation/path results; v1 artifact checking remains on its existing path."
 
 [[components]]
 id = "reference.r0_baselines"
@@ -140,6 +174,7 @@ paths = [
   "crates/nmlt-ir/src/model.rs",
   "crates/nmlt-ir/src/validate.rs",
   "crates/nmlt-ir/src/behavior.rs",
+  "crates/nmlt-ir/src/execution.rs",
 ]
 role = "Define and validate ordinary typed core and first-class behavioral IR."
 
@@ -173,8 +208,8 @@ role = "Compile the supported finite behavior surface to behavior-core-v1."
 
 [[components]]
 id = "rust.evaluator"
-paths = ["crates/nmlt-eval/src/lib.rs"]
-role = "Explore canonical artifacts with assurance none."
+paths = ["crates/nmlt-eval/src/lib.rs", "crates/nmlt-eval/src/value.rs", "crates/nmlt-eval/src/execution.rs"]
+role = "Explore Bool/Unit/enum canonical artifacts and emit untrusted v2 paths with assurance none; v2 enforces completed resource steps."
 
 [[components]]
 id = "rust.cli"
@@ -185,6 +220,8 @@ role = "Route frontend, artifact, and exploration commands without raising their
 id = "artifact.schema"
 paths = [
   "schemas/behavior-core-v1.schema.json",
+  "schemas/behavior-core-v2.schema.json",
+  "schemas/behavior-execution-v1.schema.json",
   "examples/pivot/visible_resource_sync.nmlt",
   "examples/pivot/visible_resource_sync.behavior-core-v1.json",
 ]
@@ -224,7 +261,7 @@ paths = [
   "mechanization/lean/NMLT/Artifact/SemanticClosure.lean",
   "mechanization/lean/NMLT/Artifact/CheckMain.lean",
 ]
-role = "Construct finite behaviors, decide premises, and build conditional theorem witnesses."
+role = "Construct finite behaviors and conditional v1 witnesses; dispatch v2 initialized path and initial refinement checking with source/artifact byte binding."
 
 [[components]]
 id = "lean.kernel_audit"
@@ -241,8 +278,15 @@ paths = [
   "Cargo.toml",
   "Makefile",
   ".github/workflows/ci.yml",
+  "tools/check_finite_parity.sh",
+  "mechanization/lean/tests/FiniteParity.lean",
+  "crates/nmlt-eval/examples/finite_parity.rs",
+  "tools/check_execution.sh",
+  "tests/execution/check_controls.py",
+  "mechanization/lean/tests/ExecutionParity.lean",
+  "crates/nmlt-eval/examples/execution_parity.rs",
 ]
-role = "Compose Rust, artifact-reproduction, and Lean checks; not a reproducible or signed release pipeline."
+role = "Compose Rust, artifact-reproduction, Lean checks and a scoped finite-value differential check; not a reproducible or signed release pipeline."
 
 [[components]]
 id = "repository.hygiene"

@@ -29,6 +29,7 @@ dependencies = [
  "nmlt-compile",
  "nmlt-core",
  "nmlt-eval",
+ "nmlt-hir",
  "nmlt-ir",
 ]
 
@@ -60,6 +61,7 @@ dependencies = [
 name = "nmlt-eval"
 version = "0.0.1"
 dependencies = [
+ "nmlt-compile",
  "nmlt-ir",
 ]
 

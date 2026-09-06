@@ -1,0 +1,69 @@
+{
+  "schema": "behavior-core-v2",
+  "source_path": "examples/pivot/affine_continuation.nmlt",
+  "source_sha256": "c89bf66d9b2071bb2ce0a8a3ba935992602ddf4cea13efc0459d92a78fe67fe4",
+  "enums": {
+  },
+  "systems": {
+    "Receiver": {
+      "state": {
+        "monitored": {"type": "Bool", "initial": "false", "initial_ast": {"kind": "bool", "type": "Bool", "value": false}},
+        "received": {"type": "Bool", "initial": "false", "initial_ast": {"kind": "bool", "type": "Bool", "value": false}}
+      },
+      "capabilities": {
+      },
+      "ports": {
+        "giveback": {"direction": "output", "payload": "Once<Unit>"},
+        "receive": {"direction": "input", "payload": "Once<Unit>"}
+      },
+      "actions": {
+        "giveback": {"direction": "output", "hidden": false, "parameters": [], "guards": ["received == true"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "received"}, "right": {"kind": "bool", "type": "Bool", "value": true}}], "updates": {}, "update_ast": {}, "outputs": ["permit"], "resources": {"requires": [], "consumes": [], "transfers": ["permit"], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "monitor": {"direction": "internal", "hidden": true, "parameters": [], "guards": ["monitored == false"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "monitored"}, "right": {"kind": "bool", "type": "Bool", "value": false}}], "updates": {"monitored": "true"}, "update_ast": {"monitored": {"kind": "bool", "type": "Bool", "value": true}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "receive": {"direction": "input", "hidden": false, "parameters": [{"name": "permit", "type": "Once<Unit>"}], "guards": ["received == false"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "received"}, "right": {"kind": "bool", "type": "Bool", "value": false}}], "updates": {"received": "true"}, "update_ast": {"received": {"kind": "bool", "type": "Bool", "value": true}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": ["permit"], "grade": {}, "relies": [], "guarantees": []}},
+        "use": {"direction": "internal", "hidden": false, "parameters": [], "guards": [], "guard_ast": [], "updates": {}, "update_ast": {}, "outputs": [], "resources": {"requires": [], "consumes": ["permit"], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}}
+      },
+      "observe": ["received"]
+    },
+    "Sender": {
+      "state": {
+        "sent": {"type": "Bool", "initial": "false", "initial_ast": {"kind": "bool", "type": "Bool", "value": false}}
+      },
+      "capabilities": {
+        "permit": "Once<Unit>"
+      },
+      "ports": {
+        "returned": {"direction": "input", "payload": "Once<Unit>"},
+        "send": {"direction": "output", "payload": "Once<Unit>"}
+      },
+      "actions": {
+        "finish": {"direction": "internal", "hidden": false, "parameters": [], "guards": ["sent == true"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "sent"}, "right": {"kind": "bool", "type": "Bool", "value": true}}], "updates": {}, "update_ast": {}, "outputs": [], "resources": {"requires": [], "consumes": ["permit"], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "returned": {"direction": "input", "hidden": false, "parameters": [{"name": "permit", "type": "Once<Unit>"}], "guards": ["sent == true"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "sent"}, "right": {"kind": "bool", "type": "Bool", "value": true}}], "updates": {}, "update_ast": {}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": ["permit"], "grade": {}, "relies": [], "guarantees": []}},
+        "send": {"direction": "output", "hidden": false, "parameters": [], "guards": ["sent == false"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "sent"}, "right": {"kind": "bool", "type": "Bool", "value": false}}], "updates": {"sent": "true"}, "update_ast": {"sent": {"kind": "bool", "type": "Bool", "value": true}}, "outputs": ["permit"], "resources": {"requires": [], "consumes": [], "transfers": ["permit"], "receives": [], "grade": {}, "relies": [], "guarantees": []}}
+      },
+      "observe": ["sent"]
+    }
+  },
+  "compositions": {
+    "Network": {"left": "Receiver", "right": "Sender", "connections": [{"left_system": "Receiver", "left_action": "receive", "right_system": "Sender", "right_action": "send"}, {"left_system": "Receiver", "left_action": "giveback", "right_system": "Sender", "right_action": "returned"}]}
+  },
+  "refinements": [  ],
+  "known_capabilities": {
+    "Receiver": {
+      "permit": "Once<Unit>"
+    },
+    "Sender": {
+      "permit": "Once<Unit>"
+    }
+  },
+  "initial_authority": {
+    "Network": {
+      "permit": "Sender"
+    },
+    "Receiver": {
+      "permit": null
+    },
+    "Sender": {
+      "permit": "Sender"
+    }
+  }
+}

@@ -50,3 +50,5 @@ evidence.
 | 0012 | Conservative graded-resource modalities | Postponed experiment |
 | 0013 | Integrated source-to-typed-core contract | Accepted |
 | [0014](0014-executable-workflow-profile.md) | Executable workflow profile | Draft |
+| [0015](0015-unified-resource-bearing-behavior.md) | Unified resource-bearing behavior | Under review |
+| [0016](0016-decoded-finite-execution.md) | Decoded finite execution | Under review |

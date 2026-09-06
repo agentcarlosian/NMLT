@@ -116,6 +116,31 @@ import NMLT
 #print axioms NMLT.Examples.ResourceWorldTransfer.permit_transfer_lifts_dynamically
 #print axioms NMLT.Counterexamples.ResourceWorldControls.hiddenConsumption_changesWorld
 #print axioms NMLT.Counterexamples.ResourceWorldControls.hiddenConsumption_cannotRefineStutter
+#print axioms NMLT.Behavior.ResourceDynamics.legacy_step_iff
+#print axioms NMLT.Behavior.ResourceDynamics.step_projects
+#print axioms NMLT.Behavior.ResourceDynamics.parallel_init_iff
+#print axioms NMLT.Behavior.ResourceDynamics.parallel_observe
+#print axioms NMLT.Behavior.ResourceDynamics.liftParallel
+#print axioms NMLT.Behavior.ResourceDynamics.ofWorldRefinement
+#print axioms NMLT.Behavior.ResourceDynamics.synchronized_effect_refines
+#print axioms NMLT.Behavior.ResourceDynamics.reachable_no_fabrication
+#print axioms NMLT.Behavior.ResourceDynamics.reachable_unique_owner
+#print axioms NMLT.Artifact.ExecutionClosure.Model.initial_iff
+#print axioms NMLT.Artifact.ExecutionClosure.Model.step_iff
+#print axioms NMLT.Artifact.ExecutionClosure.Model.formed
+#print axioms NMLT.Artifact.ExecutionClosure.Model.path_owned_origin
+#print axioms NMLT.Artifact.ExecutionClosure.Model.sync_left_moves_once
+#print axioms NMLT.Artifact.ExecutionClosure.Model.sync_right_moves_once
+#print axioms NMLT.Artifact.ExecutionWitness.Certificate.reachable
+#print axioms NMLT.Artifact.ExecutionWitness.Certificate.no_fabrication
+#print axioms NMLT.Artifact.ExecutionWitness.Certificate.unique_owner
+#print axioms NMLT.Artifact.ExecutionWitness.Certificate.owner_origin
+#print axioms NMLT.Artifact.ExecutionLift.simulation
+#print axioms NMLT.Artifact.ExecutionLift.simulation_sync_step
+#print axioms NMLT.Examples.NestedResourceDynamics.finite_execution
+#print axioms NMLT.Examples.NestedResourceDynamics.transfer_moves_once
+#print axioms NMLT.Examples.NestedResourceDynamics.inner_open_transfer_requires_peer
+#print axioms NMLT.Examples.NestedResourceDynamics.enclosed_transfer
 EOF
 (
   cd "$lean_root"

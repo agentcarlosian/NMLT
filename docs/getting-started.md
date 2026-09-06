@@ -115,6 +115,44 @@ step 0 -> 1: ConcreteSender.send|Receiver.receive
 Exploration always reports `assurance: none`. It is an operational design and
 debugging tool, not a proof engine.
 
+## Finite v2 execution
+
+V2 separates known capability types from initial ownership. The continuation
+example can receive a permit and either consume it or return it to the sender.
+From the repository root:
+
+```bash
+cargo run -p nmlt-cli -- elaborate examples/pivot/affine_continuation.nmlt \
+  --core-version v2 --emit-core /tmp/continuation.json
+cargo run -p nmlt-cli -- trace --behavior Network \
+  --actions 'Receiver.receive|Sender.send,Receiver.monitor,Receiver.use' \
+  --emit-path /tmp/consume-path.json --max-states 32 /tmp/continuation.json
+cd mechanization/lean
+lake exe nmlt-artifact-check /tmp/continuation.json \
+  ../../examples/pivot/affine_continuation.nmlt /tmp/consume-path.json
+cd ../..
+```
+
+The trace command emits an untrusted witness. Lean checks its selected binary
+composition, decoded initializer, every control/authority step, and source/core
+byte bindings. It accepts this three-step path and derives reachability and
+ownership properties. For the return path, use actions
+`Receiver.receive|Sender.send,Receiver.giveback|Sender.returned,Sender.finish`.
+Attempting `Receiver.use` before acquisition is disabled even though that action
+has no Boolean guard.
+
+`make execution` reproduces both v2 cores and all three committed path witnesses,
+including the primary fixture's initial synchronized refinement. It also runs
+30 rejection controls and compares the resource fixture's complete reachable
+graph with Lean: one initial state, eight reachable states, twelve transitions.
+This is finite binary execution; host jobs and the general interpreter are R2.
+
+The default `elaborate` and two-argument v1 checker retain their earlier contract.
+Migration means recompiling with `--core-version v2`, then regenerating paths;
+changing a schema string does not supply the required maps. Unsupported versions
+are rejected. Control indices in a path refer to the canonical finite-domain
+ordering specified by [RFC 0016](../rfcs/0016-decoded-finite-execution.md).
+
 ## Run the repository gates
 
 ```bash
@@ -128,7 +166,11 @@ make reproduce
 - `make metatheory` builds Lean, tests fail-closed artifact mutations, scans for
   unchecked placeholders, and audits focused theorem axioms.
 - `make reproduce` additionally runs the pinned independent NanoDA check over the
-  complete `NMLT` module and the three R0 reference workflows with real Lean.
+  complete `NMLT` module, the three R0 reference workflows with real Lean, and
+  the frozen finite-value comparison and v2 execution gate.
+- `make finite-parity` compares the complete reachable graph for one closed
+  Bool/Unit/enum fixture: one initial state, four reachable states, and ten
+  transitions. It rejects truncation and does not establish compiler correctness.
 
 Run `make r0-baselines` to try the frozen proof, discovery, and local worker
 examples. Each invocation saves a fresh record directory under

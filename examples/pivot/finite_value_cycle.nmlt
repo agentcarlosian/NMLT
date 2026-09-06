@@ -1,0 +1,34 @@
+enum Phase { Idle, Ready }
+
+system ValueCycle {
+  state marker: Unit = ()
+  state phase: Phase = Phase.Idle
+  state ready: Bool = ! false
+
+  action advance {
+    require phase == Phase.Idle
+    require ready
+    set phase = Phase.Ready
+    set ready = ! ready
+    set marker = marker
+  }
+
+  action reset {
+    require phase == Phase.Ready
+    require ! ready
+    set phase = Phase.Idle
+    set ready = ! ready
+  }
+
+  action invert {
+    set ready = ! ready
+  }
+
+  action hold {
+    require marker == ()
+    set phase = phase
+    set ready = ready
+  }
+
+  observe marker, phase, ready
+}

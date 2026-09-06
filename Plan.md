@@ -2,9 +2,9 @@
 
 - Status: active execution plan for pre-alpha language and mathematics research
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
-- Current result: finite resource-aware composition plus auxiliary dynamic
-  authority-world one-step lifting
-- Immediate milestone: R1 — unified semantics and finite execution
+- Current result: unified resource-aware semantics, decoded finite execution,
+  and received-capability continuation; v1 retains its conditional witnesses
+- Immediate milestone: R2 — useful executable language (not started)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-06
@@ -61,18 +61,21 @@ is preserved separately in `33e7240`.
 
 ## Current honesty boundary
 
-The static `Behavior.parallel` semantics and the dynamic
-`ResourceWorld.ProductStep` semantics are currently separate layers. The
-dynamic layer is not yet a `Behavior`, has no artifact-derived initial-step
-existence theorem, and has no reachability or trace theorem. Product formation
-checks several language invariants that are not all logical dependencies of the
-current lifting proof. The source digest identifies supplied source bytes but
-does not verify Rust elaboration.
+The v1 artifact path still constructs static and dynamic conditional witnesses.
+R1's `ResourceDynamics.Behavior` combines control and authority in one state,
+initializer, observation, and completed-step relation. Its leaf-pair step is
+equivalent to the old dynamic relation and projects to the control product.
+It has finite-path ownership results and constructed nested examples; these
+are supplemented by v2 decoded initial paths and source-level receive then
+consume/retransfer. The primary initial synchronization also lifts to an
+initialized abstract step. Product formation remains distinct from the minimal
+premises of lifting. The source digest identifies bytes without verifying
+elaboration, and compiled Lean decoding/decision remains a runtime trust boundary.
 
 Public documentation must preserve those distinctions.
 
 The behavioral and retained ordinary compilation routes differ; the reference
-explorer currently supports Boolean state. General program execution, host
+explorer supports finite Bool/Unit/enum state. General program execution, host
 effects, and user-defined behavioral property checking remain planned work.
 Historical independent-checker results do not remove the need for current
 toolchain maintenance.
@@ -82,7 +85,7 @@ toolchain maintenance.
 | Milestone | Status | Dependency | Responsible role |
 |---|---|---|---|
 | R0 — Checker and workflow baselines | Complete | Audited baseline | Integration and Lean maintainers |
-| R1 — Unified semantics and finite execution | Planned | R0 checker baseline | Lean/semantics and Rust maintainers |
+| R1 — Unified semantics and finite execution | Complete at finite scope | R0 checker baseline | Lean/semantics and Rust maintainers |
 | R2 — Useful executable language | Planned | R1 for formal execution claims | Compiler/runtime and integration maintainers |
 | R3 — Supported Lean workflows | Planned | R2; adapter prototype can begin in R0 | Lean integration maintainer |
 | R4 — Discovery workflows | Planned | R3 for integration; domain preparation can start earlier | Mathematical reviewer and integration maintainer |
@@ -95,6 +98,7 @@ Mark a milestone complete only when its exit gate has recorded evidence.
 Completed on 2026-09-06. The [R0 evidence record](docs/reviews/r0-checker-and-baselines-2026-09-06.md)
 contains immutable checker pins, exported-input hashes, executed case results,
 validation commands, and the specific friction for the next stages to address.
+Committed as `f966758` before beginning R1.
 
 - Completed: preserve the P3 audit fix as its own reviewable commit (`33e7240`),
   separate from toolchain and feature changes; all 18 `nmlt-ir` tests passed.
@@ -121,7 +125,24 @@ examples, and specific user friction that NMLT will attempt to reduce.
 
 Retain M1–M3 as explicit mathematical milestones within R1.
 
+The first increment established the unified Lean model and finite values;
+its [evidence record](docs/reviews/r1-unified-behavior-increment-2026-09-06.md)
+remains historical. The next increment implements v2 capability/initial-world
+maps, decoded paths, receive then consume/retransfer, ownership-origin results,
+and initial synchronized refinement through the unified theorem. V1 remains
+the default and keeps its contract and canonical fixtures.
+[RFC 0015](rfcs/0015-unified-resource-bearing-behavior.md) and
+[RFC 0016](rfcs/0016-decoded-finite-execution.md) remain Under review.
+Completed on 2026-09-06 at finite binary-source scope. The
+[R1 completion evidence](docs/reviews/r1-finite-execution-2026-09-06.md) records
+202 passing Rust tests, 30 execution rejection controls, both complete finite
+graph comparisons, and a fresh NanoDA check of 8,655 declarations.
+RFC acceptance and the publication review gate are separate.
+
 #### M1 — Unified resource-bearing behavior
+
+Completed: unified model, legacy equivalence, control projection, separate
+formation, and constructed nested binary executions.
 
 - Make dynamic authority part of the normative behavior state rather than a
   parallel semantic layer, including initialization and observation.
@@ -139,6 +160,9 @@ resource theorem without duplicated semantic authority.
 
 #### M2 — `behavior-core-v2` and artifact-derived execution witness
 
+Completed: reproduced v2 artifacts, decoded initial synchronization, exact
+authority movement, and an initialized abstract step through unified lifting.
+
 - Encode initial authority, dynamic state, and the data needed to form enabled
   local and synchronized steps.
 - Reproduce the positive artifact byte-for-byte.
@@ -155,6 +179,9 @@ fixture's initial dynamic step. This remains source identification until a
 separate translation-validation or compiler-correctness result exists.
 
 #### M3 — Finite reachability and affine continuation
+
+Completed: decoded three-step consume and retransfer paths, ownership-origin
+results, and complete Rust/Lean comparisons for the frozen value/resource corpus.
 
 - Define reachable dynamic states from decoded initial states.
 - Permit a received affine capability to enter the receiver's post-step

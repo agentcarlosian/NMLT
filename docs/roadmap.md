@@ -17,12 +17,14 @@ it governs delivery priorities and status.
 - distinguish source identification from verified translation; and
 - reconstruct the large pivot as a reviewable PR stack.
 
-## Next: one resource-bearing behavior
+## Implemented: one resource-bearing behavior
 
-The immediate mathematical task is to integrate the authority-world state into
-the normative `Behavior` rather than maintain separate static and dynamic
-product semantics. Product formation must preserve the intended remaining open
-interface, including action visibility, direction, and payload.
+R1's first increment implements `ResourceDynamics.Behavior`, combining control
+and authority in its state, initialization, observations, and completed steps.
+The binary constructor preserves remaining open action metadata and leaf
+effects. Constructed nested examples exercise a transfer and a later monitor
+step. The v1 artifact path still uses the retained static and auxiliary dynamic
+semantics. The opt-in v2 path checks decoded execution against the unified model.
 
 Deliverables:
 
@@ -33,11 +35,11 @@ Deliverables:
 - negative controls that demonstrate failure of weakened theorem statements,
   not only failure of language formation.
 
-## Then: `behavior-core-v2` and dynamic witnesses
+## Implemented: `behavior-core-v2` and dynamic witnesses
 
-The next artifact version will encode initial authority and dynamic step data.
-Lean should construct the primary fixture's initial synchronized step rather
-than only prove that any supplied step can be lifted.
+V2 encodes independently derived capability namespaces and initial authority.
+Supplied path witnesses carry dynamic state and action data. Lean constructs the
+primary fixture's initial synchronized step and its initialized abstract image.
 
 Deliverables:
 
@@ -47,11 +49,17 @@ Deliverables:
 - exact one-time transfer theorem for that decoded step; and
 - malformed-world and forged-step controls.
 
-## Then: finite paths and reusable received authority
+## Implemented: finite paths and received authority
 
 Define reachability over dynamic worlds and make received affine capabilities
 available to later receiver actions without allowing copying, fabrication, or
 retention after transfer.
+
+R1 defines finite paths, vacancy preservation, and ownership-origin results in
+the unified model. V2 source continuation supports receive then consume or
+retransfer. Rust/Lean comparisons cover a resource-free Bool/Unit/enum fixture
+and the complete eight-state, twelve-transition resource fixture. General source
+composition, runtime effects, and broader correspondence remain later work.
 
 Deliverables:
 

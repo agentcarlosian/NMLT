@@ -1,5 +1,12 @@
 # Integration tests
 
+`make execution` regenerates the v2 cores and three finite path witnesses,
+runs 30 rejection controls through the actual Lean executable, and compares
+the continuation fixture's complete reachable resource graph with Lean. The
+corpus includes true-guard use before acquisition, repeat consumption, sender
+use after transfer, hidden-world changes, sentinel indices, malformed maps,
+byte-binding mismatches, and a failed declared refinement.
+
 This directory holds cross-component fixtures. Crate-local unit, negative,
 benchmark, and CLI integration tests remain beside their Rust crates.
 
@@ -13,3 +20,9 @@ and resume, explicit checker failures, and local worker response handling. Run i
 with `make r0-baseline-tests`. Mock checker tests establish orchestration behavior;
 `make r0-baselines` separately exercises the actual pinned Lean binary. See the
 [baseline contracts](../docs/r0-baseline-contracts.md) for the evidence boundary.
+
+`make finite-parity` regenerates the
+[finite value fixture](../examples/pivot/finite_value_cycle.nmlt), builds Lean,
+and compares the complete reachable state/transition sets from Rust with the
+Lean-defined control behavior. The fixture is closed and resource-free; this
+four-state comparison does not establish general Rust-to-Lean correspondence.

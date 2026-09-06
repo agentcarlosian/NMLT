@@ -9,15 +9,17 @@
 #![forbid(unsafe_code)]
 
 mod behavior;
+mod execution;
 mod identity;
 mod model;
 mod validate;
 
 pub use behavior::{
-    BEHAVIOR_CORE_SCHEMA, BehaviorCoreProgram, CoreBehaviorAction, CoreBehaviorBinding,
-    CoreBehaviorState, CoreBehaviorSystem, CoreBehaviorTerm, CoreComposition, CoreConnection,
-    CorePort, CorePortDirection, CoreRefinement, CoreResourceProfile,
+    BEHAVIOR_CORE_SCHEMA, BEHAVIOR_CORE_V2_SCHEMA, BehaviorCoreProgram, CoreBehaviorAction,
+    CoreBehaviorBinding, CoreBehaviorState, CoreBehaviorSystem, CoreBehaviorTerm, CoreComposition,
+    CoreConnection, CorePort, CorePortDirection, CoreRefinement, CoreResourceProfile,
 };
+pub use execution::{ExecutionAction, ExecutionPath, ExecutionState};
 
 pub use identity::{CoreIdentityError, CoreNodeId, CoreProgramId};
 pub use model::{

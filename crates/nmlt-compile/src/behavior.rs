@@ -10,9 +10,9 @@ use nmlt_core::{
 };
 use nmlt_hir::{ResourceDimension, sha256_bytes};
 use nmlt_ir::{
-    BEHAVIOR_CORE_SCHEMA, BehaviorCoreProgram, CoreBehaviorAction, CoreBehaviorBinding,
-    CoreBehaviorState, CoreBehaviorSystem, CoreBehaviorTerm, CoreComposition, CoreConnection,
-    CorePort, CorePortDirection, CoreRefinement, CoreResourceProfile,
+    BEHAVIOR_CORE_SCHEMA, BEHAVIOR_CORE_V2_SCHEMA, BehaviorCoreProgram, CoreBehaviorAction,
+    CoreBehaviorBinding, CoreBehaviorState, CoreBehaviorSystem, CoreBehaviorTerm, CoreComposition,
+    CoreConnection, CorePort, CorePortDirection, CoreRefinement, CoreResourceProfile,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -53,8 +53,22 @@ pub fn compile_behavior_single(
     repository_path: impl Into<String>,
     exact_bytes: impl Into<Vec<u8>>,
 ) -> Result<BehaviorCoreProgram, BehaviorDiagnostic> {
-    let repository_path = repository_path.into();
-    let exact_bytes = exact_bytes.into();
+    compile_behavior_version(repository_path.into(), exact_bytes.into(), false)
+}
+
+/// Opt-in v2: input capability names persist, while ownership is checked dynamically.
+pub fn compile_behavior_v2(
+    repository_path: impl Into<String>,
+    exact_bytes: impl Into<Vec<u8>>,
+) -> Result<BehaviorCoreProgram, BehaviorDiagnostic> {
+    compile_behavior_version(repository_path.into(), exact_bytes.into(), true)
+}
+
+fn compile_behavior_version(
+    repository_path: String,
+    exact_bytes: Vec<u8>,
+    dynamic: bool,
+) -> Result<BehaviorCoreProgram, BehaviorDiagnostic> {
     let source = std::str::from_utf8(&exact_bytes)
         .map_err(|_| reject("NMLT-BHV-UTF8", "behavior source is not valid UTF-8"))?;
     let parsed = parse_cst(source);
@@ -82,7 +96,7 @@ pub fn compile_behavior_single(
 
     let mut systems = BTreeMap::new();
     for system in projection.file.systems() {
-        let system = compile_system(system, &facts)?;
+        let system = compile_system(system, &facts, dynamic)?;
         if systems.insert(system.name.clone(), system).is_some() {
             return Err(reject(
                 "NMLT-BHV-DUPLICATE-SYSTEM",
@@ -101,15 +115,28 @@ pub fn compile_behavior_single(
     collect_compositions(&projection.file.declarations, &systems, &mut compositions)?;
     let refinements = compile_refinements(projection.file.refinements(), &systems)?;
 
-    Ok(BehaviorCoreProgram {
-        schema: BEHAVIOR_CORE_SCHEMA.to_owned(),
+    let mut program = BehaviorCoreProgram {
+        schema: if dynamic {
+            BEHAVIOR_CORE_V2_SCHEMA
+        } else {
+            BEHAVIOR_CORE_SCHEMA
+        }
+        .to_owned(),
         source_path: repository_path,
         source_sha256: hex_digest(sha256_bytes(&exact_bytes)),
         enums,
         systems,
         compositions,
         refinements,
-    })
+        known_capabilities: BTreeMap::new(),
+        initial_authority: BTreeMap::new(),
+    };
+    if dynamic {
+        program
+            .populate_execution_maps()
+            .map_err(|message| reject("NMLT-BHV-EXECUTION-MAPS", message))?;
+    }
+    Ok(program)
 }
 
 fn collect_enums(
@@ -168,6 +195,7 @@ fn collect_enums(
 fn compile_system(
     system: &UntypedSystem,
     facts: &BTreeSet<String>,
+    dynamic: bool,
 ) -> Result<CoreBehaviorSystem, BehaviorDiagnostic> {
     let name = required_name(
         system.name.as_ref().map(|name| name.text.as_str()),
@@ -319,9 +347,43 @@ fn compile_system(
         }
     }
 
+    let mut known = capabilities.clone();
+    if dynamic {
+        for action in &action_sources {
+            if action.polarity != Some(SurfacePolarity::Input) {
+                continue;
+            }
+            for parameter in action.supported_parameters() {
+                let binding = required_name(
+                    parameter.name.as_ref().map(|n| n.text.as_str()),
+                    "NMLT-BHV-PARAMETER-NAME",
+                    "action parameter",
+                )?;
+                let ty = raw_required(parameter.declared_type.as_ref(), "NMLT-BHV-PARAMETER-TYPE")?;
+                if ty.starts_with("Once<")
+                    && known
+                        .insert(binding.to_owned(), ty.clone())
+                        .is_some_and(|old| old != ty)
+                {
+                    return Err(reject(
+                        "NMLT-BHV-CAPABILITY-TYPE",
+                        format!("inconsistent capability type for '{name}.{binding}'"),
+                    ));
+                }
+            }
+        }
+    }
     let mut actions = BTreeMap::new();
     for action in action_sources {
-        let action = compile_action(&name, action, &state, &capabilities, &ports, facts, &hidden)?;
+        let action = compile_action(
+            &name,
+            action,
+            &state,
+            (&known, dynamic),
+            &ports,
+            facts,
+            &hidden,
+        )?;
         if actions.insert(action.name.clone(), action).is_some() {
             return Err(reject(
                 "NMLT-BHV-DUPLICATE-ACTION",
@@ -352,11 +414,12 @@ fn compile_action(
     system_name: &str,
     action: &UntypedAction,
     state: &BTreeMap<String, CoreBehaviorState>,
-    capabilities: &BTreeMap<String, String>,
+    authority_context: (&BTreeMap<String, String>, bool),
     ports: &BTreeMap<String, CorePort>,
     facts: &BTreeSet<String>,
     hidden_actions: &BTreeSet<String>,
 ) -> Result<CoreBehaviorAction, BehaviorDiagnostic> {
+    let (capabilities, dynamic) = authority_context;
     let name = required_name(
         action.name.as_ref().map(|name| name.text.as_str()),
         "NMLT-BHV-ACTION-NAME",
@@ -541,7 +604,7 @@ fn compile_action(
             port,
             &parameters,
             &outputs,
-            capabilities,
+            (capabilities, dynamic),
             &resources,
         )?;
     }
@@ -589,9 +652,10 @@ fn validate_payload_shape(
     port: &CorePort,
     parameters: &[CoreBehaviorBinding],
     outputs: &[String],
-    capabilities: &BTreeMap<String, String>,
+    authority_context: (&BTreeMap<String, String>, bool),
     resources: &CoreResourceProfile,
 ) -> Result<(), BehaviorDiagnostic> {
+    let (capabilities, dynamic) = authority_context;
     match port.direction {
         CorePortDirection::Input => {
             let accepted = if port.payload_type == "Unit" {
@@ -607,10 +671,11 @@ fn validate_payload_shape(
                     format!("input '{system}.{action}' parameters do not match its port payload"),
                 ));
             }
-            if resources
-                .receives
-                .iter()
-                .any(|name| capabilities.contains_key(name))
+            if !dynamic
+                && resources
+                    .receives
+                    .iter()
+                    .any(|name| capabilities.contains_key(name))
             {
                 return Err(reject(
                     "NMLT-BHV-INPUT-OWNERSHIP",

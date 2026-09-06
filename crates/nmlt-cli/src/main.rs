@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use nmlt_compile::compile_behavior_single;
+use nmlt_compile::{compile_behavior_single, compile_behavior_v2};
 use nmlt_core::diagnostic::line_column;
 use nmlt_core::{Diagnostic, ParsedFile, lex_source, parse_source};
 use nmlt_eval::{ExploreConfig, explore};
@@ -17,7 +17,9 @@ Usage:\n\
   nmlt tokens <file>                                     Print the lossless token stream\n\
   nmlt typecheck <file>                                  Elaborate the finite behavior slice\n\
   nmlt elaborate <file> --emit-core <artifact.json>      Emit behavior-core-v1\n\
+  nmlt elaborate <file> --core-version v2 --emit-core <artifact.json> Emit opt-in v2\n\
   nmlt explore --behavior <name> --max-states <n> <core.json> Explore a canonical artifact\n\
+  nmlt trace --behavior <name> --actions <comma-separated labels> --emit-path <path.json> --max-states <n> <core.json> Emit a v2 witness\n\
   nmlt version                                           Print the frontend version\n\
   nmlt help                                              Show this help\n\n\
 Lean defines NMLT's normative behavior semantics. Exploration is not verification.\n";
@@ -74,8 +76,13 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             Ok(())
         }
         "elaborate" => {
-            let (source, output) = elaborate_arguments(&arguments[1..])?;
-            let artifact = compile_path(&source)?;
+            let (source, output, dynamic) = elaborate_arguments(&arguments[1..])?;
+            let artifact = if dynamic {
+                let bytes = fs::read(&source).map_err(|e| e.to_string())?;
+                compile_behavior_v2(repository_path(&source)?, bytes).map_err(|e| e.to_string())?
+            } else {
+                compile_path(&source)?
+            };
             fs::write(&output, artifact.to_json_pretty())
                 .map_err(|error| format!("could not write '{}': {error}", output.display()))?;
             println!(
@@ -91,7 +98,8 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             let (behavior, max_states, path) = explore_arguments(&arguments[1..])?;
             let encoded = fs::read_to_string(&path)
                 .map_err(|error| format!("could not read '{}': {error}", path.display()))?;
-            let artifact = BehaviorCoreProgram::from_canonical_json(&encoded)?;
+            let artifact = BehaviorCoreProgram::from_canonical_json(&encoded)
+                .or_else(|_| BehaviorCoreProgram::from_canonical_json_v2(&encoded))?;
             let result = explore(&artifact, &behavior, ExploreConfig { max_states })
                 .map_err(|error| error.to_string())?;
             println!("behavior: {}", result.behavior);
@@ -132,6 +140,7 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             }
             Ok(())
         }
+        "trace" => emit_trace(&arguments[1..]),
         unknown => Err(format!("unknown command '{unknown}'\n\n{HELP}")),
     }
 }
@@ -162,13 +171,60 @@ fn repository_path(path: &Path) -> Result<String, String> {
     ))
 }
 
-fn elaborate_arguments(arguments: &[std::ffi::OsString]) -> Result<(PathBuf, PathBuf), String> {
+fn elaborate_arguments(
+    arguments: &[std::ffi::OsString],
+) -> Result<(PathBuf, PathBuf, bool), String> {
     match arguments {
         [source, flag, output] if flag == "--emit-core" => {
-            Ok((PathBuf::from(source), PathBuf::from(output)))
+            Ok((PathBuf::from(source), PathBuf::from(output), false))
+        }
+        [source, version_flag, version, flag, output]
+            if version_flag == "--core-version" && version == "v2" && flag == "--emit-core" =>
+        {
+            Ok((PathBuf::from(source), PathBuf::from(output), true))
         }
         _ => Err("usage: nmlt elaborate <file> --emit-core <artifact.json>".to_owned()),
     }
+}
+
+fn emit_trace(arguments: &[std::ffi::OsString]) -> Result<(), String> {
+    let [bf, behavior, af, actions, of, output, mf, max, path] = arguments else {
+        return Err("usage: nmlt trace --behavior <name> --actions <labels> --emit-path <path.json> --max-states <n> <core.json>".into());
+    };
+    if bf != "--behavior" || af != "--actions" || of != "--emit-path" || mf != "--max-states" {
+        return Err("invalid trace options".into());
+    }
+    let behavior = behavior.to_str().ok_or("behavior is not UTF-8")?;
+    let action_text = actions.to_str().ok_or("actions are not UTF-8")?;
+    if !action_text.is_empty() && action_text.split(',').any(str::is_empty) {
+        return Err("empty action label between separators".into());
+    }
+    let labels: Vec<_> = action_text
+        .split(',')
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+        .collect();
+    let max_states = max
+        .to_str()
+        .ok_or("max-states is not UTF-8")?
+        .parse()
+        .map_err(|_| "invalid max-states")?;
+    let encoded = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let artifact = BehaviorCoreProgram::from_canonical_json_v2(&encoded)?;
+    let graph =
+        explore(&artifact, behavior, ExploreConfig { max_states }).map_err(|e| e.to_string())?;
+    let digest = nmlt_hir::sha256_bytes(encoded.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let witness =
+        nmlt_eval::execution_path(&artifact, &graph, digest, &labels).map_err(|e| e.to_string())?;
+    fs::write(output, witness.to_json_pretty()?).map_err(|e| e.to_string())?;
+    println!(
+        "witness emitted: {} steps; assurance: none; requires separate Lean execution checking",
+        witness.actions.len()
+    );
+    Ok(())
 }
 
 fn explore_arguments(arguments: &[std::ffi::OsString]) -> Result<(String, usize, PathBuf), String> {

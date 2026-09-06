@@ -68,3 +68,9 @@ jobs:
 
       - name: Run the frozen R0 reference workflows
         run: make r0-baselines
+
+      - name: Compare finite Rust exploration with Lean
+        run: bash tools/check_finite_parity.sh "${{ steps.stage_lean.outputs.path }}"
+
+      - name: Check decoded v2 execution and resource graph parity
+        run: bash tools/check_execution.sh "${{ steps.stage_lean.outputs.path }}"

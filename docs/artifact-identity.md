@@ -2,16 +2,23 @@
 
 > Mixed-status document. Exact-byte source and canonical identity principles
 > remain design input; sections about removed evidence manifests are historical.
-> The active behavioral envelope is `behavior-core-v1`, and its source digest
-> identifies supplied bytes rather than proving compiler correspondence.
+> Behavioral artifacts use default `behavior-core-v1` or opt-in `behavior-core-v2`.
+> Their source digests identify supplied bytes rather than proving compiler
+> correspondence.
 
 Status: normative for identity version 1. Cryptographic identity binds exact
 bytes and declared meaning; filesystem paths and display names are metadata.
 
-`behavior-core-v1.source_sha256` is a deliberate interoperability exception to
+The `source_sha256` field in both behavioral versions is an interoperability exception to
 the domain-separated identities below: it stores lowercase bare SHA-256 of the
 exact source bytes so the Lean checker can compare it with `sha256sum`. It is an
 identifier for the separately supplied bytes, not a proof of elaboration.
+
+The separate `behavior-execution-v1.artifact_sha256` similarly stores lowercase
+bare SHA-256 of the exact supplied core artifact bytes. The Lean executable
+compares this digest before reporting acceptance of a decoded finite path.
+Whitespace or line-ending changes require a new digest. This binds the path to
+an artifact; it does not verify the Rust compiler or a host runtime.
 
 ## Encoding primitives
 

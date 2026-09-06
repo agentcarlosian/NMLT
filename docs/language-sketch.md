@@ -66,7 +66,7 @@ frontend boundary rather than receiving an approximate semantics.
 The lossless parser recognizes more declaration shells than the behavioral
 compiler accepts. Parsing preserves source; it does not assign meaning. The
 implemented semantic route is the finite profile above, emitted as canonical
-`behavior-core-v1` and decoded by Lean.
+`behavior-core-v1` by default, or opt-in `behavior-core-v2`, and decoded by Lean.
 
 The ordinary typed-core route retains additional expression and property forms
 for frontend research. Those forms do not automatically enter the behavioral
@@ -92,15 +92,18 @@ There is no source form for `resources.requires` yet. That field is reserved in
 `behavior-core-v1`; current mutation tests exercise its Lean-side validation by
 editing an artifact directly.
 
-## Near-term language work
+## Opt-in affine continuation
 
-The next surface and artifact work should support:
+With `elaborate --core-version v2`, typed input capability slots remain known
+to later actions. `capability` declarations still mean initial ownership.
+An action that consumes a known slot before acquisition is dynamically disabled.
+The [continuation fixture](../examples/pivot/affine_continuation.nmlt) demonstrates
+receive then consume, or receive then return followed by sender consumption.
+No new source syntax is needed for those paths. See
+[the execution guide](getting-started.md#finite-v2-execution) for checked commands.
 
-- dynamic initial authority and post-receive authority contexts;
-- receive-then-consume and receive-then-transfer programs;
-- a product that preserves remaining open ports and action visibility;
-- artifact-derived step and finite-path witnesses; and
-- more mathematical definitions that can be shared by programs and proofs.
+Modules, general source composition, host effects, richer values, and an
+interpreter remain subsequent language work.
 
 ## Later language families
 

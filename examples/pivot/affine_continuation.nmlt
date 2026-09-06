@@ -1,0 +1,59 @@
+system Sender {
+  state sent: Bool = false
+  capability permit: Once<Unit>
+  port output send: Once<Unit>
+  port input returned: Once<Unit>
+
+  action output send {
+    require sent == false
+    emit permit
+    consume permit
+    set sent = true
+  }
+
+  action input returned(permit: Once<Unit>) {
+    require sent == true
+  }
+
+  action finish {
+    require sent == true
+    consume permit
+  }
+
+  observe sent
+}
+
+system Receiver {
+  state received: Bool = false
+  state monitored: Bool = false
+  port input receive: Once<Unit>
+  port output giveback: Once<Unit>
+
+  action input receive(permit: Once<Unit>) {
+    require received == false
+    set received = true
+  }
+
+  action use {
+    consume permit
+  }
+
+  action output giveback {
+    require received == true
+    emit permit
+    consume permit
+  }
+
+  action monitor {
+    require monitored == false
+    set monitored = true
+  }
+
+  hide action monitor
+  observe received
+}
+
+compose Network {
+  connect Sender.send -> Receiver.receive
+  connect Receiver.giveback -> Sender.returned
+}

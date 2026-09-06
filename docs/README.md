@@ -34,6 +34,15 @@ The current normative executable artifacts are:
 - [dynamic authority-world layer](../mechanization/lean/NMLT/Behavior/ResourceWorld.lean); and
 - [artifact semantic closure](../mechanization/lean/NMLT/Artifact/SemanticClosure.lean).
 
+R1 additionally introduces a
+[unified dynamic behavior model](../mechanization/lean/NMLT/Behavior/ResourceDynamics.lean)
+and [nested execution examples](../mechanization/lean/NMLT/Examples/NestedResourceDynamics.lean).
+The v1 contract is retained. The opt-in
+[v2 schema](../schemas/behavior-core-v2.schema.json),
+[execution witness schema](../schemas/behavior-execution-v1.schema.json), and
+[path checker](../mechanization/lean/NMLT/Artifact/ExecutionWitness.lean) use the
+unified model. See the [v2 execution guide](getting-started.md#finite-v2-execution).
+
 ## Language and implementation
 
 - [Source corpus](source-corpus.md) — historical frontend corpus and provenance
@@ -58,8 +67,16 @@ The current normative executable artifacts are:
   observation forms for later evaluation
 - [R0 completion evidence](reviews/r0-checker-and-baselines-2026-09-06.md)
   — patched checker compatibility, executed workflows, and remaining friction
+- [R1 first-increment evidence](reviews/r1-unified-behavior-increment-2026-09-06.md)
+  — unified model, mixed finite values, validation results, and remaining gates
+- [R1 completion evidence](reviews/r1-finite-execution-2026-09-06.md)
+  — decoded finite paths, affine continuation, initialized refinement, and fresh checks
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
+- [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)
+  — Under review design for R1's first implementation increment
+- [Decoded finite execution](../rfcs/0016-decoded-finite-execution.md)
+  — Under review contract for v2 artifacts, capability continuation, and paths
 - [Historical records](history.md)
 - [Public pivot pre-PR review](reviews/public-pivot-pre-pr-2026-08-31.md)
 

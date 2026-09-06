@@ -38,9 +38,9 @@ and non-authoritative exploration.
 ```text
 exact .nmlt bytes
   → lossless syntax, resolution, and typed elaboration       Rust
-  → deterministic behavior-core-v1 artifact                 Rust
+  → deterministic behavior-core-v1/v2 artifact              Rust
   → finite behavior construction and premise checking       Lean
-  → conditional composition/refinement witnesses            Lean
+  → conditional refinement or supplied finite path checks   Lean
   → bounded operational inspection, assurance: none         Rust
 ```
 
@@ -48,9 +48,9 @@ exact .nmlt bytes
 |---|---|
 | Language | Finite `Bool`, `Unit`, and enum state; observations; typed input/output ports; affine capabilities; named natural-number grades; nominal rely/guarantee facts; binary wiring; explicit state maps |
 | Static semantics | A resource-bearing `Behavior`, binary product steps, resource-aware weak refinement, and a conditional lifting theorem in Lean |
-| Dynamic authority | An additional Lean authority-world layer proves unique ownership changes and conditional one-step lifting; it is not yet integrated into the single `Behavior` object or a reachability theorem |
-| Artifact | Canonical `behavior-core-v1` JSON with a source digest, typed terms, action profiles, wiring, and refinement data |
-| Exploration | `nmlt-eval` explores finite artifacts for language design and debugging, always with `assurance: none` |
+| Dynamic authority | R1 combines control and authority in an initialized behavior with conditional simulation and finite-path ownership results; v1 artifacts still construct the earlier conditional witnesses |
+| Artifact | Default v1 plus opt-in v2 with explicit known capabilities, initial authority, and separately checked finite path witnesses |
+| Exploration | `nmlt-eval` explores Bool/Unit/enum artifacts and emits v2 paths; frozen value/resource graphs are compared with Lean, always with `assurance: none` |
 
 This milestone is finite, binary, and safety-oriented. The source digest
 identifies the source bytes presented to Lean; the repository separately
@@ -66,6 +66,8 @@ are recorded with the active definitions in the
 | `nmlt-kernel` | Replay the retained ordinary typed-elaboration certificate | Formation/type acceptance only; never behavioral proof |
 | `NMLT.Behavior.ResourceBehavior` | Define the current behavior and static product/refinement theorem | The checked Lean statements under their explicit premises |
 | `NMLT.Behavior.ResourceWorld` | Model dynamic nominal authority and one-step product simulation | Ownership uniqueness, explained effects, and conditional one-step lifting; no reachability or liveness |
+| `NMLT.Behavior.ResourceDynamics` | Unify control, shared authority, initialization, observation and deferred effects | Scoped binary simulation and finite-path results |
+| Lean v2 execution checker | Check supplied paths from decoded initial states, including receive then consume/retransfer | Finite binary execution and initial synchronized refinement; no verified compilation or host runtime |
 | Lean artifact modules | Decode finite artifacts, construct behaviors, and decide theorem premises | Acceptance of the decoded artifact semantics; no verified source translation |
 | `nmlt-eval` | Reference operational exploration | No proof or verification claim |
 

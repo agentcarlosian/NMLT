@@ -175,7 +175,7 @@ private def systemAt (systems : JObject) (name : String) : Except String Json :=
 
 private def validateAction
     (enums : JObject) (facts : List String) (state capabilities ports : JObject)
-    (systemName actionName : String) (action : Json) : Except String Unit := do
+    (systemName actionName : String) (action : Json) (dynamic : Bool := false) : Except String Unit := do
   let direction ← stringAt action "direction"
   let parametersJson ← action.getObjVal? "parameters"
   let parameters ← parametersJson.getArr?
@@ -183,13 +183,17 @@ private def validateAction
   let outputs ← strings (← action.getObjVal? "outputs")
   let resources ← profile action
   let ownedCapabilities := capabilities.toList.map Prod.fst
+  if dynamic && direction == "input" then
+    for parameter in parameters do
+      let ty ← stringAt parameter "type"
+      if !ty.startsWith "Once<" then reject "v2 input parameters must bind affine payloads"
   if !subset resources.requires ownedCapabilities ||
       !subset resources.consumes ownedCapabilities ||
       !subset resources.transfers ownedCapabilities then
     reject s!"action '{systemName}.{actionName}' uses authority it does not own"
   if resources.consumes.any resources.transfers.contains then
     reject s!"action '{systemName}.{actionName}' both consumes and transfers the same authority"
-  if resources.receives.any ownedCapabilities.contains then
+  if !dynamic && resources.receives.any ownedCapabilities.contains then
     reject s!"action '{systemName}.{actionName}' receives authority it already owns"
   if direction != "internal" && direction != "input" && direction != "output" then
     reject s!"action '{systemName}.{actionName}' has invalid direction '{direction}'"
@@ -258,7 +262,8 @@ private def validateAction
   pure ()
 
 private def validateSystem
-    (enums : JObject) (facts : List String) (name : String) (system : Json) : Except String Unit := do
+    (enums : JObject) (facts : List String) (name : String) (system : Json)
+    (known : Option JObject := none) : Except String Unit := do
   let states ← objectAt system "state"
   let capabilities ← objectAt system "capabilities"
   let ports ← objectAt system "ports"
@@ -290,7 +295,7 @@ private def validateSystem
     if !states.contains observed then
       reject s!"observation '{name}.{observed}' is not a state field"
   for (actionName, action) in actions.toList do
-    validateAction enums facts states capabilities ports name actionName action
+    validateAction enums facts states (known.getD capabilities) ports name actionName action known.isSome
 
 private def validateConnection (systems : JObject) (connection : Json) : Except String Unit := do
   let leftSystemName ← stringAt connection "left_system"
@@ -413,10 +418,49 @@ private def validSha256 (digest : String) : Bool :=
   digest.length == 64 && digest.toList.all fun character =>
     character.isDigit || ('a' ≤ character && character ≤ 'f')
 
-/-- Decode and semantically validate the finite `behavior-core-v1` envelope. -/
-def decode (json : Json) : Except String Summary := do
+/-- Derive v2 namespaces and worlds independently of their claimed maps. -/
+private def validateExecutionMaps (json : Json) (systems compositions : JObject) : Except String JObject := do
+  let mut expectedKnown : List (String × Json) := []
+  let mut capabilityTypes : JObject := {}
+  for (name, system) in systems.toList do
+    let mut known ← objectAt system "capabilities"
+    for (_, action) in (← objectAt system "actions").toList do
+      if (← stringAt action "direction") == "input" then
+        for parameter in (← (← action.getObjVal? "parameters").getArr?) do
+          let cap ← stringAt parameter "name"
+          let ty ← stringAt parameter "type"
+          if ty.startsWith "Once<" then
+            if let some old := known.get? cap then
+              if old != Json.str ty then reject s!"inconsistent capability type for '{name}.{cap}'"
+            known := known.insert cap (Json.str ty)
+    for (cap, ty) in known.toList do
+      if let some old := capabilityTypes.get? cap then
+        if old != ty then reject s!"inconsistent nominal capability type for '{cap}'"
+      capabilityTypes := capabilityTypes.insert cap ty
+    expectedKnown := expectedKnown ++ [(name, Json.mkObj known.toList)]
+  if (← json.getObjVal? "known_capabilities") != Json.mkObj expectedKnown then
+    reject "v2 known_capabilities disagrees with declarations and input bindings"
+  let mut targets := systems.toList.map fun (name, _) => (name, [name])
+  for (name, composition) in compositions.toList do
+    if systems.contains name then reject s!"ambiguous behavior '{name}'"
+    targets := targets ++ [(name, [← stringAt composition "left", ← stringAt composition "right"])]
+  let mut expectedWorlds : List (String × Json) := []
+  for (target, leaves) in targets do
+    let mut world := capabilityTypes.toList.map fun (cap, _) => (cap, Json.null)
+    for leaf in leaves do
+      let system ← lookup systems leaf
+      for (cap, _) in (← objectAt system "capabilities").toList do
+        if (world.lookup cap).getD Json.null != Json.null then
+          reject s!"duplicate initial ownership of '{cap}' in '{target}'"
+        world := world.map fun (name, owner) => (name, if name == cap then Json.str leaf else owner)
+    expectedWorlds := expectedWorlds ++ [(target, Json.mkObj world)]
+  if (← json.getObjVal? "initial_authority") != Json.mkObj expectedWorlds then
+    reject "v2 initial_authority disagrees with selected leaf declarations"
+  (Json.mkObj expectedKnown).getObj?
+
+private def decodeVersion (json : Json) (dynamic : Bool) : Except String Summary := do
   let schema ← stringAt json "schema"
-  if schema != "behavior-core-v1" then
+  if schema != (if dynamic then "behavior-core-v2" else "behavior-core-v1") then
     reject s!"unsupported schema '{schema}'"
   let sourcePath ← stringAt json "source_path"
   let sourceSha256 ← stringAt json "source_sha256"
@@ -432,9 +476,11 @@ def decode (json : Json) : Except String Summary := do
   let systems ← objectAt json "systems"
   if systems.size == 0 then
     reject "at least one behavior system is required"
-  for (name, system) in systems.toList do
-    validateSystem enums facts name system
   let compositions ← objectAt json "compositions"
+  let known ← if dynamic then validateExecutionMaps json systems compositions else pure ({} : JObject)
+  for (name, system) in systems.toList do
+    let localKnown ← if dynamic then pure (some (← (← lookup known name).getObj?)) else pure none
+    validateSystem enums facts name system localKnown
   for (name, composition) in compositions.toList do
     validateComposition systems name composition
   let refinementJson ← json.getObjVal? "refinements"
@@ -448,6 +494,9 @@ def decode (json : Json) : Except String Summary := do
     compositions := compositions.size
     refinements := refinements.size
   }
+
+/-- The v1 entry point deliberately rejects v2. -/
+def decode (json : Json) : Except String Summary := decodeVersion json false
 
 def parse (input : String) : Except String Summary := do
   decode (← Json.parse input)
@@ -620,8 +669,8 @@ Construct the finite semantic data after the normative decoder has accepted
 the artifact. This is intentionally separate from Summary: downstream Lean
 code receives the actual terms, transitions, resources, wirings, and maps.
 -/
-def decodeProgram (json : Json) : Except String Program := do
-  let summary ← decode json
+private def decodeProgramVersion (json : Json) (dynamic : Bool) : Except String Program := do
+  let summary ← decodeVersion json dynamic
   let enumsObject ← objectAt json "enums"
   let enums ← enumsObject.toList.mapM fun (enumName, variantsJson) => do
     pure (enumName, ← strings variantsJson)
@@ -637,6 +686,12 @@ def decodeProgram (json : Json) : Except String Program := do
   let refinementJson ← (← json.getObjVal? "refinements").getArr?
   let refinements ← refinementJson.toList.mapM decodeRefinement
   pure { summary, enums, facts, systems, compositions, refinements }
+
+def decodeProgram (json : Json) : Except String Program := decodeProgramVersion json false
+
+/-- Explicit opt-in v2 interpretation; initial ownership is still in capabilities. -/
+def decodeProgramV2 (json : Json) : Except String Program :=
+  (decodeProgramVersion json true).mapError fun message => message.replace "behavior-core-v1" "behavior-core-v2"
 
 def parseProgram (input : String) : Except String Program := do
   decodeProgram (← Json.parse input)

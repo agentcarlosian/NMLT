@@ -1,0 +1,49 @@
+{
+  "schema": "behavior-execution-v1",
+  "artifact_sha256": "5e6d9113065f51d387fbca77b9a17405c3e656ca69c1f22fd3578f4dfa582aa2",
+  "behavior": "Network",
+  "states": [
+    {
+      "left": 0,
+      "right": 0,
+      "authority": {
+        "permit": "Sender"
+      }
+    },
+    {
+      "left": 1,
+      "right": 1,
+      "authority": {
+        "permit": "Receiver"
+      }
+    },
+    {
+      "left": 3,
+      "right": 1,
+      "authority": {
+        "permit": "Receiver"
+      }
+    },
+    {
+      "left": 3,
+      "right": 1,
+      "authority": {
+        "permit": null
+      }
+    }
+  ],
+  "actions": [
+    {
+      "left": "receive",
+      "right": "send"
+    },
+    {
+      "left": "monitor",
+      "right": null
+    },
+    {
+      "left": "use",
+      "right": null
+    }
+  ]
+}

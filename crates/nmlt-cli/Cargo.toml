@@ -16,6 +16,7 @@ nmlt-compile = { path = "../nmlt-compile" }
 nmlt-core = { path = "../nmlt-core" }
 nmlt-eval = { path = "../nmlt-eval" }
 nmlt-ir = { path = "../nmlt-ir" }
+nmlt-hir = { path = "../nmlt-hir" }
 
 [lints]
 workspace = true

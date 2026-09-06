@@ -10,7 +10,7 @@ use nmlt_kernel::{CheckedProgram, RawCertificate, check};
 
 mod behavior;
 
-pub use behavior::{BehaviorDiagnostic, compile_behavior_single};
+pub use behavior::{BehaviorDiagnostic, compile_behavior_single, compile_behavior_v2};
 
 /// One exact module in the closed compilation source set.
 #[derive(Clone, Debug, PartialEq, Eq)]

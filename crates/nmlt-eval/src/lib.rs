@@ -13,6 +13,13 @@ use nmlt_ir::{
     CorePortDirection, CoreResourceProfile,
 };
 
+mod execution;
+mod value;
+pub use execution::execution_path;
+
+pub use value::EvalValue;
+use value::eval_value;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ExploreConfig {
     pub max_states: usize,
@@ -26,7 +33,7 @@ impl Default for ExploreConfig {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EvalState {
-    pub values: BTreeMap<String, bool>,
+    pub values: BTreeMap<String, EvalValue>,
     pub authority: BTreeMap<String, String>,
 }
 
@@ -66,8 +73,12 @@ pub fn explore(
     if config.max_states == 0 {
         return Err(EvalError("max_states must be positive".to_owned()));
     }
+    let dynamic = program.schema == nmlt_ir::BEHAVIOR_CORE_V2_SCHEMA;
+    if dynamic {
+        program.validate_execution_maps().map_err(EvalError)?;
+    }
     if let Some(system) = program.systems.get(behavior) {
-        explore_system(system, config)
+        explore_system(system, &program.enums, config, dynamic)
     } else if let Some(composition) = program.compositions.get(behavior) {
         explore_composition(program, composition, config)
     } else {
@@ -77,17 +88,23 @@ pub fn explore(
 
 fn explore_system(
     system: &CoreBehaviorSystem,
+    enums: &BTreeMap<String, BTreeSet<String>>,
     config: ExploreConfig,
+    dynamic: bool,
 ) -> Result<Exploration, EvalError> {
-    let initial = initial_state(system, None)?;
+    let initial = initial_state(system, None, enums)?;
+    validate_action_terms(system, &initial, enums)?;
     explore_graph(system.name.clone(), initial, config, |state| {
         system
             .actions
             .values()
-            .filter(|action| enabled(action, state, &system.name))
+            .filter(|action| {
+                enabled(action, state, &system.name, enums)
+                    && (!dynamic || local_enabled(action, state, &system.name))
+            })
             .map(|action| {
                 let mut after = state.clone();
-                apply(action, &mut after, &system.name)?;
+                apply(action, &mut after, &system.name, enums)?;
                 apply_open_resources(action, &mut after, &system.name);
                 Ok(Candidate {
                     state: after,
@@ -105,6 +122,8 @@ fn explore_composition(
     composition: &CoreComposition,
     config: ExploreConfig,
 ) -> Result<Exploration, EvalError> {
+    let enums = &program.enums;
+    let dynamic = program.schema == nmlt_ir::BEHAVIOR_CORE_V2_SCHEMA;
     let resolve_system = |name: &str| {
         program.systems.get(name).ok_or_else(|| {
             EvalError(format!(
@@ -161,8 +180,10 @@ fn explore_composition(
             })
         })
         .collect::<Result<Vec<_>, EvalError>>()?;
-    let mut initial = initial_state(left, Some(&left.name))?;
-    let right_initial = initial_state(right, Some(&right.name))?;
+    let mut initial = initial_state(left, Some(&left.name), enums)?;
+    let right_initial = initial_state(right, Some(&right.name), enums)?;
+    validate_action_terms(left, &initial, enums)?;
+    validate_action_terms(right, &right_initial, enums)?;
     initial.values.extend(right_initial.values);
     initial.authority.extend(right_initial.authority);
     let connected = composition
@@ -191,12 +212,20 @@ fn explore_composition(
             right_action,
         } in &connections
         {
-            if enabled(left_action, state, &left_system.name)
-                && enabled(right_action, state, &right_system.name)
+            if enabled(left_action, state, &left_system.name, enums)
+                && enabled(right_action, state, &right_system.name, enums)
+                && (!dynamic
+                    || synchronized_enabled(
+                        left_action,
+                        &left_system.name,
+                        right_action,
+                        &right_system.name,
+                        state,
+                    ))
             {
                 let mut after = state.clone();
-                apply(left_action, &mut after, &left_system.name)?;
-                apply(right_action, &mut after, &right_system.name)?;
+                apply(left_action, &mut after, &left_system.name, enums)?;
+                apply(right_action, &mut after, &right_system.name, enums)?;
                 apply_synchronized_resources(
                     left_action,
                     &left_system.name,
@@ -245,12 +274,13 @@ fn explore_composition(
         for system in [left, right] {
             for action in system.actions.values() {
                 if connected.contains(&(system.name.clone(), action.name.clone()))
-                    || !enabled(action, state, &system.name)
+                    || !enabled(action, state, &system.name, enums)
+                    || (dynamic && !local_enabled(action, state, &system.name))
                 {
                     continue;
                 }
                 let mut after = state.clone();
-                apply(action, &mut after, &system.name)?;
+                apply(action, &mut after, &system.name, enums)?;
                 apply_open_resources(action, &mut after, &system.name);
                 candidates.push(Candidate {
                     state: after,
@@ -341,6 +371,7 @@ fn explore_graph(
 fn initial_state(
     system: &CoreBehaviorSystem,
     prefix: Option<&str>,
+    enums: &BTreeMap<String, BTreeSet<String>>,
 ) -> Result<EvalState, EvalError> {
     let empty = EvalState {
         values: BTreeMap::new(),
@@ -354,12 +385,11 @@ fn initial_state(
                 Some(prefix) => format!("{prefix}.{}", field.name),
                 None => field.name.clone(),
             };
-            let value = (field.ty == "Bool")
-                .then(|| eval_bool(&field.initial_ast, &empty, &system.name))
-                .flatten()
+            let value = eval_value(&field.initial_ast, &empty, &system.name, enums)
+                .filter(|value| value.type_name() == field.ty)
                 .ok_or_else(|| {
                     EvalError(format!(
-                        "reference evaluator supports closed Bool initializers only: {}.{}",
+                        "expected a closed initializer of declared Bool/Unit/enum type: {}.{}",
                         system.name, field.name
                     ))
                 })?;
@@ -374,11 +404,50 @@ fn initial_state(
     Ok(EvalState { values, authority })
 }
 
-fn enabled(action: &CoreBehaviorAction, state: &EvalState, system: &str) -> bool {
+fn validate_action_terms(
+    system: &CoreBehaviorSystem,
+    initial: &EvalState,
+    enums: &BTreeMap<String, BTreeSet<String>>,
+) -> Result<(), EvalError> {
+    for action in system.actions.values() {
+        for guard in &action.guard_ast {
+            if eval_bool(guard, initial, &system.name, enums).is_none() {
+                return Err(EvalError(format!(
+                    "invalid Bool guard AST in {}.{}",
+                    system.name, action.name
+                )));
+            }
+        }
+        for (field, term) in &action.update_ast {
+            let declared = system.state.get(field).ok_or_else(|| {
+                EvalError(format!(
+                    "unknown update field {field} in {}.{}",
+                    system.name, action.name
+                ))
+            })?;
+            if eval_value(term, initial, &system.name, enums)
+                .is_none_or(|value| value.type_name() != declared.ty)
+            {
+                return Err(EvalError(format!(
+                    "invalid update AST in {}.{} for field {field}; expected {}",
+                    system.name, action.name, declared.ty
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn enabled(
+    action: &CoreBehaviorAction,
+    state: &EvalState,
+    system: &str,
+    enums: &BTreeMap<String, BTreeSet<String>>,
+) -> bool {
     let guards_hold = action
         .guard_ast
         .iter()
-        .all(|guard| eval_bool(guard, state, system).unwrap_or(false));
+        .all(|guard| eval_bool(guard, state, system, enums).unwrap_or(false));
     let authority_available = action
         .resources
         .requires
@@ -394,16 +463,51 @@ fn enabled(action: &CoreBehaviorAction, state: &EvalState, system: &str) -> bool
     guards_hold && authority_available
 }
 
+fn affine_enabled(action: &CoreBehaviorAction, state: &EvalState, actor: &str) -> bool {
+    let p = &action.resources;
+    p.receives
+        .iter()
+        .all(|cap| state.authority.get(cap).is_none_or(|owner| owner != actor))
+        && p.consumes.is_disjoint(&p.transfers)
+        && p.consumes.is_disjoint(&p.receives)
+        && p.transfers.is_disjoint(&p.receives)
+}
+
+fn local_enabled(action: &CoreBehaviorAction, state: &EvalState, actor: &str) -> bool {
+    affine_enabled(action, state, actor)
+        && action.resources.transfers.is_empty()
+        && action.resources.receives.is_empty()
+}
+
+fn synchronized_enabled(
+    left: &CoreBehaviorAction,
+    left_owner: &str,
+    right: &CoreBehaviorAction,
+    right_owner: &str,
+    state: &EvalState,
+) -> bool {
+    let l = &left.resources;
+    let r = &right.resources;
+    left_owner != right_owner
+        && affine_enabled(left, state, left_owner)
+        && affine_enabled(right, state, right_owner)
+        && l.transfers == r.receives
+        && r.transfers == l.receives
+        && l.relies.is_subset(&r.guarantees)
+        && r.relies.is_subset(&l.guarantees)
+}
+
 fn apply(
     action: &CoreBehaviorAction,
     state: &mut EvalState,
     system: &str,
+    enums: &BTreeMap<String, BTreeSet<String>>,
 ) -> Result<(), EvalError> {
     let before = state.clone();
     for (field, term) in &action.update_ast {
-        let value = eval_bool(term, &before, system).ok_or_else(|| {
+        let value = eval_value(term, &before, system, enums).ok_or_else(|| {
             EvalError(format!(
-                "unsupported Bool update AST in {system}.{} for field {field}",
+                "invalid finite update AST in {system}.{} for field {field}",
                 action.name,
             ))
         })?;
@@ -454,18 +558,15 @@ fn apply_synchronized_resources(
     }
 }
 
-fn eval_bool(term: &CoreBehaviorTerm, state: &EvalState, system: &str) -> Option<bool> {
-    match term {
-        CoreBehaviorTerm::Bool { value, .. } => Some(*value),
-        CoreBehaviorTerm::Read { field, .. } => {
-            let key = qualify(state, system, field);
-            state.values.get(&key).copied()
-        }
-        CoreBehaviorTerm::Not { value, .. } => eval_bool(value, state, system).map(|value| !value),
-        CoreBehaviorTerm::Equal { left, right, .. } => {
-            Some(eval_bool(left, state, system)? == eval_bool(right, state, system)?)
-        }
-        CoreBehaviorTerm::Unit { .. } | CoreBehaviorTerm::Enum { .. } => None,
+fn eval_bool(
+    term: &CoreBehaviorTerm,
+    state: &EvalState,
+    system: &str,
+    enums: &BTreeMap<String, BTreeSet<String>>,
+) -> Option<bool> {
+    match eval_value(term, state, system, enums)? {
+        EvalValue::Bool(value) => Some(value),
+        EvalValue::Unit | EvalValue::Enum { .. } => None,
     }
 }
 
@@ -600,6 +701,8 @@ mod tests {
                 },
             )]),
             refinements: Vec::new(),
+            known_capabilities: BTreeMap::new(),
+            initial_authority: BTreeMap::new(),
         }
     }
 
@@ -611,7 +714,7 @@ mod tests {
             result
                 .states
                 .iter()
-                .any(|state| state.values["Receiver.bit"])
+                .any(|state| state.values["Receiver.bit"] == EvalValue::Bool(true))
         );
         assert!(result.states.iter().any(|state| {
             state.authority.get("permit").map(String::as_str) == Some("Receiver")
@@ -768,12 +871,18 @@ mod tests {
         receiver.state.insert("literal".to_owned(), literal);
 
         let result = explore(&program, "Receiver", ExploreConfig::default()).unwrap();
-        assert!(result.states[0].values["bit"]);
-        assert!(!result.states[0].values["literal"]);
+        assert_eq!(result.states[0].values["bit"], EvalValue::Bool(true));
+        assert_eq!(result.states[0].values["literal"], EvalValue::Bool(false));
 
         let result = explore(&program, "Network", ExploreConfig::default()).unwrap();
-        assert!(result.states[0].values["Receiver.bit"]);
-        assert!(!result.states[0].values["Receiver.literal"]);
+        assert_eq!(
+            result.states[0].values["Receiver.bit"],
+            EvalValue::Bool(true)
+        );
+        assert_eq!(
+            result.states[0].values["Receiver.literal"],
+            EvalValue::Bool(false)
+        );
     }
 
     #[test]
@@ -787,7 +896,7 @@ mod tests {
                 },
             ),
             (
-                "Unit",
+                "Bool",
                 CoreBehaviorTerm::Unit {
                     r#type: "Unit".to_owned(),
                 },
@@ -808,7 +917,14 @@ mod tests {
             bit.initial_ast = term;
             let error = explore(&program, "Receiver", ExploreConfig::default())
                 .expect_err("unsupported initializer must return an error");
-            assert!(error.to_string().contains("closed Bool initializers only"));
+            assert!(
+                error
+                    .to_string()
+                    .contains("closed initializer of declared Bool/Unit/enum type")
+            );
         }
     }
 }
+
+#[cfg(test)]
+mod value_tests;

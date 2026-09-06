@@ -12,3 +12,6 @@ nmlt-ir = { path = "../nmlt-ir" }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+nmlt-compile = { path = "../nmlt-compile" }

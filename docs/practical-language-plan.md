@@ -35,7 +35,7 @@ Owners: integration maintainer and Lean maintainer. Dependencies: none.
 Completed at calibration scope on 2026-09-06; see the
 [checker and workflow evidence record](reviews/r0-checker-and-baselines-2026-09-06.md).
 The requirements below describe the completed baseline gate, not an implemented
-NMLT interpreter. R1 is the next execution milestone.
+NMLT interpreter. R1 has since completed at finite scope; R2 remains planned.
 
 - Review a compatible patched Lean version, with 4.33.1 as the minimum candidate identified by this research. The former 4.30 pin predates the August kernel/runtime fixes; R0 upgraded it to 4.33.1. Update the exporter and independent checker as a compatible set, then rebuild and freshly recheck the existing corpus. Use the established export/comparator path; the postmortem's `lake check` command is a future feature, not this plan's assumed interface. [Upstream postmortem, 2026-08-24](https://leodemoura.github.io/blog/2026-8-24-postmortem-for-the-kernel-soundness-bug-hunt/)
 - Preserve the existing passing baseline and audited working changes in separately reviewable commits when implementation is authorized. A toolchain migration must not silently weaken theorem statements or the axiom policy.
@@ -48,6 +48,16 @@ Exit: a fresh checker compatibility record; one complete baseline example per au
 ## R1 — Complete the semantic basis for real execution
 
 Owners: Lean/semantics maintainer with Rust support. Dependencies: R0 checker baseline. This is the principal research uncertainty.
+
+R1 now implements `ResourceDynamics.Behavior`, constructed nested examples,
+v2 decoded initial execution and finite paths, source-level received-authority
+continuation, and ownership-origin results. Frozen value and resource graphs
+compare Rust exploration with the actual Lean relations. The primary decoded
+synchronization also lifts through the unified refinement theorem with an
+initialized abstract image. [RFC 0015](../rfcs/0015-unified-resource-bearing-behavior.md)
+and [RFC 0016](../rfcs/0016-decoded-finite-execution.md) remain Under review.
+The [completion evidence](reviews/r1-finite-execution-2026-09-06.md) records the
+passed M1–M3 gates; the authoritative execution plan keeps R2 as the next milestone.
 
 Implement the existing M1–M3 in reviewable increments:
 
