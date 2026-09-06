@@ -178,7 +178,7 @@ pub(crate) fn parse_type(input: &RawTermInput) -> Result<ParsedType, TermParseEr
 
 pub(crate) fn parse_expression(input: &RawTermInput) -> Result<ParsedExpr, TermParseError> {
     let mut parser = Parser::new(&input.source, input.span.start)?;
-    let parsed = parser.parse_expression(0)?;
+    let parsed = parser.parse_expression(0, MAX_TERM_DEPTH)?;
     parser.expect_end("expression")?;
     Ok(parsed)
 }
@@ -192,7 +192,7 @@ pub(crate) fn parse_expression_list(
         return Err(parser.error_here("observation list cannot be empty"));
     }
     loop {
-        expressions.push(parser.parse_expression(0)?);
+        expressions.push(parser.parse_expression(0, MAX_TERM_DEPTH)?);
         if !parser.eat(",") {
             break;
         }
@@ -348,8 +348,16 @@ impl Parser {
     fn parse_expression(
         &mut self,
         minimum_binding_power: u8,
+        remaining_depth: usize,
     ) -> Result<ParsedExpr, TermParseError> {
-        let mut left = self.parse_prefix()?;
+        // Bound recursive descent before reading the next operand. Completed
+        // AST depth checks below also cover left-associative operator chains.
+        let remaining_depth = remaining_depth.checked_sub(1).ok_or_else(|| {
+            self.error_here(&format!(
+                "term nesting exceeds the M9 limit of {MAX_TERM_DEPTH}"
+            ))
+        })?;
+        let mut left = self.parse_prefix(remaining_depth)?;
         loop {
             let Some((operator, left_power, right_power)) = self.current_binary_operator() else {
                 break;
@@ -369,7 +377,7 @@ impl Parser {
                 return Err(self.error_here("comparison operators do not chain in M9"));
             }
             self.index += 1;
-            let right = self.parse_expression(right_power)?;
+            let right = self.parse_expression(right_power, remaining_depth)?;
             let depth = 1 + left.depth.max(right.depth);
             self.enforce_depth(depth, SourceSpan::new(left.span.start, right.span.end))?;
             left = ParsedExpr {
@@ -385,7 +393,7 @@ impl Parser {
         Ok(left)
     }
 
-    fn parse_prefix(&mut self) -> Result<ParsedExpr, TermParseError> {
+    fn parse_prefix(&mut self, remaining_depth: usize) -> Result<ParsedExpr, TermParseError> {
         let token = self
             .take()
             .ok_or_else(|| self.error_here("expected an expression"))?;
@@ -403,10 +411,11 @@ impl Parser {
                 })
             }
             LexicalKind::Identifier if token.text == "not" => {
-                self.parse_unary(token.span.start, ParsedUnaryOp::Not)
+                self.parse_unary(token.span.start, ParsedUnaryOp::Not, remaining_depth)
             }
             LexicalKind::Punctuation if token.text == "-" => {
-                let expression = self.parse_unary(token.span.start, ParsedUnaryOp::Negate)?;
+                let expression =
+                    self.parse_unary(token.span.start, ParsedUnaryOp::Negate, remaining_depth)?;
                 if matches!(
                     expression.kind,
                     ParsedExprKind::Unary {
@@ -430,7 +439,7 @@ impl Parser {
                             message: "qualified calls are outside the first M9 fragment".to_owned(),
                         });
                     }
-                    self.parse_builtin(name)
+                    self.parse_builtin(name, remaining_depth)
                 } else {
                     Ok(ParsedExpr {
                         span: name.span,
@@ -440,7 +449,7 @@ impl Parser {
                 }
             }
             LexicalKind::LeftParen => {
-                let inner = self.parse_expression(0)?;
+                let inner = self.parse_expression(0, remaining_depth)?;
                 let close = self.expect(")", "expected `)` to close expression")?;
                 let depth = inner.depth + 1;
                 let span = SourceSpan::new(token.span.start, close.span.end);
@@ -462,8 +471,9 @@ impl Parser {
         &mut self,
         start: usize,
         operator: ParsedUnaryOp,
+        remaining_depth: usize,
     ) -> Result<ParsedExpr, TermParseError> {
-        let operand = self.parse_expression(13)?;
+        let operand = self.parse_expression(13, remaining_depth)?;
         let depth = operand.depth + 1;
         let span = SourceSpan::new(start, operand.span.end);
         self.enforce_depth(depth, span)?;
@@ -477,7 +487,11 @@ impl Parser {
         })
     }
 
-    fn parse_builtin(&mut self, name: NameUse) -> Result<ParsedExpr, TermParseError> {
+    fn parse_builtin(
+        &mut self,
+        name: NameUse,
+        remaining_depth: usize,
+    ) -> Result<ParsedExpr, TermParseError> {
         let builtin = match name.spelling.as_str() {
             "to_int" => ParsedBuiltin::ToInt,
             "always" => ParsedBuiltin::Always,
@@ -498,7 +512,7 @@ impl Parser {
         let mut arguments = Vec::new();
         if !self.at(")") {
             loop {
-                arguments.push(self.parse_expression(0)?);
+                arguments.push(self.parse_expression(0, remaining_depth)?);
                 if !self.eat(",") {
                     break;
                 }
@@ -724,8 +738,9 @@ fn decimal_magnitude(text: &str, span: SourceSpan) -> Result<Vec<u8>, TermParseE
 #[cfg(test)]
 mod tests {
     use super::{
-        ParsedBinaryOp, ParsedBuiltin, ParsedExprKind, ParsedTypeKind, RawTermInput,
-        RawTermInputKind, TermRootInput, parse_expression, parse_expression_list, parse_type,
+        MAX_TERM_DEPTH, ParsedBinaryOp, ParsedBuiltin, ParsedExprKind, ParsedTypeKind, Parser,
+        RawTermInput, RawTermInputKind, TermRootInput, parse_expression, parse_expression_list,
+        parse_type,
     };
     use crate::{DefPath, Namespace, SourceSpan};
 
@@ -799,5 +814,55 @@ mod tests {
         assert!(parse_expression(&input("00", RawTermInputKind::Expression)).is_err());
         assert!(parse_expression(&input("-0", RawTermInputKind::Expression)).is_err());
         assert!(parse_expression(&input("f(x)", RawTermInputKind::Expression)).is_err());
+    }
+
+    #[test]
+    fn recursion_budget_is_checked_before_every_operand_descent() {
+        for (source, budget, next_token) in [
+            ("true", 0, "true"),
+            ("(true)", 1, "true"),
+            ("not true", 1, "true"),
+            ("-1", 1, "1"),
+            ("always(true)", 1, "true"),
+            ("true implies false", 1, "false"),
+            ("always(not (true))", 3, "true"),
+        ] {
+            let mut parser = Parser::new(source, 10).unwrap();
+            let error = parser.parse_expression(0, budget).unwrap_err();
+            let current = parser.current().unwrap();
+            assert_eq!(current.text, next_token, "{source}");
+            assert_eq!(error.span, current.span, "{source}");
+            assert_eq!(
+                error.message,
+                format!("term nesting exceeds the M9 limit of {MAX_TERM_DEPTH}"),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn recursion_budget_is_reused_by_siblings_and_keeps_ast_depth_checks() {
+        for (source, budget, depth) in [
+            ("true", 1, 1),
+            ("(true)", 2, 2),
+            ("not true", 2, 2),
+            ("-1", 2, 2),
+            ("always(true)", 2, 2),
+            ("true implies false", 2, 2),
+            ("until((true), (false))", 3, 3),
+            ("always(not (true))", 4, 4),
+            ("1 + 2 + 3", 2, 3),
+        ] {
+            let mut parser = Parser::new(source, 10).unwrap();
+            let parsed = parser.parse_expression(0, budget).unwrap();
+            parser.expect_end("expression").unwrap();
+            assert_eq!(parsed.depth, depth, "{source}");
+        }
+
+        let parser = Parser::new("true", 10).unwrap();
+        let span = SourceSpan::new(10, 14);
+        assert!(parser.enforce_depth(MAX_TERM_DEPTH, span).is_ok());
+        let error = parser.enforce_depth(MAX_TERM_DEPTH + 1, span).unwrap_err();
+        assert_eq!(error.span, span);
     }
 }

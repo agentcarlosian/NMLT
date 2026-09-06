@@ -698,12 +698,23 @@ pub enum HideSort {
 pub struct UntypedObservation {
     pub kind: ObservationKind,
     pub hide_sort: Option<HideSort>,
+    /// Names from a completely accepted name list; empty for other expressions.
     pub names: Vec<SpannedText>,
     pub expression: Option<RawTerm>,
     pub span: Span,
 }
 
 impl UntypedObservation {
+    /// Check the retained expression as a nonempty, comma-separated name list.
+    ///
+    /// Hiding also accepts `action name[, name]*`. A lone `action` is a state
+    /// field name. Other expressions remain available to term elaboration but
+    /// cannot be consumed as a list of declared names.
+    #[must_use]
+    pub fn checked_names(&self) -> Option<Vec<SpannedText>> {
+        observation_name_list(self.expression.as_ref()?, self.kind).map(|(_, names)| names)
+    }
+
     #[must_use]
     pub fn hides_actions(&self) -> bool {
         self.kind == ObservationKind::Hide && self.hide_sort == Some(HideSort::Actions)
@@ -1669,10 +1680,10 @@ impl Projector {
     fn project_observation(&mut self, node: NodeAt<'_>, kind: ObservationKind) -> UntypedMember {
         let children = direct_nodes(node.node, node.span.start);
         let expression = raw_child(&children, SyntaxKind::Expr);
-        let (hide_sort, names) = match kind {
-            ObservationKind::Hide => classify_hide_expression(expression.as_ref()),
-            ObservationKind::Observe => (None, observation_names(expression.as_ref())),
-        };
+        let (hide_sort, names) = expression
+            .as_ref()
+            .and_then(|term| observation_name_list(term, kind))
+            .unwrap_or_default();
         UntypedMember::Observation(UntypedObservation {
             kind,
             hide_sort,
@@ -2554,57 +2565,57 @@ fn valid_location_tokens(tokens: &[crate::Token], source: &str) -> bool {
     true
 }
 
-fn observation_names(expression: Option<&RawTerm>) -> Vec<SpannedText> {
-    expression.map(ident_spans_in_term).unwrap_or_default()
-}
-
-fn classify_hide_expression(expression: Option<&RawTerm>) -> (Option<HideSort>, Vec<SpannedText>) {
-    let Some(term) = expression else {
-        return (Some(HideSort::StateFields), Vec::new());
-    };
-    let idents = ident_spans_in_term(term);
-    if idents.first().map(|name| name.text.as_str()) == Some("action") && idents.len() > 1 {
-        (
-            Some(HideSort::Actions),
-            idents.into_iter().skip(1).collect(),
-        )
-    } else {
-        (Some(HideSort::StateFields), idents)
-    }
-}
-
-fn ident_spans_in_term(term: &RawTerm) -> Vec<SpannedText> {
+fn observation_name_list(
+    term: &RawTerm,
+    kind: ObservationKind,
+) -> Option<(Option<HideSort>, Vec<SpannedText>)> {
     let text = &term.source.text;
     let base = term.source.span.start;
-    let bytes = text.as_bytes();
-    let mut names = Vec::new();
-    let mut index = 0;
-    while index < bytes.len() {
-        let ch = bytes[index];
-        if ch == b',' || ch.is_ascii_whitespace() {
-            index += 1;
-            continue;
-        }
-        if ch.is_ascii_alphabetic() || ch == b'_' {
-            let start = index;
-            index += 1;
-            while index < bytes.len() {
-                let next = bytes[index];
-                if next.is_ascii_alphanumeric() || next == b'_' {
-                    index += 1;
-                } else {
-                    break;
-                }
-            }
-            names.push(SpannedText {
-                text: text[start..index].to_string(),
-                span: Span::new(base + start, base + index),
-            });
-            continue;
-        }
-        index += 1;
+    let lexed = crate::lex_source(text);
+    if !lexed.diagnostics.is_empty() {
+        return None;
     }
-    names
+    let mut tokens = lexed
+        .tokens
+        .into_iter()
+        .filter(|token| !token.kind.is_trivia())
+        .peekable();
+    let mut name = tokens.next()?;
+    if name.kind != TokenKind::Identifier {
+        return None;
+    }
+    let hide_sort = match kind {
+        ObservationKind::Observe => None,
+        ObservationKind::Hide => {
+            if name.text(text) == "action"
+                && tokens
+                    .peek()
+                    .is_some_and(|token| token.kind == TokenKind::Identifier)
+            {
+                name = tokens.next()?;
+                Some(HideSort::Actions)
+            } else {
+                Some(HideSort::StateFields)
+            }
+        }
+    };
+    let mut names = Vec::new();
+    loop {
+        names.push(SpannedText {
+            text: name.text(text).to_owned(),
+            span: Span::new(base + name.span.start, base + name.span.end),
+        });
+        let Some(separator) = tokens.next() else {
+            return Some((hide_sort, names));
+        };
+        if separator.kind != TokenKind::Punctuation || separator.text(text) != "," {
+            return None;
+        }
+        name = tokens.next()?;
+        if name.kind != TokenKind::Identifier {
+            return None;
+        }
+    }
 }
 
 #[cfg(test)]

@@ -105,8 +105,62 @@ fn explore_composition(
     composition: &CoreComposition,
     config: ExploreConfig,
 ) -> Result<Exploration, EvalError> {
-    let left = &program.systems[&composition.left_system];
-    let right = &program.systems[&composition.right_system];
+    let resolve_system = |name: &str| {
+        program.systems.get(name).ok_or_else(|| {
+            EvalError(format!(
+                "composition '{}' names unknown system '{name}'",
+                composition.name
+            ))
+        })
+    };
+    let left = resolve_system(&composition.left_system)?;
+    let right = resolve_system(&composition.right_system)?;
+    if composition.left_system == composition.right_system {
+        return Err(EvalError(format!(
+            "composition '{}' must contain two distinct systems",
+            composition.name
+        )));
+    }
+    let connections = composition
+        .connections
+        .iter()
+        .map(|connection| {
+            let (left_system, right_system) = if connection.left_system == composition.left_system
+                && connection.right_system == composition.right_system
+            {
+                (left, right)
+            } else if connection.left_system == composition.right_system
+                && connection.right_system == composition.left_system
+            {
+                (right, left)
+            } else {
+                return Err(EvalError(format!(
+                    "connection '{}.{}|{}.{}' in composition '{}' must join '{}' and '{}'",
+                    connection.left_system,
+                    connection.left_action,
+                    connection.right_system,
+                    connection.right_action,
+                    composition.name,
+                    composition.left_system,
+                    composition.right_system,
+                )));
+            };
+            Ok(ResolvedConnection {
+                left_system,
+                left_action: resolve_action(
+                    left_system,
+                    &connection.left_action,
+                    &composition.name,
+                )?,
+                right_system,
+                right_action: resolve_action(
+                    right_system,
+                    &connection.right_action,
+                    &composition.name,
+                )?,
+            })
+        })
+        .collect::<Result<Vec<_>, EvalError>>()?;
     let mut initial = initial_state(left, Some(&left.name))?;
     let right_initial = initial_state(right, Some(&right.name))?;
     initial.values.extend(right_initial.values);
@@ -130,11 +184,13 @@ fn explore_composition(
 
     explore_graph(composition.name.clone(), initial, config, |state| {
         let mut candidates = Vec::new();
-        for connection in &composition.connections {
-            let left_system = &program.systems[&connection.left_system];
-            let right_system = &program.systems[&connection.right_system];
-            let left_action = &left_system.actions[&connection.left_action];
-            let right_action = &right_system.actions[&connection.right_action];
+        for &ResolvedConnection {
+            left_system,
+            left_action,
+            right_system,
+            right_action,
+        } in &connections
+        {
             if enabled(left_action, state, &left_system.name)
                 && enabled(right_action, state, &right_system.name)
             {
@@ -148,7 +204,19 @@ fn explore_composition(
                     &right_system.name,
                     &mut after,
                 );
-                let resources = left_action.resources.parallel(&right_action.resources);
+                let resources = left_action
+                    .resources
+                    .parallel(&right_action.resources)
+                    .map_err(|error| {
+                        EvalError(format!(
+                            "composition '{}' at '{}.{}|{}.{}': {error}",
+                            composition.name,
+                            left_system.name,
+                            left_action.name,
+                            right_system.name,
+                            right_action.name,
+                        ))
+                    })?;
                 let (sender_name, transfers) =
                     if left_action.direction == Some(CorePortDirection::Output) {
                         (&left_system.name, &left_action.resources.transfers)
@@ -193,6 +261,26 @@ fn explore_composition(
             }
         }
         Ok(candidates)
+    })
+}
+
+struct ResolvedConnection<'a> {
+    left_system: &'a CoreBehaviorSystem,
+    left_action: &'a CoreBehaviorAction,
+    right_system: &'a CoreBehaviorSystem,
+    right_action: &'a CoreBehaviorAction,
+}
+
+fn resolve_action<'a>(
+    system: &'a CoreBehaviorSystem,
+    name: &str,
+    composition: &str,
+) -> Result<&'a CoreBehaviorAction, EvalError> {
+    system.actions.get(name).ok_or_else(|| {
+        EvalError(format!(
+            "composition '{composition}' names unknown action '{}.{name}'",
+            system.name
+        ))
     })
 }
 
@@ -254,6 +342,10 @@ fn initial_state(
     system: &CoreBehaviorSystem,
     prefix: Option<&str>,
 ) -> Result<EvalState, EvalError> {
+    let empty = EvalState {
+        values: BTreeMap::new(),
+        authority: BTreeMap::new(),
+    };
     let values = system
         .state
         .values()
@@ -262,13 +354,16 @@ fn initial_state(
                 Some(prefix) => format!("{prefix}.{}", field.name),
                 None => field.name.clone(),
             };
-            match &field.initial_ast {
-                CoreBehaviorTerm::Bool { value, .. } => Ok((name, *value)),
-                _ => Err(EvalError(format!(
-                    "reference evaluator supports Bool initializers only: {}.{}",
-                    system.name, field.name
-                ))),
-            }
+            let value = (field.ty == "Bool")
+                .then(|| eval_bool(&field.initial_ast, &empty, &system.name))
+                .flatten()
+                .ok_or_else(|| {
+                    EvalError(format!(
+                        "reference evaluator supports closed Bool initializers only: {}.{}",
+                        system.name, field.name
+                    ))
+                })?;
+            Ok((name, value))
         })
         .collect::<Result<_, _>>()?;
     let authority = system
@@ -390,8 +485,7 @@ mod tests {
         BEHAVIOR_CORE_SCHEMA, CoreBehaviorState, CoreBehaviorTerm, CoreConnection, CorePort,
     };
 
-    #[test]
-    fn reference_exploration_reports_sync_grade_and_transfer() {
+    fn resource_sync_program() -> BehaviorCoreProgram {
         let send = CoreBehaviorAction {
             name: "send".to_owned(),
             direction: Some(CorePortDirection::Output),
@@ -482,7 +576,7 @@ mod tests {
             actions: BTreeMap::from([("receive".to_owned(), receive)]),
             observations: vec!["bit".to_owned()],
         };
-        let program = BehaviorCoreProgram {
+        BehaviorCoreProgram {
             schema: BEHAVIOR_CORE_SCHEMA.to_owned(),
             source_path: "test.nmlt".to_owned(),
             source_sha256: "0".repeat(64),
@@ -506,7 +600,12 @@ mod tests {
                 },
             )]),
             refinements: Vec::new(),
-        };
+        }
+    }
+
+    #[test]
+    fn reference_exploration_reports_sync_grade_and_transfer() {
+        let program = resource_sync_program();
         let result = explore(&program, "Network", ExploreConfig::default()).unwrap();
         assert!(
             result
@@ -521,5 +620,195 @@ mod tests {
             transition.grade.get("work") == Some(&3)
                 && transition.transfers == ["permit: Sender -> Receiver"]
         }));
+    }
+
+    fn assert_exploration_error(program: &BehaviorCoreProgram, message: &str) {
+        let decoded = BehaviorCoreProgram::from_canonical_json(&program.to_json_pretty())
+            .expect("canonical representation");
+        for program in [program, &decoded] {
+            let error = explore(program, "Network", ExploreConfig::default())
+                .expect_err("invalid composition must return an error");
+            assert!(error.to_string().contains(message), "{error}");
+        }
+    }
+
+    #[test]
+    fn composition_resolves_both_component_systems() {
+        for left in [true, false] {
+            let mut program = resource_sync_program();
+            let composition = program.compositions.get_mut("Network").unwrap();
+            if left {
+                composition.left_system = "Unknown".to_owned();
+            } else {
+                composition.right_system = "Unknown".to_owned();
+            }
+            assert_exploration_error(&program, "unknown system 'Unknown'");
+        }
+
+        let mut program = resource_sync_program();
+        let composition = program.compositions.get_mut("Network").unwrap();
+        composition
+            .left_system
+            .clone_from(&composition.right_system);
+        assert_exploration_error(&program, "must contain two distinct systems");
+    }
+
+    #[test]
+    fn connection_endpoints_must_join_the_declared_components() {
+        for (left, right) in [
+            ("Unknown", "Receiver"),
+            ("Sender", "Unknown"),
+            ("Other", "Receiver"),
+            ("Sender", "Other"),
+            ("Sender", "Sender"),
+            ("Receiver", "Receiver"),
+        ] {
+            let mut program = resource_sync_program();
+            let mut other = program.systems["Sender"].clone();
+            other.name = "Other".to_owned();
+            program.systems.insert("Other".to_owned(), other);
+            let composition = program.compositions.get_mut("Network").unwrap();
+            composition.connections[0].left_system = left.to_owned();
+            composition.connections[0].right_system = right.to_owned();
+            assert_exploration_error(&program, "must join 'Receiver' and 'Sender'");
+        }
+    }
+
+    #[test]
+    fn connection_actions_are_resolved_before_exploration() {
+        for left in [true, false] {
+            let mut program = resource_sync_program();
+            // Even a later, disabled connection must have valid action references.
+            program
+                .systems
+                .get_mut("Sender")
+                .unwrap()
+                .actions
+                .get_mut("send")
+                .unwrap()
+                .guard_ast
+                .push(bool_term(false));
+            let composition = program.compositions.get_mut("Network").unwrap();
+            let mut connection = composition.connections[0].clone();
+            if left {
+                connection.left_action = "unknown".to_owned();
+            } else {
+                connection.right_action = "unknown".to_owned();
+            }
+            composition.connections.push(connection);
+            let action = if left {
+                "Sender.unknown"
+            } else {
+                "Receiver.unknown"
+            };
+            assert_exploration_error(&program, &format!("unknown action '{action}'"));
+        }
+    }
+
+    #[test]
+    fn composition_accepts_both_connection_orientations() {
+        let mut program = resource_sync_program();
+        let before = explore(&program, "Network", ExploreConfig::default()).unwrap();
+        let composition = program.compositions.get_mut("Network").unwrap();
+        let connection = &mut composition.connections[0];
+        std::mem::swap(&mut connection.left_system, &mut connection.right_system);
+        std::mem::swap(&mut connection.left_action, &mut connection.right_action);
+        let after = explore(&program, "Network", ExploreConfig::default()).unwrap();
+        assert_eq!(after.states, before.states);
+        assert_eq!(after.transitions.len(), before.transitions.len());
+        assert!(after.transitions.iter().any(|transition| {
+            transition.label == "Receiver.receive|Sender.send"
+                && transition.grade.get("work") == Some(&3)
+                && transition.transfers == ["permit: Sender -> Receiver"]
+        }));
+    }
+
+    #[test]
+    fn synchronized_grade_overflow_returns_an_eval_error() {
+        let mut program = resource_sync_program();
+        program
+            .systems
+            .get_mut("Sender")
+            .unwrap()
+            .actions
+            .get_mut("send")
+            .unwrap()
+            .resources
+            .grade
+            .insert("work".to_owned(), u64::MAX);
+        assert_exploration_error(
+            &program,
+            "composition 'Network' at 'Sender.send|Receiver.receive': parallel resource grade overflow for 'work'",
+        );
+    }
+
+    fn bool_term(value: bool) -> CoreBehaviorTerm {
+        CoreBehaviorTerm::Bool {
+            r#type: "Bool".to_owned(),
+            value,
+        }
+    }
+
+    #[test]
+    fn initial_state_evaluates_closed_boolean_terms() {
+        let mut program = resource_sync_program();
+        let receiver = program.systems.get_mut("Receiver").unwrap();
+        let bit = receiver.state.get_mut("bit").unwrap();
+        bit.initial_ast = CoreBehaviorTerm::Not {
+            r#type: "Bool".to_owned(),
+            value: Box::new(CoreBehaviorTerm::Equal {
+                r#type: "Bool".to_owned(),
+                left: Box::new(bool_term(true)),
+                right: Box::new(bool_term(false)),
+            }),
+        };
+        let mut literal = bit.clone();
+        literal.name = "literal".to_owned();
+        literal.initial_ast = bool_term(false);
+        receiver.state.insert("literal".to_owned(), literal);
+
+        let result = explore(&program, "Receiver", ExploreConfig::default()).unwrap();
+        assert!(result.states[0].values["bit"]);
+        assert!(!result.states[0].values["literal"]);
+
+        let result = explore(&program, "Network", ExploreConfig::default()).unwrap();
+        assert!(result.states[0].values["Receiver.bit"]);
+        assert!(!result.states[0].values["Receiver.literal"]);
+    }
+
+    #[test]
+    fn initial_state_rejects_open_terms_and_unsupported_state_types() {
+        for (ty, term) in [
+            (
+                "Bool",
+                CoreBehaviorTerm::Read {
+                    r#type: "Bool".to_owned(),
+                    field: "bit".to_owned(),
+                },
+            ),
+            (
+                "Unit",
+                CoreBehaviorTerm::Unit {
+                    r#type: "Unit".to_owned(),
+                },
+            ),
+            (
+                "Color",
+                CoreBehaviorTerm::Enum {
+                    r#type: "Color".to_owned(),
+                    constructor: "Red".to_owned(),
+                },
+            ),
+            ("Unit", bool_term(false)),
+        ] {
+            let mut program = resource_sync_program();
+            let receiver = program.systems.get_mut("Receiver").unwrap();
+            let bit = receiver.state.get_mut("bit").unwrap();
+            bit.ty = ty.to_owned();
+            bit.initial_ast = term;
+            let error = explore(&program, "Receiver", ExploreConfig::default())
+                .expect_err("unsupported initializer must return an error");
+            assert!(error.to_string().contains("closed Bool initializers only"));
+        }
     }
 }

@@ -54,7 +54,8 @@ The first behavioral profile supports:
 - rely and guarantee atoms from a finite enum;
 - exactly two-component compositions with one-to-one connections;
 - action hiding; and
-- refinement with an explicit total state-field map.
+- refinement with an explicit bijective state-field map (each field on either
+  side has exactly one corresponding field of the same type).
 
 Unsupported general composition, infinite domains, partial or higher-order state
 maps, arbitrary grade algebras, and liveness syntax fail at a documented
@@ -70,6 +71,11 @@ implemented semantic route is the finite profile above, emitted as canonical
 The ordinary typed-core route retains additional expression and property forms
 for frontend research. Those forms do not automatically enter the behavioral
 artifact or inherit the Lean composition theorem.
+
+Behavior compilation rejects property declarations until their obligations are
+represented in the artifact. Its observations and hiding use comma-separated
+field or action names; comments are trivia. Initializer, guard, and update text
+in the artifact is rendered canonically from the typed expression AST.
 
 The first slice lowers authority-related surface forms as follows:
 

@@ -39,6 +39,9 @@ trap cleanup EXIT
   cd "$lean_root"
   lake exe nmlt-artifact-check "$artifact" \
     "$repo_root/examples/pivot/visible_resource_sync.nmlt"
+  lake exe nmlt-artifact-check \
+    "$repo_root/examples/pivot/canonical_terms_and_wiring.behavior-core-v1.json" \
+    "$repo_root/examples/pivot/canonical_terms_and_wiring.nmlt"
 )
 
 python3 - "$artifact" "$stale_artifact" "$malformed_artifact" \

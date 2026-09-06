@@ -126,14 +126,16 @@ impl CoreResourceProfile {
             && self.relies.is_empty()
     }
 
-    #[must_use]
-    pub fn parallel(&self, other: &Self) -> Self {
+    /// Combine profiles, returning an error if an exact grade sum exceeds `u64`.
+    pub fn parallel(&self, other: &Self) -> Result<Self, String> {
         let mut grade = self.grade.clone();
         for (atom, value) in &other.grade {
             let entry = grade.entry(atom.clone()).or_default();
-            *entry = entry.saturating_add(*value);
+            *entry = entry
+                .checked_add(*value)
+                .ok_or_else(|| format!("parallel resource grade overflow for '{atom}'"))?;
         }
-        Self {
+        Ok(Self {
             requires: self.requires.union(&other.requires).cloned().collect(),
             consumes: self.consumes.union(&other.consumes).cloned().collect(),
             transfers: BTreeSet::new(),
@@ -146,7 +148,7 @@ impl CoreResourceProfile {
                 .cloned()
                 .collect(),
             guarantees: self.guarantees.union(&other.guarantees).cloned().collect(),
-        }
+        })
     }
 }
 
@@ -592,9 +594,30 @@ mod tests {
             guarantees: BTreeSet::from(["Ready".to_owned()]),
             ..CoreResourceProfile::default()
         };
-        let product = left.parallel(&right);
+        let product = left.parallel(&right).expect("representable grade sum");
         assert_eq!(product.grade["work"], 3);
         assert!(product.relies.is_empty());
+    }
+
+    #[test]
+    fn parallel_profiles_preserve_exact_grade_limits() {
+        let left = CoreResourceProfile {
+            grade: BTreeMap::from([("work".to_owned(), u64::MAX - 1)]),
+            ..CoreResourceProfile::default()
+        };
+        let right = CoreResourceProfile {
+            grade: BTreeMap::from([("work".to_owned(), 1), ("memory".to_owned(), u64::MAX)]),
+            ..CoreResourceProfile::default()
+        };
+        let product = left.parallel(&right).expect("exact upper bound");
+        assert_eq!(product.grade["work"], u64::MAX);
+        assert_eq!(product.grade["memory"], u64::MAX);
+
+        let before = product.clone();
+        let error = product.parallel(&right).expect_err("sum exceeds u64");
+        assert!(error.contains("grade overflow"));
+        assert!(error.contains("memory"));
+        assert_eq!(product, before);
     }
 
     #[test]
