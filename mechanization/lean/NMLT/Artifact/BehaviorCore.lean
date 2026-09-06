@@ -104,7 +104,7 @@ private def stutterCompatible (resources : Profile) : Bool :=
     resources.relies.isEmpty
 
 private partial def validateTerm
-    (facts : List String) (state : JObject) (expected : String) (term : Json) : Except String Unit := do
+    (enums state : JObject) (expected : String) (term : Json) : Except String Unit := do
   let kind ← stringAt term "kind"
   let encodedType ← stringAt term "type"
   if encodedType != expected then
@@ -116,8 +116,11 @@ private partial def validateTerm
   | "unit" =>
       if expected != "Unit" then reject "Unit literal has a non-Unit type"
   | "enum" =>
+      if expected == "Bool" || expected == "Unit" then
+        reject s!"enum literal has builtin type '{expected}'"
       let constructor ← stringAt term "constructor"
-      if !facts.contains s!"{expected}.{constructor}" then
+      let constructors ← strings (← lookup enums expected)
+      if !constructors.contains constructor then
         reject s!"unknown constructor '{expected}.{constructor}'"
   | "read" =>
       let field ← stringAt term "field"
@@ -127,14 +130,14 @@ private partial def validateTerm
         reject s!"read of '{field}' has type '{fieldType}', expected '{expected}'"
   | "not" =>
       if expected != "Bool" then reject "negation has a non-Bool type"
-      validateTerm facts state "Bool" (← term.getObjVal? "value")
+      validateTerm enums state "Bool" (← term.getObjVal? "value")
   | "equal" =>
       if expected != "Bool" then reject "equality has a non-Bool result type"
       let left ← term.getObjVal? "left"
       let right ← term.getObjVal? "right"
       let operandType ← stringAt left "type"
-      validateTerm facts state operandType left
-      validateTerm facts state operandType right
+      validateTerm enums state operandType left
+      validateTerm enums state operandType right
   | _ => reject s!"unknown term kind '{kind}'"
 
 private partial def renderTerm (term : Json) : Except String String := do
@@ -171,7 +174,7 @@ private def systemAt (systems : JObject) (name : String) : Except String Json :=
   lookup systems name
 
 private def validateAction
-    (facts : List String) (state capabilities ports : JObject)
+    (enums : JObject) (facts : List String) (state capabilities ports : JObject)
     (systemName actionName : String) (action : Json) : Except String Unit := do
   let direction ← stringAt action "direction"
   let parametersJson ← action.getObjVal? "parameters"
@@ -237,7 +240,7 @@ private def validateAction
   if guards.length != guardAst.size then
     reject s!"action '{systemName}.{actionName}' has mismatched guard text and AST counts"
   for term in guardAst do
-    validateTerm facts state "Bool" term
+    validateTerm enums state "Bool" term
   for index in [:guards.length] do
     if guards[index]! != (← renderTerm guardAst[index]!) then
       reject s!"action '{systemName}.{actionName}' guard text does not match its AST"
@@ -247,14 +250,15 @@ private def validateAction
     reject s!"action '{systemName}.{actionName}' has mismatched update text and AST fields"
   for (field, term) in updateAst.toList do
     let fieldState ← lookup state field
-    validateTerm facts state (← stringAt fieldState "type") term
+    validateTerm enums state (← stringAt fieldState "type") term
     let updateTextJson ← lookup updates field
     let updateText ← updateTextJson.getStr?
     if updateText != (← renderTerm term) then
       reject s!"action '{systemName}.{actionName}' update text does not match its AST"
   pure ()
 
-private def validateSystem (facts : List String) (name : String) (system : Json) : Except String Unit := do
+private def validateSystem
+    (enums : JObject) (facts : List String) (name : String) (system : Json) : Except String Unit := do
   let states ← objectAt system "state"
   let capabilities ← objectAt system "capabilities"
   let ports ← objectAt system "ports"
@@ -264,11 +268,11 @@ private def validateSystem (facts : List String) (name : String) (system : Json)
   for (field, state) in states.toList do
     let stateType ← stringAt state "type"
     if stateType != "Bool" && stateType != "Unit" &&
-        !facts.any (fun fact => fact.startsWith s!"{stateType}.") then
+        !enums.contains stateType then
       reject s!"state '{name}.{field}' is outside the finite core"
     let initial ← stringAt state "initial"
     let initialAst ← state.getObjVal? "initial_ast"
-    validateTerm facts states stateType initialAst
+    validateTerm enums states stateType initialAst
     if !(← closedInitializer initialAst) then
       reject s!"state '{name}.{field}' initializer must be closed in behavior-core-v1"
     if initial != (← renderTerm initialAst) then
@@ -286,7 +290,7 @@ private def validateSystem (facts : List String) (name : String) (system : Json)
     if !states.contains observed then
       reject s!"observation '{name}.{observed}' is not a state field"
   for (actionName, action) in actions.toList do
-    validateAction facts states capabilities ports name actionName action
+    validateAction enums facts states capabilities ports name actionName action
 
 private def validateConnection (systems : JObject) (connection : Json) : Except String Unit := do
   let leftSystemName ← stringAt connection "left_system"
@@ -429,7 +433,7 @@ def decode (json : Json) : Except String Summary := do
   if systems.size == 0 then
     reject "at least one behavior system is required"
   for (name, system) in systems.toList do
-    validateSystem facts name system
+    validateSystem enums facts name system
   let compositions ← objectAt json "compositions"
   for (name, composition) in compositions.toList do
     validateComposition systems name composition

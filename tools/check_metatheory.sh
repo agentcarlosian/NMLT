@@ -32,6 +32,7 @@ trap cleanup EXIT
 (
   cd "$lean_root"
   lake build
+  lake env lean --run tests/ArtifactInvariants.lean
 )
 
 (
