@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
-reviewed = "2026-08-31"
-scope = "Active NMLT language-and-mathematics pivot only"
+reviewed = "2026-09-06"
+scope = "Active NMLT language-and-mathematics pivot and R0 reference workflows"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -77,6 +77,24 @@ trusted_components = [
   "lean.kernel_audit",
   "build.gates",
 ]
+
+[[claim_profiles]]
+name = "r0_reference_workflows"
+ceiling = "fixed-task Lean process checks with an empty transitive-axiom report, finite enumeration, or four observed local Python worker scenarios; no NMLT execution theorem, independent baseline-proof audit, novelty, or usability claim"
+trusted_components = [
+  "toolchain.lean",
+  "reference.r0_baselines",
+  "build.gates",
+]
+
+[[components]]
+id = "reference.r0_baselines"
+paths = [
+  "tools/baselines/run_baselines.py",
+  "examples/baselines/manifest.json",
+  "docs/r0-baseline-contracts.md",
+]
+role = "Run frozen host-language comparison tasks, classify Lean process diagnostics and axiom reports, and bind local records to inputs, implementation, checker command, and version; Python, process execution, and the Lean binary remain trusted."
 
 [[components]]
 id = "toolchain.rust"

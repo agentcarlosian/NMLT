@@ -7,8 +7,8 @@ Rust elaboration into a canonical artifact, then into Lean-defined semantics.
 ## Prerequisites
 
 - Rust 1.94 with Cargo;
-- Lean 4.30 through Elan and Lake;
-- a POSIX shell, `python3`, and GNU core utilities including `sha256sum`; and
+- Lean 4.33.1 through Elan and Lake;
+- a POSIX shell, Python 3.11 or newer as `python3`, and GNU core utilities including `sha256sum`; and
 - WSL when running the complete repository gate from Windows.
 
 The repository pins the Rust and Lean versions used by CI.
@@ -124,11 +124,17 @@ make reproduce
 ```
 
 - `make ci` runs formatting, compilation, Clippy, Rust tests, artifact
-  reproduction, and public-surface checks.
+  reproduction, public-surface checks, and R0 workflow harness tests.
 - `make metatheory` builds Lean, tests fail-closed artifact mutations, scans for
   unchecked placeholders, and audits focused theorem axioms.
 - `make reproduce` additionally runs the pinned independent NanoDA check over the
-  complete `NMLT` module.
+  complete `NMLT` module and the three R0 reference workflows with real Lean.
+
+Run `make r0-baselines` to try the frozen proof, discovery, and local worker
+examples. Each invocation saves a fresh record directory under
+`target/r0-baselines`. The [baseline guide](../examples/baselines/README.md)
+explains direct commands, interruption, and resume. These host-language examples
+establish a comparison baseline for the proposed NMLT interpreter.
 
 Continue with the [language sketch](language-sketch.md),
 [architecture](architecture.md), or [current calculus](core-calculus.md).

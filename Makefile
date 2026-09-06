@@ -1,4 +1,7 @@
-.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda ci reproduce
+.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda r0-baseline-tests r0-baselines ci reproduce
+
+R0_LEAN_TOOLCHAIN = $(strip $(shell cat mechanization/lean/lean-toolchain))
+R0_LEAN_COMMAND_JSON ?= ["elan","run","leanprover/lean4:$(R0_LEAN_TOOLCHAIN)","lean"]
 
 help:
 	@echo "NMLT language-and-mathematics targets"
@@ -12,6 +15,8 @@ help:
 	@echo "  public-surface    Check public links, trust inventory, and repository hygiene"
 	@echo "  metatheory        Build Lean, audit axioms, and decode the matching-source artifact"
 	@echo "  nanoda            Independently check all NMLT Lean declarations"
+	@echo "  r0-baseline-tests Test the deterministic reference-workflow harness"
+	@echo "  r0-baselines      Run the three frozen Python/Lean reference workflows"
 	@echo "  ci                Run the Rust language gate"
 	@echo "  reproduce         Run the complete Rust and Lean gate"
 
@@ -49,6 +54,14 @@ metatheory:
 nanoda:
 	./tools/check_nanoda.sh mechanization/lean NMLT
 
-ci: fmt-check check lint test behavior-artifact public-surface
+r0-baseline-tests:
+	python3 -m unittest discover -s tests/baselines -v
 
-reproduce: ci metatheory nanoda
+r0-baselines:
+	@set -eu; mkdir -p target/r0-baselines; \
+		output_dir="$$(mktemp -d target/r0-baselines/run.XXXXXX)"; \
+		python3 tools/baselines/run_baselines.py --output-dir "$$output_dir" --lean-command-json '$(R0_LEAN_COMMAND_JSON)'
+
+ci: fmt-check check lint test behavior-artifact public-surface r0-baseline-tests
+
+reproduce: ci metatheory nanoda r0-baselines

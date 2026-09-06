@@ -1,6 +1,6 @@
 # NMLT Lean mechanization
 
-This directory is the Lean 4.30 home for NMLT's current checked mathematics.
+This directory is the Lean 4.33.1 home for NMLT's current checked mathematics.
 Lean defines the behavioral semantics used by the language-and-mathematics
 pivot. Rust does not prove behavioral claims.
 

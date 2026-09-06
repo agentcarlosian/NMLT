@@ -48,6 +48,18 @@ The current normative executable artifacts are:
 ## Research method and history
 
 - [Research method](research-method.md)
+- [Practical language plan](practical-language-plan.md) — proposed shared
+  language and workflows for AI/Lean development, mathematics, and software
+- [Practical language research](research-notes/practical-language-strategy-2026-09-06.md)
+  — evidence, alternatives, and limitations behind the proposal
+- [R0 baseline contracts](r0-baseline-contracts.md) — frozen tasks, budgets, and
+  evidence meanings for the three reference workflows
+- [R0 pilot protocol](r0-pilot-protocol.md) — reusable role-based tasks and
+  observation forms for later evaluation
+- [R0 completion evidence](reviews/r0-checker-and-baselines-2026-09-06.md)
+  — patched checker compatibility, executed workflows, and remaining friction
+- [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
+  — Draft design for the proposed shared language and runtime
 - [Historical records](history.md)
 - [Public pivot pre-PR review](reviews/public-pivot-pre-pr-2026-08-31.md)
 

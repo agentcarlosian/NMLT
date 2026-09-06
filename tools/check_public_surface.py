@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-IGNORED_PARTS = {".git", ".lake", "target"}
+IGNORED_PARTS = {".git", ".lake", ".cache", "target"}
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 ACTIVE_SURFACES = (

@@ -49,3 +49,4 @@ evidence.
 | 0011 | Authority-bounded agentic formalization and repair | Postponed |
 | 0012 | Conservative graded-resource modalities | Postponed experiment |
 | 0013 | Integrated source-to-typed-core contract | Accepted |
+| [0014](0014-executable-workflow-profile.md) | Executable workflow profile | Draft |

@@ -65,3 +65,6 @@ jobs:
 
       - name: Check theorem axioms and source-bound artifact decoding
         run: ./tools/check_metatheory.sh "${{ steps.stage_lean.outputs.path }}"
+
+      - name: Run the frozen R0 reference workflows
+        run: make r0-baselines

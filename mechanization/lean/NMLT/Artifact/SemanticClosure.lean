@@ -250,7 +250,8 @@ private def actionPayload
   | some name => (portNamed? system name).map Port.payload |>.getD "Unit"
   | none => "Unit"
 
-def toBehavior
+-- Instance search must see the concrete state type through this constructor.
+@[implicit_reducible] def toBehavior
     (program : Program) (system : System) (actionNames extraHidden : List String) :
     Behavior
       (Fin (actionNames.length + 1))

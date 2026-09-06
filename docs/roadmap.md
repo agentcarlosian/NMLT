@@ -3,6 +3,11 @@
 NMLT's roadmap is organized by semantic dependencies, not release dates.
 Completion always means completion at the explicitly stated pre-alpha scope.
 
+This document tracks the mathematical dependencies. The current
+[execution plan](../Plan.md) adds the immediate checker baseline and R0–R5
+product milestones for an executable language serving all three audiences;
+it governs delivery priorities and status.
+
 ## Now: make the pivot publicly coherent
 
 - align README, security, contributor, RFC, example, and Lean documentation

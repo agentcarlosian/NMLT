@@ -34,7 +34,9 @@ make fmt
 make reproduce
 ```
 
-`make reproduce` runs the Rust language gate and Lean metatheory gate.
+`make reproduce` runs the Rust language gate, Lean metatheory and independent
+NanoDA checks, and the frozen R0 reference workflows. `make ci` includes the
+Python workflow harness tests; `make r0-baselines` checks the examples with Lean.
 Contributors changing only Rust may use `make ci` while iterating, but a
 semantic or publication-ready change must pass the complete gate.
 

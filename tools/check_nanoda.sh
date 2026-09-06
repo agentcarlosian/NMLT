@@ -4,8 +4,8 @@ set -euo pipefail
 # lean-action v1.5.0's built-in nanoda path combines an old nanoda `debug`
 # branch with an unpinned lean4export HEAD. Pin a compatible NDJSON exporter
 # and checker pair until the action provides equivalent immutable inputs.
-readonly LEAN4EXPORT_COMMIT="a3e35a584f59b390667db7269cd37fca8575e4bf"
-readonly NANODA_COMMIT="f58f2f6d535e189a40fcb02ede8eb95f97a92d37"
+readonly LEAN4EXPORT_COMMIT="411dce7db58a3afc60ecab2d211acd1042b593dc"
+readonly NANODA_COMMIT="05055695879dfebb6628a67da88ceca6cd6b0421"
 readonly NANODA_RUST_TOOLCHAIN="1.94.0"
 
 readonly LAKE_PACKAGE_DIR="${1:?usage: check_nanoda.sh <lake-package-directory> [module]}"
@@ -21,7 +21,7 @@ if [[ ! "${MODULE_NAME}" =~ ^[A-Za-z_][A-Za-z0-9_.]*$ ]]; then
   exit 2
 fi
 
-for command_name in cargo git lake rustup; do
+for command_name in cargo git lake rustup sha256sum; do
   if ! command -v "${command_name}" >/dev/null 2>&1; then
     echo "error: required command is unavailable: ${command_name}" >&2
     exit 2
@@ -60,6 +60,12 @@ readonly CHECKER_DIR="${NANODA_TEMP_DIR}/nanoda_lib"
 readonly EXPORT_FILE="${NANODA_TEMP_DIR}/environment.ndjson"
 readonly CONFIG_FILE="${NANODA_TEMP_DIR}/nanoda-config.json"
 
+echo "Lean toolchain: $(cat "${LAKE_PACKAGE_DIR}/lean-toolchain")"
+(
+  cd "${LAKE_PACKAGE_DIR}"
+  lake env lean --version
+)
+
 echo "Fetching lean4export ${LEAN4EXPORT_COMMIT}"
 fetch_commit \
   "https://github.com/leanprover/lean4export.git" \
@@ -83,6 +89,8 @@ cargo "+${NANODA_RUST_TOOLCHAIN}" build \
   --locked \
   --release \
   --manifest-path "${CHECKER_DIR}/Cargo.toml"
+rustc "+${NANODA_RUST_TOOLCHAIN}" --version
+sha256sum "${CHECKER_DIR}/Cargo.lock" "${CHECKER_DIR}/target/release/nanoda_bin"
 
 # Export only the checked module's own constants plus their transitive
 # dependency closure (dumpConstant recurses into everything they use).
@@ -142,7 +150,28 @@ fi
 } > "${CONFIG_FILE}"
 
 echo "Checking ${MODULE_NAME} with pinned nanoda"
+sha256sum "${EXPORT_FILE}" "${CONSTANT_LIST}" "${CONFIG_FILE}"
 (
   cd "${NANODA_TEMP_DIR}"
   "${CHECKER_DIR}/target/release/nanoda_bin" "${CONFIG_FILE}"
 )
+
+# Optionally retain the exact successful check inputs for local or CI replay.
+# Each invocation gets a new directory; existing records are never replaced.
+if [[ -n "${NMLT_NANODA_ARTIFACT_DIR:-}" ]]; then
+  mkdir -p -- "${NMLT_NANODA_ARTIFACT_DIR}"
+  ARTIFACT_RUN_DIR="$(mktemp -d "${NMLT_NANODA_ARTIFACT_DIR%/}/run.XXXXXX")"
+  cp -- "${EXPORT_FILE}" "${CONSTANT_LIST}" "${CONFIG_FILE}" "${ARTIFACT_RUN_DIR}/"
+  {
+    echo "lean_toolchain=$(cat "${LAKE_PACKAGE_DIR}/lean-toolchain")"
+    echo "lean4export_commit=${LEAN4EXPORT_COMMIT}"
+    echo "nanoda_commit=${NANODA_COMMIT}"
+    echo "rust_toolchain=${NANODA_RUST_TOOLCHAIN}"
+    echo "module=${MODULE_NAME}"
+    (
+      cd "${ARTIFACT_RUN_DIR}"
+      sha256sum environment.ndjson checked-constants.txt nanoda-config.json
+    )
+  } > "${ARTIFACT_RUN_DIR}/provenance.txt"
+  echo "Retained checker artifacts: ${ARTIFACT_RUN_DIR}"
+fi
