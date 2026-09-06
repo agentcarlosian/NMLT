@@ -680,6 +680,13 @@ fn validate_roots(program: &CoreProgram, index: &Index) -> Result<(), CoreValida
 }
 
 fn validate_graph(program: &CoreProgram) -> Result<(), CoreValidationError> {
+    validate_graph_with_limit(program, MAX_TERM_DEPTH)
+}
+
+fn validate_graph_with_limit(
+    program: &CoreProgram,
+    maximum_depth: usize,
+) -> Result<(), CoreValidationError> {
     let mut roots = Vec::new();
     for module in program.modules.values() {
         for system in module.systems.values() {
@@ -695,20 +702,29 @@ fn validate_graph(program: &CoreProgram) -> Result<(), CoreValidationError> {
             }
         }
     }
-    let mut permanent = BTreeSet::new();
+    // Cache subtree heights, not just visitation: shared suffixes contribute
+    // their full height to every parent and semantic root that reaches them.
+    let mut heights = BTreeMap::<CoreNodeId, usize>::new();
     let mut active = BTreeSet::new();
     for root in roots {
         let mut stack = vec![(root, 1_usize, false)];
         while let Some((id, depth, exiting)) = stack.pop() {
             if exiting {
+                let term = child(program, id, "term graph")?;
+                let height = 1 + children(&term.kind)
+                    .iter()
+                    .map(|child_id| heights[child_id])
+                    .max()
+                    .unwrap_or(0);
+                resource(CoreResourceDimension::TermDepth, height, maximum_depth)?;
                 active.remove(&id);
-                permanent.insert(id);
+                heights.insert(id, height);
                 continue;
             }
-            if permanent.contains(&id) {
+            if heights.contains_key(&id) {
                 continue;
             }
-            resource(CoreResourceDimension::TermDepth, depth, MAX_TERM_DEPTH)?;
+            resource(CoreResourceDimension::TermDepth, depth, maximum_depth)?;
             if !active.insert(id) {
                 return Err(CoreValidationError::Cycle(id));
             }
@@ -719,7 +735,7 @@ fn validate_graph(program: &CoreProgram) -> Result<(), CoreValidationError> {
             }
         }
     }
-    if let Some(unreachable) = program.terms.keys().find(|id| !permanent.contains(id)) {
+    if let Some(unreachable) = program.terms.keys().find(|id| !heights.contains_key(id)) {
         return Err(CoreValidationError::UnreachableTerm(*unreachable));
     }
     Ok(())
@@ -903,3 +919,6 @@ fn resource(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
