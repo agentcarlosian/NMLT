@@ -31,6 +31,8 @@ dependencies = [
  "nmlt-eval",
  "nmlt-hir",
  "nmlt-ir",
+ "nmlt-runtime",
+ "nmlt-workflow",
  "serde",
  "serde_json",
 ]
@@ -98,6 +100,16 @@ dependencies = [
 name = "nmlt-runtime"
 version = "0.0.1"
 dependencies = [
+ "nmlt-hir",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "nmlt-workflow"
+version = "0.0.1"
+dependencies = [
+ "nmlt-core",
  "nmlt-hir",
  "serde",
  "serde_json",

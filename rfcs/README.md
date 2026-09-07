@@ -54,3 +54,7 @@ evidence.
 | [0016](0016-decoded-finite-execution.md) | Decoded finite execution | Under review |
 | [0017](0017-finite-local-run-and-replay.md) | Finite local run and replay | Under review |
 | [0018](0018-bounded-local-job-lifecycle.md) | Bounded local job lifecycle and recovery | Under review |
+| [0019](0019-pure-workflow-source.md) | Pure workflow source, entry points, and replay | Under review |
+| [0020](0020-workflow-records-and-collections.md) | Workflow records and bounded collections | Under review |
+| [0021](0021-workflow-source-packages.md) | Workflow source packages and import-bound replay | Under review |
+| [0022](0022-source-local-job-effects.md) | Source-level bounded local job effects | Under review |

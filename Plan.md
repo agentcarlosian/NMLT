@@ -75,8 +75,10 @@ elaboration, and compiled Lean decoding/decision remains a runtime trust boundar
 Public documentation must preserve those distinctions.
 
 The behavioral and retained ordinary compilation routes differ; the reference
-explorer supports finite Bool/Unit/enum state. General program execution, host
-effects, and user-defined behavioral property checking remain planned work.
+explorer supports finite Bool/Unit/enum state. A separate executable-only profile
+now runs functions with scalars, outcomes, records, bounded lists/folds, and
+opt-in local square jobs. Lean jobs, asynchronous source control, and user-defined
+behavioral property checking remain planned work.
 Historical independent-checker results do not remove the need for current
 toolchain maintenance.
 
@@ -86,7 +88,7 @@ toolchain maintenance.
 |---|---|---|---|
 | R0 — Checker and workflow baselines | Complete | Audited baseline | Integration and Lean maintainers |
 | R1 — Unified semantics and finite execution | Complete at finite scope | R0 checker baseline | Lean/semantics and Rust maintainers |
-| R2 — Useful executable language | In progress: finite run/replay and bounded local jobs | R1 for formal execution claims | Compiler/runtime and integration maintainers |
+| R2 — Useful executable language | In progress: finite execution, source packages, bounded local source jobs | R1 for formal execution claims | Compiler/runtime and integration maintainers |
 | R3 — Supported Lean workflows | Planned | R2; adapter prototype can begin in R0 | Lean integration maintainer |
 | R4 — Discovery workflows | Planned | R3 for integration; domain preparation can start earlier | Mathematical reviewer and integration maintainer |
 | R5 — Three-audience alpha validation | Planned | R2–R4 | Maintainers and independent pilot users |
@@ -218,17 +220,60 @@ a Rust API and adapter prototype; `.nmlt` host-effect integration is outstanding
 The [second-increment evidence](docs/reviews/r2-job-lifecycle-increment-2026-09-06.md)
 records cross-platform tests, two process-death boundaries, and fresh unchanged
 Lean/NanoDA checks.
+The first two increments were committed as `80e2a0c` before further development.
+
+The third increment adds [pure source workflows](docs/r2-pure-workflows.md):
+named entry points with scalar inputs, local modules, reusable acyclic functions,
+typed `Outcome<T>` values, exhaustive matching, immutable bindings, and bounded
+evaluation/replay. It reuses the lossless source projection and retains source
+spans through its separate typed lowering. [RFC 0019](rfcs/0019-pure-workflow-source.md)
+is Under review. The entire new profile is executable-only; its functions do
+not yet execute the job runtime or inherit finite behavioral proofs.
+The [third-increment evidence](docs/reviews/r2-pure-workflow-increment-2026-09-06.md)
+records 247 Windows / 248 Linux tests, source and replay rejection controls,
+and the complete fresh Rust/Lean/NanoDA reproduction gate.
+
+The fourth increment extends that profile with nominal records, structured JSON
+inputs, homogeneous lists capped at 256 items, safe lookup, and bounded folds.
+Aggregate value and cumulative value-work limits bound nested data and reuse.
+[RFC 0020](rfcs/0020-workflow-records-and-collections.md) is Under review; all
+new constructs remain executable-only. The profile and pure record formats move
+explicitly to version 2. The [batch example](examples/pivot/batch_summary.nmlt)
+handles three input records and returns accepted 2, rejected 1, total 41.
+The [fourth-increment evidence](docs/reviews/r2-collections-increment-2026-09-06.md)
+records 257 Windows / 258 Linux tests and a complete fresh
+Rust/Lean/NanoDA/baseline gate.
+
+The fifth increment adds [cross-file packages](docs/r2-source-packages.md) using
+the canonical `import Name` syntax, sibling module files, explicit per-file
+scope, and global declaration/type checks. File-aware locations and a complete
+source manifest bind imported code to version 3 pure replay. The
+[four-file example](examples/pivot/package_batch/main.nmlt) passes records and
+outcomes between reusable libraries. [RFC 0021](rfcs/0021-workflow-source-packages.md)
+is Under review and the new facilities remain executable-only.
+The [fifth-increment evidence](docs/reviews/r2-package-increment-2026-09-07.md)
+records 269 Windows / 271 Linux tests and the complete fresh
+Rust/Lean/NanoDA/baseline gate.
+
+The sixth increment connects [source jobs](docs/r2-source-jobs.md) to the durable
+runtime. `job_square(Int)` yields `Outcome<Int>` after validated settlement and
+collection. Conservative transitive effect inference protects the pure route.
+Explicit job/time limits, bounded subprocess pipes, source-bound context and
+journal capture, replay without launching work, and `jobs-recover` inspection
+complete this first native adapter. Host failures stop with uncertain charged
+work; source domain failures can select a bounded fallback and reuse its value.
+[RFC 0022](rfcs/0022-source-local-job-effects.md) is Under review. This remains
+executable-only and does not complete the asynchronous job or Lean adapter scope.
+The [sixth-increment evidence](docs/reviews/r2-source-job-increment-2026-09-07.md)
+records 287 Windows / 289 Linux Rust tests, the source fallback demonstration,
+and a complete fresh Rust/Lean/NanoDA/parity/baseline gate.
 
 Remaining implementation sequence:
 
-1. Add the required source/value facilities with explicit routing and semantic
-   dispositions: entry points, tagged outcomes, reusable definitions, and their
-   typed lowering are next.
-2. Integrate the bounded job protocol with native source effects and typed Lean
-   and worker adapters, including host cancellation, process limits, and the
-   recovery/reconciliation user flow.
-3. Complete user-defined safety invariants and their evidence/counterexample path.
-4. Add project/toolchain locks, source-located structured diagnostics, formatter,
+1. Add the typed Lean adapter and asynchronous source job control, including
+   cancellation, stronger process containment, and reconciliation/resumption.
+2. Complete user-defined safety invariants and their evidence/counterexample path.
+3. Add project/toolchain locks, source-located structured diagnostics, formatter,
    `init`/`test`, and the real-input workflow acceptance example.
 
 The full R2 requirements and exit gate remain:

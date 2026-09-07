@@ -49,9 +49,31 @@ byte-for-byte equality.
   executable-only and do not add a Lean or host-runtime guarantee.
 - `nmlt-runtime` supplies the experimental bounded job lifecycle, typed response
   bindings, revisioned control, and locked journal with uncertain recovery.
-  Its subprocess worker example uses the Rust API; native source effects and
-  Lean job integration remain outstanding. [RFC 0018](../rfcs/0018-bounded-local-job-lifecycle.md)
+  Its subprocess worker example uses the Rust API; the CLI now connects the same
+  protocol to source jobs. Lean job integration remains outstanding.
+  [RFC 0018](../rfcs/0018-bounded-local-job-lifecycle.md)
   specifies its separate executable-only boundary.
+- `nmlt-workflow` consumes the same lossless CST/projection and interprets retained
+  function/record slices for pure entry points, acyclic calls, scalar values,
+  nominal records, bounded lists/folds, typed outcomes and matching. Its private
+  typed tree and resolved record table serve execution and replay. Value validation
+  bounds structured inputs and repeated aggregate production.
+  Its package loader interprets canonical imports, checks per-file scopes,
+  prefixes dependency declarations, and retains local spans with source indices.
+  Every imported source is identified in the private program and replay manifest.
+  CLI `--entry` and `typecheck --profile workflow` explicitly select this route;
+  `--behavior` retains finite execution. All new constructs are executable-only
+  under [RFC 0019](../rfcs/0019-pure-workflow-source.md) and
+  [RFC 0020](../rfcs/0020-workflow-records-and-collections.md); no host effects or Lean
+  correspondence is implied.
+  [RFC 0021](../rfcs/0021-workflow-source-packages.md) specifies the local package
+  reader and version 3 record boundary.
+  [RFC 0022](../rfcs/0022-source-local-job-effects.md) adds a dedicated typed
+  `job_square` node and transitive effect summary. An explicit host boundary
+  connects the CLI's source-bound context and journal to the fixed worker;
+  limits and supervision precede validated settlement/collection. The pure
+  executor rejects job effects. Job replay reconstructs source and journal
+  consistency without launching work; recovery classifies unfinished state.
 
 ## Active Lean components
 

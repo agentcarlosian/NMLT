@@ -52,14 +52,22 @@ exact .nmlt bytes
 | Artifact | Default v1 plus opt-in v2 with explicit known capabilities, initial authority, and separately checked finite path witnesses |
 | Exploration | `nmlt-eval` explores Bool/Unit/enum artifacts and emits v2 paths; frozen value/resource graphs are compared with Lean, always with `assurance: none` |
 | Local execution | R2's first increment adds source-driven finite `run` and exact-executable `replay`; shared v2 steps, structured stop outcomes, no host jobs, `assurance: none` |
-| Job runtime prototype | R2 adds bounded slots/generations, revisioned ownership, cancellation/settlement, a locked recovery journal, and a Rust subprocess worker example; native source effects remain planned |
+| Local source jobs | Opt-in `job_square` uses bounded attempts, a durable journal, validated subprocess results, timeout/output limits, replay without redispatch, and recovery inspection; executable-only |
+| Pure source workflows | Named entries, structured inputs, records, bounded lists/folds, local modules, acyclic functions, typed outcomes, matching, execution/replay; executable-only, no host jobs |
 
 Try the [local execution guide](docs/r2-local-execution.md). R2 remains in
-progress; the complete workflow language and integrated host adapters are planned
-work. The [job runtime guide](crates/nmlt-runtime/README.md) demonstrates the
+progress; Lean adapters, asynchronous source control, and the complete workflow
+gate remain open. The [job runtime guide](crates/nmlt-runtime/README.md) demonstrates the
 separate Rust adapter prototype.
+The [pure workflow guide](docs/r2-pure-workflows.md) runs `.nmlt` functions with
+real inputs, failure handling, and immutable result reuse. Records and bounded
+lists/folds support structured batches. [Source packages](docs/r2-source-packages.md)
+share typed components across files and bind their complete import graph to
+version 3 replay, with an executable-only interpretation.
+The [source job guide](docs/r2-source-jobs.md) connects those functions to the
+real worker with explicit bounds and typed failure/fallback handling.
 
-This milestone is finite, binary, and safety-oriented. The source digest
+The behavioral milestone is finite, binary, and safety-oriented. The source digest
 identifies the source bytes presented to Lean; the repository separately
 reproduces and byte-compares the primary artifact. Detailed semantic boundaries
 are recorded with the active definitions in the
@@ -78,6 +86,7 @@ are recorded with the active definitions in the
 | Lean artifact modules | Decode finite artifacts, construct behaviors, and decide theorem premises | Acceptance of the decoded artifact semantics; no verified source translation |
 | `nmlt-eval` | Reference exploration and bounded finite execution | No proof or verification claim |
 | `nmlt-runtime` | Bounded job control, journal replay/recovery, and local adapter protocol | Executable-only; no Lean, host isolation, or exactly-once external execution claim |
+| `nmlt-workflow` | Pure function typing, lowering, bounded evaluation and replay | Executable-only; no behavioral artifact, Lean acceptance, or host effects |
 
 The precise active inventory is in
 [`security/trusted-components.toml`](security/trusted-components.toml), with

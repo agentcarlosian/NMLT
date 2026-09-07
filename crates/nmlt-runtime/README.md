@@ -9,6 +9,12 @@ Requires Rust 1.94, as used by the repository's pinned CI toolchain.
 - `Request`, `Binding`, `Response`, and `Control` bind types, input/context,
   attempts, owners, and control revisions.
 - `worker` implements and validates the exact `local-square` adapter contract.
+- `Journal::snapshot` captures and checks durable bytes through the locked handle;
+  `replay_journal` validates captured bytes without recovering or issuing authority.
+
+The [source job guide](../../docs/r2-source-jobs.md) connects this runtime to
+`.nmlt` `job_square` effects with a bounded supervisor and replay without dispatch.
+The Rust example below remains the original adapter prototype.
 
 Run a real subprocess attempt with failure and bounded fallback:
 

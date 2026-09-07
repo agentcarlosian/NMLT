@@ -11,8 +11,15 @@ it governs delivery priorities and status.
 R2 is now in progress. Its [first local execution increment](r2-local-execution.md)
 adds finite source-driven run/replay over shared evaluator steps. The
 [bounded job runtime](../crates/nmlt-runtime/README.md) now adds durable control,
-uncertain recovery, and a subprocess worker prototype. Native source effects,
-Lean adapters, and the useful-language exit gate remain outstanding.
+uncertain recovery, and a subprocess worker prototype. The [source job increment](r2-source-jobs.md)
+connects typed worker effects with explicit limits, journal replay, and recovery
+inspection. Lean adapters, asynchronous source control, and the useful-language
+exit gate remain outstanding.
+The [pure source workflow increment](r2-pure-workflows.md) adds named function
+entries, structured inputs, records, bounded lists/folds, typed outcomes, and evaluation/replay. These
+constructs currently have an executable-only interpretation.
+The [source package increment](r2-source-packages.md) adds reusable libraries,
+per-file resolution, and version 3 replay over the complete import closure.
 
 ## Now: make the pivot publicly coherent
 

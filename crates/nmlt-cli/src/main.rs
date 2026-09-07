@@ -9,7 +9,11 @@ use nmlt_core::{Diagnostic, ParsedFile, lex_source, parse_source};
 use nmlt_eval::{ExploreConfig, explore};
 use nmlt_ir::BehaviorCoreProgram;
 
+mod job_process;
+mod jobs;
 mod runtime;
+mod strict_json;
+mod workflow;
 
 const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
@@ -18,11 +22,15 @@ Usage:\n\
   nmlt inspect <file>                                    List recognized systems\n\
   nmlt tokens <file>                                     Print the lossless token stream\n\
   nmlt typecheck <file>                                  Elaborate the finite behavior slice\n\
+  nmlt typecheck <file> --profile workflow               Check workflow functions and effects\n\
   nmlt elaborate <file> --emit-core <artifact.json>      Emit behavior-core-v1\n\
   nmlt elaborate <file> --core-version v2 --emit-core <artifact.json> Emit opt-in v2\n\
   nmlt explore --behavior <name> --max-states <n> <core.json> Explore a canonical artifact\n\
   nmlt trace --behavior <name> --actions <comma-separated labels> --emit-path <path.json> --max-states <n> <core.json> Emit a v2 witness\n\
   nmlt run <source.nmlt> --behavior <name> --max-steps <n> --emit-run <new.json> [--actions <labels>] Execute finite v2\n\
+  nmlt run <source.nmlt> --entry <name> --max-steps <n> --emit-run <new.json> [--arg name=value] Execute pure functions\n\
+  nmlt run <source.nmlt> --entry <name> ... --jobs-dir <new-dir> --max-jobs <1..16> --job-timeout-ms <1..30000> Execute local jobs\n\
+  nmlt jobs-recover <jobs-dir>                            Classify unfinished work without redispatch\n\
   nmlt replay <record.json> --source <source.nmlt>         Replay with the same executable\n\
   nmlt version                                           Print the frontend version\n\
   nmlt help                                              Show this help\n\n\
@@ -67,6 +75,9 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             print_tokens(&path)
         }
         "typecheck" => {
+            if arguments.len() == 4 && arguments[2] == "--profile" && arguments[3] == "workflow" {
+                return workflow::typecheck(Path::new(&arguments[1]));
+            }
             let path = single_path_argument(command, &arguments[1..])?;
             let artifact = compile_path(&path)?;
             println!(
@@ -145,8 +156,17 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             Ok(())
         }
         "trace" => emit_trace(&arguments[1..]),
+        "__square-worker" if arguments.len() == 1 => jobs::worker(),
+        "jobs-recover" => jobs::recover(&single_path_argument(command, &arguments[1..])?),
+        "run"
+            if arguments[2.min(arguments.len())..]
+                .chunks_exact(2)
+                .any(|pair| pair[0] == "--entry") =>
+        {
+            workflow::run(&arguments[1..])
+        }
         "run" => runtime::run(&arguments[1..]),
-        "replay" => runtime::replay(&arguments[1..]),
+        "replay" => workflow::replay_or_finite(&arguments[1..]),
         unknown => Err(format!("unknown command '{unknown}'\n\n{HELP}")),
     }
 }

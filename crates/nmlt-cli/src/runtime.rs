@@ -35,14 +35,14 @@ struct RunRecord {
     trace: RunTrace,
 }
 
-fn digest(bytes: &[u8]) -> String {
+pub(super) fn digest(bytes: &[u8]) -> String {
     nmlt_hir::sha256_bytes(bytes)
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect()
 }
 
-fn implementation_digest() -> Result<String, String> {
+pub(super) fn implementation_digest() -> Result<String, String> {
     let executable = env::current_exe().map_err(|e| e.to_string())?;
     fs::read(executable)
         .map(|bytes| digest(&bytes))

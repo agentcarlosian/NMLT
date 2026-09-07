@@ -49,6 +49,59 @@ fn implementation() -> Result<String, Error> {
     Ok(sha256(&fs::read(std::env::current_exe()?)?))
 }
 
+/// Check an immutable journal without locking, recovering, or issuing dispatch
+/// authority. The returned lifecycle is evidence only, just like Lifecycle::step.
+pub fn replay_journal(
+    bytes: &[u8],
+    expected: &RunSpec,
+) -> Result<(Lifecycle, Vec<Command>), Error> {
+    let (state, _, commands) = decode_log(bytes, expected)?;
+    Ok((state, commands))
+}
+
+fn decode_log(
+    bytes: &[u8],
+    expected: &RunSpec,
+) -> Result<(Lifecycle, String, Vec<Command>), Error> {
+    if bytes.len() as u64 > MAX_BYTES || bytes.last() != Some(&b'\n') {
+        return Err(Error(
+            "oversized or incomplete journal; reconciliation required".into(),
+        ));
+    }
+    let mut lines = bytes[..bytes.len() - 1].split(|b| *b == b'\n');
+    let first = lines
+        .next()
+        .ok_or_else(|| Error("missing journal header".into()))?;
+    let header: Header = decode(first)?;
+    if header.schema != SCHEMA
+        || header.spec != *expected
+        || header.implementation_sha256 != implementation()?
+    {
+        return Err(Error(
+            "journal schema, run context, or executable identity mismatch".into(),
+        ));
+    }
+    let mut lifecycle = Lifecycle::new(header.spec)?;
+    let mut tail = sha256(first);
+    let mut commands = Vec::new();
+    for line in lines {
+        let entry: Entry = decode(line)?;
+        if entry.sequence != lifecycle.event_count() + 1 || entry.previous_sha256 != tail {
+            return Err(Error("journal sequence or hash-chain mismatch".into()));
+        }
+        let (next, receipt) = lifecycle.step(&entry.command)?;
+        if receipt != entry.receipt || sha256(&canonical(&next)?) != entry.state_sha256 {
+            return Err(Error(
+                "journal receipt or reconstructed state mismatch".into(),
+            ));
+        }
+        commands.push(entry.command);
+        lifecycle = next;
+        tail = sha256(line);
+    }
+    Ok((lifecycle, tail, commands))
+}
+
 // Some mounted filesystems (including the tested WSL/Windows mount) do not
 // coordinate flock across hardlink aliases despite reporting the same inode.
 // Reject that configuration on Unix instead of trusting an ineffective lock.
@@ -84,7 +137,11 @@ impl Journal {
             spec,
         };
         let bytes = canonical(&header)?;
-        let mut file = File::create_new(path)?;
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(path)?;
         file.try_lock()
             .map_err(|e| Error(format!("journal lock unavailable: {e}")))?;
         check_links(&file)?;
@@ -113,41 +170,7 @@ impl Journal {
         }
         let mut bytes = Vec::new();
         (&mut file).take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
-        if bytes.len() as u64 > MAX_BYTES || bytes.last() != Some(&b'\n') {
-            return Err(Error(
-                "oversized or incomplete journal; reconciliation required".into(),
-            ));
-        }
-        let mut lines = bytes[..bytes.len() - 1].split(|b| *b == b'\n');
-        let first = lines
-            .next()
-            .ok_or_else(|| Error("missing journal header".into()))?;
-        let header: Header = decode(first)?;
-        if header.schema != SCHEMA
-            || header.spec != *expected
-            || header.implementation_sha256 != implementation()?
-        {
-            return Err(Error(
-                "journal schema, run context, or executable identity mismatch".into(),
-            ));
-        }
-        let mut lifecycle = Lifecycle::new(header.spec)?;
-        let mut tail_sha256 = sha256(first);
-        for line in lines {
-            let entry: Entry = decode(line)?;
-            if entry.sequence != lifecycle.event_count() + 1 || entry.previous_sha256 != tail_sha256
-            {
-                return Err(Error("journal sequence or hash-chain mismatch".into()));
-            }
-            let (next, receipt) = lifecycle.step(&entry.command)?;
-            if receipt != entry.receipt || sha256(&canonical(&next)?) != entry.state_sha256 {
-                return Err(Error(
-                    "journal receipt or reconstructed state mismatch".into(),
-                ));
-            }
-            lifecycle = next;
-            tail_sha256 = sha256(line);
-        }
+        let (lifecycle, tail_sha256, _) = decode_log(&bytes, expected)?;
         let mut result = Self {
             file,
             lifecycle,
@@ -169,6 +192,26 @@ impl Journal {
     #[must_use]
     pub fn state(&self) -> &Lifecycle {
         &self.lifecycle
+    }
+
+    /// Capture the exact durable bytes while retaining the writer lock. Never
+    /// use a pathname re-open, which could capture a replaced file instead.
+    pub fn snapshot(&mut self) -> Result<String, Error> {
+        if self.poisoned {
+            return Err(Error("journal handle poisoned by an I/O failure".into()));
+        }
+        check_links(&self.file)?;
+        self.file.seek(SeekFrom::Start(0))?;
+        let mut bytes = Vec::new();
+        (&mut self.file)
+            .take(MAX_BYTES + 1)
+            .read_to_end(&mut bytes)?;
+        let (state, tail, _) = decode_log(&bytes, self.lifecycle.spec())?;
+        if state != self.lifecycle || tail != self.tail_sha256 || bytes.len() as u64 != self.length
+        {
+            return Err(Error("journal changed outside its owner".into()));
+        }
+        String::from_utf8(bytes).map_err(|e| Error(e.to_string()))
     }
 
     /// Dispatch receipts are released only after write_all + sync_all succeed.

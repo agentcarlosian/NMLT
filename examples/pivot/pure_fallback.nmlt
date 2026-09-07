@@ -1,0 +1,17 @@
+// Executable-only pure functions. No host worker or Lean acceptance.
+module Math {
+  fn square_nonnegative(input: Int) -> Outcome<Int> {
+    if input < 0 { Err("negative input") } else { Ok(input * input) }
+  }
+}
+
+fn main(input: Int, fallback: Int) -> Outcome<Int> {
+  let first = Math.square_nonnegative(input);
+  match first {
+    Ok(value) => Ok(value + value),
+    Err(reason) => match Math.square_nonnegative(fallback) {
+      Ok(value) => Ok(value + value),
+      Err(message) => Err(message)
+    }
+  }
+}

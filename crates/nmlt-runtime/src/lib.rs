@@ -10,7 +10,7 @@ mod lifecycle;
 mod protocol;
 pub mod worker;
 
-pub use journal::Journal;
+pub use journal::{Journal, replay_journal};
 pub use lifecycle::*;
 pub use protocol::*;
 

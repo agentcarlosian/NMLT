@@ -33,3 +33,28 @@ failure/fallback, direct success, and exhausted attempts. Crate-local
 accounting, journal corruption and I/O failures, locking, and real process death
 both before work and after worker output survives without a completion record.
 These are implementation regressions, not Lean checks or host-execution proofs.
+
+`nmlt-workflow` tests compile and run the pure function/outcome profile, including
+all-branch checking, lexical/module resolution, recursion rejection, depth/step
+bounds, and arithmetic stops. CLI workflow tests exercise real input changes,
+failure handling, immutable reuse, replay, record mutation/duplicates, output
+preservation, and explicit routing away from the finite behavioral checker.
+Collection controls cover nominal record resolution, recursive type rejection,
+exact fields, fold order/scope and shared fuel, empty/maximal lists, safe lookup,
+structured input decoding, aggregate growth, and repeated copying. CLI controls
+replay structured batches and incomplete value-limit runs, reject nested duplicate
+keys, and explicitly reject version 1 pure records.
+
+Package controls cover deterministic/shared imports, file scopes, record-only
+libraries, imported diagnostic spans, runtime source indices, cycles, alias/case
+collisions, graph/source bounds, dependency changes, manifest mutations, package
+moves, and version 1/2 rejection. Linux also exercises symbolic-source rejection.
+
+Source job controls cover transitive/dead-branch/imported effects, typed job
+results and fold order, pure-route rejection, real subprocess fallback and
+overflow, collection/value reuse, preflight and attempt/step limits, and exact
+context/event/journal replay. Supervisor tests exercise blocked stdin, both
+bounded output pipes, nonzero exit, unexpected stderr, and direct-child timeout
+cleanup. Injected host failures retain uncertain charged work without selecting
+fallback. Recovery tests classify a complete interrupted journal prefix without
+redispatch and reject torn logs. These controls join the existing workspace gate.

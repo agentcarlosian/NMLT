@@ -157,8 +157,22 @@ ordering specified by [RFC 0016](../rfcs/0016-decoded-finite-execution.md).
 
 R2's first increment supports bounded finite `run` and exact-executable
 `replay`, including a simulated failure/retry and reusable result. Follow the
-[local execution guide](r2-local-execution.md). The general language and host
-adapters remain outstanding; this path always reports `assurance: none`.
+[local execution guide](r2-local-execution.md). This finite path always reports
+`assurance: none`.
+
+Use the [pure workflow guide](r2-pure-workflows.md) for scalar or structured inputs,
+records, bounded lists/folds, named entries, typed `Ok`/`Err` branches, and result reuse.
+Its explicit `--entry` route also supports bounded execution and replay, with
+an executable-only scope.
+
+Use the [source package guide](r2-source-packages.md) to split those workflows
+across sibling `.nmlt` libraries with explicit imports and complete dependency
+identities during replay.
+
+Use the [source job guide](r2-source-jobs.md) to launch the fixed local worker
+with explicit attempt/time limits, typed failure handling, and a durable journal.
+Replay checks recorded job evidence without launching work. Lean adapters and
+asynchronous source job controls remain planned.
 
 ## Run the repository gates
 

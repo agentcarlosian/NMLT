@@ -27,6 +27,18 @@ be replaced with durable `getting-started`, `open-systems`, and
 - [`finite_retry.nmlt`](pivot/finite_retry.nmlt) is R2's executable finite
   retry/reuse simulation. The [run/replay guide](../docs/r2-local-execution.md)
   shows how to change its input; it does not start a host worker.
+- [`batch_summary.nmlt`](pivot/batch_summary.nmlt) folds structured inputs into a
+  nominal summary record, retaining accepted and rejected domain outcomes.
+- [`package_batch/main.nmlt`](pivot/package_batch/main.nmlt) splits that workflow
+  across Work, Arithmetic, and Reports libraries using canonical imports.
+  The [package guide](../docs/r2-source-packages.md) documents version 3 replay.
+- [`pure_fallback.nmlt`](pivot/pure_fallback.nmlt) accepts scalar CLI inputs,
+  handles typed outcomes, calls reusable pure functions, and reuses a result.
+  The [pure workflow guide](../docs/r2-pure-workflows.md) documents its explicit
+  `--entry` route and executable-only interpretation.
+- [`job_fallback.nmlt`](pivot/job_fallback.nmlt) launches the real local square
+  worker, handles failure with a bounded fallback, and reuses its collected value.
+  The [source job guide](../docs/r2-source-jobs.md) covers opt-in bounds and replay.
 
 The other directories are retained language-design and lossless-frontend
 fixtures. Many use surface forms intentionally outside the first finite

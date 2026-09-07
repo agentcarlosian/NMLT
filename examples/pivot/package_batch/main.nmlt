@@ -1,0 +1,8 @@
+import Work
+import Reports
+
+fn main(items: List<Work.Item>) -> Reports.Summary {
+  fold(items, Reports.empty(), summary, item => {
+    Reports.add(summary, Work.resolve(item))
+  })
+}

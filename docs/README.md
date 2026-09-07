@@ -49,6 +49,12 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   structured outcomes, and the remaining workflow-runtime boundary
 - [R2 job runtime](../crates/nmlt-runtime/README.md) — bounded job control,
   journal recovery, and a real local subprocess adapter prototype
+- [R2 pure workflows](r2-pure-workflows.md) — real inputs, named functions,
+  records, bounded lists/folds, typed outcomes, matching, execution, and replay
+- [R2 source packages](r2-source-packages.md) — reusable libraries, file scope,
+  source manifests, imported diagnostics, and version 3 replay
+- [R2 source jobs](r2-source-jobs.md) — typed subprocess outcomes, bounded fallback,
+  durable context, replay without dispatch, and recovery inspection
 - [Source corpus](source-corpus.md) — historical frontend corpus and provenance
 - [Untyped projection](untyped-core-desugaring.md)
 - [Typed executable core](typed-executable-core.md) — retained ordinary
@@ -79,6 +85,14 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — finite run/replay, shared steps, mutation controls, and remaining runtime work
 - [R2 second-increment evidence](reviews/r2-job-lifecycle-increment-2026-09-06.md)
   — bounded job control, recovery, subprocess execution, and cross-platform checks
+- [R2 third-increment evidence](reviews/r2-pure-workflow-increment-2026-09-06.md)
+  — pure source functions, typed outcomes, input-sensitive execution, and replay
+- [R2 fourth-increment evidence](reviews/r2-collections-increment-2026-09-06.md)
+  — records, structured inputs, bounded lists/folds, value limits, and version 2 replay
+- [R2 fifth-increment evidence](reviews/r2-package-increment-2026-09-07.md)
+  — reusable source packages, imported locations, dependency manifests, and version 3 replay
+- [R2 sixth-increment evidence](reviews/r2-source-job-increment-2026-09-07.md)
+  — bounded source effects, subprocess supervision, durable context, replay, and recovery
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

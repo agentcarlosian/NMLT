@@ -78,13 +78,25 @@ Owners: Rust/compiler maintainer and integration maintainer. Dependencies: R1 fo
 
 Started on 2026-09-06. The [first increment](r2-local-execution.md) supplies
 bounded execution and replay over the existing finite v2 slice. The requirements
-below still govern the complete milestone; host jobs and the richer language
-remain outstanding.
+below still govern the complete milestone; subsequent increments add source
+functions, packages, and the first local job adapter.
 
 The second increment supplies a [Rust job runtime prototype](../crates/nmlt-runtime/README.md)
 with bounded identities, revisioned control, cancellation/settlement, and locked
-journal recovery. Native source effects and supported Lean adapters remain
-integration work; the subprocess example is not completion of this milestone.
+journal recovery. Supported Lean adapters remain integration work; the
+subprocess example is not completion of this milestone.
+
+The third increment adds [pure source functions](r2-pure-workflows.md), scalar
+entry inputs, local modules, typed outcomes and exhaustive matching, immutable
+bindings, checked arithmetic, and bounded evaluation/replay. This profile is
+executable-only. The fourth increment adds nominal records, structured inputs,
+bounded lists/folds, and aggregate value limits under RFC 0020. Cross-file
+packages are now provided by the fifth increment: canonical imports, per-file
+resolution, typed library components, and complete source manifests. The sixth
+increment adds [source local jobs](r2-source-jobs.md): typed worker effects,
+explicit budgets, bounded pipes/timeouts, durable context, replay, and recovery
+inspection. Lean jobs, asynchronous control, and the complete project loop
+remain required below.
 
 Deliver a local interpreter before an optimizing compiler or distributed runtime. Initially support a single host and a small bounded number of concurrent jobs.
 

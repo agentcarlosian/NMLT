@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-09-06"
-scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, experimental R2 finite run/replay and bounded local job runtime"
+scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, experimental R2 finite/pure run/replay and bounded local job runtime"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -72,6 +72,11 @@ trusted_components = [
 name = "rust_finite_run_replay"
 ceiling = "assurance none; bounded finite execution and same-executable record consistency, no host effects or Lean acceptance"
 trusted_components = ["toolchain.rust", "rust.behavior_compiler", "rust.evaluator", "rust.cli"]
+
+[[claim_profiles]]
+name = "rust_pure_workflow"
+ceiling = "executable-only pure function typing/evaluation and same-executable record consistency; no M9 certificate, behavioral artifact, host effects, or Lean acceptance"
+trusted_components = ["toolchain.rust", "rust.frontend", "rust.hir", "rust.workflow", "rust.cli"]
 
 [[claim_profiles]]
 name = "rust_local_job_lifecycle"
@@ -235,9 +240,21 @@ paths = [
 role = "Bound local job control, bind responses, serialize and recover journal transitions under a same-file OS lock, and demonstrate a validated arithmetic subprocess; executable-only."
 
 [[components]]
+id = "rust.workflow"
+paths = [
+  "crates/nmlt-workflow/src/lib.rs",
+  "crates/nmlt-workflow/src/parse.rs",
+  "crates/nmlt-workflow/src/check.rs",
+  "crates/nmlt-workflow/src/eval.rs",
+  "crates/nmlt-workflow/src/value.rs",
+  "crates/nmlt-workflow/src/package.rs",
+]
+role = "Interpret canonical imports and function/record slices, resolve file scopes, type functions and aggregates/folds, infer local job effects, validate inputs and value-work limits, and bind the private typed tree to a complete source manifest; executable-only."
+
+[[components]]
 id = "rust.cli"
-paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs"]
-role = "Route frontend, artifact, exploration, finite run and same-executable replay commands without raising their claim ceilings."
+paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs", "crates/nmlt-cli/src/workflow.rs", "crates/nmlt-cli/src/strict_json.rs", "crates/nmlt-cli/src/jobs.rs", "crates/nmlt-cli/src/job_process.rs"]
+role = "Route frontend, finite/pure/local-job execution and replay, bind durable source job contexts, supervise the fixed worker's pipes/deadline, and classify unfinished journals without raising claim ceilings."
 
 [[components]]
 id = "artifact.schema"

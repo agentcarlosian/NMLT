@@ -1,0 +1,17 @@
+[package]
+name = "nmlt-workflow"
+description = "Experimental pure source functions and bounded execution for NMLT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+nmlt-core = { path = "../nmlt-core" }
+nmlt-hir = { path = "../nmlt-hir" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

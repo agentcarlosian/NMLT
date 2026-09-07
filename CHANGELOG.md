@@ -4,7 +4,27 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Connected source `job_square(Int)` effects to the durable local runtime with
+  typed results, conservative effect inference, explicit attempt/time limits,
+  bounded subprocess pipes, captured-journal replay without redispatch, and
+  `jobs-recover` inspection (RFC 0022). The local job profile is executable-only;
+  Lean adapters and asynchronous source control remain open.
+
 ### Language and semantics
+
+- Added bounded cross-file workflow packages using canonical `import Name`
+  declarations, per-file scope, imported diagnostics, and complete source
+  manifests (RFC 0021). Pure formats move to version 3; version 1/2 records
+  require their original executable. Finite formats remain unchanged.
+
+- Added nominal records, structured JSON inputs, lists capped at 256 items,
+  safe lookup, bounded folds, and aggregate value/work limits (RFC 0020).
+  Pure workflow output moves to version 2; old records require their original
+  executable. Existing finite artifact and replay formats are unchanged.
+
+- Added executable-only pure source functions with named entries and real scalar
+  inputs, local modules, acyclic calls, typed outcomes, exhaustive matching,
+  immutable bindings, bounded evaluation, and exact-executable replay (RFC 0019).
 
 - Recentered the repository on the `.nmlt` programming language with normative
   behavior semantics in Lean.

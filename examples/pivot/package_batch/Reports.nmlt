@@ -1,0 +1,20 @@
+record Summary { accepted: Int, rejected: Int, total: Int }
+
+fn empty() -> Summary {
+  new Summary { accepted: 0, rejected: 0, total: 0 }
+}
+
+fn add(summary: Summary, result: Outcome<Int>) -> Summary {
+  match result {
+    Ok(value) => new Summary {
+      accepted: summary.accepted + 1,
+      rejected: summary.rejected,
+      total: summary.total + value
+    },
+    Err(reason) => new Summary {
+      accepted: summary.accepted,
+      rejected: summary.rejected + 1,
+      total: summary.total
+    }
+  }
+}

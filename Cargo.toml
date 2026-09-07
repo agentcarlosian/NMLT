@@ -9,6 +9,7 @@ members = [
     "crates/nmlt-kernel",
     "crates/nmlt-eval",
     "crates/nmlt-runtime",
+    "crates/nmlt-workflow",
     "crates/nmlt-cli",
 ]
 default-members = ["crates/nmlt-cli"]
