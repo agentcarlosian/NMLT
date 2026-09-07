@@ -77,7 +77,7 @@ Public documentation must preserve those distinctions.
 The behavioral and retained ordinary compilation routes differ; the reference
 explorer supports finite Bool/Unit/enum state. A separate executable-only profile
 now runs functions with scalars, outcomes, records, bounded lists/folds, and
-opt-in local square jobs. Lean jobs, asynchronous source control, and user-defined
+opt-in local square jobs. Source Lean jobs, asynchronous source control, and user-defined
 behavioral property checking remain planned work.
 Historical independent-checker results do not remove the need for current
 toolchain maintenance.
@@ -268,10 +268,25 @@ The [sixth-increment evidence](docs/reviews/r2-source-job-increment-2026-09-07.m
 records 287 Windows / 289 Linux Rust tests, the source fallback demonstration,
 and a complete fresh Rust/Lean/NanoDA/parity/baseline gate.
 
+The source workflow, collection, package, and synchronous job increments were
+committed as `0f4a9c8` before starting the seventh increment.
+
+The seventh increment starts [Lean adapters and asynchronous host control](docs/r2-lean-async.md).
+An initial Rust session API starts, polls, cancels, and collects worker or fixed
+Lean-template jobs through the durable journal. Opaque session-specific handles,
+independent child deadlines, uncertain cleanup states, and captured-observation
+verification are implemented under [RFC 0023](rfcs/0023-asynchronous-host-and-lean-adapter.md).
+The actual pinned Lean process rejects wrong/admitted proofs and checks the
+existing-lemma and induction templates. These host APIs do not yet expose
+asynchronous `.nmlt` handles or general Lean source input.
+The [seventh-increment evidence](docs/reviews/r2-lean-async-increment-2026-09-07.md)
+records the current tests and real subprocess validation.
+
 Remaining implementation sequence:
 
-1. Add the typed Lean adapter and asynchronous source job control, including
-   cancellation, stronger process containment, and reconciliation/resumption.
+1. Expose asynchronous source job controls with affine checking, broaden the
+   supported Lean request interface, and add stronger dependency/process
+   containment and reconciliation/resumption.
 2. Complete user-defined safety invariants and their evidence/counterexample path.
 3. Add project/toolchain locks, source-located structured diagnostics, formatter,
    `init`/`test`, and the real-input workflow acceptance example.

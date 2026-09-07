@@ -171,8 +171,12 @@ identities during replay.
 
 Use the [source job guide](r2-source-jobs.md) to launch the fixed local worker
 with explicit attempt/time limits, typed failure handling, and a durable journal.
-Replay checks recorded job evidence without launching work. Lean adapters and
+Replay checks recorded job evidence without launching work. General source Lean integration and
 asynchronous source job controls remain planned.
+
+The [Lean and async host guide](r2-lean-async.md) demonstrates the initial Rust
+adapter API with the pinned Lean executable and fixed proof templates. Source
+asynchronous handles and general Lean input are subsequent work.
 
 ## Run the repository gates
 

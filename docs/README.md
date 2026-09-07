@@ -55,6 +55,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   source manifests, imported diagnostics, and version 3 replay
 - [R2 source jobs](r2-source-jobs.md) — typed subprocess outcomes, bounded fallback,
   durable context, replay without dispatch, and recovery inspection
+- [R2 Lean and async host API](r2-lean-async.md) — initial Lean adapter,
+  independent deadlines, private handles, cancellation, and collection
 - [Source corpus](source-corpus.md) — historical frontend corpus and provenance
 - [Untyped projection](untyped-core-desugaring.md)
 - [Typed executable core](typed-executable-core.md) — retained ordinary
@@ -93,6 +95,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — reusable source packages, imported locations, dependency manifests, and version 3 replay
 - [R2 sixth-increment evidence](reviews/r2-source-job-increment-2026-09-07.md)
   — bounded source effects, subprocess supervision, durable context, replay, and recovery
+- [R2 seventh-increment evidence](reviews/r2-lean-async-increment-2026-09-07.md)
+  — initial Lean adapter, asynchronous host controls, cancellation, and snapshot validation
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

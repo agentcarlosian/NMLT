@@ -1,7 +1,8 @@
-.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda finite-parity execution r0-baseline-tests r0-baselines r2-jobs ci reproduce
+.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda finite-parity execution r0-baseline-tests r0-baselines r2-jobs r2-async r2-lean ci reproduce
 
 R0_LEAN_TOOLCHAIN = $(strip $(shell cat mechanization/lean/lean-toolchain))
 R0_LEAN_COMMAND_JSON ?= ["elan","run","leanprover/lean4:$(R0_LEAN_TOOLCHAIN)","lean"]
+R2_LEAN_BIN ?= $(shell elan run leanprover/lean4:$(R0_LEAN_TOOLCHAIN) lean --print-prefix)/bin/lean
 
 help:
 	@echo "NMLT language-and-mathematics targets"
@@ -20,6 +21,8 @@ help:
 	@echo "  r0-baseline-tests Test the deterministic reference-workflow harness"
 	@echo "  r0-baselines      Run the three frozen Python/Lean reference workflows"
 	@echo "  r2-jobs           Exercise the executable-only local job subprocess prototype"
+	@echo "  r2-async          Exercise asynchronous worker control and snapshot replay"
+	@echo "  r2-lean           Exercise the pinned Lean adapter and async control"
 	@echo "  ci                Run the Rust language gate"
 	@echo "  reproduce         Run the complete Rust and Lean gate"
 
@@ -74,6 +77,12 @@ r0-baselines:
 r2-jobs:
 	python3 tools/check_job_runtime.py
 
-ci: fmt-check check lint test behavior-artifact public-surface r0-baseline-tests r2-jobs
+r2-async:
+	python3 tools/check_async_jobs.py
 
-reproduce: ci metatheory nanoda finite-parity execution r0-baselines
+r2-lean:
+	python3 tools/check_async_jobs.py --lean-bin "$(R2_LEAN_BIN)"
+
+ci: fmt-check check lint test behavior-artifact public-surface r0-baseline-tests r2-jobs r2-async
+
+reproduce: ci metatheory nanoda finite-parity execution r0-baselines r2-lean

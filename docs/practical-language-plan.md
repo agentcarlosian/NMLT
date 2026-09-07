@@ -95,8 +95,10 @@ packages are now provided by the fifth increment: canonical imports, per-file
 resolution, typed library components, and complete source manifests. The sixth
 increment adds [source local jobs](r2-source-jobs.md): typed worker effects,
 explicit budgets, bounded pipes/timeouts, durable context, replay, and recovery
-inspection. Lean jobs, asynchronous control, and the complete project loop
-remain required below.
+inspection. The seventh increment starts [Lean and asynchronous host APIs](r2-lean-async.md)
+with fixed proof templates, independent child deadlines, and private control
+handles. General Lean input, asynchronous source control, and the complete
+project loop remain required below.
 
 Deliver a local interpreter before an optimizing compiler or distributed runtime. Initially support a single host and a small bounded number of concurrent jobs.
 

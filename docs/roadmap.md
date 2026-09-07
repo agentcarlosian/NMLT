@@ -13,7 +13,9 @@ adds finite source-driven run/replay over shared evaluator steps. The
 [bounded job runtime](../crates/nmlt-runtime/README.md) now adds durable control,
 uncertain recovery, and a subprocess worker prototype. The [source job increment](r2-source-jobs.md)
 connects typed worker effects with explicit limits, journal replay, and recovery
-inspection. Lean adapters, asynchronous source control, and the useful-language
+inspection. The [initial Lean and async host API](r2-lean-async.md) now checks
+fixed proof templates and supports runtime start/poll/cancel/collect. General
+Lean input, asynchronous source control, and the useful-language
 exit gate remain outstanding.
 The [pure source workflow increment](r2-pure-workflows.md) adds named function
 entries, structured inputs, records, bounded lists/folds, typed outcomes, and evaluation/replay. These

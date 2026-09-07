@@ -234,10 +234,15 @@ paths = [
   "crates/nmlt-runtime/src/lifecycle.rs",
   "crates/nmlt-runtime/src/journal.rs",
   "crates/nmlt-runtime/src/worker.rs",
+  "crates/nmlt-runtime/src/process.rs",
+  "crates/nmlt-runtime/src/lean.rs",
+  "crates/nmlt-runtime/src/session.rs",
   "crates/nmlt-runtime/examples/local_worker.rs",
+  "crates/nmlt-runtime/examples/async_jobs.rs",
   "tools/check_job_runtime.py",
+  "tools/check_async_jobs.py",
 ]
-role = "Bound local job control, bind responses, serialize and recover journal transitions under a same-file OS lock, and demonstrate a validated arithmetic subprocess; executable-only."
+role = "Bound local job control, bind responses, persist and recover journal transitions, supervise asynchronous children, enforce session-specific handles, and validate worker or fixed-template Lean observations; executable-only, with the configured Lean installation as an explicit host trust dependency."
 
 [[components]]
 id = "rust.workflow"

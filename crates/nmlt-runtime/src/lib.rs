@@ -6,8 +6,11 @@
 #![forbid(unsafe_code)]
 
 mod journal;
+pub mod lean;
 mod lifecycle;
+pub mod process;
 mod protocol;
+pub mod session;
 pub mod worker;
 
 pub use journal::{Journal, replay_journal};

@@ -58,3 +58,12 @@ bounded output pipes, nonzero exit, unexpected stderr, and direct-child timeout
 cleanup. Injected host failures retain uncertain charged work without selecting
 fallback. Recovery tests classify a complete interrupted journal prefix without
 redispatch and reject torn logs. These controls join the existing workspace gate.
+
+The asynchronous host controls test independent deadlines, late polling, pipe
+bounds, cancellation cleanup, slot/attempt limits, session-specific handles,
+single collection, uncertain charges, injected partial journal writes, and
+captured-observation mutations. Lean adapter unit tests distinguish rejection,
+exact empty-axiom acceptance, admitted/wrong-proof controls, and tool failures.
+`make r2-async` runs real worker concurrency/replay/recovery in the Rust gate;
+`make r2-lean` separately runs actual pinned Lean templates in the complete gate.
+These exercise the initial Rust API; source-level asynchronous handles remain open.

@@ -223,6 +223,14 @@ impl Journal {
         })
     }
 
+    #[cfg(test)]
+    pub(crate) fn inject_failed_append(&mut self, command: Command) -> Result<Receipt, Error> {
+        self.commit_with(command, |file, bytes| {
+            file.write_all(&bytes[..bytes.len() / 2])?;
+            Err(std::io::Error::other("injected partial journal append"))
+        })
+    }
+
     fn commit_with(
         &mut self,
         command: Command,

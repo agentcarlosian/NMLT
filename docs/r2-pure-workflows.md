@@ -123,5 +123,5 @@ The [source job guide](r2-source-jobs.md) adds opt-in `job_square` effects throu
 the durable [Rust job runtime](../crates/nmlt-runtime/README.md). An effectful
 entry is rejected by this pure execution route. Workflow typecheck output is
 version 4 and exposes `requires_jobs`; pure run records remain version 3.
-Lean adapters, asynchronous source job control, and the complete R2 exit gate
+Source Lean integration, asynchronous source job control, and the complete R2 exit gate
 remain outstanding.

@@ -50,7 +50,12 @@ byte-for-byte equality.
 - `nmlt-runtime` supplies the experimental bounded job lifecycle, typed response
   bindings, revisioned control, and locked journal with uncertain recovery.
   Its subprocess worker example uses the Rust API; the CLI now connects the same
-  protocol to source jobs. Lean job integration remains outstanding.
+  protocol to source jobs. The initial asynchronous session API also supervises
+  concurrent children and fixed-template Lean checks under
+  [RFC 0023](../rfcs/0023-asynchronous-host-and-lean-adapter.md). Session-specific
+  handles, cancellation acknowledgements, collection, and snapshot verification
+  precede source-level asynchronous control. The configured Lean installation
+  remains an explicit host trust dependency; captured output is not a fresh check.
   [RFC 0018](../rfcs/0018-bounded-local-job-lifecycle.md)
   specifies its separate executable-only boundary.
 - `nmlt-workflow` consumes the same lossless CST/projection and interprets retained

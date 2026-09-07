@@ -9,12 +9,23 @@ Requires Rust 1.94, as used by the repository's pinned CI toolchain.
 - `Request`, `Binding`, `Response`, and `Control` bind types, input/context,
   attempts, owners, and control revisions.
 - `worker` implements and validates the exact `local-square` adapter contract.
+- `process` supervises bounded children asynchronously, with deadlines independent
+  of polling and explicit cancellation/cleanup observations.
+- `session` mediates start/poll/wait/cancel/collect through the journal using
+  private session-specific handles; snapshots can be verified without launching work.
+- `lean` checks fixed zero-addition proof templates with the pinned Lean version,
+  executable/source identity, and an exact empty-axiom output policy.
 - `Journal::snapshot` captures and checks durable bytes through the locked handle;
   `replay_journal` validates captured bytes without recovering or issuing authority.
 
 The [source job guide](../../docs/r2-source-jobs.md) connects this runtime to
 `.nmlt` `job_square` effects with a bounded supervisor and replay without dispatch.
 The Rust example below remains the original adapter prototype.
+
+The [Lean and async host guide](../../docs/r2-lean-async.md) describes the initial
+Rust API and `async_jobs` example. Run `make r2-async` for the real worker controls
+or `make r2-lean R2_LEAN_BIN=/absolute/path/to/lean` for the pinned Lean exercise.
+Asynchronous source handles and a general Lean source interface remain next work.
 
 Run a real subprocess attempt with failure and bounded fallback:
 

@@ -58,3 +58,4 @@ evidence.
 | [0020](0020-workflow-records-and-collections.md) | Workflow records and bounded collections | Under review |
 | [0021](0021-workflow-source-packages.md) | Workflow source packages and import-bound replay | Under review |
 | [0022](0022-source-local-job-effects.md) | Source-level bounded local job effects | Under review |
+| [0023](0023-asynchronous-host-and-lean-adapter.md) | Asynchronous host controls and the first Lean adapter | Under review |

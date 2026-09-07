@@ -69,6 +69,9 @@ jobs:
       - name: Run the frozen R0 reference workflows
         run: make r0-baselines
 
+      - name: Check the pinned Lean adapter and asynchronous job controls
+        run: make r2-lean
+
       - name: Compare finite Rust exploration with Lean
         run: bash tools/check_finite_parity.sh "${{ steps.stage_lean.outputs.path }}"
 

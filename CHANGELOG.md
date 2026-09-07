@@ -4,6 +4,12 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Started the Lean/asynchronous host increment with bounded background process
+  supervision, private session handles, polling/cancellation/collection, and
+  snapshot verification. The first Lean adapter checks fixed zero-addition
+  proof templates against the repository pin and an exact empty-axiom policy
+  (RFC 0023). Source-level asynchronous handles remain future work.
+
 - Connected source `job_square(Int)` effects to the durable local runtime with
   typed results, conservative effect inference, explicit attempt/time limits,
   bounded subprocess pipes, captured-journal replay without redispatch, and

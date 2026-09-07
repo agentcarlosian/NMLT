@@ -53,10 +53,11 @@ exact .nmlt bytes
 | Exploration | `nmlt-eval` explores Bool/Unit/enum artifacts and emits v2 paths; frozen value/resource graphs are compared with Lean, always with `assurance: none` |
 | Local execution | R2's first increment adds source-driven finite `run` and exact-executable `replay`; shared v2 steps, structured stop outcomes, no host jobs, `assurance: none` |
 | Local source jobs | Opt-in `job_square` uses bounded attempts, a durable journal, validated subprocess results, timeout/output limits, replay without redispatch, and recovery inspection; executable-only |
+| Initial Lean / async host API | Rust sessions start, poll, cancel, and collect jobs; a pinned Lean adapter checks fixed proof templates with an exact empty-axiom policy; source async handles remain planned |
 | Pure source workflows | Named entries, structured inputs, records, bounded lists/folds, local modules, acyclic functions, typed outcomes, matching, execution/replay; executable-only, no host jobs |
 
 Try the [local execution guide](docs/r2-local-execution.md). R2 remains in
-progress; Lean adapters, asynchronous source control, and the complete workflow
+progress; broader Lean integration, asynchronous source control, and the complete workflow
 gate remain open. The [job runtime guide](crates/nmlt-runtime/README.md) demonstrates the
 separate Rust adapter prototype.
 The [pure workflow guide](docs/r2-pure-workflows.md) runs `.nmlt` functions with
@@ -66,6 +67,8 @@ share typed components across files and bind their complete import graph to
 version 3 replay, with an executable-only interpretation.
 The [source job guide](docs/r2-source-jobs.md) connects those functions to the
 real worker with explicit bounds and typed failure/fallback handling.
+The [Lean and async host guide](docs/r2-lean-async.md) demonstrates the first
+Lean adapter and the runtime control API used to develop the next source layer.
 
 The behavioral milestone is finite, binary, and safety-oriented. The source digest
 identifies the source bytes presented to Lean; the repository separately
