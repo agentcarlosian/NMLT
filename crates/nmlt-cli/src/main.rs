@@ -9,6 +9,8 @@ use nmlt_core::{Diagnostic, ParsedFile, lex_source, parse_source};
 use nmlt_eval::{ExploreConfig, explore};
 use nmlt_ir::BehaviorCoreProgram;
 
+mod runtime;
+
 const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
@@ -20,6 +22,8 @@ Usage:\n\
   nmlt elaborate <file> --core-version v2 --emit-core <artifact.json> Emit opt-in v2\n\
   nmlt explore --behavior <name> --max-states <n> <core.json> Explore a canonical artifact\n\
   nmlt trace --behavior <name> --actions <comma-separated labels> --emit-path <path.json> --max-states <n> <core.json> Emit a v2 witness\n\
+  nmlt run <source.nmlt> --behavior <name> --max-steps <n> --emit-run <new.json> [--actions <labels>] Execute finite v2\n\
+  nmlt replay <record.json> --source <source.nmlt>         Replay with the same executable\n\
   nmlt version                                           Print the frontend version\n\
   nmlt help                                              Show this help\n\n\
 Lean defines NMLT's normative behavior semantics. Exploration is not verification.\n";
@@ -141,6 +145,8 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             Ok(())
         }
         "trace" => emit_trace(&arguments[1..]),
+        "run" => runtime::run(&arguments[1..]),
+        "replay" => runtime::replay(&arguments[1..]),
         unknown => Err(format!("unknown command '{unknown}'\n\n{HELP}")),
     }
 }

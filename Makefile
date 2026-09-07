@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda finite-parity execution r0-baseline-tests r0-baselines ci reproduce
+.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda finite-parity execution r0-baseline-tests r0-baselines r2-jobs ci reproduce
 
 R0_LEAN_TOOLCHAIN = $(strip $(shell cat mechanization/lean/lean-toolchain))
 R0_LEAN_COMMAND_JSON ?= ["elan","run","leanprover/lean4:$(R0_LEAN_TOOLCHAIN)","lean"]
@@ -19,6 +19,7 @@ help:
 	@echo "  execution         Reproduce and Lean-check v2 paths and resource graphs"
 	@echo "  r0-baseline-tests Test the deterministic reference-workflow harness"
 	@echo "  r0-baselines      Run the three frozen Python/Lean reference workflows"
+	@echo "  r2-jobs           Exercise the executable-only local job subprocess prototype"
 	@echo "  ci                Run the Rust language gate"
 	@echo "  reproduce         Run the complete Rust and Lean gate"
 
@@ -70,6 +71,9 @@ r0-baselines:
 		output_dir="$$(mktemp -d target/r0-baselines/run.XXXXXX)"; \
 		python3 tools/baselines/run_baselines.py --output-dir "$$output_dir" --lean-command-json '$(R0_LEAN_COMMAND_JSON)'
 
-ci: fmt-check check lint test behavior-artifact public-surface r0-baseline-tests
+r2-jobs:
+	python3 tools/check_job_runtime.py
+
+ci: fmt-check check lint test behavior-artifact public-surface r0-baseline-tests r2-jobs
 
 reproduce: ci metatheory nanoda finite-parity execution r0-baselines

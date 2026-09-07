@@ -26,3 +26,10 @@ with `make r0-baseline-tests`. Mock checker tests establish orchestration behavi
 and compares the complete reachable state/transition sets from Rust with the
 Lean-defined control behavior. The fixture is closed and resource-free; this
 four-state comparison does not establish general Rust-to-Lean correspondence.
+
+`make r2-jobs` exercises the executable-only local subprocess prototype with
+failure/fallback, direct success, and exhausted attempts. Crate-local
+`nmlt-runtime` tests cover lifecycle bounds, stale controls/responses, cancellation,
+accounting, journal corruption and I/O failures, locking, and real process death
+both before work and after worker output survives without a completion record.
+These are implementation regressions, not Lean checks or host-execution proofs.

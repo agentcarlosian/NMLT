@@ -45,6 +45,10 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
 
 ## Language and implementation
 
+- [R2 local execution](r2-local-execution.md) — finite source-driven run/replay,
+  structured outcomes, and the remaining workflow-runtime boundary
+- [R2 job runtime](../crates/nmlt-runtime/README.md) — bounded job control,
+  journal recovery, and a real local subprocess adapter prototype
 - [Source corpus](source-corpus.md) — historical frontend corpus and provenance
 - [Untyped projection](untyped-core-desugaring.md)
 - [Typed executable core](typed-executable-core.md) — retained ordinary
@@ -71,6 +75,10 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — unified model, mixed finite values, validation results, and remaining gates
 - [R1 completion evidence](reviews/r1-finite-execution-2026-09-06.md)
   — decoded finite paths, affine continuation, initialized refinement, and fresh checks
+- [R2 first-increment evidence](reviews/r2-local-execution-increment-2026-09-06.md)
+  — finite run/replay, shared steps, mutation controls, and remaining runtime work
+- [R2 second-increment evidence](reviews/r2-job-lifecycle-increment-2026-09-06.md)
+  — bounded job control, recovery, subprocess execution, and cross-platform checks
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

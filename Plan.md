@@ -4,7 +4,7 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Immediate milestone: R2 — useful executable language (not started)
+- Immediate milestone: R2 — useful executable language (in progress)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-06
@@ -86,7 +86,7 @@ toolchain maintenance.
 |---|---|---|---|
 | R0 — Checker and workflow baselines | Complete | Audited baseline | Integration and Lean maintainers |
 | R1 — Unified semantics and finite execution | Complete at finite scope | R0 checker baseline | Lean/semantics and Rust maintainers |
-| R2 — Useful executable language | Planned | R1 for formal execution claims | Compiler/runtime and integration maintainers |
+| R2 — Useful executable language | In progress: finite run/replay and bounded local jobs | R1 for formal execution claims | Compiler/runtime and integration maintainers |
 | R3 — Supported Lean workflows | Planned | R2; adapter prototype can begin in R0 | Lean integration maintainer |
 | R4 — Discovery workflows | Planned | R3 for integration; domain preparation can start earlier | Mathematical reviewer and integration maintainer |
 | R5 — Three-audience alpha validation | Planned | R2–R4 | Maintainers and independent pilot users |
@@ -197,6 +197,41 @@ lifting alone cannot complete R1. Formation rejection alone does not establish
 the necessity of a theorem premise.
 
 ### R2 — Deliver the smallest useful executable language
+
+Started on 2026-09-06 from R1 commit `c1404f1`. The first increment adds
+[direct finite execution and replay](docs/r2-local-execution.md), a shared
+initializer/successor operation for execution and exploration, structured stop
+outcomes, exact source/artifact/executable identities, and a finite retry/reuse
+example. [RFC 0017](rfcs/0017-finite-local-run-and-replay.md) is Under review.
+The [increment evidence](docs/reviews/r2-local-execution-increment-2026-09-06.md)
+records 215 passing Rust tests, unchanged frozen Rust/Lean graphs, and the
+separately checked five-step retry witness.
+This is an executable-only scheduling/record layer over existing v2 operations,
+not the general workflow runtime or completion of R2.
+
+The second increment adds the executable-only `nmlt-runtime` job lifecycle,
+typed attempt bindings, revisioned control, reservation/settlement rules, and a
+locked journal with explicit uncertain restart recovery. A real local square
+worker demonstrates failure, bounded fallback, and persistent result reuse.
+[RFC 0018](rfcs/0018-bounded-local-job-lifecycle.md) is Under review. This remains
+a Rust API and adapter prototype; `.nmlt` host-effect integration is outstanding.
+The [second-increment evidence](docs/reviews/r2-job-lifecycle-increment-2026-09-06.md)
+records cross-platform tests, two process-death boundaries, and fresh unchanged
+Lean/NanoDA checks.
+
+Remaining implementation sequence:
+
+1. Add the required source/value facilities with explicit routing and semantic
+   dispositions: entry points, tagged outcomes, reusable definitions, and their
+   typed lowering are next.
+2. Integrate the bounded job protocol with native source effects and typed Lean
+   and worker adapters, including host cancellation, process limits, and the
+   recovery/reconciliation user flow.
+3. Complete user-defined safety invariants and their evidence/counterexample path.
+4. Add project/toolchain locks, source-located structured diagnostics, formatter,
+   `init`/`test`, and the real-input workflow acceptance example.
+
+The full R2 requirements and exit gate remain:
 
 - Share parsing, names, types, source spans, and lowering facilities where
   appropriate; document the source route for each supported construct.

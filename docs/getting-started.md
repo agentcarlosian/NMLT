@@ -153,6 +153,13 @@ changing a schema string does not supply the required maps. Unsupported versions
 are rejected. Control indices in a path refer to the canonical finite-domain
 ordering specified by [RFC 0016](../rfcs/0016-decoded-finite-execution.md).
 
+## Run source directly
+
+R2's first increment supports bounded finite `run` and exact-executable
+`replay`, including a simulated failure/retry and reusable result. Follow the
+[local execution guide](r2-local-execution.md). The general language and host
+adapters remain outstanding; this path always reports `assurance: none`.
+
 ## Run the repository gates
 
 ```bash
@@ -162,7 +169,8 @@ make reproduce
 ```
 
 - `make ci` runs formatting, compilation, Clippy, Rust tests, artifact
-  reproduction, public-surface checks, and R0 workflow harness tests.
+  reproduction, public-surface checks, R0 workflow harness tests, and the R2
+  local subprocess adapter cases.
 - `make metatheory` builds Lean, tests fail-closed artifact mutations, scans for
   unchecked placeholders, and audits focused theorem axioms.
 - `make reproduce` additionally runs the pinned independent NanoDA check over the
@@ -171,12 +179,15 @@ make reproduce
 - `make finite-parity` compares the complete reachable graph for one closed
   Bool/Unit/enum fixture: one initial state, four reachable states, and ten
   transitions. It rejects truncation and does not establish compiler correctness.
+- `make r2-jobs` exercises the [job runtime prototype](../crates/nmlt-runtime/README.md):
+  failure/retry, direct success, and all-failed subprocess cases, with typed
+  results and a durable lifecycle log. This does not add host effects to `nmlt run`.
 
 Run `make r0-baselines` to try the frozen proof, discovery, and local worker
 examples. Each invocation saves a fresh record directory under
 `target/r0-baselines`. The [baseline guide](../examples/baselines/README.md)
 explains direct commands, interruption, and resume. These host-language examples
-establish a comparison baseline for the proposed NMLT interpreter.
+establish a comparison baseline for the complete NMLT workflow interpreter.
 
 Continue with the [language sketch](language-sketch.md),
 [architecture](architecture.md), or [current calculus](core-calculus.md).

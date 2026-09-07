@@ -76,6 +76,16 @@ An intermediate theorem is useful progress. A conditional lifting result alone d
 
 Owners: Rust/compiler maintainer and integration maintainer. Dependencies: R1 for formal execution claims; interface and UX prototypes may proceed during R1.
 
+Started on 2026-09-06. The [first increment](r2-local-execution.md) supplies
+bounded execution and replay over the existing finite v2 slice. The requirements
+below still govern the complete milestone; host jobs and the richer language
+remain outstanding.
+
+The second increment supplies a [Rust job runtime prototype](../crates/nmlt-runtime/README.md)
+with bounded identities, revisioned control, cancellation/settlement, and locked
+journal recovery. Native source effects and supported Lean adapters remain
+integration work; the subprocess example is not completion of this milestone.
+
 Deliver a local interpreter before an optimizing compiler or distributed runtime. Initially support a single host and a small bounded number of concurrent jobs.
 
 Start with a fixed pool of job slots and a declared maximum number of attempts per run. Bind each result to its slot, attempt/generation, owner, inputs, and expected output type; stop before identity counters can wrap or be reused ambiguously. Specify allocation, transfer, cancellation, and settlement against that bounded universe before adding dynamic unbounded allocation.
@@ -87,7 +97,7 @@ Start with a fixed pool of job slots and a declared maximum number of attempts p
 | External work | Start, observe, cancel, and collect a typed job; local Lean and one simple worker adapter | Response validation, permission ownership, timeout, and failure |
 | Resource use | Reserve and account for job attempts and declared work budgets | Observed usage versus semantic grades; cancellation does not erase prior spend |
 | Recovery | Persist completed artifacts, resume attempts, reject stale results | A crashed external action may have completed; uncertain outcomes stay explicit |
-| Project loop | Proposed `init`, `run`, `test`, `replay`, `fmt`, and a precisely named checking command | These are proposed commands, not available today |
+| Project loop | `init`, `run`, `test`, `replay`, `fmt`, and a precisely named checking command | Finite `run`/`replay` are experimental; the full project loop is still planned |
 | Diagnostics | Source spans, expected/actual values, related locations, JSON output | One error vocabulary shared by CLI and future editor integration |
 | Dependencies | Local packages, exact tool/dependency lockfile, compatibility errors | A public package registry is unnecessary for the alpha |
 

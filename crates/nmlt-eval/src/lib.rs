@@ -1,7 +1,7 @@
 //! A deliberately non-authoritative evaluator for inspectable behavior cores.
 //!
-//! Exploration is a language aid. It does not return verification result
-//! classes and cannot establish a semantic theorem.
+//! Exploration and bounded finite execution share their step operations. They
+//! do not return verification results or establish semantic theorems.
 
 #![forbid(unsafe_code)]
 
@@ -14,8 +14,10 @@ use nmlt_ir::{
 };
 
 mod execution;
+mod interpreter;
 mod value;
 pub use execution::execution_path;
+pub use interpreter::{MAX_RUN_STEPS, RunConfig, RunOutcome, RunStep, RunTrace, Schedule, execute};
 
 pub use value::EvalValue;
 use value::eval_value;
@@ -31,7 +33,8 @@ impl Default for ExploreConfig {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EvalState {
     pub values: BTreeMap<String, EvalValue>,
     pub authority: BTreeMap<String, String>,
@@ -73,28 +76,48 @@ pub fn explore(
     if config.max_states == 0 {
         return Err(EvalError("max_states must be positive".to_owned()));
     }
+    let prepared = prepare(program, behavior)?;
+    explore_graph(
+        behavior.to_owned(),
+        prepared.initial,
+        config,
+        prepared.successors,
+    )
+}
+
+type Successors<'a> = Box<dyn Fn(&EvalState) -> Result<Vec<Candidate>, EvalError> + 'a>;
+
+/// One initializer and successor operation shared by graph search and execution.
+struct PreparedBehavior<'a> {
+    initial: EvalState,
+    successors: Successors<'a>,
+}
+
+fn prepare<'a>(
+    program: &'a BehaviorCoreProgram,
+    behavior: &str,
+) -> Result<PreparedBehavior<'a>, EvalError> {
     let dynamic = program.schema == nmlt_ir::BEHAVIOR_CORE_V2_SCHEMA;
     if dynamic {
         program.validate_execution_maps().map_err(EvalError)?;
     }
     if let Some(system) = program.systems.get(behavior) {
-        explore_system(system, &program.enums, config, dynamic)
+        prepare_system(system, &program.enums, dynamic)
     } else if let Some(composition) = program.compositions.get(behavior) {
-        explore_composition(program, composition, config)
+        prepare_composition(program, composition)
     } else {
         Err(EvalError(format!("unknown behavior '{behavior}'")))
     }
 }
 
-fn explore_system(
-    system: &CoreBehaviorSystem,
-    enums: &BTreeMap<String, BTreeSet<String>>,
-    config: ExploreConfig,
+fn prepare_system<'a>(
+    system: &'a CoreBehaviorSystem,
+    enums: &'a BTreeMap<String, BTreeSet<String>>,
     dynamic: bool,
-) -> Result<Exploration, EvalError> {
+) -> Result<PreparedBehavior<'a>, EvalError> {
     let initial = initial_state(system, None, enums)?;
     validate_action_terms(system, &initial, enums)?;
-    explore_graph(system.name.clone(), initial, config, |state| {
+    let successors = Box::new(move |state: &EvalState| {
         system
             .actions
             .values()
@@ -114,14 +137,17 @@ fn explore_system(
                 })
             })
             .collect()
+    });
+    Ok(PreparedBehavior {
+        initial,
+        successors,
     })
 }
 
-fn explore_composition(
-    program: &BehaviorCoreProgram,
-    composition: &CoreComposition,
-    config: ExploreConfig,
-) -> Result<Exploration, EvalError> {
+fn prepare_composition<'a>(
+    program: &'a BehaviorCoreProgram,
+    composition: &'a CoreComposition,
+) -> Result<PreparedBehavior<'a>, EvalError> {
     let enums = &program.enums;
     let dynamic = program.schema == nmlt_ir::BEHAVIOR_CORE_V2_SCHEMA;
     let resolve_system = |name: &str| {
@@ -203,7 +229,7 @@ fn explore_composition(
         })
         .collect::<BTreeSet<_>>();
 
-    explore_graph(composition.name.clone(), initial, config, |state| {
+    let successors = Box::new(move |state: &EvalState| {
         let mut candidates = Vec::new();
         for &ResolvedConnection {
             left_system,
@@ -291,6 +317,10 @@ fn explore_composition(
             }
         }
         Ok(candidates)
+    });
+    Ok(PreparedBehavior {
+        initial,
+        successors,
     })
 }
 

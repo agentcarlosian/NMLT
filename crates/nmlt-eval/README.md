@@ -19,3 +19,10 @@ only the separate Lean execution checker can accept its semantic claims.
 
 Every result has `assurance: none`. The crate does not invoke Lean and
 cannot issue proof, model-check, evidence, or runtime-authorization claims.
+
+R2's `execute` API steps directly from initialization with a required bound,
+using the same prepared successors as `explore`. It supports deterministic
+first-enabled scheduling or an exact label sequence and returns typed full
+states, grades, and a precise stop outcome. It does not enumerate the graph
+before running. Its cumulative grades are model annotations, and it has no
+host adapters. See [RFC 0017](../../rfcs/0017-finite-local-run-and-replay.md).

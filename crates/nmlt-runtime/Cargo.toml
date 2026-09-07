@@ -1,0 +1,16 @@
+[package]
+name = "nmlt-runtime"
+description = "Experimental bounded local job lifecycle and durable journal for NMLT"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.94"
+license.workspace = true
+publish = false
+
+[dependencies]
+nmlt-hir = { path = "../nmlt-hir" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

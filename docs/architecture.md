@@ -39,10 +39,19 @@ byte-for-byte equality.
   name does not make it the behavior prover.
 - `nmlt-compile` drives the supported source routes and emits
   default `behavior-core-v1` or opt-in v2 for the finite behavioral profile.
-- `nmlt-eval` performs bounded reference exploration with
-  Bool/Unit/enum values and `assurance: none`.
+- `nmlt-eval` shares initialization and successors between bounded reference
+  exploration and direct finite execution, with Bool/Unit/enum values and
+  `assurance: none`.
 - `nmlt-cli` exposes `check`, `inspect`, `tokens`,
-  `typecheck`, `elaborate`, `explore`, and v2 path generation with `trace`.
+  `typecheck`, `elaborate`, `explore`, v2 path generation with `trace`, and
+  experimental finite `run`/`replay`. The [local execution contract](../rfcs/0017-finite-local-run-and-replay.md)
+  binds source, artifact, and executable bytes; its scheduler and record are
+  executable-only and do not add a Lean or host-runtime guarantee.
+- `nmlt-runtime` supplies the experimental bounded job lifecycle, typed response
+  bindings, revisioned control, and locked journal with uncertain recovery.
+  Its subprocess worker example uses the Rust API; native source effects and
+  Lean job integration remain outstanding. [RFC 0018](../rfcs/0018-bounded-local-job-lifecycle.md)
+  specifies its separate executable-only boundary.
 
 ## Active Lean components
 

@@ -52,3 +52,5 @@ evidence.
 | [0014](0014-executable-workflow-profile.md) | Executable workflow profile | Draft |
 | [0015](0015-unified-resource-bearing-behavior.md) | Unified resource-bearing behavior | Under review |
 | [0016](0016-decoded-finite-execution.md) | Decoded finite execution | Under review |
+| [0017](0017-finite-local-run-and-replay.md) | Finite local run and replay | Under review |
+| [0018](0018-bounded-local-job-lifecycle.md) | Bounded local job lifecycle and recovery | Under review |

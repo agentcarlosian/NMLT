@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-09-06"
-scope = "Active NMLT language-and-mathematics pivot, R0 reference workflows, and R1 finite v2 execution"
+scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, experimental R2 finite run/replay and bounded local job runtime"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -67,6 +67,16 @@ trusted_components = [
   "rust.evaluator",
   "rust.cli",
 ]
+
+[[claim_profiles]]
+name = "rust_finite_run_replay"
+ceiling = "assurance none; bounded finite execution and same-executable record consistency, no host effects or Lean acceptance"
+trusted_components = ["toolchain.rust", "rust.behavior_compiler", "rust.evaluator", "rust.cli"]
+
+[[claim_profiles]]
+name = "rust_local_job_lifecycle"
+ceiling = "executable-only lifecycle/response checks and same-executable local journal recovery; no Lean theorem, authenticated OS authority, rollback-resistant store, or exactly-once external effects"
+trusted_components = ["toolchain.rust", "rust.job_runtime", "rust.hir", "build.gates"]
 
 [[claim_profiles]]
 name = "retained_elaboration_metatheory"
@@ -208,13 +218,26 @@ role = "Compile the supported finite behavior surface to behavior-core-v1."
 
 [[components]]
 id = "rust.evaluator"
-paths = ["crates/nmlt-eval/src/lib.rs", "crates/nmlt-eval/src/value.rs", "crates/nmlt-eval/src/execution.rs"]
-role = "Explore Bool/Unit/enum canonical artifacts and emit untrusted v2 paths with assurance none; v2 enforces completed resource steps."
+paths = ["crates/nmlt-eval/src/lib.rs", "crates/nmlt-eval/src/value.rs", "crates/nmlt-eval/src/execution.rs", "crates/nmlt-eval/src/interpreter.rs"]
+role = "Explore Bool/Unit/enum artifacts, execute bounded finite runs over shared steps, and emit untrusted v2 paths with assurance none."
+
+[[components]]
+id = "rust.job_runtime"
+paths = [
+  "crates/nmlt-runtime/src/lib.rs",
+  "crates/nmlt-runtime/src/protocol.rs",
+  "crates/nmlt-runtime/src/lifecycle.rs",
+  "crates/nmlt-runtime/src/journal.rs",
+  "crates/nmlt-runtime/src/worker.rs",
+  "crates/nmlt-runtime/examples/local_worker.rs",
+  "tools/check_job_runtime.py",
+]
+role = "Bound local job control, bind responses, serialize and recover journal transitions under a same-file OS lock, and demonstrate a validated arithmetic subprocess; executable-only."
 
 [[components]]
 id = "rust.cli"
-paths = ["crates/nmlt-cli/src/main.rs"]
-role = "Route frontend, artifact, and exploration commands without raising their claim ceilings."
+paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs"]
+role = "Route frontend, artifact, exploration, finite run and same-executable replay commands without raising their claim ceilings."
 
 [[components]]
 id = "artifact.schema"

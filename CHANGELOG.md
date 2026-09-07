@@ -41,6 +41,12 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ### CLI and gates
 
+- Added R2's bounded job lifecycle and locked journal, exact attempt/context
+  bindings, revisioned control, cancellation/settlement, uncertain recovery,
+  and `make r2-jobs` with a real subprocess worker. Source effects remain planned.
+- Started R2 with direct finite `run` and exact-source/executable `replay`,
+  shared evaluator steps, structured stop outcomes, modeled-grade accounting,
+  and a retry/reuse simulation. Host adapters and the full R2 gate remain open.
 - Added `elaborate --emit-core` and artifact-based `explore`.
 - Removed `model-check` and `evidence` from the active CLI.
 - Replaced the default gate with Rust formatting, Clippy, compilation, tests,

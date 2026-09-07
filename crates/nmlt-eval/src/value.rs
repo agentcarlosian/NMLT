@@ -7,7 +7,13 @@ use crate::{EvalState, qualify};
 
 /// Values in the supported finite behavior slice. Enumeration identity includes
 /// its type, so constructors from different declarations remain distinct.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[serde(
+    tag = "kind",
+    content = "value",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 pub enum EvalValue {
     Bool(bool),
     Unit,

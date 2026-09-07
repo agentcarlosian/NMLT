@@ -24,6 +24,9 @@ be replaced with durable `getting-started`, `open-systems`, and
 - [`pivot/negative/`](pivot/negative/) contains boundary-specific rejection
   controls for wiring, ownership, transfer, hidden resources, contract
   discharge, port compatibility, hidden state change, and refinement maps.
+- [`finite_retry.nmlt`](pivot/finite_retry.nmlt) is R2's executable finite
+  retry/reuse simulation. The [run/replay guide](../docs/r2-local-execution.md)
+  shows how to change its input; it does not start a host worker.
 
 The other directories are retained language-design and lossless-frontend
 fixtures. Many use surface forms intentionally outside the first finite

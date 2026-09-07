@@ -25,9 +25,9 @@ resource grades, and the assumptions and guarantees that make composition
 valid.
 
 Rust implements the lossless frontend, typed elaboration pipeline, canonical
-artifact producer, and a reference explorer. Lean defines the current
-behavioral semantics, checks the theorem premises, and is the semantic authority
-for the current behavioral core.
+artifact producer, reference explorer, and bounded finite interpreter. Lean
+defines the current behavioral semantics, checks the theorem premises, and is
+the semantic authority for the current behavioral core.
 
 The [getting-started guide](docs/getting-started.md) walks through the checked
 sender/receiver program, its refinement, canonical artifact, Lean validation,
@@ -51,6 +51,13 @@ exact .nmlt bytes
 | Dynamic authority | R1 combines control and authority in an initialized behavior with conditional simulation and finite-path ownership results; v1 artifacts still construct the earlier conditional witnesses |
 | Artifact | Default v1 plus opt-in v2 with explicit known capabilities, initial authority, and separately checked finite path witnesses |
 | Exploration | `nmlt-eval` explores Bool/Unit/enum artifacts and emits v2 paths; frozen value/resource graphs are compared with Lean, always with `assurance: none` |
+| Local execution | R2's first increment adds source-driven finite `run` and exact-executable `replay`; shared v2 steps, structured stop outcomes, no host jobs, `assurance: none` |
+| Job runtime prototype | R2 adds bounded slots/generations, revisioned ownership, cancellation/settlement, a locked recovery journal, and a Rust subprocess worker example; native source effects remain planned |
+
+Try the [local execution guide](docs/r2-local-execution.md). R2 remains in
+progress; the complete workflow language and integrated host adapters are planned
+work. The [job runtime guide](crates/nmlt-runtime/README.md) demonstrates the
+separate Rust adapter prototype.
 
 This milestone is finite, binary, and safety-oriented. The source digest
 identifies the source bytes presented to Lean; the repository separately
@@ -69,7 +76,8 @@ are recorded with the active definitions in the
 | `NMLT.Behavior.ResourceDynamics` | Unify control, shared authority, initialization, observation and deferred effects | Scoped binary simulation and finite-path results |
 | Lean v2 execution checker | Check supplied paths from decoded initial states, including receive then consume/retransfer | Finite binary execution and initial synchronized refinement; no verified compilation or host runtime |
 | Lean artifact modules | Decode finite artifacts, construct behaviors, and decide theorem premises | Acceptance of the decoded artifact semantics; no verified source translation |
-| `nmlt-eval` | Reference operational exploration | No proof or verification claim |
+| `nmlt-eval` | Reference exploration and bounded finite execution | No proof or verification claim |
+| `nmlt-runtime` | Bounded job control, journal replay/recovery, and local adapter protocol | Executable-only; no Lean, host isolation, or exactly-once external execution claim |
 
 The precise active inventory is in
 [`security/trusted-components.toml`](security/trusted-components.toml), with

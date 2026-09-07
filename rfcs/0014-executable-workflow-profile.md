@@ -19,11 +19,11 @@ establish any new theorem.
 
 ## Motivation
 
-The current language can emit a finite behavioral artifact and explore a
-restricted model, but cannot run a general input-to-output workflow with typed
-host effects. Its static behavior and dynamic authority worlds are separate;
-received authority is not reusable by a later source action. Adding an agent
-loop to that architecture would not resolve these gaps.
+At R0, the language could emit a finite behavioral artifact and explore a
+restricted model, but could not run a general input-to-output workflow with typed
+host effects. R1 subsequently unified the dynamic model and added received
+authority continuation at finite scope. General workflows and typed host effects
+remain outstanding; adding an agent loop alone would not resolve those gaps.
 
 The immediate comparison is with small programs using existing Lean, Python,
 and Rust tools. The [R0 contracts](../docs/r0-baseline-contracts.md) define that
@@ -67,8 +67,8 @@ The following are behavioral contracts, not accepted NMLT syntax:
 
 The complete executable R0 examples are ordinary host-language baselines.
 Equivalent NMLT examples become an implementation gate after the profile is
-reviewed. Proposed commands such as `run` and `replay` are not existing CLI
-capabilities.
+reviewed. R2's experimental [finite `run` and `replay`](0017-finite-local-run-and-replay.md)
+are a first increment, without host effects or the complete workflow profile.
 
 ## Reference semantics
 

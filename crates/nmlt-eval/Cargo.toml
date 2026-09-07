@@ -9,6 +9,7 @@ publish = false
 
 [dependencies]
 nmlt-ir = { path = "../nmlt-ir" }
+serde.workspace = true
 
 [lints]
 workspace = true

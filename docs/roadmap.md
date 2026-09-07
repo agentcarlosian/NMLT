@@ -8,6 +8,12 @@ This document tracks the mathematical dependencies. The current
 product milestones for an executable language serving all three audiences;
 it governs delivery priorities and status.
 
+R2 is now in progress. Its [first local execution increment](r2-local-execution.md)
+adds finite source-driven run/replay over shared evaluator steps. The
+[bounded job runtime](../crates/nmlt-runtime/README.md) now adds durable control,
+uncertain recovery, and a subprocess worker prototype. Native source effects,
+Lean adapters, and the useful-language exit gate remain outstanding.
+
 ## Now: make the pivot publicly coherent
 
 - align README, security, contributor, RFC, example, and Lean documentation

@@ -17,6 +17,8 @@ nmlt-core = { path = "../nmlt-core" }
 nmlt-eval = { path = "../nmlt-eval" }
 nmlt-ir = { path = "../nmlt-ir" }
 nmlt-hir = { path = "../nmlt-hir" }
+serde.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true
