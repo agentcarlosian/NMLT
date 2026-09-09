@@ -35,7 +35,7 @@ Owners: integration maintainer and Lean maintainer. Dependencies: none.
 Completed at calibration scope on 2026-09-06; see the
 [checker and workflow evidence record](reviews/r0-checker-and-baselines-2026-09-06.md).
 The requirements below describe the completed baseline gate, not an implemented
-NMLT interpreter. R1 has since completed at finite scope; R2 remains planned.
+NMLT interpreter. R1 completed at finite scope; R2 completed at local pre-alpha scope on 2026-09-09.
 
 - Review a compatible patched Lean version, with 4.33.1 as the minimum candidate identified by this research. The former 4.30 pin predates the August kernel/runtime fixes; R0 upgraded it to 4.33.1. Update the exporter and independent checker as a compatible set, then rebuild and freshly recheck the existing corpus. Use the established export/comparator path; the postmortem's `lake check` command is a future feature, not this plan's assumed interface. [Upstream postmortem, 2026-08-24](https://leodemoura.github.io/blog/2026-8-24-postmortem-for-the-kernel-soundness-bug-hunt/)
 - Preserve the existing passing baseline and audited working changes in separately reviewable commits when implementation is authorized. A toolchain migration must not silently weaken theorem statements or the axiom policy.
@@ -74,6 +74,14 @@ An intermediate theorem is useful progress. A conditional lifting result alone d
 
 ## R2 — Deliver the smallest useful executable language
 
+Completed on 2026-09-09 at local, finite, pre-alpha scope: typed projects,
+dependency locks, finite user safety invariants, affine handle transfer,
+contained local processes, variable Init proof terms and durable source/project
+resumption. The [completion audit](r2-completion-tracker.md) and
+[validation record](reviews/r2-completion-2026-09-09.md) cover the full
+requirements. The increment descriptions below are implementation history.
+RFC acceptance and publication review remain separate.
+
 Owners: Rust/compiler maintainer and integration maintainer. Dependencies: R1 for formal execution claims; interface and UX prototypes may proceed during R1.
 
 Started on 2026-09-06. The [first increment](r2-local-execution.md) supplies
@@ -97,8 +105,10 @@ increment adds [source local jobs](r2-source-jobs.md): typed worker effects,
 explicit budgets, bounded pipes/timeouts, durable context, replay, and recovery
 inspection. The seventh increment starts [Lean and asynchronous host APIs](r2-lean-async.md)
 with fixed proof templates, independent child deadlines, and private control
-handles. General Lean input, asynchronous source control, and the complete
-project loop remain required below.
+handles. The eighth increment adds [scoped source controls](r2-source-async.md)
+with checked branch/loop ownership and captured-session replay. Later increments implement closed Init terms, transferable handles, finite
+safety predicates, process containment, the project loop and durable resumption.
+Completed validation is recorded in the audit above.
 
 Deliver a local interpreter before an optimizing compiler or distributed runtime. Initially support a single host and a small bounded number of concurrent jobs.
 
@@ -111,7 +121,7 @@ Start with a fixed pool of job slots and a declared maximum number of attempts p
 | External work | Start, observe, cancel, and collect a typed job; local Lean and one simple worker adapter | Response validation, permission ownership, timeout, and failure |
 | Resource use | Reserve and account for job attempts and declared work budgets | Observed usage versus semantic grades; cancellation does not erase prior spend |
 | Recovery | Persist completed artifacts, resume attempts, reject stale results | A crashed external action may have completed; uncertain outcomes stay explicit |
-| Project loop | `init`, `run`, `test`, `replay`, `fmt`, and a precisely named checking command | Finite `run`/`replay` are experimental; the full project loop is still planned |
+| Project loop | `init`, `run`, `test`, `replay`, `fmt`, and a precisely named checking command | Finite and workflow routes retain separate scopes; the local project loop is implemented |
 | Diagnostics | Source spans, expected/actual values, related locations, JSON output | One error vocabulary shared by CLI and future editor integration |
 | Dependencies | Local packages, exact tool/dependency lockfile, compatibility errors | A public package registry is unnecessary for the alpha |
 

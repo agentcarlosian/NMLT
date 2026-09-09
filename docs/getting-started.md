@@ -8,8 +8,9 @@ Rust elaboration into a canonical artifact, then into Lean-defined semantics.
 
 - Rust 1.94 with Cargo;
 - Lean 4.33.1 through Elan and Lake;
-- a POSIX shell, Python 3.11 or newer as `python3`, and GNU core utilities including `sha256sum`; and
-- WSL when running the complete repository gate from Windows.
+- Bash, GNU Make, Python 3.11 or newer, and GNU core utilities including `sha256sum`;
+- on native Windows, Git Bash and Visual Studio C++ build tools for the MSVC Rust
+  toolchain. WSL is also an option.
 
 The repository pins the Rust and Lean versions used by CI.
 
@@ -171,12 +172,15 @@ identities during replay.
 
 Use the [source job guide](r2-source-jobs.md) to launch the fixed local worker
 with explicit attempt/time limits, typed failure handling, and a durable journal.
-Replay checks recorded job evidence without launching work. General source Lean integration and
-asynchronous source job controls remain planned.
+Replay checks recorded job evidence without launching work. The
+[proof-term guide](r2-lean-terms.md) accepts dynamic Lean statement/candidate inputs;
+the local worker intentionally retains its small fixed arithmetic contract.
 
 The [Lean and async host guide](r2-lean-async.md) demonstrates the initial Rust
-adapter API with the pinned Lean executable and fixed proof templates. Source
-asynchronous handles and general Lean input are subsequent work.
+adapter API with the pinned Lean executable and fixed proof templates. The
+[asynchronous source guide](r2-source-async.md) adds start, poll, cancel and collect
+with affine [transfer](r2-job-transfer.md). [Source/project recovery](r2-recovery.md)
+uses saved inputs and decisions without resetting job budgets.
 
 ## Run the repository gates
 
@@ -185,6 +189,22 @@ make ci
 make metatheory
 make reproduce
 ```
+
+On native Windows, run the gates from Git Bash with Cargo, Elan, GNU Make,
+Python, and Git's GNU utilities on `PATH`. Select Bash explicitly for Make's
+compound recipes and the installed Python executable. For example, when Python
+is available as `python`:
+
+```bash
+lean_prefix="$(elan run leanprover/lean4:v4.33.1 lean --print-prefix)"
+make SHELL=bash.exe PYTHON=python R2_LEAN_BIN="$lean_prefix/bin/lean.exe" reproduce
+```
+
+`PYTHON` defaults to `python3` on other hosts. The NanoDA gate reads its complete
+root list from a file to avoid the Windows command-line limit and checks that
+adapter against the pinned exporter's ordinary executable before the full check.
+Set `NMLT_NANODA_ARTIFACT_DIR` to retain successful export/checker inputs and
+adapter parity evidence in a fresh subdirectory.
 
 - `make ci` runs formatting, compilation, Clippy, Rust tests, artifact
   reproduction, public-surface checks, R0 workflow harness tests, and the R2

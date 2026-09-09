@@ -32,7 +32,7 @@ for path in receive_consume receive_retransfer; do
   "$checker" "$repo_root/examples/pivot/affine_continuation.behavior-core-v2.json" \
     "$repo_root/examples/pivot/affine_continuation.nmlt" "$work/$path.json"
 done
-python3 tests/execution/check_controls.py "$checker"
+"${PYTHON:-python3}" tests/execution/check_controls.py "$checker"
 cargo run --quiet -p nmlt-eval --example execution_parity -- \
   examples/pivot/affine_continuation.behavior-core-v2.json Network > "$work/rust.txt"
 if ! (cd "$lean_root" && lake env lean --run "$repo_root/mechanization/lean/tests/ExecutionParity.lean" \
@@ -40,7 +40,7 @@ if ! (cd "$lean_root" && lake env lean --run "$repo_root/mechanization/lean/test
   cat "$work/lean.txt" >&2
   exit 1
 fi
-python3 - "$work/rust.txt" "$work/lean.txt" <<'PY'
+"${PYTHON:-python3}" - "$work/rust.txt" "$work/lean.txt" <<'PY'
 import hashlib
 from pathlib import Path
 import sys

@@ -41,3 +41,16 @@ implementations own scheduling, durability, response validation, and limits;
 only scalar results/domain errors cross into values. Host failures stop execution.
 The CLI's first adapter is described in the [source job guide](../../docs/r2-source-jobs.md)
 and [RFC 0022](../../rfcs/0022-source-local-job-effects.md).
+
+[Scoped async jobs](../../docs/r2-source-async.md) add let-bound `Job<Int>` and
+`Job<Text>` controls with path-sensitive collection checking. Poll and cancel
+borrow a handle; collect consumes it. Handles stay outside `Value` and aggregates; they move through direct function
+parameters/results under affine checks. `requires_async_jobs` and `requires_lean_jobs` report transitive
+entry requirements. `JobHost::start` and `control` extend the explicit host
+boundary; returned ordinary values are checked against the expected type.
+See [RFC 0024](../../rfcs/0024-scoped-source-job-controls.md) for branch/fold
+rules, replay boundaries, and the retained executable-only designation.
+
+`job_start_lean_check(Text, Text)` accepts dynamic statement/proof inputs. The
+CLI host supplies [durable source decisions and resumption](../../docs/r2-recovery.md);
+these facilities do not change the workflow profile's executable-only ceiling.

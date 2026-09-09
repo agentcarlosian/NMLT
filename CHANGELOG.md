@@ -4,17 +4,25 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Completed R2 at local pre-alpha scope: projects and exact dependency locks,
+  affine source job transfer, variable Init proof terms, process/resource
+  containment, durable source/project resumption and finite user safety
+  invariants (RFCs 0024–0030). The integrated Rust/Lean/NanoDA reproduction
+  passed; final follow-up CI passed 345 Rust tests and 14 Python tests.
+  See [the validation record](docs/reviews/r2-completion-2026-09-09.md).
+  Earlier entries below describe the incremental implementation history.
+
 - Started the Lean/asynchronous host increment with bounded background process
   supervision, private session handles, polling/cancellation/collection, and
   snapshot verification. The first Lean adapter checks fixed zero-addition
   proof templates against the repository pin and an exact empty-axiom policy
-  (RFC 0023). Source-level asynchronous handles remain future work.
+  (RFC 0023). Source controls were added by subsequent R2 increments.
 
 - Connected source `job_square(Int)` effects to the durable local runtime with
   typed results, conservative effect inference, explicit attempt/time limits,
   bounded subprocess pipes, captured-journal replay without redispatch, and
   `jobs-recover` inspection (RFC 0022). The local job profile is executable-only;
-  Lean adapters and asynchronous source control remain open.
+  subsequent increments add Lean adapters and asynchronous source control.
 
 ### Language and semantics
 

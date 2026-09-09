@@ -15,9 +15,11 @@ use nmlt_ir::{
 
 mod execution;
 mod interpreter;
+mod invariant;
 mod value;
-pub use execution::execution_path;
+pub use execution::{encode_execution_state, execution_path};
 pub use interpreter::{MAX_RUN_STEPS, RunConfig, RunOutcome, RunStep, RunTrace, Schedule, execute};
+pub use invariant::{evaluate_predicate, safety_claim, safety_universe};
 
 pub use value::EvalValue;
 use value::eval_value;

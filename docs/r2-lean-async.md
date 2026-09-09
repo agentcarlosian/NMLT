@@ -1,9 +1,11 @@
 # Initial Lean adapter and asynchronous controls
 
-The next R2 increment is available as a Rust runtime API. It starts jobs without
+The R2 Rust runtime API supports local job orchestration. It starts jobs without
 waiting, polls them, requests cancellation, and collects settled results once.
 The first Lean adapter checks fixed proof templates for `forall n : Nat, 0 + n = n`.
-Source-level asynchronous handles and general Lean proof input remain next work.
+[Scoped source controls](r2-source-async.md) now expose these operations to `.nmlt`.
+The [proof-term interface](r2-lean-terms.md) adds dynamic statement/candidate inputs;
+[transfer](r2-job-transfer.md) and [source resumption](r2-recovery.md) are also available.
 
 Run the real example using the direct executable from the pinned Lean installation:
 
@@ -34,12 +36,14 @@ The public API is in `nmlt_runtime::session`:
 | Operation | Behavior |
 |---|---|
 | `Session::create` | Saves a new manifest and opens a durable journal |
-| `start_square` / `start_lean` | Reserves and records dispatch before launching; returns a private handle |
+| `start_square` / `start_lean` / `start_lean_candidate` | Reserves and records dispatch before launching; returns a private handle |
 | `poll` / `wait` | Returns pending, ready, uncertain, or collected state |
 | `cancel` | Records intent before signalling; confirms cancellation or reports uncertainty |
 | `collect` | Returns a settled outcome once; pending work keeps its handle |
 | `snapshot` / `verify_snapshot` | Captures and checks journal/observation consistency |
-| `recover` | Classifies unfinished journal state without rebuilding handles or redispatching |
+| `recover` | Settles saved observations and classifies unresolved work without dispatch |
+| `Session::resume` | Restores the locked session; only never-dispatched reservations may launch |
+| `acknowledge_uncertain` | Records explicit operator failure settlement and retains spend |
 
 Configure 1–4 slots, at most 16 attempts, and a timeout up to 30 seconds. Child
 deadlines run independently of polling. Cancellation does not refund dispatched
@@ -53,8 +57,10 @@ source identity, a successful process exit, and the exact empty transitive-axiom
 report for the named target. `sorry` and wrong-proof controls are never accepted.
 A failed candidate does not refute the target. Returned text identifies submitted
 source; it is not a source-language proof object or independent checker report.
-The standard/dynamic libraries remain part of the trusted local installation;
-complete dependency locks and process-tree containment are not implemented.
+The complete `bin`/`lib` identity is checked before dispatch and retained in
+project locks. The common supervisor records tree/resource containment; its
+[platform limits](../rfcs/0028-contained-process-lifecycle.md), system libraries
+and concurrent filesystem stability remain explicit host trust boundaries.
 
 The gates are:
 

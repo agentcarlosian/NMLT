@@ -2453,16 +2453,16 @@ fn identifier(node: &GreenNode, base: usize, index: usize) -> Option<SpannedText
     let mut offset = base;
     let mut seen = 0_usize;
     for child in node.children() {
-        if let GreenElement::Token(token) = child {
-            if token.kind() == TokenKind::Identifier {
-                if seen == index {
-                    return Some(SpannedText {
-                        text: token.text().to_owned(),
-                        span: Span::new(offset, offset + token.text_len()),
-                    });
-                }
-                seen += 1;
+        if let GreenElement::Token(token) = child
+            && token.kind() == TokenKind::Identifier
+        {
+            if seen == index {
+                return Some(SpannedText {
+                    text: token.text().to_owned(),
+                    span: Span::new(offset, offset + token.text_len()),
+                });
             }
+            seen += 1;
         }
         offset += child.text_len();
     }

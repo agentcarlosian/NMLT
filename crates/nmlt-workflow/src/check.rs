@@ -72,6 +72,12 @@ pub(super) fn compile_raw(
     }
     let mut heights = BTreeMap::new();
     for r in &parsed.records {
+        if records[&r.name]
+            .iter()
+            .any(|f| matches!(f.ty, Type::Job(_)))
+        {
+            return Err(error(r.span, "Job handles cannot be record fields"));
+        }
         type_height(
             &Type::Record(r.name.clone()),
             &records,
@@ -119,19 +125,34 @@ pub(super) fn compile_raw(
             heights: heights.clone(),
             calls: BTreeSet::new(),
             jobs: false,
+            async_jobs: false,
+            lean_jobs: false,
         };
         let mut env = f
             .parameters
             .iter()
             .map(|p| (p.name.clone(), p.ty.clone()))
             .collect();
-        let body = checker.term(&f.body, Some(&f.result), &mut env, 0)?;
+        let body = checker
+            .term(&f.body, Some(&f.result), &mut env, 0)
+            .map_err(|mut d| {
+                d.related
+                    .push((f.span, format!("in function `{}` declared here", f.name)));
+                d
+            })?;
+        affine::check(&body, &f.parameters).map_err(|mut d| {
+            d.related
+                .push((f.span, format!("in function `{}` declared here", f.name)));
+            d
+        })?;
         functions.push(Function {
             name: f.name.clone(),
             parameters: f.parameters.clone(),
             result: f.result.clone(),
             body,
             jobs: checker.jobs,
+            async_jobs: checker.async_jobs,
+            lean_jobs: checker.lean_jobs,
         });
         edges.push(checker.calls);
     }
@@ -143,6 +164,8 @@ pub(super) fn compile_raw(
     for _ in 0..functions.len() {
         for i in 0..functions.len() {
             functions[i].jobs |= edges[i].iter().any(|j| functions[*j].jobs);
+            functions[i].async_jobs |= edges[i].iter().any(|j| functions[*j].async_jobs);
+            functions[i].lean_jobs |= edges[i].iter().any(|j| functions[*j].lean_jobs);
         }
     }
     Ok(Program {
@@ -205,7 +228,21 @@ fn type_height(
     span: Location,
 ) -> Result<usize, Diagnostic> {
     let height = match ty {
-        Type::Outcome(t) | Type::List(t) => 1 + type_height(t, records, heights, active, span)?,
+        Type::Outcome(t) | Type::List(t) => {
+            if matches!(**t, Type::Job(_)) {
+                return Err(error(
+                    span,
+                    "Job handles cannot be stored in outcomes or lists",
+                ));
+            }
+            1 + type_height(t, records, heights, active, span)?
+        }
+        Type::Job(t) => {
+            if !matches!(**t, Type::Int | Type::Text) {
+                return Err(error(span, "Job output must be Int or Text"));
+            }
+            1
+        }
         Type::Record(name) => {
             if let Some(h) = heights.get(name) {
                 return Ok(*h);
@@ -261,6 +298,8 @@ struct Checker<'a> {
     heights: BTreeMap<String, usize>,
     calls: BTreeSet<usize>,
     jobs: bool,
+    async_jobs: bool,
+    lean_jobs: bool,
 }
 impl Checker<'_> {
     fn term(
@@ -368,6 +407,75 @@ impl Checker<'_> {
                     initial.ty.clone(),
                     TypedKind::Fold(Box::new(items), Box::new(initial), Box::new(body)),
                 )
+            }
+            ExprKind::Call(name, args) if name == "job_start_lean_check" => {
+                if args.len() != 2 {
+                    return Err(error(
+                        expr.span,
+                        "job_start_lean_check requires statement and proof Text arguments",
+                    ));
+                }
+                let statement = self.term(&args[0], Some(&Type::Text), env, depth + 1)?;
+                let proof = self.term(&args[1], Some(&Type::Text), env, depth + 1)?;
+                self.jobs = true;
+                self.async_jobs = true;
+                self.lean_jobs = true;
+                (
+                    Type::Job(Box::new(Type::Text)),
+                    TypedKind::JobLeanCheck(Box::new(statement), Box::new(proof)),
+                )
+            }
+            ExprKind::Call(name, args)
+                if name == "job_start_square" || name == "job_start_lean" =>
+            {
+                if args.len() != 1 {
+                    return Err(error(expr.span, "job start requires one argument"));
+                }
+                let lean = name == "job_start_lean";
+                let ty = if lean { Type::Text } else { Type::Int };
+                let input = self.term(&args[0], Some(&ty), env, depth + 1)?;
+                if lean
+                    && !matches!(&input.kind, TypedKind::Literal(Value::Text(s)) if ["wrong_term", "existing_lemma", "induction", "admitted"].contains(&s.as_str()))
+                {
+                    return Err(error(
+                        input.span,
+                        "Lean strategy must be a supported literal: wrong_term, existing_lemma, induction, admitted",
+                    ));
+                }
+                self.jobs = true;
+                self.async_jobs = true;
+                self.lean_jobs |= lean;
+                (
+                    Type::Job(Box::new(ty)),
+                    TypedKind::JobStart(Box::new(input), lean),
+                )
+            }
+            ExprKind::Call(name, args)
+                if ["job_poll", "job_cancel", "job_collect"].contains(&name.as_str()) =>
+            {
+                if args.len() != 1 {
+                    return Err(error(expr.span, "job control requires one named handle"));
+                }
+                let handle = self.term(&args[0], None, env, depth + 1)?;
+                let (Type::Job(inner), TypedKind::Local(index)) = (&handle.ty, &handle.kind) else {
+                    return Err(error(
+                        expr.span,
+                        "job control requires a scoped Job handle by name",
+                    ));
+                };
+                let op = match name.as_str() {
+                    "job_poll" => JobOperation::Poll,
+                    "job_cancel" => JobOperation::Cancel,
+                    _ => JobOperation::Collect,
+                };
+                self.jobs = true;
+                self.async_jobs = true;
+                let result = if op == JobOperation::Collect {
+                    Type::Outcome(inner.clone())
+                } else {
+                    Type::Bool
+                };
+                (result, TypedKind::JobControl(op, *index))
             }
             ExprKind::Call(name, args) if name == "job_square" => {
                 if args.len() != 1 {
@@ -539,10 +647,13 @@ impl Checker<'_> {
             expr.span,
         )?;
         if expected.is_some_and(|e| *e != ty) {
-            return Err(error(
+            let mut diagnostic = error(
                 expr.span,
                 format!("expected {:?}, received {ty:?}", expected.unwrap()),
-            ));
+            );
+            diagnostic.expected = expected.cloned().map(Box::new);
+            diagnostic.actual = Some(Box::new(ty));
+            return Err(diagnostic);
         }
         Ok(Typed {
             span: expr.span,

@@ -1,4 +1,4 @@
-use std::fs::{self, File, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
@@ -46,7 +46,7 @@ fn decode<T: Serialize + DeserializeOwned>(line: &[u8]) -> Result<T, Error> {
 }
 
 fn implementation() -> Result<String, Error> {
-    Ok(sha256(&fs::read(std::env::current_exe()?)?))
+    crate::identity::file(&std::env::current_exe()?, 256 * 1024 * 1024).map(|(_, digest)| digest)
 }
 
 /// Check an immutable journal without locking, recovering, or issuing dispatch
@@ -160,6 +160,44 @@ impl Journal {
     /// Validate the complete log under an exact caller-supplied run context,
     /// then durably classify unfinished work before exposing live control.
     pub fn open(path: &Path, expected: &RunSpec) -> Result<Self, Error> {
+        let mut result = Self::open_existing(path, expected)?;
+        if result
+            .lifecycle
+            .attempts()
+            .iter()
+            .any(|a| !matches!(a.phase, Phase::Collected { .. }))
+        {
+            result.apply(Command::Recover)?;
+        }
+        Ok(result)
+    }
+
+    /// Restore the locked log before recovery so a saved observation whose
+    /// settlement append was interrupted can first be completed and validated.
+    pub(crate) fn open_existing(path: &Path, expected: &RunSpec) -> Result<Self, Error> {
+        Self::open_inner(path, expected, None).map(|(journal, _)| journal)
+    }
+
+    /// Explicitly quarantine only a final incomplete append. Complete entries,
+    /// even malformed ones, are never discarded. Keep this lock while repairing
+    /// any source decision log that shares the same session.
+    pub fn open_repair(
+        path: &Path,
+        expected: &RunSpec,
+        reason: &str,
+    ) -> Result<(Self, Option<std::path::PathBuf>), Error> {
+        if reason.trim().is_empty() || reason.len() > 1024 {
+            return Err(Error(
+                "tail repair requires an explicit 1..1024-byte reason".into(),
+            ));
+        }
+        Self::open_inner(path, expected, Some(reason))
+    }
+    fn open_inner(
+        path: &Path,
+        expected: &RunSpec,
+        repair: Option<&str>,
+    ) -> Result<(Self, Option<std::path::PathBuf>), Error> {
         let mut file = OpenOptions::new().read(true).write(true).open(path)?;
         check_links(&file)?;
         file.try_lock()
@@ -170,23 +208,38 @@ impl Journal {
         }
         let mut bytes = Vec::new();
         (&mut file).take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
+        let mut quarantine = None;
+        if bytes.last() != Some(&b'\n')
+            && let Some(reason) = repair
+        {
+            let boundary = bytes.iter().rposition(|b| *b == b'\n').ok_or_else(|| {
+                Error("no complete journal header; cannot repair this file".into())
+            })? + 1;
+            if bytes.len() - boundary > MAX_ENTRY_BYTES {
+                return Err(Error("incomplete journal tail exceeds entry bound".into()));
+            }
+            decode_log(&bytes[..boundary], expected)?;
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(|e| Error(e.to_string()))?
+                .as_nanos();
+            let destination = path.with_extension(format!("incomplete-{stamp}.json"));
+            let report = serde_json::json!({"schema":"nmlt-incomplete-tail-v1","reason":reason,"original_sha256":sha256(&bytes),"prefix_bytes":boundary,"prefix_sha256":sha256(&bytes[..boundary]),"discarded_bytes":&bytes[boundary..]});
+            crate::session_store::write(&destination, &serde_json::to_vec(&report)?)?;
+            file.set_len(boundary as u64)?;
+            file.sync_all()?;
+            bytes.truncate(boundary);
+            quarantine = Some(destination);
+        }
         let (lifecycle, tail_sha256, _) = decode_log(&bytes, expected)?;
-        let mut result = Self {
+        let result = Self {
             file,
             lifecycle,
             tail_sha256,
             length: bytes.len() as u64,
             poisoned: false,
         };
-        if result
-            .lifecycle
-            .attempts()
-            .iter()
-            .any(|a| !matches!(a.phase, Phase::Collected { .. }))
-        {
-            result.apply(Command::Recover)?;
-        }
-        Ok(result)
+        Ok((result, quarantine))
     }
 
     #[must_use]
@@ -278,6 +331,7 @@ impl Journal {
 mod tests {
     use super::*;
     use crate::{Limits, Request, Value, worker};
+    use std::fs;
 
     fn fixture() -> (std::path::PathBuf, RunSpec) {
         let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/job-journal-faults");

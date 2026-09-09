@@ -59,3 +59,10 @@ evidence.
 | [0021](0021-workflow-source-packages.md) | Workflow source packages and import-bound replay | Under review |
 | [0022](0022-source-local-job-effects.md) | Source-level bounded local job effects | Under review |
 | [0023](0023-asynchronous-host-and-lean-adapter.md) | Asynchronous host controls and the first Lean adapter | Under review |
+| [0024](0024-scoped-source-job-controls.md) | Scoped asynchronous source job controls | Under review |
+| [0025](0025-local-projects-and-dependency-locks.md) | Local projects and dependency locks | Under review |
+| [0026](0026-finite-source-safety-invariants.md) | Finite source safety invariants | Under review |
+| [0027](0027-affine-job-transfer.md) | Affine job transfer through functions | Under review |
+| [0028](0028-contained-process-lifecycle.md) | Contained local process lifecycle | Under review |
+| [0029](0029-pinned-init-proof-terms.md) | Pinned Init proof terms | Under review |
+| [0030](0030-durable-source-resumption.md) | Durable source resumption | Under review |

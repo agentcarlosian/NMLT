@@ -1,5 +1,6 @@
 //! Initial asynchronous host API. Handles cannot be cloned or deserialized;
 //! every live operation is mediated by a locked, durable journal.
+use crate::session_store::{self as store, Evidence as StoredEvidence, Stored};
 use crate::{
     Command, Control, Dispatch, Error, Journal, Lifecycle, Limits, Outcome, Phase, Receipt,
     Request, Response, ResponseOutcome, RunSpec, Value, lean, process, sha256, worker,
@@ -36,6 +37,7 @@ impl SquareTool {
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     pub schema: String,
+    pub process_contract: String,
     pub parent_context_sha256: String,
     pub bounds: Bounds,
     pub square_executable_sha256: Option<String>,
@@ -43,7 +45,8 @@ pub struct Configuration {
 }
 impl Configuration {
     fn validate(&self) -> Result<(), Error> {
-        if self.schema != "nmlt-async-session-v1"
+        if self.schema != "nmlt-async-session-v3"
+            || self.process_contract != process::CONTRACT
             || !crate::valid_digest(&self.parent_context_sha256)
             || !(1..=4).contains(&self.bounds.slots)
             || !(1..=16).contains(&self.bounds.max_attempts)
@@ -60,12 +63,12 @@ impl Configuration {
         }
         if let Some(identity) = &self.lean {
             // Reuse the complete Lean identity and contract validation.
-            lean::Request {
-                schema: "nmlt-lean-request-v1".into(),
-                toolchain: identity.clone(),
-                strategy: lean::Strategy::ExistingLemma,
-                source_sha256: sha256(lean::source(lean::Strategy::ExistingLemma).as_bytes()),
-            }
+            lean::Request::new(
+                identity.clone(),
+                lean::Candidate::Template {
+                    strategy: lean::Strategy::ExistingLemma,
+                },
+            )?
             .input()?;
         }
         Ok(())
@@ -75,7 +78,7 @@ impl Configuration {
             slots: self.bounds.slots,
             generations_per_slot: self.bounds.max_attempts,
             max_attempts: self.bounds.max_attempts,
-            max_events: self.bounds.max_attempts * 6 + 1,
+            max_events: self.bounds.max_attempts * 8 + 8,
             work_budget: u64::from(self.bounds.max_attempts),
         }
     }
@@ -119,6 +122,7 @@ pub enum Status {
 pub struct Observation {
     pub dispatch: Dispatch,
     pub completion: process::Result,
+    pub policy: Option<process::Policy>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -126,12 +130,43 @@ pub struct Snapshot {
     pub manifest: Manifest,
     pub journal: String,
     pub observations: Vec<Observation>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub acknowledgements: Vec<Acknowledgement>,
+}
+
+/// Explicit operator settlement of an unknown effect. Never an accepted tool
+/// result or a claim that the original action did not physically complete.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Acknowledgement {
+    pub acknowledged_uncertain_effects: bool,
+    pub reason: String,
+    pub response: Response,
+}
+impl Acknowledgement {
+    fn validate(&self) -> Result<(), Error> {
+        if !self.acknowledged_uncertain_effects
+            || self.reason.trim().is_empty()
+            || self.reason.len() > 1024
+            || self.response.schema != crate::RESPONSE_SCHEMA
+            || self.response.observed_work.is_some()
+            || self.response.outcome
+                != (ResponseOutcome::Failed {
+                    message: format!("operator acknowledged unresolved effects: {}", self.reason),
+                })
+        {
+            return Err(Error("invalid uncertainty acknowledgement; only explicit failure settlement is supported".into()));
+        }
+        Ok(())
+    }
 }
 
 struct Task {
-    dispatch: Dispatch,
+    dispatch: Option<Dispatch>,
     control: Control,
     process: Option<process::Process>,
+    policy: Option<process::Policy>,
+    handle_issued: bool,
 }
 pub struct Session {
     failed: bool,
@@ -142,6 +177,8 @@ pub struct Session {
     instance: Arc<()>,
     tasks: Vec<Task>,
     observations: Vec<Observation>,
+    acknowledgements: Vec<Acknowledgement>,
+    directory: PathBuf,
 }
 impl Session {
     pub fn create(
@@ -154,7 +191,8 @@ impl Session {
     ) -> Result<Self, Error> {
         use std::io::Write;
         let configuration = Configuration {
-            schema: "nmlt-async-session-v1".into(),
+            schema: "nmlt-async-session-v3".into(),
+            process_contract: process::CONTRACT.into(),
             parent_context_sha256,
             bounds,
             square_executable_sha256: square.as_ref().map(|s| s.identity.clone()),
@@ -175,6 +213,12 @@ impl Session {
         let mut file = std::fs::File::create_new(directory.join("manifest.json"))?;
         file.write_all(&serde_json::to_vec(&manifest)?)?;
         file.sync_all()?;
+        if let Some(tool) = &lean {
+            store::write(
+                &directory.join("lean-installation.json"),
+                &serde_json::to_vec(tool.files())?,
+            )?;
+        }
         let journal = Journal::create(&directory.join("journal.jsonl"), manifest.spec.clone())?;
         Ok(Self {
             failed: false,
@@ -185,6 +229,8 @@ impl Session {
             instance: Arc::new(()),
             tasks: vec![],
             observations: vec![],
+            acknowledgements: vec![],
+            directory: directory.to_owned(),
         })
     }
     pub fn manifest(&self) -> &Manifest {
@@ -195,6 +241,288 @@ impl Session {
     }
     pub fn observations(&self) -> &[Observation] {
         &self.observations
+    }
+    fn persist_transition(
+        &mut self,
+        command: Command,
+        evidence: StoredEvidence,
+    ) -> Result<(), Error> {
+        let stored = Stored {
+            before: self.state().event_count(),
+            command,
+            evidence,
+        };
+        check_stored(&self.manifest.configuration, self.state(), &stored)?;
+        if let Err(error) = store::save(&self.directory, &stored) {
+            self.failed = true;
+            for task in &mut self.tasks {
+                task.process = None;
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    /// Restore authority only under the original journal lock. Saved completed
+    /// observations settle before recovery; dispatched work without one becomes
+    /// uncertain. No old dispatched process is relaunched.
+    pub fn resume(
+        directory: &Path,
+        parent_context: &str,
+        square: Option<SquareTool>,
+        lean: Option<lean::Toolchain>,
+    ) -> Result<Self, Error> {
+        let manifest: Manifest = store::read(&directory.join("manifest.json"), 65_536)?;
+        manifest.validate()?;
+        if manifest.configuration.parent_context_sha256 != parent_context
+            || manifest.configuration.square_executable_sha256
+                != square.as_ref().map(|t| t.identity.clone())
+            || manifest.configuration.lean != lean.as_ref().map(|t| t.identity().clone())
+        {
+            return Err(Error(
+                "resumption context or exact tool identities differ".into(),
+            ));
+        }
+        Self::restore(directory, manifest, square, lean)
+    }
+    fn restore(
+        directory: &Path,
+        manifest: Manifest,
+        square: Option<SquareTool>,
+        lean: Option<lean::Toolchain>,
+    ) -> Result<Self, Error> {
+        let mut journal = Journal::open_existing(&directory.join("journal.jsonl"), &manifest.spec)?;
+        let (_, mut commands) =
+            crate::replay_journal(journal.snapshot()?.as_bytes(), &manifest.spec)?;
+        let mut observations = vec![];
+        let mut acknowledgements = vec![];
+        for stored in store::load(directory, manifest.spec.limits.max_events)? {
+            if stored.before as usize == commands.len() {
+                check_stored(&manifest.configuration, journal.state(), &stored)?;
+                journal.apply(stored.command.clone())?;
+                commands.push(stored.command.clone());
+            } else if commands.get(stored.before as usize) != Some(&stored.command) {
+                return Err(Error(
+                    "saved transition evidence disagrees with the durable journal".into(),
+                ));
+            }
+            match stored.evidence {
+                StoredEvidence::Observation(observation) => observations.push(observation),
+                StoredEvidence::Acknowledgement(ack) => acknowledgements.push(ack),
+            }
+        }
+        let mut result = Self {
+            failed: false,
+            manifest,
+            journal,
+            square,
+            lean,
+            instance: Arc::new(()),
+            tasks: vec![],
+            observations,
+            acknowledgements,
+            directory: directory.to_owned(),
+        };
+        result.verify_retained_inputs()?;
+        verify_snapshot(&result.snapshot()?)?;
+        if result
+            .state()
+            .attempts()
+            .iter()
+            .any(|a| !matches!(a.phase, Phase::Collected { .. }))
+        {
+            result.apply(Command::Recover)?;
+        }
+        result.tasks = result
+            .state()
+            .attempts()
+            .iter()
+            .map(|attempt| Task {
+                dispatch: attempt.dispatch.clone().map(|binding| Dispatch {
+                    binding,
+                    input: attempt.request.input.clone(),
+                }),
+                control: attempt.control.clone(),
+                process: None,
+                policy: None,
+                handle_issued: false,
+            })
+            .collect();
+        Ok(result)
+    }
+
+    fn verify_retained_inputs(&self) -> Result<(), Error> {
+        if let Some(identity) = &self.manifest.configuration.lean {
+            let files: Vec<crate::identity::FileIdentity> = store::read(
+                &self.directory.join("lean-installation.json"),
+                24 * 1024 * 1024,
+            )?;
+            if sha256(&serde_json::to_vec(&files)?) != identity.installation_sha256 {
+                return Err(Error("retained Lean dependency manifest changed".into()));
+            }
+        }
+        for (index, attempt) in self.state().attempts().iter().enumerate() {
+            let Some(binding) = &attempt.dispatch else {
+                continue;
+            };
+            let dispatch = Dispatch {
+                binding: binding.clone(),
+                input: attempt.request.input.clone(),
+            };
+            let required = self
+                .observations
+                .iter()
+                .any(|o| o.dispatch.binding == *binding);
+            let (extension, bytes) = if binding.adapter == lean::adapter() {
+                let Value::Text(input) = &dispatch.input else {
+                    return Err(Error("retained Lean request is not text".into()));
+                };
+                let request: lean::Request = serde_json::from_str(input)?;
+                ("lean", request.candidate.source()?.into_bytes())
+            } else {
+                ("json", serde_json::to_vec(&dispatch)?)
+            };
+            for (name, expected) in [
+                (
+                    format!("dispatch-{index}.json"),
+                    serde_json::to_vec(&dispatch)?,
+                ),
+                (format!("input-{index}.{extension}"), bytes),
+            ] {
+                let path = self.directory.join(name);
+                if path.exists() {
+                    let metadata = std::fs::symlink_metadata(&path)?;
+                    if !metadata.is_file()
+                        || metadata.file_type().is_symlink()
+                        || crate::identity::file(&path, process::PIPE_BYTES as u64)?.1
+                            != sha256(&expected)
+                    {
+                        return Err(Error("retained dispatch input changed".into()));
+                    }
+                } else if required {
+                    return Err(Error(
+                        "completed observation is missing its retained dispatch input".into(),
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Restore the source-local reference. The caller must first replay the
+    /// source operation prefix. Only a never-dispatched reservation may launch.
+    pub fn resume_start(&mut self, index: usize) -> Result<Handle, Error> {
+        if self.tasks.get(index).is_none_or(|task| task.handle_issued) {
+            return Err(Error("restored handle is unknown or already issued".into()));
+        }
+        let attempt = self
+            .state()
+            .attempts()
+            .get(index)
+            .ok_or_else(|| Error("unknown resumed job".into()))?
+            .clone();
+        if matches!(attempt.phase, Phase::Reserved) {
+            if attempt.request.adapter == worker::adapter() {
+                let tool = self
+                    .square
+                    .as_ref()
+                    .ok_or_else(|| Error("square tool missing".into()))?;
+                if lean::executable_digest(&tool.executable)? != tool.identity {
+                    return Err(Error("square executable changed".into()));
+                }
+                let mut command = std::process::Command::new(&tool.executable);
+                command.arg("__square-worker");
+                self.launch(index, command, |dispatch| {
+                    serde_json::to_vec(dispatch).expect("dispatch")
+                })?;
+            } else if attempt.request.adapter == lean::adapter() {
+                let Value::Text(input) = &attempt.request.input else {
+                    return Err(Error("invalid resumed Lean input".into()));
+                };
+                let request: lean::Request = serde_json::from_str(input)?;
+                let (prepared, command, stdin) = self
+                    .lean
+                    .as_ref()
+                    .ok_or_else(|| Error("Lean tool missing".into()))?
+                    .prepare_candidate(request.candidate)?;
+                if prepared.input()? != attempt.request.input {
+                    return Err(Error("resumed Lean source identity differs".into()));
+                }
+                self.launch(index, command, |_| stdin)?;
+            } else {
+                return Err(Error("unsupported resumed adapter".into()));
+            }
+        }
+        self.tasks[index].handle_issued = true;
+        Ok(Handle {
+            session: self.instance.clone(),
+            index,
+        })
+    }
+    pub fn restored_handle(&mut self, index: usize) -> Result<Handle, Error> {
+        if self.failed || self.tasks.get(index).is_none_or(|task| task.handle_issued) {
+            return Err(Error("unknown restored job reference".into()));
+        }
+        self.tasks[index].handle_issued = true;
+        Ok(Handle {
+            session: self.instance.clone(),
+            index,
+        })
+    }
+
+    /// Borrow the retained logical result for an interrupted collect reply.
+    /// This does not create a second journal collection or external effect.
+    pub fn restored_outcome(&self, index: usize) -> Result<Option<Outcome>, Error> {
+        let attempt = self
+            .state()
+            .attempts()
+            .get(index)
+            .ok_or_else(|| Error("unknown resumed job".into()))?;
+        Ok(match &attempt.phase {
+            Phase::Collected { outcome } => Some(outcome.clone()),
+            _ => None,
+        })
+    }
+
+    pub fn acknowledge_uncertain(&mut self, index: usize, reason: &str) -> Result<(), Error> {
+        let attempt = self
+            .state()
+            .attempts()
+            .get(index)
+            .ok_or_else(|| Error("unknown uncertain job".into()))?;
+        if !matches!(attempt.phase, Phase::Uncertain { .. }) {
+            return Err(Error(
+                "acknowledgement requires an uncertain dispatched attempt".into(),
+            ));
+        }
+        let response = Response {
+            schema: crate::RESPONSE_SCHEMA.into(),
+            binding: attempt
+                .dispatch
+                .clone()
+                .ok_or_else(|| Error("uncertain dispatch missing".into()))?,
+            outcome: ResponseOutcome::Failed {
+                message: format!("operator acknowledged unresolved effects: {reason}"),
+            },
+            observed_work: None,
+        };
+        let ack = Acknowledgement {
+            acknowledged_uncertain_effects: true,
+            reason: reason.into(),
+            response: response.clone(),
+        };
+        ack.validate()?;
+        let command = Command::Reconcile {
+            control: attempt.control.clone(),
+            response,
+        };
+        self.persist_transition(
+            command.clone(),
+            StoredEvidence::Acknowledgement(ack.clone()),
+        )?;
+        self.tasks[index].control = self.apply_control(command)?;
+        self.acknowledgements.push(ack);
+        Ok(())
     }
     fn apply_control(&mut self, command: Command) -> Result<Control, Error> {
         match self.apply(command)? {
@@ -236,32 +564,77 @@ impl Session {
             owner: "local-session".into(),
             request,
         })?;
-        let Receipt::Dispatch { dispatch, control } = self.apply(Command::Dispatch { control })?
+        let index = self.tasks.len();
+        self.tasks.push(Task {
+            dispatch: None,
+            control,
+            process: None,
+            policy: None,
+            handle_issued: false,
+        });
+        self.launch(index, command, stdin)?;
+        self.tasks[index].handle_issued = true;
+        Ok(Handle {
+            session: self.instance.clone(),
+            index,
+        })
+    }
+    fn launch(
+        &mut self,
+        index: usize,
+        command: std::process::Command,
+        stdin: impl FnOnce(&Dispatch) -> Vec<u8>,
+    ) -> Result<(), Error> {
+        let Receipt::Dispatch { dispatch, control } = self.apply(Command::Dispatch {
+            control: self.tasks[index].control.clone(),
+        })?
         else {
             return Err(Error("expected durable dispatch receipt".into()));
         };
-        let index = self.tasks.len();
+        let input = stdin(&dispatch);
+        // Exact inputs and generated Lean files are flushed before the process
+        // receives authority. An interrupted artifact write leaves uncertainty.
+        let artifacts = (|| {
+            store::write(
+                &self.directory.join(format!("dispatch-{index}.json")),
+                &serde_json::to_vec(&dispatch)?,
+            )?;
+            store::write(
+                &self.directory.join(format!(
+                    "input-{index}.{}",
+                    if dispatch.binding.adapter == lean::adapter() {
+                        "lean"
+                    } else {
+                        "json"
+                    }
+                )),
+                &input,
+            )
+        })();
+        if let Err(error) = artifacts {
+            self.failed = true;
+            for task in &mut self.tasks {
+                task.process = None;
+            }
+            return Err(error);
+        }
+        self.tasks[index].dispatch = Some(dispatch);
+        self.tasks[index].control = control;
         let launched = process::Process::start(
             command,
-            stdin(&dispatch),
+            input,
             Duration::from_millis(self.manifest.configuration.bounds.timeout_ms),
         );
         let (process, failed) = match launched {
             Ok(process) => (Some(process), None),
             Err(error) => (None, Some(error)),
         };
-        self.tasks.push(Task {
-            dispatch,
-            control,
-            process,
-        });
+        self.tasks[index].policy = process.as_ref().map(|p| p.policy().clone());
+        self.tasks[index].process = process;
         if let Some(failure) = failed {
             self.observe(index, Err(failure), false)?;
         }
-        Ok(Handle {
-            session: self.instance.clone(),
-            index,
-        })
+        Ok(())
     }
     pub fn start_square(&mut self, task: &str, input: i64) -> Result<Handle, Error> {
         let tool = self
@@ -284,11 +657,18 @@ impl Session {
         })
     }
     pub fn start_lean(&mut self, task: &str, strategy: lean::Strategy) -> Result<Handle, Error> {
+        self.start_lean_candidate(task, lean::Candidate::Template { strategy })
+    }
+    pub fn start_lean_candidate(
+        &mut self,
+        task: &str,
+        candidate: lean::Candidate,
+    ) -> Result<Handle, Error> {
         let (input, command, stdin) = self
             .lean
             .as_ref()
             .ok_or_else(|| Error("Lean is not configured".into()))?
-            .prepare(strategy)?;
+            .prepare_candidate(candidate)?;
         let request = Request {
             adapter: lean::adapter(),
             context_sha256: self.manifest.spec.context_sha256.clone(),
@@ -323,15 +703,24 @@ impl Session {
         cancelled: bool,
     ) -> Result<(), Error> {
         let observation = Observation {
-            dispatch: self.tasks[index].dispatch.clone(),
+            dispatch: self.tasks[index]
+                .dispatch
+                .clone()
+                .ok_or_else(|| Error("observation precedes dispatch".into()))?,
             completion,
+            policy: self.tasks[index].policy.clone(),
         };
         let response = response(&self.manifest.configuration, &observation, cancelled)?;
         let control = self.tasks[index].control.clone();
-        let next = match response {
-            Some(response) => self.apply_control(Command::Deliver { response })?,
-            None => self.apply_control(Command::Timeout { control })?,
+        let command = match response {
+            Some(response) => Command::Deliver { response },
+            None => Command::Timeout { control },
         };
+        self.persist_transition(
+            command.clone(),
+            StoredEvidence::Observation(observation.clone()),
+        )?;
+        let next = self.apply_control(command)?;
         self.tasks[index].control = next;
         self.tasks[index].process = None;
         self.observations.push(observation);
@@ -360,6 +749,14 @@ impl Session {
     /// cancellation precedes signalling; only confirmed child exit can settle it.
     pub fn cancel(&mut self, handle: &mut Handle) -> Result<bool, Error> {
         let i = self.index(handle)?;
+        // A restored reservation has no process and has not spent its budget.
+        // Its cancellation is a local state transition, requiring no signal.
+        if matches!(self.state().attempts()[i].phase, Phase::Reserved) {
+            self.tasks[i].control = self.apply_control(Command::Cancel {
+                control: self.tasks[i].control.clone(),
+            })?;
+            return Ok(true);
+        }
         match self.poll(handle)? {
             Status::Ready => return Ok(false),
             Status::Collected => return Err(Error("job already collected".into())),
@@ -410,8 +807,67 @@ impl Session {
             manifest: self.manifest.clone(),
             journal: self.journal.snapshot()?,
             observations: self.observations.clone(),
+            acknowledgements: self.acknowledgements.clone(),
         })
     }
+}
+
+fn check_stored(
+    configuration: &Configuration,
+    state: &Lifecycle,
+    stored: &Stored,
+) -> Result<(), Error> {
+    if stored.before != state.event_count() {
+        return Err(Error("saved evidence begins at the wrong state".into()));
+    }
+    let expected = match &stored.evidence {
+        StoredEvidence::Observation(observation) => {
+            let attempt = state
+                .attempts()
+                .iter()
+                .find(|a| a.control.attempt == observation.dispatch.binding.attempt)
+                .ok_or_else(|| Error("unknown observed attempt".into()))?;
+            if attempt.dispatch.as_ref() != Some(&observation.dispatch.binding)
+                || attempt.request.input != observation.dispatch.input
+            {
+                return Err(Error("saved observation dispatch mismatch".into()));
+            }
+            match response(
+                configuration,
+                observation,
+                matches!(attempt.phase, Phase::CancelRequested),
+            )? {
+                Some(response) => Command::Deliver { response },
+                None => Command::Timeout {
+                    control: attempt.control.clone(),
+                },
+            }
+        }
+        StoredEvidence::Acknowledgement(ack) => {
+            ack.validate()?;
+            let attempt = state
+                .attempts()
+                .iter()
+                .find(|a| a.control.attempt == ack.response.binding.attempt)
+                .ok_or_else(|| Error("unknown acknowledged attempt".into()))?;
+            if !matches!(attempt.phase, Phase::Uncertain { .. })
+                || attempt.dispatch.as_ref() != Some(&ack.response.binding)
+            {
+                return Err(Error(
+                    "acknowledgement does not match uncertain dispatch".into(),
+                ));
+            }
+            Command::Reconcile {
+                control: attempt.control.clone(),
+                response: ack.response.clone(),
+            }
+        }
+    };
+    if expected != stored.command {
+        return Err(Error("saved evidence/transition mismatch".into()));
+    }
+    state.step(&expected)?;
+    Ok(())
 }
 
 fn check_dispatch(configuration: &Configuration, dispatch: &Dispatch) -> Result<(), Error> {
@@ -445,6 +901,21 @@ fn response(
     cancelled: bool,
 ) -> Result<Option<Response>, Error> {
     check_dispatch(configuration, &observation.dispatch)?;
+    match &observation.policy {
+        Some(policy) => policy.validate()?,
+        None if matches!(
+            &observation.completion,
+            Err(process::Failure {
+                kind: process::FailureKind::Spawn | process::FailureKind::Io,
+                ..
+            })
+        ) => {}
+        None => {
+            return Err(Error(
+                "started process observation lacks containment policy".into(),
+            ));
+        }
+    }
     if let Ok(output) = &observation.completion
         && (output.stdout.len() > process::PIPE_BYTES || output.stderr.len() > process::PIPE_BYTES)
     {
@@ -501,6 +972,7 @@ pub fn verify_snapshot(snapshot: &Snapshot) -> Result<Lifecycle, Error> {
         crate::replay_journal(snapshot.journal.as_bytes(), &snapshot.manifest.spec)?;
     let mut state = Lifecycle::new(snapshot.manifest.spec.clone())?;
     let mut cursor = 0;
+    let mut acknowledged = 0;
     for command in commands {
         match &command {
             Command::Deliver { .. } | Command::Timeout { .. } => {
@@ -541,6 +1013,23 @@ pub fn verify_snapshot(snapshot: &Snapshot) -> Result<Lifecycle, Error> {
             Command::Reserve { owner, request, .. }
                 if owner == "local-session" && request.reserved_work == 1 => {}
             Command::Dispatch { .. } | Command::Cancel { .. } | Command::Collect { .. } => {}
+            Command::Recover => {}
+            Command::Reconcile { .. } => {
+                let ack = snapshot
+                    .acknowledgements
+                    .get(acknowledged)
+                    .ok_or_else(|| Error("missing uncertainty acknowledgement".into()))?;
+                check_stored(
+                    &snapshot.manifest.configuration,
+                    &state,
+                    &Stored {
+                        before: state.event_count(),
+                        command: command.clone(),
+                        evidence: StoredEvidence::Acknowledgement(ack.clone()),
+                    },
+                )?;
+                acknowledged += 1;
+            }
             _ => {
                 return Err(Error(
                     "command is outside the asynchronous session profile".into(),
@@ -553,7 +1042,10 @@ pub fn verify_snapshot(snapshot: &Snapshot) -> Result<Lifecycle, Error> {
         }
         state = next;
     }
-    if cursor != snapshot.observations.len() || state != expected {
+    if cursor != snapshot.observations.len()
+        || acknowledged != snapshot.acknowledgements.len()
+        || state != expected
+    {
         return Err(Error(
             "unused observations or reconstructed state mismatch".into(),
         ));
@@ -561,8 +1053,8 @@ pub fn verify_snapshot(snapshot: &Snapshot) -> Result<Lifecycle, Error> {
     Ok(state)
 }
 
-/// Recover journal state only. Surviving processes are not rediscovered and
-/// asynchronous handles are never reconstructed or automatically redispatched.
+/// Recover captured settlements and classify unresolved work without tool
+/// authority. No process is rediscovered or dispatched by this inspection.
 pub fn recover(directory: &Path) -> Result<Lifecycle, Error> {
     use std::io::Read;
     let mut bytes = vec![];
@@ -577,11 +1069,9 @@ pub fn recover(directory: &Path) -> Result<Lifecycle, Error> {
         return Err(Error("session manifest is not canonical".into()));
     }
     manifest.validate()?;
-    Ok(
-        Journal::open(&directory.join("journal.jsonl"), &manifest.spec)?
-            .state()
-            .clone(),
-    )
+    Ok(Session::restore(directory, manifest, None, None)?
+        .state()
+        .clone())
 }
 
 #[cfg(test)]
@@ -625,7 +1115,9 @@ mod tests {
             input: Value::Int(3),
             reserved_work: 1,
         };
-        session.start(task, request, command, |_| vec![])
+        session.start(task, request, command, |dispatch| {
+            serde_json::to_vec(dispatch).unwrap()
+        })
     }
     #[test]
     fn process_probe() {
@@ -633,6 +1125,69 @@ mod tests {
             std::thread::sleep(Duration::from_secs(5));
         }
     }
+    #[test]
+    fn restored_undispatched_reservation_cancels_without_a_child_or_charge() {
+        let (directory, mut session) = fixture(1, 5000);
+        session
+            .apply_control(Command::Reserve {
+                task: "never-dispatched".into(),
+                owner: "local-session".into(),
+                request: Request {
+                    adapter: worker::adapter(),
+                    context_sha256: session.manifest.spec.context_sha256.clone(),
+                    input: Value::Int(3),
+                    reserved_work: 1,
+                },
+            })
+            .unwrap();
+        drop(session);
+        let square = SquareTool::open(&std::env::current_exe().unwrap()).unwrap();
+        let mut restored =
+            Session::resume(&directory, &sha256(b"unit context"), Some(square), None).unwrap();
+        let mut handle = restored.restored_handle(0).unwrap();
+        assert_eq!(restored.wait(&handle).unwrap(), Status::Pending);
+        assert!(restored.cancel(&mut handle).unwrap());
+        assert_eq!(
+            restored.collect(&mut handle).unwrap(),
+            Some(Outcome::Cancelled)
+        );
+        assert!(restored.observations().is_empty());
+        assert_eq!(restored.state().accounting().dispatched_attempts, 0);
+        assert_eq!(restored.state().accounting().charged_work, 0);
+        assert_eq!(restored.state().accounting().available_work, 3);
+        verify_snapshot(&restored.snapshot().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn restored_handles_issue_once_and_unknown_work_keeps_its_charge() {
+        let (directory, mut session) = fixture(1, 5000);
+        let old = sleeping(&mut session, "interrupted").unwrap();
+        drop(session);
+        let square = SquareTool::open(&std::env::current_exe().unwrap()).unwrap();
+        let mut restored =
+            Session::resume(&directory, &sha256(b"unit context"), Some(square), None).unwrap();
+        assert_eq!(restored.state().accounting().charged_work, 1);
+        assert!(restored.poll(&old).is_err());
+        let mut handle = restored.restored_handle(0).unwrap();
+        assert!(restored.restored_handle(0).is_err());
+        assert!(restored.resume_start(0).is_err());
+        assert_eq!(restored.poll(&handle).unwrap(), Status::Uncertain);
+        assert!(restored.collect(&mut handle).is_err());
+        restored
+            .acknowledge_uncertain(0, "operator inspected the interrupted unit fixture")
+            .unwrap();
+        assert!(matches!(
+            restored.collect(&mut handle).unwrap(),
+            Some(Outcome::Failed { .. })
+        ));
+        assert_eq!(restored.state().accounting().charged_work, 1);
+        assert_eq!(restored.state().accounting().dispatched_attempts, 1);
+        verify_snapshot(&restored.snapshot().unwrap()).unwrap();
+        let mut changed = restored.snapshot().unwrap();
+        changed.acknowledgements[0].acknowledged_uncertain_effects = false;
+        assert!(verify_snapshot(&changed).is_err());
+    }
+
     #[test]
     fn parallel_capacity_cancellation_collection_and_generation_reuse() {
         let (_, mut session) = fixture(2, 5000);
@@ -652,10 +1207,31 @@ mod tests {
         assert!(session.collect(&mut first).is_err());
         let mut third = sleeping(&mut session, "third").unwrap();
         assert_eq!(
-            session.tasks[2].dispatch.binding.attempt.slot,
-            session.tasks[0].dispatch.binding.attempt.slot
+            session.tasks[2]
+                .dispatch
+                .as_ref()
+                .unwrap()
+                .binding
+                .attempt
+                .slot,
+            session.tasks[0]
+                .dispatch
+                .as_ref()
+                .unwrap()
+                .binding
+                .attempt
+                .slot
         );
-        assert_eq!(session.tasks[2].dispatch.binding.attempt.generation, 2);
+        assert_eq!(
+            session.tasks[2]
+                .dispatch
+                .as_ref()
+                .unwrap()
+                .binding
+                .attempt
+                .generation,
+            2
+        );
         for handle in [&mut second, &mut third] {
             assert!(session.cancel(handle).unwrap());
             assert_eq!(session.collect(handle).unwrap(), Some(Outcome::Cancelled));
@@ -753,7 +1329,7 @@ mod tests {
                 .unwrap_err()
                 .child_reaped
         );
-        let result = worker::evaluate(&session.tasks[0].dispatch).unwrap();
+        let result = worker::evaluate(session.tasks[0].dispatch.as_ref().unwrap()).unwrap();
         session
             .observe(
                 0,

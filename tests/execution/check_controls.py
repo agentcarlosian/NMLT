@@ -10,6 +10,16 @@ import tempfile
 
 root = Path(__file__).resolve().parents[2]
 checker = Path(sys.argv[1]).resolve()
+
+
+def check_paths(*paths):
+    # GNU sha256sum escapes backslashes in printed filenames. The current Lean
+    # checker consumes its ordinary digest format, so pass portable forward-slash
+    # paths on Windows as well. The supplied files and expected verdicts are unchanged.
+    return subprocess.run([str(checker), *(p.as_posix() for p in paths)],
+                          capture_output=True, text=True, timeout=30)
+
+
 artifact = root / "examples/pivot/affine_continuation.behavior-core-v2.json"
 source = root / "examples/pivot/affine_continuation.nmlt"
 original = json.loads(artifact.read_text())
@@ -95,16 +105,16 @@ with tempfile.TemporaryDirectory(prefix="nmlt-execution-controls-") as directory
             witness["artifact_sha256"] = hashlib.sha256(core_path.read_bytes()).hexdigest()
         witness_path = directory / f"path-{index}.json"
         witness_path.write_text(json.dumps(witness), encoding="utf-8")
-        result = subprocess.run([str(checker), str(core_path), str(source), str(witness_path)], capture_output=True, text=True, timeout=30)
+        result = check_paths(core_path, source, witness_path)
         if result.returncode == 0 or expected not in result.stderr:
             raise SystemExit(f"control {name!r} failed: {result.returncode}\n{result.stdout}\n{result.stderr}")
     # Source mismatch must be exercised with an otherwise accepted path.
     stale_source = directory / "stale.nmlt"
     stale_source.write_bytes(source.read_bytes() + b"\n")
     valid = root / "examples/pivot/receive_consume.behavior-execution-v1.json"
-    result = subprocess.run([str(checker), str(artifact), str(stale_source), str(valid)], capture_output=True, text=True, timeout=30)
+    result = check_paths(artifact, stale_source, valid)
     if result.returncode == 0 or "stale source digest" not in result.stderr:
-        raise SystemExit("source identity control failed")
+        raise SystemExit(f"source identity control failed: {result.returncode}\n{result.stdout}\n{result.stderr}")
 
     primary = root / "examples/pivot/visible_resource_sync.behavior-core-v2.json"
     primary_core = json.loads(primary.read_text())
@@ -116,7 +126,7 @@ with tempfile.TemporaryDirectory(prefix="nmlt-execution-controls-") as directory
     primary_path["artifact_sha256"] = hashlib.sha256(failed_refinement.read_bytes()).hexdigest()
     primary_witness = directory / "primary-path.json"
     primary_witness.write_text(json.dumps(primary_path), encoding="utf-8")
-    result = subprocess.run([str(checker), str(failed_refinement), str(root / "examples/pivot/visible_resource_sync.nmlt"), str(primary_witness)], capture_output=True, text=True, timeout=30)
+    result = check_paths(failed_refinement, root / "examples/pivot/visible_resource_sync.nmlt", primary_witness)
     if result.returncode == 0 or "artifact theorem application failed" not in result.stderr:
         raise SystemExit(f"v2 refinement control failed: {result.stderr}")
 

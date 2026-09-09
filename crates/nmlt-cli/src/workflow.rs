@@ -19,6 +19,8 @@ struct Record {
     profile: String,
     assurance: String,
     implementation_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    project_context_sha256: Option<String>,
     source_path: String,
     source_sha256: String,
     sources: Vec<SourceIdentity>,
@@ -41,6 +43,12 @@ pub(super) fn bounded_read(path: &Path, max: u64) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 pub(super) fn load(path: &Path, logical_entry: Option<&str>) -> Result<Program, String> {
+    load_diagnostic(path, logical_entry).map_err(|e| e.to_string())
+}
+pub(super) fn load_diagnostic(
+    path: &Path,
+    logical_entry: Option<&str>,
+) -> Result<Program, super::diagnostics::Error> {
     let metadata = std::fs::symlink_metadata(path).map_err(|e| e.to_string())?;
     if !metadata.is_file() || metadata.file_type().is_symlink() {
         return Err("workflow sources must be regular files, not symbolic links".into());
@@ -86,21 +94,36 @@ pub(super) fn load(path: &Path, logical_entry: Option<&str>) -> Result<Program, 
         Ok(source)
     })
     .map_err(|e| {
-        let rendered = loaded
-            .get(&e.path)
-            .map(|source| {
-                nmlt_core::render_diagnostic_snapshot(source, std::slice::from_ref(&e.diagnostic))
-            })
-            .unwrap_or_else(|| e.diagnostic.message.clone());
-        format!("{}: {rendered}", root.join(&e.path).display())
+        let mut diagnostic =
+            super::diagnostics::Error::new(e.diagnostic.code, &e.diagnostic.message);
+        if let (Some(source), Some(span)) = (loaded.get(&e.path), e.diagnostic.span) {
+            diagnostic = diagnostic.located(&root.join(&e.path), source, span);
+        }
+        diagnostic.expected = e.expected.map(|t| serde_json::json!(t));
+        diagnostic.actual = e.actual.map(|t| serde_json::json!(t));
+        for (path, span, message) in e.related {
+            if let Some(source) = loaded.get(&path) {
+                let related = super::diagnostics::Error::new("NMLT-RELATED", &message).located(
+                    &root.join(path),
+                    source,
+                    span,
+                );
+                if let Some(location) = related.location.clone() {
+                    diagnostic
+                        .related
+                        .push(super::diagnostics::Related { message, location });
+                }
+            }
+        }
+        diagnostic
     })
 }
 pub(super) fn typecheck(path: &Path) -> Result<(), String> {
     let program = load(path, None)?;
     println!(
         "{}",
-        serde_json::json!({ "schema": "nmlt-workflow-typecheck-v4", "profile": "workflow-v4", "assurance": "none", "program_sha256": program.identity(), "records": program.records(), "sources": program.sources(),
-        "entries": program.entries().map(|(name, parameters, result)| serde_json::json!({"name":name, "parameters": parameters, "result":result, "requires_jobs":program.requires_jobs(name).expect("entry")})).collect::<Vec<_>>() })
+        serde_json::json!({ "schema": "nmlt-workflow-typecheck-v6", "profile": "workflow-v6", "assurance": "none", "program_sha256": program.identity(), "records": program.records(), "sources": program.sources(),
+        "entries": program.entries().map(|(name, parameters, result)| serde_json::json!({"name":name, "parameters": parameters, "result":result, "can_run_as_entry":program.can_run_as_entry(name), "requires_jobs":program.requires_jobs(name).expect("entry"), "requires_async_jobs":program.requires_async_jobs(name).expect("entry"), "requires_lean_jobs":program.requires_lean_jobs(name).expect("entry")})).collect::<Vec<_>>() })
     );
     Ok(())
 }
@@ -110,13 +133,16 @@ fn record(
     entry: String,
     inputs: Inputs,
     max_steps: u32,
+    project_context_sha256: Option<String>,
 ) -> Result<Record, String> {
+    validate_project_context(&project_context_sha256)?;
     let execution = execute(program, &entry, &inputs, max_steps)?;
     Ok(Record {
         schema: SCHEMA.into(),
         profile: PROFILE.into(),
         assurance: "none".into(),
         implementation_sha256: implementation_digest()?,
+        project_context_sha256,
         source_path,
         source_sha256: program.sources()[0].source_sha256.clone(),
         sources: program.sources().to_vec(),
@@ -133,10 +159,21 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
     };
     let (mut entry, mut limit, mut output) = (None, None, None);
     let (mut jobs_dir, mut max_jobs, mut job_timeout_ms) = (None, None, None);
+    let (mut slots, mut lean_bin) = (None, None);
+    let mut project_context = None;
     let mut raw_inputs = std::collections::BTreeMap::new();
     let mut pairs = args[1..].chunks_exact(2);
     for pair in &mut pairs {
         match pair[0].to_str() {
+            Some("--project-context") if project_context.is_none() => {
+                project_context = Some(
+                    pair[1]
+                        .to_str()
+                        .ok_or("project context must be UTF-8")?
+                        .to_owned(),
+                );
+                validate_project_context(&project_context)?;
+            }
             Some("--entry") if entry.is_none() => {
                 entry = Some(pair[1].to_str().ok_or("entry must be UTF-8")?.to_owned())
             }
@@ -151,6 +188,16 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
             }
             Some("--emit-run") if output.is_none() => output = Some(PathBuf::from(&pair[1])),
             Some("--jobs-dir") if jobs_dir.is_none() => jobs_dir = Some(PathBuf::from(&pair[1])),
+            Some("--job-slots") if slots.is_none() => {
+                slots = Some(
+                    pair[1]
+                        .to_str()
+                        .ok_or("job-slots must be UTF-8")?
+                        .parse::<u32>()
+                        .map_err(|_| "invalid job-slots")?,
+                );
+            }
+            Some("--lean-bin") if lean_bin.is_none() => lean_bin = Some(PathBuf::from(&pair[1])),
             Some("--max-jobs") if max_jobs.is_none() => {
                 max_jobs = Some(
                     pair[1]
@@ -210,8 +257,34 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
         inputs.insert(p.name.clone(), program.input_value(&p.ty, json)?);
     }
     let max_steps = limit.ok_or(USAGE)?;
+    if program.requires_async_jobs(&entry)? || (program.requires_jobs(&entry)? && slots.is_some()) {
+        return super::async_jobs::run(
+            &program,
+            super::repository_path(&source)?,
+            entry,
+            inputs,
+            max_steps,
+            &output,
+            super::async_jobs::Options {
+                source: source.clone(),
+                directory: jobs_dir.ok_or("async source jobs require --jobs-dir")?,
+                bounds: nmlt_runtime::session::Bounds {
+                    slots: slots.ok_or("async source jobs require --job-slots")?,
+                    max_attempts: max_jobs.ok_or("async source jobs require --max-jobs")?,
+                    timeout_ms: job_timeout_ms
+                        .ok_or("async source jobs require --job-timeout-ms")?,
+                },
+                lean: lean_bin,
+                project_context,
+            },
+        );
+    }
+    if slots.is_some() || lean_bin.is_some() {
+        return Err("--job-slots and --lean-bin require a source job entry".into());
+    }
     if jobs_dir.is_some() || max_jobs.is_some() || job_timeout_ms.is_some() {
         let options = super::jobs::Options {
+            project_context,
             directory: jobs_dir
                 .ok_or("jobs require --jobs-dir, --max-jobs, and --job-timeout-ms")?,
             max_jobs: max_jobs.ok_or("jobs require --max-jobs")?,
@@ -233,6 +306,7 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
         entry,
         inputs,
         max_steps,
+        project_context,
     )?;
     let json = format!(
         "{}\n",
@@ -280,6 +354,12 @@ pub(super) fn replay_or_finite(args: &[OsString]) -> Result<(), String> {
     // generic JSON tree just to select the format-specific validator.
     let format: Format = serde_json::from_reader(BufReader::new(file))
         .map_err(|e| format!("invalid run record: {e}"))?;
+    if format.schema == super::async_jobs::SCHEMA {
+        return super::async_jobs::replay(
+            &bounded_read(Path::new(path), super::async_jobs::MAX_BYTES)?,
+            Path::new(source),
+        );
+    }
     if format.schema == super::jobs::SCHEMA {
         return super::jobs::replay(
             &bounded_read(Path::new(path), MAX_RECORD_BYTES)?,
@@ -332,6 +412,7 @@ pub(super) fn replay_or_finite(args: &[OsString]) -> Result<(), String> {
         recorded.entry.clone(),
         recorded.inputs.clone(),
         recorded.max_steps,
+        recorded.project_context_sha256.clone(),
     )?;
     if rebuilt != recorded {
         return Err("replay mismatch: typed program, inputs, steps, or outcome differ".into());
@@ -341,5 +422,17 @@ pub(super) fn replay_or_finite(args: &[OsString]) -> Result<(), String> {
         serde_json::json!({"schema":"nmlt-pure-replay-v3", "assurance":"none", "matched":true, "execution":recorded.execution, "sources":recorded.sources,
         "meaning":"same-executable pure evaluation consistency; no Lean acceptance or host effects"})
     );
+    Ok(())
+}
+
+pub(super) fn validate_project_context(value: &Option<String>) -> Result<(), String> {
+    if value.as_ref().is_some_and(|s| {
+        s.len() != 64
+            || !s
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    }) {
+        return Err("project context must be a lowercase SHA-256 digest".into());
+    }
     Ok(())
 }

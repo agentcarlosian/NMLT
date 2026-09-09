@@ -22,7 +22,7 @@ def main() -> None:
     session = evidence / "session"
     command = ["cargo", "run", "--quiet", "-p", "nmlt-runtime", "--example", "async_jobs", "--"]
     tool = str(args.lean_bin.resolve()) if args.lean_bin else "--without-lean"
-    run = subprocess.run(command + [str(session), tool], cwd=ROOT, capture_output=True, text=True, timeout=180, check=False)
+    run = subprocess.run(command + [str(session), tool], cwd=ROOT, capture_output=True, text=True, timeout=900, check=False)
     (evidence / "stdout.json").write_text(run.stdout, encoding="utf-8")
     (evidence / "stderr.txt").write_text(run.stderr, encoding="utf-8")
     if run.returncode:

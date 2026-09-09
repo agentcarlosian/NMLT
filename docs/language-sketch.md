@@ -72,8 +72,10 @@ The ordinary typed-core route retains additional expression and property forms
 for frontend research. Those forms do not automatically enter the behavioral
 artifact or inherit the Lean composition theorem.
 
-Behavior compilation rejects property declarations until their obligations are
-represented in the artifact. Its observations and hiding use comma-separated
+Ordinary behavior compilation rejects property declarations. The separate
+[finite safety route](r2-safety-invariants.md) preserves `safety ... = always(...)`
+predicates and checks initialization/preservation or a reachable counterexample
+with Lean. Its observations and hiding use comma-separated
 field or action names; comments are trivia. Initializer, guard, and update text
 in the artifact is rendered canonically from the typed expression AST.
 
@@ -102,15 +104,18 @@ receive then consume, or receive then return followed by sender consumption.
 No new source syntax is needed for those paths. See
 [the execution guide](getting-started.md#finite-v2-execution) for checked commands.
 
-Modules, general source composition, host effects, richer values, and an
-interpreter remain subsequent language work.
+The separate executable workflow profile supplies modules, records, bounded
+collections, functions, typed worker/Lean jobs and resumption. Finite user safety
+predicates have a decoded-model checker. General source composition and
+verified correspondence between workflow effects and models remain later work.
 
 ## Later language families
 
 Temporal properties, behavior-indexed fairness, probabilistic and hybrid
-behavior, user-defined grade algebras, proof terms, general code generation,
-and runtime observation remain research proposals. They are not current CLI
-commands or current semantic claims.
+behavior, user-defined grade algebras, general code generation,
+and authenticated runtime observation remain research proposals rather than
+current CLI commands or semantic claims. Closed Init proof terms are supported
+through the separate pinned Lean job interface with an executable-only host ceiling.
 
 ## Design constraints
 

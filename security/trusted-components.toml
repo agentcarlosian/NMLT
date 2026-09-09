@@ -81,7 +81,17 @@ trusted_components = ["toolchain.rust", "rust.frontend", "rust.hir", "rust.workf
 [[claim_profiles]]
 name = "rust_local_job_lifecycle"
 ceiling = "executable-only lifecycle/response checks and same-executable local journal recovery; no Lean theorem, authenticated OS authority, rollback-resistant store, or exactly-once external effects"
-trusted_components = ["toolchain.rust", "rust.job_runtime", "rust.hir", "build.gates"]
+trusted_components = ["toolchain.rust", "rust.job_runtime", "rust.hir", "host.process_supervisor", "build.gates"]
+
+[[claim_profiles]]
+name = "pinned_init_job_receipt"
+ceiling = "local pinned Lean accepted the generated Init target/candidate under the empty-axiom policy; captured replay is consistency only, not a fresh check, authenticated host event or independent proof audit"
+trusted_components = ["toolchain.rust", "toolchain.lean", "rust.workflow", "rust.job_runtime", "rust.cli", "host.process_supervisor", "build.gates"]
+
+[[components]]
+id = "host.process_supervisor"
+paths = ["crates/nmlt-runtime/Cargo.toml", "Cargo.lock", "crates/nmlt-runtime/src/process.rs", "rfcs/0028-contained-process-lifecycle.md"]
+role = "Pinned ProcessKit 3.3.4 and the OS provide the recorded process/tree resource policy. Windows Job Objects and Unix process-group/rlimit fallback have distinct limits. Filesystem/network access, system libraries and concurrent filesystem stability remain outside this containment contract."
 
 [[claim_profiles]]
 name = "retained_elaboration_metatheory"
@@ -127,6 +137,16 @@ paths = [
   "mechanization/lean/NMLT/Artifact/ExecutionLift.lean",
 ]
 role = "Independently derive v2 ownership maps, interpret and decide unified finite steps, construct initialized path certificates and scoped initial refinement witnesses; the compiled Lean decoder/evaluator remains a runtime trust dependency."
+
+[[claim_profiles]]
+name = "lean_finite_user_safety"
+ceiling = "predicate holds on all reachable states of the supplied decoded finite binary model, or a checked initialized path falsifies it; no verified source/model translation or external host correspondence"
+trusted_components = ["toolchain.lean", "lean.artifact_decoder", "lean.semantic_closure", "lean.resource_dynamics", "lean.execution", "lean.safety", "lean.kernel_audit", "build.gates"]
+
+[[components]]
+id = "lean.safety"
+paths = ["mechanization/lean/NMLT/Artifact/FiniteInvariant.lean", "mechanization/lean/NMLT/Artifact/SafetyPredicate.lean", "mechanization/lean/NMLT/Artifact/InvariantWitness.lean", "mechanization/lean/NMLT/Artifact/InvariantMain.lean", "crates/nmlt-cli/src/invariant.rs", "tools/check_invariants.py"]
+role = "Prove finite state/action enumeration complete, independently parse/type/check predicate source slices, check initialization/preservation or reachable counterexamples, and bind executable observations to exact input files. Compiled checking and source-to-model elaboration remain stated trust boundaries."
 
 [[components]]
 id = "lean.resource_dynamics"
@@ -190,6 +210,7 @@ paths = [
   "crates/nmlt-ir/src/validate.rs",
   "crates/nmlt-ir/src/behavior.rs",
   "crates/nmlt-ir/src/execution.rs",
+  "crates/nmlt-ir/src/invariant.rs",
 ]
 role = "Define and validate ordinary typed core and first-class behavioral IR."
 
@@ -218,12 +239,12 @@ role = "Coordinate source processing and retained typed-core validation."
 
 [[components]]
 id = "rust.behavior_compiler"
-paths = ["crates/nmlt-compile/src/behavior.rs"]
-role = "Compile the supported finite behavior surface to behavior-core-v1."
+paths = ["crates/nmlt-compile/src/behavior.rs", "crates/nmlt-compile/src/invariant.rs"]
+role = "Compile finite behavior to v1/v2 and preserve selected source safety predicates on a separate explicit checking route."
 
 [[components]]
 id = "rust.evaluator"
-paths = ["crates/nmlt-eval/src/lib.rs", "crates/nmlt-eval/src/value.rs", "crates/nmlt-eval/src/execution.rs", "crates/nmlt-eval/src/interpreter.rs"]
+paths = ["crates/nmlt-eval/src/lib.rs", "crates/nmlt-eval/src/value.rs", "crates/nmlt-eval/src/execution.rs", "crates/nmlt-eval/src/interpreter.rs", "crates/nmlt-eval/src/invariant.rs"]
 role = "Explore Bool/Unit/enum artifacts, execute bounded finite runs over shared steps, and emit untrusted v2 paths with assurance none."
 
 [[components]]
@@ -236,13 +257,17 @@ paths = [
   "crates/nmlt-runtime/src/worker.rs",
   "crates/nmlt-runtime/src/process.rs",
   "crates/nmlt-runtime/src/lean.rs",
+  "crates/nmlt-runtime/src/lean_term.rs",
+  "crates/nmlt-runtime/src/session_store.rs",
   "crates/nmlt-runtime/src/session.rs",
+  "crates/nmlt-runtime/src/identity.rs",
   "crates/nmlt-runtime/examples/local_worker.rs",
   "crates/nmlt-runtime/examples/async_jobs.rs",
   "tools/check_job_runtime.py",
   "tools/check_async_jobs.py",
+  "tools/check_lean_terms.py",
 ]
-role = "Bound local job control, bind responses, persist and recover journal transitions, supervise asynchronous children, enforce session-specific handles, and validate worker or fixed-template Lean observations; executable-only, with the configured Lean installation as an explicit host trust dependency."
+role = "Bound local control and response identities, flush dispatch/evidence before settlement, restore private handles under a journal lock, require explicit uncertainty acknowledgements, and validate worker or closed Init-term observations. Complete bin/lib identities, the pinned Lean checker, ProcessKit and OS observations remain named host trust boundaries; no exactly-once claim."
 
 [[components]]
 id = "rust.workflow"
@@ -250,16 +275,17 @@ paths = [
   "crates/nmlt-workflow/src/lib.rs",
   "crates/nmlt-workflow/src/parse.rs",
   "crates/nmlt-workflow/src/check.rs",
+  "crates/nmlt-workflow/src/affine.rs",
   "crates/nmlt-workflow/src/eval.rs",
   "crates/nmlt-workflow/src/value.rs",
   "crates/nmlt-workflow/src/package.rs",
 ]
-role = "Interpret canonical imports and function/record slices, resolve file scopes, type functions and aggregates/folds, infer local job effects, validate inputs and value-work limits, and bind the private typed tree to a complete source manifest; executable-only."
+role = "Interpret canonical imports and function/record slices, resolve file scopes, type functions and aggregates/folds, check affine job movement through functions, branches and folds, infer local job effects, validate inputs and value-work limits, and bind the private typed tree to a complete source manifest; executable-only."
 
 [[components]]
 id = "rust.cli"
-paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs", "crates/nmlt-cli/src/workflow.rs", "crates/nmlt-cli/src/strict_json.rs", "crates/nmlt-cli/src/jobs.rs", "crates/nmlt-cli/src/job_process.rs"]
-role = "Route frontend, finite/pure/local-job execution and replay, bind durable source job contexts, supervise the fixed worker's pipes/deadline, and classify unfinished journals without raising claim ceilings."
+paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs", "crates/nmlt-cli/src/workflow.rs", "crates/nmlt-cli/src/strict_json.rs", "crates/nmlt-cli/src/jobs.rs", "crates/nmlt-cli/src/job_process.rs", "crates/nmlt-cli/src/async_jobs.rs", "crates/nmlt-cli/src/async_jobs/ledger.rs", "crates/nmlt-cli/src/async_jobs/validation.rs", "tools/check_source_async.py", "crates/nmlt-cli/src/project.rs", "crates/nmlt-cli/src/formatting.rs", "crates/nmlt-cli/src/diagnostics.rs", "tools/check_project.py"]
+role = "Route finite/pure/project execution, preserve source snapshots and tool locks, bind durable source intents/replies to exact runtime transitions, validate resumed prefixes and retained results, quarantine only explicitly acknowledged incomplete tails, and expose structured diagnostics. These executable-only workflows do not gain host or compiler-correctness theorems."
 
 [[components]]
 id = "artifact.schema"
@@ -267,6 +293,8 @@ paths = [
   "schemas/behavior-core-v1.schema.json",
   "schemas/behavior-core-v2.schema.json",
   "schemas/behavior-execution-v1.schema.json",
+  "schemas/behavior-invariant-v1.schema.json",
+  "schemas/behavior-invariant-witness-v1.schema.json",
   "examples/pivot/visible_resource_sync.nmlt",
   "examples/pivot/visible_resource_sync.behavior-core-v1.json",
 ]
@@ -314,8 +342,9 @@ paths = [
   "mechanization/lean/AXIOMS.md",
   "tools/check_metatheory.sh",
   "tools/check_nanoda.sh",
+  "tools/ExportFromFile.lean",
 ]
-role = "Reject unchecked placeholders and audit focused theorem dependencies."
+role = "Reject unchecked placeholders, audit focused theorem dependencies, and run the pinned independent checker over the full module dependency closure. A file-input adapter calls the unchanged pinned exporter entry point and is compared with its executable on sampled roots."
 
 [[components]]
 id = "build.gates"

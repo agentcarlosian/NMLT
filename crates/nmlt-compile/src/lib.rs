@@ -9,8 +9,10 @@ use nmlt_hir::{ProjectedModule, project_source_module, resolve_modules};
 use nmlt_kernel::{CheckedProgram, RawCertificate, check};
 
 mod behavior;
+mod invariant;
 
 pub use behavior::{BehaviorDiagnostic, compile_behavior_single, compile_behavior_v2};
+pub use invariant::{compile_safety, parse_predicate};
 
 /// One exact module in the closed compilation source set.
 #[derive(Clone, Debug, PartialEq, Eq)]

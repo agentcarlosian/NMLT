@@ -10,6 +10,7 @@ import NMLT.Artifact.BehaviorCore
 import NMLT.Artifact.SemanticClosure
 import NMLT.Artifact.ExecutionWitness
 import NMLT.Artifact.ExecutionLift
+import NMLT.Artifact.InvariantWitness
 import NMLT.Examples.ResourceWorldTransfer
 import NMLT.Examples.NestedResourceDynamics
 import NMLT.Counterexamples.ResourceBehaviorControls

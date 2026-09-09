@@ -19,9 +19,30 @@ use nmlt_ir::{
 pub struct BehaviorDiagnostic {
     code: &'static str,
     message: String,
+    span: Option<nmlt_core::Span>,
+    expected: Option<String>,
+    actual: Option<String>,
 }
 
 impl BehaviorDiagnostic {
+    pub fn span(&self) -> Option<nmlt_core::Span> {
+        self.span
+    }
+    pub fn expected(&self) -> Option<&str> {
+        self.expected.as_deref()
+    }
+    pub fn actual(&self) -> Option<&str> {
+        self.actual.as_deref()
+    }
+    pub(super) fn at(mut self, span: nmlt_core::Span) -> Self {
+        self.span = Some(span);
+        self
+    }
+    pub(super) fn mismatch(mut self, expected: &str, actual: &str) -> Self {
+        self.expected = Some(expected.into());
+        self.actual = Some(actual.into());
+        self
+    }
     #[must_use]
     pub const fn code(&self) -> &'static str {
         self.code
@@ -41,10 +62,13 @@ impl fmt::Display for BehaviorDiagnostic {
 
 impl std::error::Error for BehaviorDiagnostic {}
 
-fn reject(code: &'static str, message: impl Into<String>) -> BehaviorDiagnostic {
+pub(super) fn reject(code: &'static str, message: impl Into<String>) -> BehaviorDiagnostic {
     BehaviorDiagnostic {
         code,
         message: message.into(),
+        span: None,
+        expected: None,
+        actual: None,
     }
 }
 
@@ -69,6 +93,22 @@ fn compile_behavior_version(
     exact_bytes: Vec<u8>,
     dynamic: bool,
 ) -> Result<BehaviorCoreProgram, BehaviorDiagnostic> {
+    compile_with_properties(repository_path, exact_bytes, dynamic, false)
+        .map(|(program, _)| program)
+}
+
+pub(super) fn compile_with_properties(
+    repository_path: String,
+    exact_bytes: Vec<u8>,
+    dynamic: bool,
+    allow_safety: bool,
+) -> Result<
+    (
+        BehaviorCoreProgram,
+        Vec<(String, nmlt_core::UntypedProperty)>,
+    ),
+    BehaviorDiagnostic,
+> {
     let source = std::str::from_utf8(&exact_bytes)
         .map_err(|_| reject("NMLT-BHV-UTF8", "behavior source is not valid UTF-8"))?;
     let parsed = parse_cst(source);
@@ -95,9 +135,15 @@ fn compile_behavior_version(
         .collect::<BTreeSet<_>>();
 
     let mut systems = BTreeMap::new();
+    let mut properties = vec![];
     for system in projection.file.systems() {
-        let system = compile_system(system, &facts, dynamic)?;
-        if systems.insert(system.name.clone(), system).is_some() {
+        let compiled = compile_system(system, &facts, dynamic, allow_safety)?;
+        for member in &system.members {
+            if let UntypedMember::Property(property) = member {
+                properties.push((compiled.name.clone(), property.clone()));
+            }
+        }
+        if systems.insert(compiled.name.clone(), compiled).is_some() {
             return Err(reject(
                 "NMLT-BHV-DUPLICATE-SYSTEM",
                 "duplicate behavior system name",
@@ -136,7 +182,7 @@ fn compile_behavior_version(
             .populate_execution_maps()
             .map_err(|message| reject("NMLT-BHV-EXECUTION-MAPS", message))?;
     }
-    Ok(program)
+    Ok((program, properties))
 }
 
 fn collect_enums(
@@ -196,6 +242,7 @@ fn compile_system(
     system: &UntypedSystem,
     facts: &BTreeSet<String>,
     dynamic: bool,
+    allow_safety: bool,
 ) -> Result<CoreBehaviorSystem, BehaviorDiagnostic> {
     let name = required_name(
         system.name.as_ref().map(|name| name.text.as_str()),
@@ -314,11 +361,14 @@ fn compile_system(
                     }
                 }
             }
-            UntypedMember::Property(_) => {
+            UntypedMember::Property(property)
+                if allow_safety && property.kind == nmlt_core::PropertyKind::Safety => {}
+            UntypedMember::Property(property) => {
                 return Err(reject(
                     "NMLT-BHV-UNSUPPORTED-PROPERTY",
                     format!("system '{name}' has a property outside the behavior-core-v1 profile"),
-                ));
+                )
+                .at(property.span));
             }
             UntypedMember::SurfaceOnly(node) => {
                 return Err(reject(

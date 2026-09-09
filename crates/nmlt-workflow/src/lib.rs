@@ -5,13 +5,17 @@ use nmlt_core::Span;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+mod affine;
 mod check;
 mod eval;
 mod package;
 mod parse;
 mod value;
 pub use check::compile;
-pub use eval::{Execution, JobError, JobHost, Stop, execute, execute_with_host, validate_inputs};
+pub use eval::{
+    Execution, JobError, JobHost, JobOperation, JobRequest, Stop, execute, execute_with_host,
+    validate_inputs,
+};
 pub use package::{PackageError, compile_package};
 
 pub const MAX_SOURCE_BYTES: usize = 131_072;
@@ -29,6 +33,9 @@ pub const MAX_PACKAGE_BYTES: usize = 1_048_576;
 pub struct Diagnostic {
     pub source: usize,
     pub diagnostic: nmlt_core::Diagnostic,
+    pub expected: Option<Box<Type>>,
+    pub actual: Option<Box<Type>>,
+    pub related: Vec<(Location, String)>,
 }
 impl std::ops::Deref for Diagnostic {
     type Target = nmlt_core::Diagnostic;
@@ -41,6 +48,9 @@ impl From<nmlt_core::Diagnostic> for Diagnostic {
         Self {
             source: 0,
             diagnostic,
+            expected: None,
+            actual: None,
+            related: vec![],
         }
     }
 }
@@ -67,6 +77,7 @@ pub enum Type {
     Outcome(Box<Type>),
     List(Box<Type>),
     Record(String),
+    Job(Box<Type>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -131,6 +142,29 @@ pub struct Program {
     sources: Vec<SourceIdentity>,
 }
 impl Program {
+    pub fn can_run_as_entry(&self, entry: &str) -> bool {
+        self.functions
+            .iter()
+            .find(|f| f.name == entry)
+            .is_some_and(|f| {
+                !matches!(f.result, Type::Job(_))
+                    && f.parameters.iter().all(|p| !matches!(p.ty, Type::Job(_)))
+            })
+    }
+    pub fn requires_async_jobs(&self, entry: &str) -> Result<bool, String> {
+        self.functions
+            .iter()
+            .find(|f| f.name == entry)
+            .map(|f| f.async_jobs)
+            .ok_or_else(|| format!("unknown workflow entry `{entry}`"))
+    }
+    pub fn requires_lean_jobs(&self, entry: &str) -> Result<bool, String> {
+        self.functions
+            .iter()
+            .find(|f| f.name == entry)
+            .map(|f| f.lean_jobs)
+            .ok_or_else(|| format!("unknown workflow entry `{entry}`"))
+    }
     /// Conservative, transitive effect summary, including unselected branches.
     pub fn requires_jobs(&self, entry: &str) -> Result<bool, String> {
         self.functions
@@ -177,6 +211,9 @@ fn error(span: Location, message: impl Into<String>) -> Diagnostic {
     Diagnostic {
         source: span.source,
         diagnostic: nmlt_core::Diagnostic::error("NMLT-WORKFLOW", message, Some(span.into())),
+        expected: None,
+        actual: None,
+        related: vec![],
     }
 }
 
@@ -187,6 +224,8 @@ struct Function {
     result: Type,
     body: Typed,
     jobs: bool,
+    async_jobs: bool,
+    lean_jobs: bool,
 }
 #[derive(Clone, Debug, Serialize)]
 struct Typed {
@@ -196,6 +235,9 @@ struct Typed {
 }
 #[derive(Clone, Debug, Serialize)]
 enum TypedKind {
+    JobStart(Box<Typed>, bool),
+    JobLeanCheck(Box<Typed>, Box<Typed>),
+    JobControl(JobOperation, usize),
     JobSquare(Box<Typed>),
     Literal(Value),
     Local(usize),

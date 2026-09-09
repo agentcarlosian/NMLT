@@ -60,6 +60,18 @@ The retained `nmlt-kernel` checks the ordinary typed-elaboration
 certificate. It does not define behavioral semantics and cannot confer a
 behavior theorem.
 
+### Executable source job boundary
+
+The executable-only [scoped job profile](r2-source-async.md) adds a distinct host
+boundary. Source cannot construct or copy session controls; a checked lexical
+handle must be collected once on every normal path. The CLI binds every source
+operation to its exact attempt and journal transitions, and replay validates
+captured observations before returning recorded polling/cancellation decisions.
+This prevents inconsistent source/session records from being accepted, but does
+not authenticate physical observations, fence copied journals, restore handles
+after restart, or contain process trees. The configured worker/Lean installation
+and its libraries remain trusted local dependencies.
+
 ### Artifact boundary
 
 Artifact JSON is untrusted. Canonical decoding must reject duplicate
@@ -124,6 +136,28 @@ bounded operational inspection. Its output is debugging information with
    theorem dependencies.
 8. The active trusted-component inventory contains only existing paths.
 9. Dated historical records cannot override current claim ceilings.
+
+## Local job and recovery boundary
+
+Source jobs record a versioned process/resource policy and complete pinned Lean
+installation identities. Closed Init term inputs cannot insert arbitrary Lean
+commands or tactics. The empty-axiom report is checked as captured process
+evidence, with the pinned checker and host still trusted. It is not a runtime
+attestation or independent audit of each generated proof.
+
+The source decision journal is flushed around each effect. Resumption preserves
+prior decisions and charged attempts; unresolved effects require explicit
+operator failure acknowledgement. Old dispatched work is never relaunched by
+recovery. Lost collect replies reuse the existing result. Explicit incomplete-tail
+repair preserves the removed suffix and never discards a corrupt complete row.
+Copied or rolled-back stores remain outside local lock fencing, and coherent
+forgeries are not authenticated. See [RFC 0030](../rfcs/0030-durable-source-resumption.md).
+
+The [platform process contract](../rfcs/0028-contained-process-lifecycle.md) is
+not filesystem/network isolation. Windows whole-job resource/parent-death
+coverage and Unix process-group fallback limits must not be presented as equal
+OS guarantees. Current native containment execution evidence is Windows;
+Linux compilation alone is not runtime validation.
 
 ## Residual trust
 

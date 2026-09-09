@@ -27,7 +27,7 @@ if ! (
   exit 1
 fi
 
-python3 - "$rust_snapshot" "$lean_snapshot" <<'PY'
+"${PYTHON:-python3}" - "$rust_snapshot" "$lean_snapshot" <<'PY'
 from pathlib import Path
 import hashlib
 import sys

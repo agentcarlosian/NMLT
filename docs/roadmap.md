@@ -8,15 +8,19 @@ This document tracks the mathematical dependencies. The current
 product milestones for an executable language serving all three audiences;
 it governs delivery priorities and status.
 
-R2 is now in progress. Its [first local execution increment](r2-local-execution.md)
+R2 completed at local pre-alpha scope on 2026-09-09; see its
+[validation record](reviews/r2-completion-2026-09-09.md). The implementation
+history begins with the [first local execution increment](r2-local-execution.md)
 adds finite source-driven run/replay over shared evaluator steps. The
 [bounded job runtime](../crates/nmlt-runtime/README.md) now adds durable control,
 uncertain recovery, and a subprocess worker prototype. The [source job increment](r2-source-jobs.md)
 connects typed worker effects with explicit limits, journal replay, and recovery
 inspection. The [initial Lean and async host API](r2-lean-async.md) now checks
-fixed proof templates and supports runtime start/poll/cancel/collect. General
-Lean input, asynchronous source control, and the useful-language
-exit gate remain outstanding.
+legacy proof templates and supports runtime start/poll/cancel/collect. The
+[scoped source controls](r2-source-async.md) now expose worker and fixed-template
+Lean jobs with affine checks and source/session replay. Affine handle transfer, closed Init proof terms, finite safety invariants,
+project tooling and source resumption are implemented; the
+[R2 audit](r2-completion-tracker.md) records the completed validation.
 The [pure source workflow increment](r2-pure-workflows.md) adds named function
 entries, structured inputs, records, bounded lists/folds, typed outcomes, and evaluation/replay. These
 constructs currently have an executable-only interpretation.

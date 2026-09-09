@@ -53,22 +53,27 @@ exact .nmlt bytes
 | Exploration | `nmlt-eval` explores Bool/Unit/enum artifacts and emits v2 paths; frozen value/resource graphs are compared with Lean, always with `assurance: none` |
 | Local execution | R2's first increment adds source-driven finite `run` and exact-executable `replay`; shared v2 steps, structured stop outcomes, no host jobs, `assurance: none` |
 | Local source jobs | Opt-in `job_square` uses bounded attempts, a durable journal, validated subprocess results, timeout/output limits, replay without redispatch, and recovery inspection; executable-only |
-| Initial Lean / async host API | Rust sessions start, poll, cancel, and collect jobs; a pinned Lean adapter checks fixed proof templates with an exact empty-axiom policy; source async handles remain planned |
+| Source jobs | Typed worker and pinned Init proof-term jobs; affine transfer through functions/folds; poll/cancel/collect, durable decisions, explicit uncertainty and source/project resumption; executable-only |
+| Projects | `init`, `lock`, `run`, `test`, `replay`, `resume`, `fmt`, and `check-project`; complete source/tool identities and structured diagnostics |
+| User safety properties | Exact source predicates with Lean-checked initialization/preservation or an initialized finite counterexample; decoded finite scope |
 | Pure source workflows | Named entries, structured inputs, records, bounded lists/folds, local modules, acyclic functions, typed outcomes, matching, execution/replay; executable-only, no host jobs |
 
-Try the [local execution guide](docs/r2-local-execution.md). R2 remains in
-progress; broader Lean integration, asynchronous source control, and the complete workflow
-gate remain open. The [job runtime guide](crates/nmlt-runtime/README.md) demonstrates the
-separate Rust adapter prototype.
-The [pure workflow guide](docs/r2-pure-workflows.md) runs `.nmlt` functions with
-real inputs, failure handling, and immutable result reuse. Records and bounded
-lists/folds support structured batches. [Source packages](docs/r2-source-packages.md)
-share typed components across files and bind their complete import graph to
-version 3 replay, with an executable-only interpretation.
-The [source job guide](docs/r2-source-jobs.md) connects those functions to the
-real worker with explicit bounds and typed failure/fallback handling.
-The [Lean and async host guide](docs/r2-lean-async.md) demonstrates the first
-Lean adapter and the runtime control API used to develop the next source layer.
+Start with the [project guide](docs/r2-projects.md) to change real inputs,
+handle a failed worker, reuse its output, test the result and replay retained
+sources. [Source packages](docs/r2-source-packages.md) share typed components;
+[affine handles](docs/r2-job-transfer.md) move job authority through them.
+[Lean proof terms](docs/r2-lean-terms.md) accept variable statements/candidates
+under the pinned Init and empty-axiom policy. [Recovery](docs/r2-recovery.md)
+continues a saved invocation while retaining prior spend and explicit uncertainty.
+
+The [finite safety guide](docs/r2-safety-invariants.md) checks user predicates
+against the decoded model. Workflow functions and host effects remain
+executable-only; they do not automatically inherit finite model proofs.
+R2 is complete at local pre-alpha scope. The
+[R2 audit](docs/r2-completion-tracker.md) and
+[validation record](docs/reviews/r2-completion-2026-09-09.md) record its full scope
+and reproduction evidence. Imported Lean projects and reviewed target
+workflows remain R3.
 
 The behavioral milestone is finite, binary, and safety-oriented. The source digest
 identifies the source bytes presented to Lean; the repository separately
@@ -85,11 +90,12 @@ are recorded with the active definitions in the
 | `NMLT.Behavior.ResourceBehavior` | Define the current behavior and static product/refinement theorem | The checked Lean statements under their explicit premises |
 | `NMLT.Behavior.ResourceWorld` | Model dynamic nominal authority and one-step product simulation | Ownership uniqueness, explained effects, and conditional one-step lifting; no reachability or liveness |
 | `NMLT.Behavior.ResourceDynamics` | Unify control, shared authority, initialization, observation and deferred effects | Scoped binary simulation and finite-path results |
+| Lean invariant checker | Checks finite enumeration, exact predicate, initialization/preservation or a reachable violation | Supplied decoded finite binary model; no verified source translation or host correspondence |
 | Lean v2 execution checker | Check supplied paths from decoded initial states, including receive then consume/retransfer | Finite binary execution and initial synchronized refinement; no verified compilation or host runtime |
 | Lean artifact modules | Decode finite artifacts, construct behaviors, and decide theorem premises | Acceptance of the decoded artifact semantics; no verified source translation |
 | `nmlt-eval` | Reference exploration and bounded finite execution | No proof or verification claim |
-| `nmlt-runtime` | Bounded job control, journal replay/recovery, and local adapter protocol | Executable-only; no Lean, host isolation, or exactly-once external execution claim |
-| `nmlt-workflow` | Pure function typing, lowering, bounded evaluation and replay | Executable-only; no behavioral artifact, Lean acceptance, or host effects |
+| `nmlt-runtime` | Bounded job control, journal replay/recovery, and local adapter protocol | Executable-only; no host-correctness theorem, complete host isolation, or exactly-once external execution claim |
+| `nmlt-workflow` | Workflow typing, affine source control, lowering, bounded evaluation and replay | Executable-only; no behavioral artifact, Lean proof of workflow semantics, or verified host behavior |
 
 The precise active inventory is in
 [`security/trusted-components.toml`](security/trusted-components.toml), with

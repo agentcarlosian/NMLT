@@ -1,0 +1,27 @@
+// Executable-only affine transfer across reusable components and iteration.
+fn launch(input: Int) -> Job<Int> {
+  job_start_square(input)
+}
+
+fn forward(job: Job<Int>) -> Job<Int> {
+  fold([1, 2], job, current, pass => current)
+}
+
+fn finish(job: Job<Int>) -> Outcome<Int> {
+  job_collect(job)
+}
+
+fn main(input: Int, fallback: Int) -> Outcome<Int> {
+  let primary = launch(input);
+  let backup = launch(fallback);
+  let moved = forward(primary);
+  let first = finish(moved);
+  let second = finish(backup);
+  match first {
+    Ok(value) => Ok(value + value),
+    Err(message) => match second {
+      Ok(value) => Ok(value + value),
+      Err(problem) => Err(problem)
+    }
+  }
+}

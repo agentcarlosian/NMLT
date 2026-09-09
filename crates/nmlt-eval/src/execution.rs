@@ -27,20 +27,7 @@ pub fn execution_path(
         .systems
         .get(&composition.right_system)
         .ok_or_else(|| EvalError("unknown right leaf".into()))?;
-    let initial_authority = program
-        .initial_authority
-        .get(&graph.behavior)
-        .ok_or_else(|| EvalError("missing initial authority".into()))?;
-    let encode = |state: &EvalState| -> Result<ExecutionState, EvalError> {
-        Ok(ExecutionState {
-            left: control_index(program, left, state)?,
-            right: control_index(program, right, state)?,
-            authority: initial_authority
-                .keys()
-                .map(|cap| (cap.clone(), state.authority.get(cap).cloned()))
-                .collect(),
-        })
-    };
+    let encode = |state: &EvalState| encode_execution_state(program, &graph.behavior, state);
     let initial = graph
         .states
         .first()
@@ -85,6 +72,38 @@ pub fn execution_path(
             })?)?);
     }
     Ok(path)
+}
+
+/// Shared finite state encoding for path and invariant witnesses. Still untrusted.
+pub fn encode_execution_state(
+    program: &BehaviorCoreProgram,
+    behavior: &str,
+    state: &EvalState,
+) -> Result<ExecutionState, EvalError> {
+    let composition = program
+        .compositions
+        .get(behavior)
+        .ok_or_else(|| EvalError("state witness requires a binary composition".into()))?;
+    let left = program
+        .systems
+        .get(&composition.left_system)
+        .ok_or_else(|| EvalError("unknown left leaf".into()))?;
+    let right = program
+        .systems
+        .get(&composition.right_system)
+        .ok_or_else(|| EvalError("unknown right leaf".into()))?;
+    let initial = program
+        .initial_authority
+        .get(behavior)
+        .ok_or_else(|| EvalError("missing initial authority".into()))?;
+    Ok(ExecutionState {
+        left: control_index(program, left, state)?,
+        right: control_index(program, right, state)?,
+        authority: initial
+            .keys()
+            .map(|cap| (cap.clone(), state.authority.get(cap).cloned()))
+            .collect(),
+    })
 }
 
 fn control_index(

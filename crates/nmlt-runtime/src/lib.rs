@@ -5,12 +5,15 @@
 
 #![forbid(unsafe_code)]
 
+pub mod identity;
 mod journal;
 pub mod lean;
+mod lean_term;
 mod lifecycle;
 pub mod process;
 mod protocol;
 pub mod session;
+mod session_store;
 pub mod worker;
 
 pub use journal::{Journal, replay_journal};

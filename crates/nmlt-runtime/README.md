@@ -13,8 +13,10 @@ Requires Rust 1.94, as used by the repository's pinned CI toolchain.
   of polling and explicit cancellation/cleanup observations.
 - `session` mediates start/poll/wait/cancel/collect through the journal using
   private session-specific handles; snapshots can be verified without launching work.
-- `lean` checks fixed zero-addition proof templates with the pinned Lean version,
-  executable/source identity, and an exact empty-axiom output policy.
+- `lean` checks closed Init proof terms and legacy templates with the pinned Lean
+  executable, complete installation/source identity, and an empty-axiom policy.
+- `session_store` retains dispatch inputs and observations before settlement,
+  and records explicit uncertainty acknowledgements without refunding work.
 - `Journal::snapshot` captures and checks durable bytes through the locked handle;
   `replay_journal` validates captured bytes without recovering or issuing authority.
 
@@ -25,7 +27,8 @@ The Rust example below remains the original adapter prototype.
 The [Lean and async host guide](../../docs/r2-lean-async.md) describes the initial
 Rust API and `async_jobs` example. Run `make r2-async` for the real worker controls
 or `make r2-lean R2_LEAN_BIN=/absolute/path/to/lean` for the pinned Lean exercise.
-Asynchronous source handles and a general Lean source interface remain next work.
+The [source host](../../docs/r2-source-async.md) supports affine handle transfer,
+dynamic proof terms, durable decisions and [resumption](../../docs/r2-recovery.md).
 
 Run a real subprocess attempt with failure and bounded fallback:
 
@@ -44,19 +47,19 @@ possible in-flight work uncertain, retains charges, and revokes old control
 revisions. Only undispatched reservations are refundable. Missing observed work
 stays unknown. Collected values can be copied; job control cannot be reused.
 
-The API intentionally has no snapshot deserializer. To recover, use
-`Journal::open(path, &expected_run_spec)` with the same executable. Retain the
-expected run specification separately as application configuration. Obtain
-external completion evidence before issuing `Reconcile`; opening never starts
-work. Unsupported, inconsistent, or torn journals fail closed.
+Use `Session::resume` with the original context and tools to restore private
+handles under the journal lock. Saved observations settle before recovery;
+already-dispatched work is never relaunched. `acknowledge_uncertain` records an
+operator failure settlement, not proof of physical non-execution. The low-level
+`Journal::open` API remains available for lifecycle clients. Incomplete tails
+fail closed unless explicitly quarantined through the source repair command.
 
 Locks cover the same local file among cooperating processes. Journal copies,
 history rollback, file replacement, OS-principal authentication, power-loss
 guarantees, and exactly-once external execution are outside this contract.
-The pure `Lifecycle` can be cloned for tests and must not be used to authorize
-host dispatch. The sample subprocess is trusted arithmetic code; general process
-timeouts/isolation, cancellation delivery, Lean jobs, and native `.nmlt` effects
-remain integration work.
+The pure `Lifecycle` can be cloned for tests and must not authorize host dispatch.
+The supervisor supplies the [documented process/resource contract](../../rfcs/0028-contained-process-lifecycle.md).
+It does not provide filesystem/network isolation or equal guarantees on every OS.
 
 Unix journals require a single filesystem link. Multiply linked files are
 rejected, and adding a hardlink stops further commits; this avoids an observed

@@ -44,7 +44,7 @@ trap cleanup EXIT
     "$repo_root/examples/pivot/canonical_terms_and_wiring.nmlt"
 )
 
-python3 - "$artifact" "$stale_artifact" "$malformed_artifact" \
+"${PYTHON:-python3}" - "$artifact" "$stale_artifact" "$malformed_artifact" \
   "$semantic_mismatch_artifact" "$world_requirement_artifact" <<'PY'
 import json
 import sys
@@ -141,6 +141,13 @@ import NMLT
 #print axioms NMLT.Examples.NestedResourceDynamics.transfer_moves_once
 #print axioms NMLT.Examples.NestedResourceDynamics.inner_open_transfer_requires_peer
 #print axioms NMLT.Examples.NestedResourceDynamics.enclosed_transfer
+#print axioms NMLT.Artifact.FiniteInvariant.states_complete
+#print axioms NMLT.Artifact.FiniteInvariant.actions_complete
+#print axioms NMLT.Artifact.FiniteInvariant.initialization_sound
+#print axioms NMLT.Artifact.FiniteInvariant.preservation_sound
+#print axioms NMLT.Artifact.FiniteInvariant.reachable_safe
+#print axioms NMLT.Artifact.InvariantWitness.Certificate.safe
+#print axioms NMLT.Artifact.InvariantWitness.Counterexample.reachable_violation
 EOF
 (
   cd "$lean_root"

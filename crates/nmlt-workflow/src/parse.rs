@@ -243,6 +243,12 @@ impl Parser {
                 "length",
                 "get",
                 "job_square",
+                "job_start_square",
+                "job_start_lean",
+                "job_start_lean_check",
+                "job_poll",
+                "job_cancel",
+                "job_collect",
             ]
             .contains(&token.text.as_str())
         {
@@ -261,12 +267,14 @@ impl Parser {
             "Bool" => Type::Bool,
             "Int" => Type::Int,
             "Text" => Type::Text,
-            "Outcome" | "List" => {
+            "Outcome" | "List" | "Job" => {
                 self.expect("<")?;
                 let inner = self.ty(depth + 1)?;
                 self.expect(">")?;
                 if name == "Outcome" {
                     Type::Outcome(Box::new(inner))
+                } else if name == "Job" {
+                    Type::Job(Box::new(inner))
                 } else {
                     Type::List(Box::new(inner))
                 }
@@ -285,7 +293,7 @@ impl Parser {
         let span = self.span();
         self.expect("record")?;
         let local = self.name()?;
-        if ["Int", "Bool", "Text", "Outcome", "List"].contains(&local.as_str()) {
+        if ["Int", "Bool", "Text", "Outcome", "List", "Job"].contains(&local.as_str()) {
             return Err(error(span, "record name conflicts with a built-in type"));
         }
         let name = qualify(module, &local);
@@ -575,13 +583,26 @@ impl Parser {
                 }
                 TokenKind::Identifier => {
                     self.cursor -= 1;
-                    let mut name =
-                        if ["Ok", "Err", "length", "get", "job_square"].contains(&self.peek()) {
-                            self.cursor += 1;
-                            token.text
-                        } else {
-                            self.name()?
-                        };
+                    let mut name = if [
+                        "Ok",
+                        "Err",
+                        "length",
+                        "get",
+                        "job_square",
+                        "job_start_square",
+                        "job_start_lean",
+                        "job_start_lean_check",
+                        "job_poll",
+                        "job_cancel",
+                        "job_collect",
+                    ]
+                    .contains(&self.peek())
+                    {
+                        self.cursor += 1;
+                        token.text
+                    } else {
+                        self.name()?
+                    };
                     while self.eat(".") {
                         name.push('.');
                         name.push_str(&self.name()?);

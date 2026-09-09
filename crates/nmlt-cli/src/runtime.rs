@@ -44,8 +44,8 @@ pub(super) fn digest(bytes: &[u8]) -> String {
 
 pub(super) fn implementation_digest() -> Result<String, String> {
     let executable = env::current_exe().map_err(|e| e.to_string())?;
-    fs::read(executable)
-        .map(|bytes| digest(&bytes))
+    nmlt_runtime::identity::file(&executable, 256 * 1024 * 1024)
+        .map(|(_, digest)| digest)
         .map_err(|e| e.to_string())
 }
 

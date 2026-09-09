@@ -4,7 +4,10 @@ use std::collections::BTreeSet;
 #[derive(Clone, Debug)]
 pub struct PackageError {
     pub path: String,
-    pub diagnostic: nmlt_core::Diagnostic,
+    pub diagnostic: Box<nmlt_core::Diagnostic>,
+    pub expected: Option<Box<Type>>,
+    pub actual: Option<Box<Type>>,
+    pub related: Vec<(String, Span, String)>,
 }
 
 /// Compile the entry's import closure. The reader receives validated sibling
@@ -100,14 +103,31 @@ pub fn compile_package(
         combined.functions.extend(file.functions);
         combined.records.extend(file.records);
     }
-    check::compile_raw(combined, &scopes, loader.identities.clone())
-        .map_err(|d| located(&loader.identities[d.source].path, d))
+    check::compile_raw(combined, &scopes, loader.identities.clone()).map_err(|d| {
+        let related = d
+            .related
+            .iter()
+            .map(|(location, message)| {
+                (
+                    loader.identities[location.source].path.clone(),
+                    (*location).into(),
+                    message.clone(),
+                )
+            })
+            .collect();
+        let mut error = located(&loader.identities[d.source].path, d);
+        error.related = related;
+        error
+    })
 }
 
 fn located(path: &str, diagnostic: Diagnostic) -> PackageError {
     PackageError {
         path: path.into(),
-        diagnostic: diagnostic.diagnostic,
+        diagnostic: Box::new(diagnostic.diagnostic),
+        expected: diagnostic.expected,
+        actual: diagnostic.actual,
+        related: vec![],
     }
 }
 

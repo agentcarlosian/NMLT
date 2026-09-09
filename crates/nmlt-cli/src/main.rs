@@ -9,8 +9,13 @@ use nmlt_core::{Diagnostic, ParsedFile, lex_source, parse_source};
 use nmlt_eval::{ExploreConfig, explore};
 use nmlt_ir::BehaviorCoreProgram;
 
+mod async_jobs;
+mod diagnostics;
+mod formatting;
+mod invariant;
 mod job_process;
 mod jobs;
+mod project;
 mod runtime;
 mod strict_json;
 mod workflow;
@@ -18,6 +23,15 @@ mod workflow;
 const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
+  nmlt init <new-directory>                             Create a runnable project and tests\n\
+  nmlt lock [project-directory]                        Pin imported sources and local tools\n\
+  nmlt check-project [project-directory]               Check project types, inputs, and lock\n\
+  nmlt check-invariant <file> --behavior <name> --property <System.Name> --max-states <n> --checker <path> --emit-evidence <new-dir> Check finite safety in Lean\n\
+  nmlt run <project-directory> [--arg name=value]       Run with project inputs and budgets\n\
+  nmlt test [project-directory]                        Run declared tests with real adapters\n\
+  nmlt fmt [project-directory|source.nmlt] [--check]     Format workflow source/imports\n\
+  nmlt replay <project.json> --project <directory>      Replay retained project sources\n\
+  nmlt resume <saved-run-directory> --project <directory> [--acknowledge-uncertain-effects <reason>] Resume saved project work\n\
   nmlt check <file>                                      Check structural declarations\n\
   nmlt inspect <file>                                    List recognized systems\n\
   nmlt tokens <file>                                     Print the lossless token stream\n\
@@ -31,19 +45,68 @@ Usage:\n\
   nmlt run <source.nmlt> --entry <name> --max-steps <n> --emit-run <new.json> [--arg name=value] Execute pure functions\n\
   nmlt run <source.nmlt> --entry <name> ... --jobs-dir <new-dir> --max-jobs <1..16> --job-timeout-ms <1..30000> Execute local jobs\n\
   nmlt jobs-recover <jobs-dir>                            Classify unfinished work without redispatch\n\
+  nmlt jobs-resume <jobs-dir> --emit-run <new.json> [--lean-bin <path>] [--acknowledge-uncertain-effects <reason>] Resume saved source\n\
+  nmlt jobs-repair <jobs-dir> --acknowledge-incomplete-tail <reason> Quarantine incomplete final appends\n\
+  nmlt run <source.nmlt> --entry <name> ... --job-slots <1..4> [--lean-bin <path>] Execute scoped async jobs\n\
   nmlt replay <record.json> --source <source.nmlt>         Replay with the same executable\n\
   nmlt version                                           Print the frontend version\n\
   nmlt help                                              Show this help\n\n\
+Prefix a command with --json for structured error diagnostics.\n\
 Lean defines NMLT's normative behavior semantics. Exploration is not verification.\n";
 
 fn main() -> ExitCode {
-    match run(env::args_os().skip(1).collect()) {
+    let mut arguments: Vec<_> = env::args_os().skip(1).collect();
+    let json = arguments.first().is_some_and(|a| a == "--json");
+    if json {
+        arguments.remove(0);
+    }
+    match dispatch(arguments) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("{error}");
+            if json {
+                eprintln!(
+                    "{}",
+                    serde_json::to_string(&error).expect("diagnostic JSON")
+                );
+            } else {
+                eprintln!("{error}");
+            }
             ExitCode::FAILURE
         }
     }
+}
+
+fn dispatch(arguments: Vec<std::ffi::OsString>) -> Result<(), diagnostics::Error> {
+    let command = arguments.first().and_then(|a| a.to_str()).unwrap_or("help");
+    match command {
+        "check-invariant" => return invariant::command(&arguments[1..]),
+        "resume" => return project::resume(&arguments[1..]),
+        "init" | "lock" | "check-project" | "test" => {
+            return project::command(command, &arguments[1..]);
+        }
+        "fmt" => return formatting::command(&arguments[1..]),
+        "run"
+            if arguments.get(1).is_some_and(|p| Path::new(p).is_dir())
+                || (arguments.len() == 1 && Path::new("nmlt.toml").is_file()) =>
+        {
+            return project::command("run", &arguments[1..]);
+        }
+        "replay" if arguments.get(2).is_some_and(|f| f == "--project") => {
+            return project::replay(&arguments[1..]);
+        }
+        "typecheck"
+            if arguments.len() == 4
+                && arguments[2] == "--profile"
+                && arguments[3] == "workflow" =>
+        {
+            workflow::load_diagnostic(Path::new(&arguments[1]), None)?;
+        }
+        "run" if arguments.get(1).is_some() && arguments.iter().any(|a| a == "--entry") => {
+            workflow::load_diagnostic(Path::new(&arguments[1]), None)?;
+        }
+        _ => {}
+    }
+    run(arguments).map_err(Into::into)
 }
 
 fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
@@ -60,6 +123,8 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             println!("nmlt {}", env!("CARGO_PKG_VERSION"));
             Ok(())
         }
+        "jobs-resume" => async_jobs::resume(&arguments[1..]),
+        "jobs-repair" => async_jobs::repair(&arguments[1..]),
         "check" | "inspect" => {
             let path = single_path_argument(command, &arguments[1..])?;
             let parsed = load_and_parse(&path)?;
@@ -157,7 +222,14 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
         }
         "trace" => emit_trace(&arguments[1..]),
         "__square-worker" if arguments.len() == 1 => jobs::worker(),
-        "jobs-recover" => jobs::recover(&single_path_argument(command, &arguments[1..])?),
+        "jobs-recover" => {
+            let directory = single_path_argument(command, &arguments[1..])?;
+            if directory.join("source-context.json").exists() {
+                async_jobs::recover(&directory)
+            } else {
+                jobs::recover(&directory)
+            }
+        }
         "run"
             if arguments[2.min(arguments.len())..]
                 .chunks_exact(2)

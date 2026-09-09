@@ -107,10 +107,10 @@ pub(crate) fn decode(
             }
         }
         // Err is represented by a single Value node, but its JSON payload still costs bytes.
-        if let (Type::Outcome(_), J::Object(fields)) = (ty, j) {
-            if let Some(J::String(s)) = fields.get("Err") {
-                *bytes += s.len();
-            }
+        if let (Type::Outcome(_), J::Object(fields)) = (ty, j)
+            && let Some(J::String(s)) = fields.get("Err")
+        {
+            *bytes += s.len();
         }
         if *nodes > MAX_VALUE_NODES || *bytes > MAX_VALUE_BYTES {
             return Err("input exceeds aggregate value bounds".into());

@@ -51,13 +51,18 @@ byte-for-byte equality.
   bindings, revisioned control, and locked journal with uncertain recovery.
   Its subprocess worker example uses the Rust API; the CLI now connects the same
   protocol to source jobs. The initial asynchronous session API also supervises
-  concurrent children and fixed-template Lean checks under
+  concurrent children and legacy Lean templates under
   [RFC 0023](../rfcs/0023-asynchronous-host-and-lean-adapter.md). Session-specific
   handles, cancellation acknowledgements, collection, and snapshot verification
-  precede source-level asynchronous control. The configured Lean installation
+  support the scoped source controls in [RFC 0024](../rfcs/0024-scoped-source-job-controls.md).
+  The configured Lean installation
   remains an explicit host trust dependency; captured output is not a fresh check.
   [RFC 0018](../rfcs/0018-bounded-local-job-lifecycle.md)
   specifies its separate executable-only boundary.
+  [RFC 0028](../rfcs/0028-contained-process-lifecycle.md) adds process/tree resource
+  policy, [RFC 0029](../rfcs/0029-pinned-init-proof-terms.md) adds closed Init terms
+  and complete installation identity, and [RFC 0030](../rfcs/0030-durable-source-resumption.md)
+  adds durable observations, source decisions, explicit reconciliation and resumption.
 - `nmlt-workflow` consumes the same lossless CST/projection and interprets retained
   function/record slices for pure entry points, acyclic calls, scalar values,
   nominal records, bounded lists/folds, typed outcomes and matching. Its private
@@ -79,6 +84,11 @@ byte-for-byte equality.
   limits and supervision precede validated settlement/collection. The pure
   executor rejects job effects. Job replay reconstructs source and journal
   consistency without launching work; recovery classifies unfinished state.
+  Scoped `Job<Int>`/`Job<Text>` bindings now expose start/poll/cancel/collect.
+  A separate pass checks branch joins, short-circuit operands, and folds for
+  single collection; handles never enter serializable values. The async CLI
+  binds ordered source controls to session journal boundaries and verifies
+  recorded process observations before replaying source without dispatch.
 
 ## Active Lean components
 
@@ -133,6 +143,22 @@ worlds, then checks supplied finite paths against `ResourceDynamics.Behavior`.
 actual initial synchronization, including initialization of its abstract image.
 [RFC 0016](../rfcs/0016-decoded-finite-execution.md) states the binary scope,
 explicit component/peer owner correspondence, and compatibility limits.
+
+## Practical source and finite safety paths
+
+The workflow evaluator moves private job handles through typed components and
+bounded folds. The source host flushes operation intent/reply pairs around the
+locked runtime journal. Resumption reconstructs the exact source prefix,
+restores one handle per logical job, reuses completed artifacts and never
+redispatches an already-dispatched attempt. Operator acknowledgement settles
+uncertain work as failed while preserving its charge. Project snapshots and
+locks bind the same source context through run, replay and resume.
+
+Finite `safety ... = always(...)` declarations use a separate artifact carrying
+the exact predicate. Lean independently checks the predicate representation and
+finite enumeration, then initialization/preservation or an initialized violating
+path. The compiler-to-model and model-to-host correspondence limits remain
+explicit. See [the invariant contract](../rfcs/0026-finite-source-safety-invariants.md).
 
 ## Product formation and theorem premises
 

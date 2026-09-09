@@ -4,10 +4,10 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Immediate milestone: R2 — useful executable language (in progress)
+- Next milestone: R3 — existing Lean projects (planned; R2 local scope complete)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
-- Updated: 2026-09-06
+- Updated: 2026-09-07
 
 This file governs execution priorities and milestone completion. The
 [practical language design](docs/practical-language-plan.md) supplies detailed
@@ -77,7 +77,8 @@ Public documentation must preserve those distinctions.
 The behavioral and retained ordinary compilation routes differ; the reference
 explorer supports finite Bool/Unit/enum state. A separate executable-only profile
 now runs functions with scalars, outcomes, records, bounded lists/folds, and
-opt-in local square jobs. Source Lean jobs, asynchronous source control, and user-defined
+opt-in local jobs. Scoped asynchronous source controls now expose workers and
+fixed Lean templates. General Lean input, source resumption, and user-defined
 behavioral property checking remain planned work.
 Historical independent-checker results do not remove the need for current
 toolchain maintenance.
@@ -88,7 +89,7 @@ toolchain maintenance.
 |---|---|---|---|
 | R0 — Checker and workflow baselines | Complete | Audited baseline | Integration and Lean maintainers |
 | R1 — Unified semantics and finite execution | Complete at finite scope | R0 checker baseline | Lean/semantics and Rust maintainers |
-| R2 — Useful executable language | In progress: finite execution, source packages, bounded local source jobs | R1 for formal execution claims | Compiler/runtime and integration maintainers |
+| R2 — Useful executable language | Completed at local pre-alpha scope on 2026-09-09; see completion audit | R1 for formal execution claims | Compiler/runtime and integration maintainers |
 | R3 — Supported Lean workflows | Planned | R2; adapter prototype can begin in R0 | Lean integration maintainer |
 | R4 — Discovery workflows | Planned | R3 for integration; domain preparation can start earlier | Mathematical reviewer and integration maintainer |
 | R5 — Three-audience alpha validation | Planned | R2–R4 | Maintainers and independent pilot users |
@@ -200,6 +201,14 @@ the necessity of a theorem premise.
 
 ### R2 — Deliver the smallest useful executable language
 
+Completed on 2026-09-09 at local, finite, pre-alpha scope: typed projects,
+dependency locks, finite user safety invariants, affine handle transfer,
+contained local processes, variable Init proof terms and durable source/project
+resumption. The [completion audit](docs/r2-completion-tracker.md) and
+[validation record](docs/reviews/r2-completion-2026-09-09.md) cover the full
+requirements. The increment descriptions below are implementation history.
+RFC acceptance and publication review remain separate.
+
 Started on 2026-09-06 from R1 commit `c1404f1`. The first increment adds
 [direct finite execution and replay](docs/r2-local-execution.md), a shared
 initializer/successor operation for execution and exploration, structured stop
@@ -282,16 +291,34 @@ asynchronous `.nmlt` handles or general Lean source input.
 The [seventh-increment evidence](docs/reviews/r2-lean-async-increment-2026-09-07.md)
 records the current tests and real subprocess validation.
 
-Remaining implementation sequence:
+The eighth increment exposes [scoped asynchronous source controls](docs/r2-source-async.md)
+under [RFC 0024](rfcs/0024-scoped-source-job-controls.md). Let-bound `Job<Int>`
+and `Job<Text>` handles start worker and fixed-template Lean jobs. Poll/cancel
+borrow authority; collection consumes it. Branches agree on consumed handles,
+folds preserve outer authority, and iteration-local jobs must be collected.
+The separate async source record validates source operations against journal
+boundaries and captured observations before replay without redispatch.
+The [eighth-increment evidence](docs/reviews/r2-source-async-increment-2026-09-07.md)
+records the complete native Windows Rust/Lean/NanoDA gate and remaining R2 gaps.
 
-1. Expose asynchronous source job controls with affine checking, broaden the
-   supported Lean request interface, and add stronger dependency/process
-   containment and reconciliation/resumption.
-2. Complete user-defined safety invariants and their evidence/counterexample path.
-3. Add project/toolchain locks, source-located structured diagnostics, formatter,
-   `init`/`test`, and the real-input workflow acceptance example.
+The next increment adds the [local project loop](docs/r2-projects.md) under
+[RFC 0025](rfcs/0025-local-projects-and-dependency-locks.md): manifest inputs,
+dependency/tool locks, initialization, tests, formatting, structured diagnostics,
+and replay from retained source snapshots and executables. The
+[completion tracker](docs/r2-completion-tracker.md) audits the complete milestone;
+project tooling alone does not complete R2.
 
-The full R2 requirements and exit gate remain:
+The [finite safety route](docs/r2-safety-invariants.md) under
+[RFC 0026](rfcs/0026-finite-source-safety-invariants.md) now preserves user
+predicates and constructs Lean-checked initialization/preservation evidence or
+an initialized counterexample. Its reached-set certificate is checked against
+complete semantic state/action enumerations; Rust exploration completeness is
+not assumed. Later completed increments add affine job transfer (RFC 0027),
+contained process lifecycle (RFC 0028), pinned Init proof terms (RFC 0029),
+and durable source/project resumption with explicit uncertainty (RFC 0030).
+The complete reproduction and final follow-up CI are recorded in the audit.
+
+The full R2 requirements and exit gate audited above are:
 
 - Share parsing, names, types, source spans, and lowering facilities where
   appropriate; document the source route for each supported construct.

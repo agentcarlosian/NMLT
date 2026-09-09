@@ -58,3 +58,10 @@ report only `propext`. So do `ExecutionWitness.Certificate.reachable`,
 namespace `NMLT.Artifact`. The fresh R1 completion export checks all package
 declarations under the unchanged policy; it is not a proof export for each
 runtime path-checking invocation.
+
+The R2 finite safety universe and initialization/preservation theorems in
+`NMLT.Artifact.FiniteInvariant`, plus
+`NMLT.Artifact.InvariantWitness.Certificate.safe`, report `propext` and
+`Quot.sound`. `Counterexample.reachable_violation` reports only `propext`.
+They are included in the unchanged focused behavioral audit. The executable
+predicate parser and JSON checker remain in the package's runtime trust boundary.

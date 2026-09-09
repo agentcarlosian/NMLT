@@ -45,6 +45,13 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
 
 ## Language and implementation
 
+- [R2 local projects](r2-projects.md) — init, locks, run/test/replay, formatting, and structured diagnostics
+- [R2 safety invariants](r2-safety-invariants.md) — exact source predicates, Lean-checked closure, and reachable counterexamples
+- [R2 Lean proof terms](r2-lean-terms.md) — dynamic statements/candidates, pinned dependencies and axiom policy
+- [R2 recovery](r2-recovery.md) — durable decisions, explicit uncertainty and project/source resumption
+- [R2 job transfer](r2-job-transfer.md) — moving authority through components and bounded iteration
+- [R2 completion evidence](reviews/r2-completion-2026-09-09.md) — full reproduction, final Rust CI and scoped trust limits
+- [R2 completion tracker](r2-completion-tracker.md) — requirement-by-requirement status of the full milestone
 - [R2 local execution](r2-local-execution.md) — finite source-driven run/replay,
   structured outcomes, and the remaining workflow-runtime boundary
 - [R2 job runtime](../crates/nmlt-runtime/README.md) — bounded job control,
@@ -57,6 +64,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   durable context, replay without dispatch, and recovery inspection
 - [R2 Lean and async host API](r2-lean-async.md) — initial Lean adapter,
   independent deadlines, private handles, cancellation, and collection
+- [R2 scoped async source jobs](r2-source-async.md) — affine source controls,
+  worker/Lean template jobs, and source/session replay
 - [Source corpus](source-corpus.md) — historical frontend corpus and provenance
 - [Untyped projection](untyped-core-desugaring.md)
 - [Typed executable core](typed-executable-core.md) — retained ordinary
@@ -97,6 +106,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — bounded source effects, subprocess supervision, durable context, replay, and recovery
 - [R2 seventh-increment evidence](reviews/r2-lean-async-increment-2026-09-07.md)
   — initial Lean adapter, asynchronous host controls, cancellation, and snapshot validation
+- [R2 eighth-increment evidence](reviews/r2-source-async-increment-2026-09-07.md)
+  — scoped source controls and native Windows validation
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

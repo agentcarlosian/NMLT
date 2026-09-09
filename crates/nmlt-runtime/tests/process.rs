@@ -8,9 +8,16 @@ fn probe(mode: &str) -> Command {
     command
         .args(["--exact", "process_probe", "--nocapture"])
         .env("NMLT_ASYNC_PROBE", mode);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x0800_0000);
+    }
     command
 }
 #[test]
+// These fixtures deliberately leave descendants for the supervisor to reap.
+#[allow(clippy::zombie_processes)]
 fn process_probe() {
     let Ok(mode) = std::env::var("NMLT_ASYNC_PROBE") else {
         return;
@@ -33,8 +40,153 @@ fn process_probe() {
             assert_eq!(input, b"hello");
             print!("received");
         }
+        "late-marker" => {
+            std::thread::sleep(Duration::from_millis(800));
+            std::fs::write(
+                std::env::var_os("NMLT_PROCESS_MARKER").unwrap(),
+                b"survived",
+            )
+            .unwrap();
+        }
+        "descendant" | "orphan" => {
+            let marker = std::path::PathBuf::from(std::env::var_os("NMLT_PROCESS_MARKER").unwrap());
+            let _child = probe("late-marker")
+                .env("NMLT_PROCESS_MARKER", &marker)
+                .spawn()
+                .unwrap();
+            std::fs::write(marker.with_extension("ready"), b"ready").unwrap();
+            if mode == "orphan" {
+                std::process::exit(0);
+            }
+            std::thread::sleep(Duration::from_secs(5));
+        }
+        #[cfg(windows)]
+        "supervisor" => {
+            let marker = std::path::PathBuf::from(std::env::var_os("NMLT_PROCESS_MARKER").unwrap());
+            let mut command = probe("late-marker");
+            command.env("NMLT_PROCESS_MARKER", &marker);
+            let _child = Process::start(command, vec![], Duration::from_secs(5)).unwrap();
+            std::fs::write(marker.with_extension("ready"), b"ready").unwrap();
+            std::thread::sleep(Duration::from_secs(5));
+        }
+        #[cfg(windows)]
+        "memory-limit" => {
+            let mut data = Vec::<u8>::new();
+            assert!(data.try_reserve_exact(2 * 1024 * 1024 * 1024).is_err());
+            print!("memory-ceiling-enforced");
+        }
+        #[cfg(windows)]
+        "process-limit" => {
+            let mut children = vec![];
+            for _ in 0..16 {
+                match probe("sleep")
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+                {
+                    Ok(child) => children.push(child),
+                    Err(_) => break,
+                }
+            }
+            let count = children.len();
+            for child in &mut children {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+            assert_eq!(
+                count, 15,
+                "root plus children must fit sixteen process slots"
+            );
+            print!("process-ceiling-enforced");
+        }
         _ => panic!("unknown mode"),
     }
+}
+
+fn marker(name: &str) -> std::path::PathBuf {
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/process-tree-tests");
+    std::fs::create_dir_all(&root).unwrap();
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    root.join(format!("{name}-{}-{stamp}", std::process::id()))
+}
+fn await_ready(marker: &std::path::Path) {
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while !marker.with_extension("ready").exists() {
+        assert!(Instant::now() < deadline, "descendant was not started");
+        std::thread::sleep(Duration::from_millis(2));
+    }
+}
+
+#[test]
+fn timeout_cancel_drop_and_root_exit_do_not_leave_descendants() {
+    for mode in ["timeout", "cancel", "drop", "orphan"] {
+        let marker = marker(mode);
+        let mut command = probe(if mode == "orphan" {
+            "orphan"
+        } else {
+            "descendant"
+        });
+        command.env("NMLT_PROCESS_MARKER", &marker);
+        let mut child = Process::start(
+            command,
+            vec![],
+            if mode == "timeout" {
+                Duration::from_millis(400)
+            } else {
+                Duration::from_secs(5)
+            },
+        )
+        .unwrap();
+        child.policy().validate().unwrap();
+        await_ready(&marker);
+        if mode == "cancel" {
+            assert!(child.cancel().as_ref().unwrap_err().child_reaped);
+        } else if mode != "drop" {
+            assert!(child.wait().as_ref().unwrap_err().child_reaped);
+        }
+        drop(child);
+        std::thread::sleep(Duration::from_millis(950));
+        assert!(!marker.exists(), "{mode} left a descendant alive");
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_job_limits_and_abrupt_supervisor_death_are_enforced() {
+    for mode in ["memory-limit", "process-limit"] {
+        let mut child = Process::start(probe(mode), vec![], Duration::from_secs(5)).unwrap();
+        assert_eq!(child.policy().mechanism, "job_object");
+        assert_eq!(child.policy().max_processes, Some(16));
+        let output = child
+            .wait()
+            .as_ref()
+            .unwrap_or_else(|error| panic!("{mode}: {error:?}"));
+        assert_eq!(
+            output.exit_code,
+            Some(0),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    let marker = marker("parent-death");
+    let mut supervisor = probe("supervisor")
+        .env("NMLT_PROCESS_MARKER", &marker)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    await_ready(&marker);
+    supervisor.kill().unwrap();
+    supervisor.wait().unwrap();
+    std::thread::sleep(Duration::from_millis(1100));
+    assert!(
+        !marker.exists(),
+        "kernel job must close when supervisor is killed"
+    );
 }
 #[test]
 fn completed_child_does_not_timeout_when_polled_late() {

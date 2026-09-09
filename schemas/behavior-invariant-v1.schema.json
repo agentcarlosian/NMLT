@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/behavior-invariant-v1.schema.json",
+  "title": "NMLT finite safety predicate artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "core_sha256", "source_sha256", "behavior", "property"],
+  "properties": {
+    "schema": {"const": "behavior-invariant-v1"},
+    "core_sha256": {"$ref": "#/$defs/digest"},
+    "source_sha256": {"$ref": "#/$defs/digest"},
+    "behavior": {"type": "string", "minLength": 1},
+    "property": {
+      "type": "object", "additionalProperties": false,
+      "required": ["system", "name", "expression", "expression_start", "expression_end", "declaration_start", "declaration_end", "predicate"],
+      "properties": {
+        "system": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1, "maxLength": 256},
+        "expression": {"type": "string", "maxLength": 4096},
+        "expression_start": {"type": "integer", "minimum": 0},
+        "expression_end": {"type": "integer", "minimum": 0},
+        "declaration_start": {"type": "integer", "minimum": 0},
+        "declaration_end": {"type": "integer", "minimum": 0},
+        "predicate": {"$ref": "#/$defs/predicate"}
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "predicate": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["kind", "term"], "properties": {
+          "kind": {"const": "boolean"}, "term": {"$ref": "behavior-core-v2.schema.json#/$defs/term"}
+        }},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": {
+          "kind": {"const": "not"}, "value": {"$ref": "#/$defs/predicate"}
+        }},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "left", "right"], "properties": {
+          "kind": {"enum": ["and", "or", "implies"]}, "left": {"$ref": "#/$defs/predicate"}, "right": {"$ref": "#/$defs/predicate"}
+        }}
+      ]
+    }
+  }
+}

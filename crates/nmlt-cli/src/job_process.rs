@@ -1,13 +1,13 @@
-//! Supervisor for the fixed, same-executable square worker. No shell or source
-//! command selection. Pipe memory and elapsed time are bounded; this is not a
-//! CPU/memory quota or a process-tree sandbox.
+//! Synchronous fixed-worker view over the shared contained process supervisor.
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
 use std::io::{Read, Write};
-use std::process::{Command, Stdio};
-use std::sync::mpsc;
-use std::time::{Duration, Instant};
-
-const PIPE_BYTES: usize = 65_536;
+use std::process::Command;
+use std::time::Duration;
+#[cfg(test)]
+use std::time::Instant;
+#[cfg(test)]
+const PIPE_BYTES: usize = nmlt_runtime::process::PIPE_BYTES;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -24,127 +24,36 @@ pub(super) enum FailureKind {
 #[serde(deny_unknown_fields)]
 pub(super) struct Failure {
     pub kind: FailureKind,
-    /// No child was started, or try_wait confirmed that the direct child exited.
     pub child_reaped: bool,
 }
 
-enum Event {
-    Input(bool),
-    Output(Result<Vec<u8>, FailureKind>),
-    Error(Result<Vec<u8>, FailureKind>),
-}
-
-fn read_pipe(mut pipe: impl Read) -> Result<Vec<u8>, FailureKind> {
-    let mut bytes = Vec::new();
-    pipe.by_ref()
-        .take(PIPE_BYTES as u64 + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|_| FailureKind::Io)?;
-    if bytes.len() > PIPE_BYTES {
-        Err(FailureKind::OutputLimit)
-    } else {
-        Ok(bytes)
-    }
-}
-
-pub(super) fn run(
-    mut command: Command,
-    input: Vec<u8>,
-    timeout: Duration,
-) -> Result<Vec<u8>, Failure> {
-    if input.len() > PIPE_BYTES {
+pub(super) fn run(command: Command, input: Vec<u8>, timeout: Duration) -> Result<Vec<u8>, Failure> {
+    use nmlt_runtime::process::{FailureKind as Kind, Process};
+    let convert = |error: nmlt_runtime::process::Failure| Failure {
+        kind: match error.kind {
+            Kind::Spawn => FailureKind::Spawn,
+            Kind::Timeout => FailureKind::Timeout,
+            Kind::OutputLimit => FailureKind::OutputLimit,
+            Kind::Io | Kind::Cancelled => FailureKind::Io,
+        },
+        child_reaped: error.child_reaped,
+    };
+    let mut process = Process::start(command, input, timeout).map_err(convert)?;
+    let output = process.wait().clone().map_err(convert)?;
+    if output.exit_code != Some(0) {
         return Err(Failure {
-            kind: FailureKind::Io,
+            kind: FailureKind::Exit,
             child_reaped: true,
         });
     }
-    command
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    if !output.stderr.is_empty() {
+        return Err(Failure {
+            kind: FailureKind::Protocol,
+            child_reaped: true,
+        });
     }
-    let start = Instant::now();
-    let mut child = command.spawn().map_err(|_| Failure {
-        kind: FailureKind::Spawn,
-        child_reaped: true,
-    })?;
-    let mut stdin = child.stdin.take().expect("piped stdin");
-    let stdout = child.stdout.take().expect("piped stdout");
-    let stderr = child.stderr.take().expect("piped stderr");
-    let (send, receive) = mpsc::channel();
-    let output_send = send.clone();
-    let error_send = send.clone();
-    std::thread::spawn(move || {
-        let ok = stdin.write_all(&input).is_ok();
-        drop(stdin);
-        let _ = send.send(Event::Input(ok));
-    });
-    std::thread::spawn(move || {
-        let _ = output_send.send(Event::Output(read_pipe(stdout)));
-    });
-    std::thread::spawn(move || {
-        let _ = error_send.send(Event::Error(read_pipe(stderr)));
-    });
-    let (mut written, mut output, mut errors, mut status) = (false, None, false, None);
-    let failure = loop {
-        if start.elapsed() >= timeout {
-            break FailureKind::Timeout;
-        }
-        match child.try_wait() {
-            Ok(Some(exit)) => {
-                status = Some(exit);
-                if !exit.success() {
-                    break FailureKind::Exit;
-                }
-            }
-            Ok(None) => {}
-            Err(_) => break FailureKind::Io,
-        }
-        if status.is_some()
-            && written
-            && errors
-            && let Some(output) = output
-        {
-            return Ok(output);
-        }
-        match receive.recv_timeout(Duration::from_millis(2)) {
-            Ok(Event::Input(true)) => written = true,
-            Ok(Event::Input(false)) => break FailureKind::Io,
-            Ok(Event::Output(Ok(bytes))) => output = Some(bytes),
-            Ok(Event::Error(Ok(bytes))) if bytes.is_empty() => errors = true,
-            Ok(Event::Error(Ok(_))) => break FailureKind::Protocol,
-            Ok(Event::Output(Err(kind)) | Event::Error(Err(kind))) => break kind,
-            Err(mpsc::RecvTimeoutError::Timeout) => {}
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                // All pipe tasks finished; try_wait may still lag pipe closure.
-                std::thread::sleep(Duration::from_millis(2));
-            }
-        }
-    };
-    let mut reaped = status.is_some();
-    if !reaped {
-        let _ = child.kill();
-        let cleanup = Instant::now();
-        while cleanup.elapsed() < Duration::from_secs(1) {
-            if matches!(child.try_wait(), Ok(Some(_))) {
-                reaped = true;
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(2));
-        }
-    }
-    // Pipe tasks hold only bounded buffers and OS handles. Do not join a task
-    // indefinitely if cleanup failed. A failure never becomes a domain Err.
-    Err(Failure {
-        kind: failure,
-        child_reaped: reaped,
-    })
+    Ok(output.stdout)
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

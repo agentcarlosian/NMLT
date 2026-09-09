@@ -16,8 +16,8 @@ pub enum CorePortDirection {
     Output,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[derive(Clone, Debug, serde::Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CoreBehaviorTerm {
     Bool {
         r#type: String,

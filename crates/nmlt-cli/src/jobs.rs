@@ -16,6 +16,7 @@ const PROFILE: &str = "local-job-workflow-v1";
 const MAX_CONTEXT_BYTES: u64 = 1_048_576;
 
 pub(super) struct Options {
+    pub project_context: Option<String>,
     pub directory: PathBuf,
     pub max_jobs: u32,
     pub timeout_ms: u64,
@@ -25,9 +26,12 @@ pub(super) struct Options {
 #[serde(deny_unknown_fields)]
 struct Context {
     schema: String,
+    process_contract: String,
     profile: String,
     assurance: String,
     implementation_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    project_context_sha256: Option<String>,
     source_path: String,
     sources: Vec<SourceIdentity>,
     program_sha256: String,
@@ -53,7 +57,9 @@ impl Context {
         rt::sha256(&serde_json::to_vec(self).expect("context serialization"))
     }
     fn validate(&self) -> Result<(), String> {
-        if self.schema != "nmlt-local-job-context-v1"
+        super::workflow::validate_project_context(&self.project_context_sha256)?;
+        if self.schema != "nmlt-local-job-context-v2"
+            || self.process_contract != rt::process::CONTRACT
             || self.profile != PROFILE
             || self.assurance != "none"
             || self.adapter != rt::worker::adapter()
@@ -158,10 +164,12 @@ pub(super) fn run(
 ) -> Result<(), String> {
     nmlt_workflow::validate_inputs(program, &entry, &inputs, max_steps)?;
     let context = Context {
-        schema: "nmlt-local-job-context-v1".into(),
+        schema: "nmlt-local-job-context-v2".into(),
+        process_contract: rt::process::CONTRACT.into(),
         profile: PROFILE.into(),
         assurance: "none".into(),
         implementation_sha256: implementation_digest()?,
+        project_context_sha256: options.project_context,
         source_path,
         sources: program.sources().to_vec(),
         program_sha256: program.identity(),
@@ -510,10 +518,12 @@ mod tests {
             let source = "fn main() -> Outcome<Int> { match job_square(-1) { Ok(value) => Ok(value), Err(message) => job_square(5) } }";
             let program = nmlt_workflow::compile(source).unwrap();
             let context = Context {
-                schema: "nmlt-local-job-context-v1".into(),
+                schema: "nmlt-local-job-context-v2".into(),
+                process_contract: rt::process::CONTRACT.into(),
                 profile: PROFILE.into(),
                 assurance: "none".into(),
                 implementation_sha256: implementation_digest().unwrap(),
+                project_context_sha256: None,
                 source_path: "source.nmlt".into(),
                 sources: program.sources().to_vec(),
                 program_sha256: program.identity(),
