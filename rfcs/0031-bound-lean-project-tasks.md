@@ -66,6 +66,11 @@ trusted. Independent proof validity does not independently establish statement
 faithfulness, novelty, or the correctness of the host's bindings. Byte hashes
 identify inputs and are not signatures or tamper-proof storage.
 
+R3 compilation uses a 768 MiB Lean memory limit. Linux calibration of the
+target helper measured approximately 596 MiB peak resident memory; 512 MiB
+failed and 768 MiB passed. The existing OS-level process bounds, 30-second
+deadline and all proof/axiom checks are unchanged.
+
 The first export profile retains the supervisor's 64 KiB raw stdout limit;
 larger proof closures fail closed. The native exporter avoids loading its full
 Lean source environment into the elaborator during every export. A broader

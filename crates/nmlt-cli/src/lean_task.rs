@@ -498,7 +498,7 @@ impl Run {
         command
             .args([
                 "--threads=1",
-                "--memory=512",
+                "--memory=768",
                 "-DmaxHeartbeats=200000",
                 "-o",
             ])

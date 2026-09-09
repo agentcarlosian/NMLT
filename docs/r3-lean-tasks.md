@@ -97,8 +97,11 @@ This increment supports at most 64 ordered local modules, 1 MiB per module,
 16 MiB of source in total, the existing 4 KiB closed proof-term grammar, and
 64 KiB of raw output per process. The independent export also has that 64 KiB
 bound; larger proof closures are rejected. Each process has a 30-second
-deadline and the existing process memory/cleanup policy. Lean thread stacks
-are explicitly 64 MiB. Metadata and universe-name limits may reject complex
+deadline and the existing process memory/cleanup policy. Lean's own memory
+limit is 768 MiB: the Linux target helper exceeded 512 MiB and measured about
+596 MiB peak resident memory during calibration. The OS bounds remain 1 GiB
+for a Windows process job and 2 GiB per POSIX process data segment. Lean thread
+stacks are explicitly 64 MiB. Metadata and universe-name limits may reject complex
 targets. Such rejection is not a claim that the target is false.
 
 The project is trusted host code: imports, initializers, elaborators and
