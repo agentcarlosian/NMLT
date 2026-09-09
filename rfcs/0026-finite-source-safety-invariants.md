@@ -54,6 +54,11 @@ source, core, predicate, witness, checker executable, and observed checker resul
 A finite model invariant does not establish the same property for external
 workers without the stated abstraction/simulation obligation.
 
+The bounded native checker uses the same explicit 64 MiB Lean thread stacks
+and allocator arena reservation as the Lean job adapter. This permits startup
+under the existing Linux data-segment limit; process bounds and invariant
+acceptance checks remain unchanged.
+
 Positive tests include Boolean/enum predicates, a nontrivial preserved property,
 and an invariant requiring the reached-set strengthening. Negative tests include
 an initial violation, a reachable later violation, omitted states, altered steps,
