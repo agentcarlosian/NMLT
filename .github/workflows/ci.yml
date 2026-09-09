@@ -121,3 +121,7 @@ jobs:
 
       - name: Bind local Lean tasks and independently recheck final proof artifacts
         run: make r3-lean-projects
+
+      - name: Calibrate target helper memory on Linux
+        if: failure()
+        run: python3 tools/diagnose_lean_task_memory.py "$(cd mechanization/lean && elan which lean)"
