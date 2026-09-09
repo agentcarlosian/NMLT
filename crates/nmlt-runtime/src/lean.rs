@@ -134,8 +134,11 @@ impl Toolchain {
             || !reported.starts_with(&format!("Lean (version {},", version()))
         {
             return Err(Error(format!(
-                "Lean version mismatch; require {}",
-                version()
+                "Lean version preflight failed; require {}; exit={:?}; stdout={:?}; stderr={:?}",
+                version(),
+                output.exit_code,
+                reported,
+                String::from_utf8_lossy(&output.stderr)
             )));
         }
         if executable_digest(&executable)? != digest {
