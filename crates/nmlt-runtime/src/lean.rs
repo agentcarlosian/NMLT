@@ -169,6 +169,13 @@ impl Toolchain {
     pub fn files(&self) -> &[crate::identity::FileIdentity] {
         &self.files
     }
+    /// Recheck the complete installation after a bounded project checking run.
+    pub fn verify_unchanged(&self) -> Result<(), Error> {
+        if installation(&self.executable)? != self.files {
+            return Err(Error("Lean installation changed during checking".into()));
+        }
+        Ok(())
+    }
     pub(crate) fn prepare_candidate(
         &self,
         candidate: Candidate,
@@ -187,6 +194,11 @@ impl Toolchain {
         command.args(["--stdin", "--threads=1", "--memory=512"]);
         Ok((request, command, source.into_bytes()))
     }
+}
+
+/// The same closed proof-term grammar used by the Init adapter.
+pub fn render_proof_term(source: &str) -> Result<String, Error> {
+    crate::lean_term::render(source)
 }
 fn installation(executable: &Path) -> Result<Vec<crate::identity::FileIdentity>, Error> {
     let bin = executable

@@ -27,6 +27,11 @@ constructs currently have an executable-only interpretation.
 The [source package increment](r2-source-packages.md) adds reusable libraries,
 per-file resolution, and version 3 replay over the complete import closure.
 
+R3 is in progress. Its [first local Lean task profile](r3-lean-tasks.md) binds
+exact targets and saved source environments, checks separate candidates, and
+exports independently checked proofs with fresh rechecking and readable patches.
+The current profile has explicit small-project and proof-export bounds.
+
 ## Now: make the pivot publicly coherent
 
 - align README, security, contributor, RFC, example, and Lean documentation

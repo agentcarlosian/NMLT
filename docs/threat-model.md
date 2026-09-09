@@ -162,6 +162,16 @@ identifies the tested commits and platform-specific evidence.
 
 ## Residual trust
 
+The [R3 local task profile](r3-lean-tasks.md) builds trusted Lean source modules
+from a bound snapshot. A candidate supplies only a closed proof term for an
+externally selected task hash. Source, definition, statement, universe or policy
+revisions change that identity. Lean checks the selected target, and NanoDA
+independently checks the final exported proof closure under its axiom policy.
+Project initializers/elaborators, host capture and target binding, tool delivery
+and the exporter remain trusted. The profile does not isolate arbitrary
+unreviewed Lean source from the filesystem or network, and an independent proof
+check does not establish human intent or statement faithfulness.
+
 - host CPU, memory, kernel, filesystem, process execution, and SHA-256;
 - Rust and Lean bootstrap/download infrastructure;
 - Cargo and Lake dependency delivery;

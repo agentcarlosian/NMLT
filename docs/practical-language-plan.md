@@ -139,6 +139,11 @@ Lifecycle controls must include a delayed result from a previous occupant of a r
 
 ## R3 — Make existing Lean projects a supported workflow
 
+The first [bounded local-task increment](r3-lean-tasks.md) implements source and
+target binding, separate proof candidates, actual dependency exports and fresh
+independent proof rechecking. R3 remains in progress; the integration and scale
+requirements below remain the milestone's complete gate.
+
 Owners: Lean integration maintainer. Dependencies: R2; a batch adapter spike and baseline can start in R0.
 
 - Accept a pinned Lean project and a reviewed target declaration. Record the target's environment, assumptions, imported definition closure, and exact statement identity. Source hashes aid identification; Lean-side checking must establish the formal target match.

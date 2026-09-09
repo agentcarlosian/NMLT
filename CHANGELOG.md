@@ -4,6 +4,13 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Started R3 with bound tasks in trusted local Lean projects: explicit source
+  snapshots, a separately selected task hash, closed proof candidates, final
+  proof exports checked by NanoDA, additive Lean patches, and fresh rechecking
+  using retained sources and the exact CLI executable (RFC 0031). This bounded
+  executable-only increment leaves broader project, editor and asynchronous
+  integration in progress. See [the guide](docs/r3-lean-tasks.md).
+
 - Completed R2 at local pre-alpha scope: projects and exact dependency locks,
   affine source job transfer, variable Init proof terms, process/resource
   containment, durable source/project resumption and finite user safety

@@ -15,6 +15,7 @@ mod formatting;
 mod invariant;
 mod job_process;
 mod jobs;
+mod lean_task;
 mod project;
 mod runtime;
 mod strict_json;
@@ -23,6 +24,7 @@ mod workflow;
 const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
+  nmlt lean-task <bind|prove|recheck> --help             Bind and independently check a local Lean task\n\
   nmlt init <new-directory>                             Create a runnable project and tests\n\
   nmlt lock [project-directory]                        Pin imported sources and local tools\n\
   nmlt check-project [project-directory]               Check project types, inputs, and lock\n\
@@ -79,6 +81,7 @@ fn main() -> ExitCode {
 fn dispatch(arguments: Vec<std::ffi::OsString>) -> Result<(), diagnostics::Error> {
     let command = arguments.first().and_then(|a| a.to_str()).unwrap_or("help");
     match command {
+        "lean-task" => return lean_task::command(&arguments[1..]).map_err(Into::into),
         "check-invariant" => return invariant::command(&arguments[1..]),
         "resume" => return project::resume(&arguments[1..]),
         "init" | "lock" | "check-project" | "test" => {

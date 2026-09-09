@@ -45,6 +45,7 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
 
 ## Language and implementation
 
+- [R3 local Lean tasks](r3-lean-tasks.md) — bound project targets, separate candidates, independent proof artifacts and fresh rechecking
 - [R2 local projects](r2-projects.md) — init, locks, run/test/replay, formatting, and structured diagnostics
 - [R2 safety invariants](r2-safety-invariants.md) — exact source predicates, Lean-checked closure, and reachable counterexamples
 - [R2 Lean proof terms](r2-lean-terms.md) — dynamic statements/candidates, pinned dependencies and axiom policy
@@ -108,6 +109,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — initial Lean adapter, asynchronous host controls, cancellation, and snapshot validation
 - [R2 eighth-increment evidence](reviews/r2-source-async-increment-2026-09-07.md)
   — scoped source controls and native Windows validation
+- [R3 first-increment evidence](reviews/r3-local-lean-tasks-2026-09-09.md)
+  — bound local Lean targets, independent proof artifacts and fresh rechecks
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)
