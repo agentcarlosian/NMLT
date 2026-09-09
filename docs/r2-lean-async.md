@@ -7,11 +7,13 @@ The first Lean adapter checks fixed proof templates for `forall n : Nat, 0 + n =
 The [proof-term interface](r2-lean-terms.md) adds dynamic statement/candidate inputs;
 [transfer](r2-job-transfer.md) and [source resumption](r2-recovery.md) are also available.
 
-The adapter explicitly sets Lean's thread stack to 64 MiB before runtime
-initialization. Lean 4.33.1 otherwise defaults to 1 GiB per thread, which fails
-to create the required threads under the Unix process data-segment limit.
-The existing process memory ceiling is retained. This launch setting is part
-of the adapter contract digest; older captures require their retained executable.
+The adapter explicitly sets Lean's thread stack and mimalloc's initial arena
+reservation to 64 MiB. Their large defaults interact with the Unix process
+data-segment limit: Linux calibration confirmed that the stack setting alone
+still fails to create a thread, while the smaller arena permits startup under
+the same limit. The process memory ceiling is retained. These launch settings
+are part of the adapter contract digest; older captures require their retained
+executable.
 
 Run the real example using the direct executable from the pinned Lean installation:
 

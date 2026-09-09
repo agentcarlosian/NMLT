@@ -10,12 +10,14 @@ use std::process::Command;
 use std::time::Duration;
 
 const REPORT: &str = "'NMLTJob.checked_target' does not depend on any axioms";
-const CONTRACT: &str = "nmlt-lean-zero-add-v1; stdin; threads=1; stack-kib=65536; memory=512; heartbeats=200000; accepted-strategies=existing-lemma|induction; exact-empty-axiom-report";
+const CONTRACT: &str = "nmlt-lean-zero-add-v1; stdin; threads=1; stack-kib=65536; arena-kib=65536; memory=512; heartbeats=200000; accepted-strategies=existing-lemma|induction; exact-empty-axiom-report";
 const TERM_CONTRACT: &str =
     "nmlt-init-terms-v1; closed-term-grammar; statement:Prop; empty-axioms; exact-bin-lib-tree";
 /// Lean's 1 GiB default thread stacks cannot fit multiple threads within the
 /// Unix data-segment limit. Set this before Lean's runtime initializes.
 pub const STACK_KIB: &str = "65536";
+/// Bound mimalloc's initial eager arena reservation as well as thread stacks.
+pub const ARENA_KIB: &str = "65536";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -209,6 +211,7 @@ fn clean_command(executable: &Path) -> Result<Command, Error> {
     command
         .env_clear()
         .env("LEAN_STACK_SIZE_KB", STACK_KIB)
+        .env("MIMALLOC_ARENA_RESERVE", ARENA_KIB)
         .current_dir(
             executable
                 .parent()
