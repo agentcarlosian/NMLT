@@ -13,8 +13,9 @@ records every original branch/tag target and the zero-missing-commit check.
 
 Public main had already merged the five pivot PRs using a parallel commit
 series. The integration merge joins that public ancestry with the original
-private development line. Its active Rust/Lean/schema/example implementation
-matches the validated R2 snapshot. Public historical notices, the disposition
+private development line. Its initial Rust/Lean/schema/example implementation
+matched the validated R2 snapshot; subsequent Linux integration fixes are
+recorded below. Public historical notices, the disposition
 of RFC 0004, and the newer pinned checkout/Lean-action versions are retained.
 
 Two side branches contain additional historical research: nine commits on
@@ -34,7 +35,7 @@ can be reviewed before merging. R3 follows on a separate branch.
 
 - Every private branch/tag commit is reachable from the preservation merge;
   no private commit is missing.
-- The active implementation was compared against the completed R2 snapshot;
+- The initial integration was compared against the completed R2 snapshot;
   differences are public documentation disposition and pinned CI action updates.
 - Full `make reproduce` passed from the clean public checkout at `f683b12`,
   from 06:56:34Z to 07:22:44Z on 2026-09-09 (exit 0). It passed 345 Rust tests,
@@ -58,6 +59,33 @@ can be reviewed before merging. R3 follows on a separate branch.
   no candidates. This is a limited publication check, not a security audit.
 - Independent cross-family/human review is an open gate. This is explicitly
   recorded as required by the contribution policy; the migration PR is a draft.
+
+## Public Linux integration
+
+The [complete pull-request CI run at 87a5307](https://github.com/agentcarlosian/NMLT/actions/runs/34331282529)
+passed both jobs: 346 native Linux Rust tests and 14 Python tests, plus the
+complete Lean/NanoDA, R0, asynchronous/source/project, variable proof-term,
+finite execution and invariant gates. The platform-specific Rust test count
+differs from the 345-test Windows gate above.
+
+Public CI exposed integration issues that the Windows run could not establish:
+
+- Process-tree cancellation and timeout now kill descendants before waiting
+  for inherited output pipes to drain. POSIX fallback also detects a departed
+  group leader while descendants remain. The Linux descendant-lifecycle
+  regression now passes, and the runtime suite also passed again on Windows.
+- Both the Lean adapter and native invariant checker receive explicit 64 MiB
+  thread stacks and allocator arena reservation. Bounded Linux startup
+  calibration demonstrated the required allocator setting under the existing
+  data-segment limit. The invariant fix also passed the real native Windows
+  invariant/counterexample cases and all 15 rejection controls.
+- CI omits embedded Rust debug symbols and optimizes installation hashing in
+  the Lean integration job. Debug assertions, proof checks and process bounds
+  remain enabled. The separate Rust job uses the default optimization level.
+  This lets all repeated installation checks finish within the CI budget.
+
+The final CLI changes remain within R2's documented local pre-alpha scope.
+R3 implementation and its separate evidence follow in a stacked draft PR.
 
 The R2 claim ceilings and exact-executable replay requirements continue to
 apply. Preserving a historical commit does not certify its earlier claims
