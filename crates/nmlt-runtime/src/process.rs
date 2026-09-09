@@ -14,7 +14,7 @@ use tokio::io::AsyncWrite;
 use tokio_util::sync::CancellationToken;
 
 pub const PIPE_BYTES: usize = 65_536;
-pub const CONTRACT: &str = "nmlt-contained-process-v1;processkit-3.3.4;raw-pipes-65536;explicit-environment;no-filesystem-or-network-sandbox";
+pub const CONTRACT: &str = "nmlt-contained-process-v1;processkit-3.3.4;raw-pipes-65536;tree-kill-before-pipe-drain;explicit-environment;no-filesystem-or-network-sandbox";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -179,7 +179,7 @@ impl Process {
                         return;
                     }
                 };
-                let result = runtime.block_on(supervise(spec, cancelled, ready));
+                let result = runtime.block_on(supervise(spec, timeout, cancelled, ready));
                 let _ = send.send(result);
             })
             .map_err(|_| failure(FailureKind::Io, true))?;
@@ -272,6 +272,7 @@ impl AsyncWrite for Capture {
 
 async fn supervise(
     spec: processkit::Command,
+    timeout: Duration,
     cancelled: Receiver<()>,
     ready: mpsc::SyncSender<std::result::Result<Policy, Failure>>,
 ) -> Result {
@@ -355,18 +356,43 @@ async fn supervise(
         let _ = ready.send(Err(error.clone()));
         return Err(error);
     };
+    let deadline = Instant::now() + timeout.saturating_sub(running.elapsed());
     let _ = ready.send(Ok(policy));
     let output = running.output_bytes();
     tokio::pin!(output);
     let mut detached = false;
+    let mut expired = false;
     let mut root_gone = None;
     let result = loop {
         tokio::select! {
+            biased;
             result = &mut output => break result,
             _ = tokio::time::sleep(Duration::from_millis(10)) => {
                 if !matches!(cancelled.try_recv(), Err(mpsc::TryRecvError::Empty)) { token.cancel(); }
+                if !token.is_cancelled() && Instant::now() >= deadline {
+                    expired = true;
+                    token.cancel();
+                }
+                // A shared-group RunningProcess timeout/cancel reaches the root.
+                // Kill the group here before awaiting inherited pipe EOF.
+                if token.is_cancelled() { let _ = group.kill_all(); }
                 if let Ok(members) = group.members() {
-                    if !members.contains(&root_pid) && !members.is_empty() {
+                    // POSIX fallback membership lists group leaders even after
+                    // a leader exits while descendants retain its group. On
+                    // Linux/macOS, enriched membership omits a vanished leader.
+                    let root_present = if group.mechanism().name() == "process_group"
+                        && cfg!(any(target_os = "linux", target_vendor = "apple"))
+                    {
+                        match group.members_info() {
+                            Ok(info) => info.iter().any(|member| member.pid() == root_pid),
+                            Err(_) => {
+                                detached = true;
+                                let _ = group.kill_all();
+                                false
+                            }
+                        }
+                    } else { members.contains(&root_pid) };
+                    if !root_present && !members.is_empty() {
                         // A job can briefly retain a just-terminated member in
                         // its kernel list. Allow that cleanup to settle before
                         // classifying a persistent descendant as detached work.
@@ -410,6 +436,9 @@ async fn supervise(
     }
     if stderr.overflow.load(Ordering::Acquire) {
         return Err(failure(FailureKind::OutputLimit, clean));
+    }
+    if expired {
+        return Err(failure(FailureKind::Timeout, clean));
     }
     if detached {
         return Err(failure(FailureKind::Io, clean));

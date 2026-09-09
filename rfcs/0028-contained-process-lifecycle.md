@@ -51,3 +51,12 @@ Add descendants holding inherited pipes, explicit cancellation/drop cleanup,
 Windows abrupt-parent-death cleanup, and Windows memory/process ceilings. All
 test children and markers remain within bounded local fixtures. Record platform
 coverage without attributing the Windows guarantees to an untested Unix host.
+
+Linux integration follow-up (2026-09-09): the supervisor now requests whole-group
+termination when its deadline/cancellation fires, before waiting for inherited
+pipe EOF. A shared-group ProcessKit run controls its direct child; waiting for
+its output before killing the group let a descendant retain the pipes. Linux
+and macOS fallback monitoring uses enriched membership to distinguish a vanished
+leader from a still-live process group. The existing descendant fixtures cover
+timeout, cancel, drop and root exit; process limits and the documented `setsid`
+limitation of the POSIX fallback are unchanged.
