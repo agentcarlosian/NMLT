@@ -156,8 +156,9 @@ forgeries are not authenticated. See [RFC 0030](../rfcs/0030-durable-source-resu
 The [platform process contract](../rfcs/0028-contained-process-lifecycle.md) is
 not filesystem/network isolation. Windows whole-job resource/parent-death
 coverage and Unix process-group fallback limits must not be presented as equal
-OS guarantees. Current native containment execution evidence is Windows;
-Linux compilation alone is not runtime validation.
+OS guarantees. Native containment has been exercised on Windows and in public
+Linux CI; the [migration validation record](reviews/private-history-port-2026-09-09.md)
+identifies the tested commits and platform-specific evidence.
 
 ## Residual trust
 
