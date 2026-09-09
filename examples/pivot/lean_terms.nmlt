@@ -1,0 +1,16 @@
+// Executable-only closed Init terms, passed as ordinary typed source inputs.
+fn submit(statement: Text, proof: Text) -> Job<Text> {
+  job_start_lean_check(statement, proof)
+}
+
+fn check(statement: Text, proof: Text) -> Outcome<Text> {
+  let handle = submit(statement, proof);
+  job_collect(handle)
+}
+
+fn main(statement: Text, proof: Text) -> Outcome<Text> {
+  match check(statement, "True.intro") {
+    Ok(receipt) => Ok(receipt),
+    Err(message) => check(statement, proof)
+  }
+}

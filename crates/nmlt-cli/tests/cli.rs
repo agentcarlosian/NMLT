@@ -61,6 +61,72 @@ fn prints_lossless_tokens_including_trivia() {
 }
 
 #[test]
+fn emits_reproducible_v2_paths_and_rejects_early_use() {
+    let root = repository_root();
+    let directory = root.join("target/test-artifacts");
+    fs::create_dir_all(&directory).unwrap();
+    let artifact = directory.join(format!("execution-core-{}.json", std::process::id()));
+    let witness = directory.join(format!("execution-path-{}.json", std::process::id()));
+    let cli = env!("CARGO_BIN_EXE_nmlt");
+    let result = Command::new(cli)
+        .current_dir(&root)
+        .args([
+            "elaborate",
+            "examples/pivot/affine_continuation.nmlt",
+            "--core-version",
+            "v2",
+            "--emit-core",
+        ])
+        .arg(&artifact)
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(
+        fs::read(&artifact).unwrap(),
+        fs::read(root.join("examples/pivot/affine_continuation.behavior-core-v2.json")).unwrap()
+    );
+    let run_trace = |actions: &str| {
+        Command::new(cli)
+            .current_dir(&root)
+            .args([
+                "trace",
+                "--behavior",
+                "Network",
+                "--actions",
+                actions,
+                "--emit-path",
+            ])
+            .arg(&witness)
+            .args(["--max-states", "32"])
+            .arg(&artifact)
+            .output()
+            .unwrap()
+    };
+    let accepted = run_trace("Receiver.receive|Sender.send,Receiver.monitor,Receiver.use");
+    assert!(
+        accepted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&accepted.stderr)
+    );
+    assert!(String::from_utf8_lossy(&accepted.stdout).contains("assurance: none"));
+    let before = fs::read(&witness).unwrap();
+    assert_eq!(
+        before,
+        fs::read(root.join("examples/pivot/receive_consume.behavior-execution-v1.json")).unwrap()
+    );
+    let rejected = run_trace("Receiver.use");
+    assert!(!rejected.status.success());
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("expected one enabled transition"));
+    assert_eq!(fs::read(&witness).unwrap(), before);
+    fs::remove_file(artifact).unwrap();
+    fs::remove_file(witness).unwrap();
+}
+
+#[test]
 fn elaborates_then_explores_without_a_proof_claim() {
     let root = repository_root();
     let artifact_dir = root.join("target/test-artifacts");

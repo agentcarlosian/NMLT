@@ -7,6 +7,13 @@ on:
 permissions:
   contents: read
 
+# Replay tests repeatedly copy and hash the exact executable. Linux embeds
+# debug information in that file; omitting symbols keeps these integration
+# tests within the CI budget without changing assertions.
+env:
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
 jobs:
   rust:
     name: Rust workspace
@@ -29,6 +36,11 @@ jobs:
     name: Lean metatheory
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # These integration checks repeatedly hash the complete Lean installation.
+    # Optimize that host work while preserving development debug assertions;
+    # the Rust workspace job above also checks the default optimization level.
+    env:
+      CARGO_PROFILE_DEV_OPT_LEVEL: "1"
 
     steps:
       - name: Check out repository
@@ -63,5 +75,20 @@ jobs:
           NANODA_ALLOW_SORRY: "false"
         run: ./tools/check_nanoda.sh "${{ steps.stage_lean.outputs.path }}" NMLT
 
-      - name: Check theorem axioms and matching-source artifact decoding
+      - name: Check theorem axioms and source-bound artifact decoding
         run: ./tools/check_metatheory.sh "${{ steps.stage_lean.outputs.path }}"
+
+      - name: Run the frozen R0 reference workflows
+        run: make r0-baselines
+
+      - name: Check the pinned Lean adapter and asynchronous job controls
+        run: make r2-lean r2-source-lean r2-project-lean r2-lean-terms
+
+      - name: Compare finite Rust exploration with Lean
+        run: bash tools/check_finite_parity.sh "${{ steps.stage_lean.outputs.path }}"
+
+      - name: Check decoded v2 execution and resource graph parity
+        run: bash tools/check_execution.sh "${{ steps.stage_lean.outputs.path }}"
+
+      - name: Check source safety invariants and counterexamples
+        run: python3 tools/check_invariants.py --checker "${{ steps.stage_lean.outputs.path }}/.lake/build/bin/nmlt-invariant-check"

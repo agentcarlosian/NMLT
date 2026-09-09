@@ -1,0 +1,3 @@
+fn square(input: Int) -> Outcome<Int> {
+  if input < 0 { Err("negative input") } else { Ok(input * input) }
+}

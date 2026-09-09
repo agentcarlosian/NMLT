@@ -1,0 +1,10 @@
+fn main(input: Int, fallback: Int) -> Outcome<Int> {
+  let result = match job_square(input) {
+    Ok(value) => Ok(value),
+    Err(message) => job_square(fallback)
+  };
+  match result {
+    Ok(value) => Ok(value + value),
+    Err(message) => Err(message)
+  }
+}

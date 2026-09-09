@@ -4,7 +4,41 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Completed R2 at local pre-alpha scope: projects and exact dependency locks,
+  affine source job transfer, variable Init proof terms, process/resource
+  containment, durable source/project resumption and finite user safety
+  invariants (RFCs 0024–0030). The integrated Rust/Lean/NanoDA reproduction
+  passed; final follow-up CI passed 345 Rust tests and 14 Python tests.
+  See [the validation record](docs/reviews/r2-completion-2026-09-09.md).
+  Earlier entries below describe the incremental implementation history.
+
+- Started the Lean/asynchronous host increment with bounded background process
+  supervision, private session handles, polling/cancellation/collection, and
+  snapshot verification. The first Lean adapter checks fixed zero-addition
+  proof templates against the repository pin and an exact empty-axiom policy
+  (RFC 0023). Source controls were added by subsequent R2 increments.
+
+- Connected source `job_square(Int)` effects to the durable local runtime with
+  typed results, conservative effect inference, explicit attempt/time limits,
+  bounded subprocess pipes, captured-journal replay without redispatch, and
+  `jobs-recover` inspection (RFC 0022). The local job profile is executable-only;
+  subsequent increments add Lean adapters and asynchronous source control.
+
 ### Language and semantics
+
+- Added bounded cross-file workflow packages using canonical `import Name`
+  declarations, per-file scope, imported diagnostics, and complete source
+  manifests (RFC 0021). Pure formats move to version 3; version 1/2 records
+  require their original executable. Finite formats remain unchanged.
+
+- Added nominal records, structured JSON inputs, lists capped at 256 items,
+  safe lookup, bounded folds, and aggregate value/work limits (RFC 0020).
+  Pure workflow output moves to version 2; old records require their original
+  executable. Existing finite artifact and replay formats are unchanged.
+
+- Added executable-only pure source functions with named entries and real scalar
+  inputs, local modules, acyclic calls, typed outcomes, exhaustive matching,
+  immutable bindings, bounded evaluation, and exact-executable replay (RFC 0019).
 
 - Recentered the repository on the `.nmlt` programming language with normative
   behavior semantics in Lean.
@@ -41,6 +75,12 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ### CLI and gates
 
+- Added R2's bounded job lifecycle and locked journal, exact attempt/context
+  bindings, revisioned control, cancellation/settlement, uncertain recovery,
+  and `make r2-jobs` with a real subprocess worker. Source effects remain planned.
+- Started R2 with direct finite `run` and exact-source/executable `replay`,
+  shared evaluator steps, structured stop outcomes, modeled-grade accounting,
+  and a retry/reuse simulation. Host adapters and the full R2 gate remain open.
 - Added `elaborate --emit-core` and artifact-based `explore`.
 - Removed `model-check` and `evidence` from the active CLI.
 - Replaced the default gate with Rust formatting, Clippy, compilation, tests,

@@ -9,6 +9,11 @@ tag when reproducing that system.
 
 ## Build Week and pre-pivot closeout
 
+The [complete private-history port](reviews/private-history-port-2026-09-09.md)
+preserves all private branch ancestry and original commit identities. Its
+[ref inventory](history/private-refs-2026-09-09.json) locates the historical
+branches and tags, including the separate quarantined research.
+
 - [Phase 0 closeout](phase-0-closeout.md)
 - [Reproduction record, 2026-07-18](reproduction-2026-07-18.md)
 - [M9 completion audit](m9-completion-audit-2026-07-19.md)

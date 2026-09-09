@@ -9,6 +9,10 @@ publish = false
 
 [dependencies]
 nmlt-ir = { path = "../nmlt-ir" }
+serde.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+nmlt-compile = { path = "../nmlt-compile" }

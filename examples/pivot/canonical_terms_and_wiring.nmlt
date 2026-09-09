@@ -1,0 +1,44 @@
+enum Phase { Idle, Ready }
+
+system Sender {
+  state ready: Bool = ! false
+  state phase: Phase = Phase.Idle
+  state marker: Unit = ()
+  port output send: Unit
+  port input ack: Unit
+  action output send {
+    require ready==true
+    set ready = ! ready
+    set phase = Phase.Ready
+    set marker = ()
+  }
+  action input ack {
+    require ready==false
+    set ready = true
+  }
+  observe ready /* phase */, phase, marker
+}
+
+system Receiver {
+  state done: Bool = false==true
+  port input receive: Unit
+  port output reply: Unit
+  action input receive {
+    require ! done
+    set done = true
+  }
+  action output reply {
+    require done==true
+    set done = false
+  }
+  action idle {
+    set done = done
+  }
+  hide action idle /* reply */
+  observe done
+}
+
+compose Network {
+  connect Sender.send -> Receiver.receive
+  connect Receiver.reply -> Sender.ack
+}

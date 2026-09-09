@@ -3,33 +3,110 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use nmlt_compile::compile_behavior_single;
+use nmlt_compile::{compile_behavior_single, compile_behavior_v2};
 use nmlt_core::diagnostic::line_column;
 use nmlt_core::{Diagnostic, ParsedFile, lex_source, parse_source};
 use nmlt_eval::{ExploreConfig, explore};
 use nmlt_ir::BehaviorCoreProgram;
 
+mod async_jobs;
+mod diagnostics;
+mod formatting;
+mod invariant;
+mod job_process;
+mod jobs;
+mod project;
+mod runtime;
+mod strict_json;
+mod workflow;
+
 const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
+  nmlt init <new-directory>                             Create a runnable project and tests\n\
+  nmlt lock [project-directory]                        Pin imported sources and local tools\n\
+  nmlt check-project [project-directory]               Check project types, inputs, and lock\n\
+  nmlt check-invariant <file> --behavior <name> --property <System.Name> --max-states <n> --checker <path> --emit-evidence <new-dir> Check finite safety in Lean\n\
+  nmlt run <project-directory> [--arg name=value]       Run with project inputs and budgets\n\
+  nmlt test [project-directory]                        Run declared tests with real adapters\n\
+  nmlt fmt [project-directory|source.nmlt] [--check]     Format workflow source/imports\n\
+  nmlt replay <project.json> --project <directory>      Replay retained project sources\n\
+  nmlt resume <saved-run-directory> --project <directory> [--acknowledge-uncertain-effects <reason>] Resume saved project work\n\
   nmlt check <file>                                      Check structural declarations\n\
   nmlt inspect <file>                                    List recognized systems\n\
   nmlt tokens <file>                                     Print the lossless token stream\n\
   nmlt typecheck <file>                                  Elaborate the finite behavior slice\n\
+  nmlt typecheck <file> --profile workflow               Check workflow functions and effects\n\
   nmlt elaborate <file> --emit-core <artifact.json>      Emit behavior-core-v1\n\
+  nmlt elaborate <file> --core-version v2 --emit-core <artifact.json> Emit opt-in v2\n\
   nmlt explore --behavior <name> --max-states <n> <core.json> Explore a canonical artifact\n\
+  nmlt trace --behavior <name> --actions <comma-separated labels> --emit-path <path.json> --max-states <n> <core.json> Emit a v2 witness\n\
+  nmlt run <source.nmlt> --behavior <name> --max-steps <n> --emit-run <new.json> [--actions <labels>] Execute finite v2\n\
+  nmlt run <source.nmlt> --entry <name> --max-steps <n> --emit-run <new.json> [--arg name=value] Execute pure functions\n\
+  nmlt run <source.nmlt> --entry <name> ... --jobs-dir <new-dir> --max-jobs <1..16> --job-timeout-ms <1..30000> Execute local jobs\n\
+  nmlt jobs-recover <jobs-dir>                            Classify unfinished work without redispatch\n\
+  nmlt jobs-resume <jobs-dir> --emit-run <new.json> [--lean-bin <path>] [--acknowledge-uncertain-effects <reason>] Resume saved source\n\
+  nmlt jobs-repair <jobs-dir> --acknowledge-incomplete-tail <reason> Quarantine incomplete final appends\n\
+  nmlt run <source.nmlt> --entry <name> ... --job-slots <1..4> [--lean-bin <path>] Execute scoped async jobs\n\
+  nmlt replay <record.json> --source <source.nmlt>         Replay with the same executable\n\
   nmlt version                                           Print the frontend version\n\
   nmlt help                                              Show this help\n\n\
+Prefix a command with --json for structured error diagnostics.\n\
 Lean defines NMLT's normative behavior semantics. Exploration is not verification.\n";
 
 fn main() -> ExitCode {
-    match run(env::args_os().skip(1).collect()) {
+    let mut arguments: Vec<_> = env::args_os().skip(1).collect();
+    let json = arguments.first().is_some_and(|a| a == "--json");
+    if json {
+        arguments.remove(0);
+    }
+    match dispatch(arguments) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("{error}");
+            if json {
+                eprintln!(
+                    "{}",
+                    serde_json::to_string(&error).expect("diagnostic JSON")
+                );
+            } else {
+                eprintln!("{error}");
+            }
             ExitCode::FAILURE
         }
     }
+}
+
+fn dispatch(arguments: Vec<std::ffi::OsString>) -> Result<(), diagnostics::Error> {
+    let command = arguments.first().and_then(|a| a.to_str()).unwrap_or("help");
+    match command {
+        "check-invariant" => return invariant::command(&arguments[1..]),
+        "resume" => return project::resume(&arguments[1..]),
+        "init" | "lock" | "check-project" | "test" => {
+            return project::command(command, &arguments[1..]);
+        }
+        "fmt" => return formatting::command(&arguments[1..]),
+        "run"
+            if arguments.get(1).is_some_and(|p| Path::new(p).is_dir())
+                || (arguments.len() == 1 && Path::new("nmlt.toml").is_file()) =>
+        {
+            return project::command("run", &arguments[1..]);
+        }
+        "replay" if arguments.get(2).is_some_and(|f| f == "--project") => {
+            return project::replay(&arguments[1..]);
+        }
+        "typecheck"
+            if arguments.len() == 4
+                && arguments[2] == "--profile"
+                && arguments[3] == "workflow" =>
+        {
+            workflow::load_diagnostic(Path::new(&arguments[1]), None)?;
+        }
+        "run" if arguments.get(1).is_some() && arguments.iter().any(|a| a == "--entry") => {
+            workflow::load_diagnostic(Path::new(&arguments[1]), None)?;
+        }
+        _ => {}
+    }
+    run(arguments).map_err(Into::into)
 }
 
 fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
@@ -46,6 +123,8 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             println!("nmlt {}", env!("CARGO_PKG_VERSION"));
             Ok(())
         }
+        "jobs-resume" => async_jobs::resume(&arguments[1..]),
+        "jobs-repair" => async_jobs::repair(&arguments[1..]),
         "check" | "inspect" => {
             let path = single_path_argument(command, &arguments[1..])?;
             let parsed = load_and_parse(&path)?;
@@ -61,6 +140,9 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             print_tokens(&path)
         }
         "typecheck" => {
+            if arguments.len() == 4 && arguments[2] == "--profile" && arguments[3] == "workflow" {
+                return workflow::typecheck(Path::new(&arguments[1]));
+            }
             let path = single_path_argument(command, &arguments[1..])?;
             let artifact = compile_path(&path)?;
             println!(
@@ -74,8 +156,13 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             Ok(())
         }
         "elaborate" => {
-            let (source, output) = elaborate_arguments(&arguments[1..])?;
-            let artifact = compile_path(&source)?;
+            let (source, output, dynamic) = elaborate_arguments(&arguments[1..])?;
+            let artifact = if dynamic {
+                let bytes = fs::read(&source).map_err(|e| e.to_string())?;
+                compile_behavior_v2(repository_path(&source)?, bytes).map_err(|e| e.to_string())?
+            } else {
+                compile_path(&source)?
+            };
             fs::write(&output, artifact.to_json_pretty())
                 .map_err(|error| format!("could not write '{}': {error}", output.display()))?;
             println!(
@@ -91,7 +178,8 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             let (behavior, max_states, path) = explore_arguments(&arguments[1..])?;
             let encoded = fs::read_to_string(&path)
                 .map_err(|error| format!("could not read '{}': {error}", path.display()))?;
-            let artifact = BehaviorCoreProgram::from_canonical_json(&encoded)?;
+            let artifact = BehaviorCoreProgram::from_canonical_json(&encoded)
+                .or_else(|_| BehaviorCoreProgram::from_canonical_json_v2(&encoded))?;
             let result = explore(&artifact, &behavior, ExploreConfig { max_states })
                 .map_err(|error| error.to_string())?;
             println!("behavior: {}", result.behavior);
@@ -132,6 +220,25 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
             }
             Ok(())
         }
+        "trace" => emit_trace(&arguments[1..]),
+        "__square-worker" if arguments.len() == 1 => jobs::worker(),
+        "jobs-recover" => {
+            let directory = single_path_argument(command, &arguments[1..])?;
+            if directory.join("source-context.json").exists() {
+                async_jobs::recover(&directory)
+            } else {
+                jobs::recover(&directory)
+            }
+        }
+        "run"
+            if arguments[2.min(arguments.len())..]
+                .chunks_exact(2)
+                .any(|pair| pair[0] == "--entry") =>
+        {
+            workflow::run(&arguments[1..])
+        }
+        "run" => runtime::run(&arguments[1..]),
+        "replay" => workflow::replay_or_finite(&arguments[1..]),
         unknown => Err(format!("unknown command '{unknown}'\n\n{HELP}")),
     }
 }
@@ -162,13 +269,60 @@ fn repository_path(path: &Path) -> Result<String, String> {
     ))
 }
 
-fn elaborate_arguments(arguments: &[std::ffi::OsString]) -> Result<(PathBuf, PathBuf), String> {
+fn elaborate_arguments(
+    arguments: &[std::ffi::OsString],
+) -> Result<(PathBuf, PathBuf, bool), String> {
     match arguments {
         [source, flag, output] if flag == "--emit-core" => {
-            Ok((PathBuf::from(source), PathBuf::from(output)))
+            Ok((PathBuf::from(source), PathBuf::from(output), false))
+        }
+        [source, version_flag, version, flag, output]
+            if version_flag == "--core-version" && version == "v2" && flag == "--emit-core" =>
+        {
+            Ok((PathBuf::from(source), PathBuf::from(output), true))
         }
         _ => Err("usage: nmlt elaborate <file> --emit-core <artifact.json>".to_owned()),
     }
+}
+
+fn emit_trace(arguments: &[std::ffi::OsString]) -> Result<(), String> {
+    let [bf, behavior, af, actions, of, output, mf, max, path] = arguments else {
+        return Err("usage: nmlt trace --behavior <name> --actions <labels> --emit-path <path.json> --max-states <n> <core.json>".into());
+    };
+    if bf != "--behavior" || af != "--actions" || of != "--emit-path" || mf != "--max-states" {
+        return Err("invalid trace options".into());
+    }
+    let behavior = behavior.to_str().ok_or("behavior is not UTF-8")?;
+    let action_text = actions.to_str().ok_or("actions are not UTF-8")?;
+    if !action_text.is_empty() && action_text.split(',').any(str::is_empty) {
+        return Err("empty action label between separators".into());
+    }
+    let labels: Vec<_> = action_text
+        .split(',')
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+        .collect();
+    let max_states = max
+        .to_str()
+        .ok_or("max-states is not UTF-8")?
+        .parse()
+        .map_err(|_| "invalid max-states")?;
+    let encoded = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let artifact = BehaviorCoreProgram::from_canonical_json_v2(&encoded)?;
+    let graph =
+        explore(&artifact, behavior, ExploreConfig { max_states }).map_err(|e| e.to_string())?;
+    let digest = nmlt_hir::sha256_bytes(encoded.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let witness =
+        nmlt_eval::execution_path(&artifact, &graph, digest, &labels).map_err(|e| e.to_string())?;
+    fs::write(output, witness.to_json_pretty()?).map_err(|e| e.to_string())?;
+    println!(
+        "witness emitted: {} steps; assurance: none; requires separate Lean execution checking",
+        witness.actions.len()
+    );
+    Ok(())
 }
 
 fn explore_arguments(arguments: &[std::ffi::OsString]) -> Result<(String, usize, PathBuf), String> {

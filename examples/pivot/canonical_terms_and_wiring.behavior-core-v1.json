@@ -1,0 +1,49 @@
+{
+  "schema": "behavior-core-v1",
+  "source_path": "examples/pivot/canonical_terms_and_wiring.nmlt",
+  "source_sha256": "26b9087c0eda3eb83b3ff1149666e33ece4434b4ef986fe9367abf846fcd2ca3",
+  "enums": {
+    "Phase": ["Idle", "Ready"]
+  },
+  "systems": {
+    "Receiver": {
+      "state": {
+        "done": {"type": "Bool", "initial": "false == true", "initial_ast": {"kind": "equal", "type": "Bool", "left": {"kind": "bool", "type": "Bool", "value": false}, "right": {"kind": "bool", "type": "Bool", "value": true}}}
+      },
+      "capabilities": {
+      },
+      "ports": {
+        "receive": {"direction": "input", "payload": "Unit"},
+        "reply": {"direction": "output", "payload": "Unit"}
+      },
+      "actions": {
+        "idle": {"direction": "internal", "hidden": true, "parameters": [], "guards": [], "guard_ast": [], "updates": {"done": "done"}, "update_ast": {"done": {"kind": "read", "type": "Bool", "field": "done"}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "receive": {"direction": "input", "hidden": false, "parameters": [], "guards": ["!done"], "guard_ast": [{"kind": "not", "type": "Bool", "value": {"kind": "read", "type": "Bool", "field": "done"}}], "updates": {"done": "true"}, "update_ast": {"done": {"kind": "bool", "type": "Bool", "value": true}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "reply": {"direction": "output", "hidden": false, "parameters": [], "guards": ["done == true"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "done"}, "right": {"kind": "bool", "type": "Bool", "value": true}}], "updates": {"done": "false"}, "update_ast": {"done": {"kind": "bool", "type": "Bool", "value": false}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}}
+      },
+      "observe": ["done"]
+    },
+    "Sender": {
+      "state": {
+        "marker": {"type": "Unit", "initial": "unit", "initial_ast": {"kind": "unit", "type": "Unit"}},
+        "phase": {"type": "Phase", "initial": "Idle", "initial_ast": {"kind": "enum", "type": "Phase", "constructor": "Idle"}},
+        "ready": {"type": "Bool", "initial": "!false", "initial_ast": {"kind": "not", "type": "Bool", "value": {"kind": "bool", "type": "Bool", "value": false}}}
+      },
+      "capabilities": {
+      },
+      "ports": {
+        "ack": {"direction": "input", "payload": "Unit"},
+        "send": {"direction": "output", "payload": "Unit"}
+      },
+      "actions": {
+        "ack": {"direction": "input", "hidden": false, "parameters": [], "guards": ["ready == false"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "ready"}, "right": {"kind": "bool", "type": "Bool", "value": false}}], "updates": {"ready": "true"}, "update_ast": {"ready": {"kind": "bool", "type": "Bool", "value": true}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "send": {"direction": "output", "hidden": false, "parameters": [], "guards": ["ready == true"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Bool", "field": "ready"}, "right": {"kind": "bool", "type": "Bool", "value": true}}], "updates": {"marker": "unit", "phase": "Ready", "ready": "!ready"}, "update_ast": {"marker": {"kind": "unit", "type": "Unit"}, "phase": {"kind": "enum", "type": "Phase", "constructor": "Ready"}, "ready": {"kind": "not", "type": "Bool", "value": {"kind": "read", "type": "Bool", "field": "ready"}}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}}
+      },
+      "observe": ["ready", "phase", "marker"]
+    }
+  },
+  "compositions": {
+    "Network": {"left": "Receiver", "right": "Sender", "connections": [{"left_system": "Receiver", "left_action": "receive", "right_system": "Sender", "right_action": "send"}, {"left_system": "Receiver", "left_action": "reply", "right_system": "Sender", "right_action": "ack"}]}
+  },
+  "refinements": [  ]
+}

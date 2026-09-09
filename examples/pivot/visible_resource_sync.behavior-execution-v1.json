@@ -1,0 +1,27 @@
+{
+  "schema": "behavior-execution-v1",
+  "artifact_sha256": "1678d546eae7d956344633bf7011d7a497ba72fd9909acbfb14ae5c14c7fec56",
+  "behavior": "ConcreteNetwork",
+  "states": [
+    {
+      "left": 0,
+      "right": 0,
+      "authority": {
+        "permit": "ConcreteSender"
+      }
+    },
+    {
+      "left": 0,
+      "right": 1,
+      "authority": {
+        "permit": "Receiver"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "left": "send",
+      "right": "receive"
+    }
+  ]
+}

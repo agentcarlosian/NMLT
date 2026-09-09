@@ -1,0 +1,68 @@
+// Finite retry simulation. These actions do not start host jobs.
+enum Phase { Waiting, Working, Failed, Complete }
+
+system Sender {
+  state sent: Bool = false
+  capability permit: Once<Unit>
+  port output send: Once<Unit>
+
+  action output send {
+    require sent == false
+    emit permit
+    consume permit
+    set sent = true
+  }
+
+  observe sent
+}
+
+system Worker {
+  // Change to false to take the direct completion path.
+  state reject_first: Bool = true
+  state phase: Phase = Phase.Waiting
+  state retried: Bool = false
+  state result: Bool = false
+  state copied_result: Bool = false
+  state reused: Bool = false
+  port input accept: Once<Unit>
+
+  action input accept(permit: Once<Unit>) {
+    require phase == Phase.Waiting
+    set phase = Phase.Working
+  }
+
+  action fail grade { work: 1 } {
+    require phase == Phase.Working
+    require reject_first
+    require retried == false
+    set phase = Phase.Failed
+  }
+
+  action retry {
+    require phase == Phase.Failed
+    require retried == false
+    set retried = true
+    set phase = Phase.Working
+  }
+
+  action finish grade { work: 1 } {
+    require phase == Phase.Working
+    require retried == reject_first
+    consume permit
+    set result = true
+    set phase = Phase.Complete
+  }
+
+  action reuse {
+    require phase == Phase.Complete
+    require reused == false
+    set copied_result = result
+    set reused = true
+  }
+
+  observe phase, result, copied_result
+}
+
+compose Main {
+  connect Sender.send -> Worker.accept
+}
