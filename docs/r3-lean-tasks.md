@@ -21,6 +21,9 @@ build hooks, and the working project's search path are not reused.
 First build the CLI and checker tools. `LEAN_BIN` must name the direct
 executable in a Lean 4.33.1 installation. The preparation script fetches the
 same immutable lean4export/NanoDA revisions used by the metatheory gate.
+It records the Lean pin and an empty Cargo workspace table added to the
+downloaded NanoDA manifest so the checker can build inside this checkout;
+the checker's Rust sources and dependency lock are unchanged.
 
 ```bash
 cargo build -p nmlt-cli

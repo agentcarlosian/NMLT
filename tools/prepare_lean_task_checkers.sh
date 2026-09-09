@@ -23,6 +23,9 @@ fetch https://github.com/leanprover/lean4export.git "$EXPORTER_COMMIT" "$ROOT/le
 printf 'leanprover/lean4:v4.33.1\n' > "$ROOT/lean4export/lean-toolchain"
 (cd "$ROOT/lean4export" && lake build)
 fetch https://github.com/ammkrn/nanoda_lib.git "$NANODA_COMMIT" "$ROOT/nanoda"
+# The requested installation may be inside NMLT's workspace. Isolate this
+# downloaded package without changing its Rust sources or dependency lock.
+printf '\n[workspace]\n' >> "$ROOT/nanoda/Cargo.toml"
 cargo +1.94.0 build --locked --release --manifest-path "$ROOT/nanoda/Cargo.toml"
-printf 'lean=v4.33.1\nlean4export=%s\nnanoda=%s\nrust=1.94.0\n' "$EXPORTER_COMMIT" "$NANODA_COMMIT" > "$ROOT/provenance.txt"
+printf 'lean=v4.33.1\nlean4export=%s\nnanoda=%s\nnanoda_manifest_patch=empty-workspace-table\nrust=1.94.0\n' "$EXPORTER_COMMIT" "$NANODA_COMMIT" > "$ROOT/provenance.txt"
 echo "Checker installations: $ROOT"
