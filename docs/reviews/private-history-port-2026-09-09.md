@@ -36,9 +36,23 @@ can be reviewed before merging. R3 follows on a separate branch.
   no private commit is missing.
 - The active implementation was compared against the completed R2 snapshot;
   differences are public documentation disposition and pinned CI action updates.
-- Full reproduction is rerun from the public checkout to validate relocation
-  and the merged tree. The R2 source-checkout evidence remains historical and
-  is not relabeled as a build of this checkout.
+- Full `make reproduce` passed from the clean public checkout at `f683b12`,
+  from 06:56:34Z to 07:22:44Z on 2026-09-09 (exit 0). It passed 345 Rust tests,
+  14 Python harness tests, Clippy with warnings denied, Lean metatheory,
+  canonical artifact reproduction, frozen value/resource graph comparisons,
+  30 execution rejection controls, all nine R0 tasks, real asynchronous Lean
+  jobs, source/project recovery, 15 invariant rejection controls, and the
+  variable proof-term/axiom-policy cases. NanoDA independently checked 9,004
+  declarations, exported from 2,505 roots. The source-checkout R2 evidence
+  remains historical and is not relabeled as this build.
+- Export SHA-256:
+  `9e5ef4a4796ea4ca90050eff4ac320a2b784eca6280e6b571e4d1d1e20cf7a1f`.
+  Root-list SHA-256:
+  `6febb893c07c53d8f83109f34880615862bcbdbe2873a07c28f3b53d86f7ce34`.
+  Retained local evidence: `work/public-port-reproduce.log`,
+  `work/nanoda-evidence/run.Rjm0uf`, and the public checkout's
+  `target/r2-projects/run-phz3dhip`, `target/r2-invariants/run-dm69n2px`,
+  and `target/r2-lean-terms/run-9_fczfr5`. No generated build outputs are tracked.
 - The publication preflight inspected reachable private-history text blobs for
   high-confidence credential patterns without printing matched values; it found
   no candidates. This is a limited publication check, not a security audit.
