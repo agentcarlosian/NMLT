@@ -1,7 +1,7 @@
 //! Source safety checking with explicit, retained Lean checker evidence.
 use super::{diagnostics::Error, runtime, strict_json::Unique, workflow::bounded_read};
 use nmlt_ir::{SafetyArtifact, SafetyClaim, SafetyWitness};
-use nmlt_runtime::{identity, process};
+use nmlt_runtime::{identity, lean, process};
 use serde_json::json;
 use std::collections::BTreeMap;
 use std::ffi::OsString;
@@ -133,7 +133,11 @@ pub(super) fn command(arguments: &[OsString]) -> Result<(), Error> {
     let witness_sha256 = runtime::digest(&encoded_witness);
     persist(&directory.join("witness.json"), &encoded_witness)?;
     let mut command = Command::new(&checker);
-    command.current_dir(&directory).env_clear();
+    command
+        .current_dir(&directory)
+        .env_clear()
+        .env("LEAN_STACK_SIZE_KB", lean::STACK_KIB)
+        .env("MIMALLOC_ARENA_RESERVE", lean::ARENA_KIB);
     for name in ["PATH", "SystemRoot", "WINDIR", "TEMP", "TMP"] {
         if let Some(value) = std::env::var_os(name) {
             command.env(name, value);
