@@ -38,3 +38,9 @@ not rerun Lean. Existing project/target import support remains R3.
 Validation covers dynamic source arguments, transfer through functions,
 incorrect proof/fallback, distinct arithmetic and propositional statements,
 axiom-policy rejection, grammar bounds, identity mutations and real replay.
+
+Linux integration follow-up (2026-09-09): set `LEAN_STACK_SIZE_KB=65536` before
+runtime initialization, including the version probe, and retain the existing
+process memory limits. The pinned Lean runtime's default 1 GiB thread stacks
+prevented thread creation under the Unix data-segment cap. The launch change
+is included in the adapter contract digest; no existing receipt is relabeled.

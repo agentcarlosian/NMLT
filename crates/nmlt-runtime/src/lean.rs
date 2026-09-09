@@ -10,9 +10,12 @@ use std::process::Command;
 use std::time::Duration;
 
 const REPORT: &str = "'NMLTJob.checked_target' does not depend on any axioms";
-const CONTRACT: &str = "nmlt-lean-zero-add-v1; stdin; threads=1; memory=512; heartbeats=200000; accepted-strategies=existing-lemma|induction; exact-empty-axiom-report";
+const CONTRACT: &str = "nmlt-lean-zero-add-v1; stdin; threads=1; stack-kib=65536; memory=512; heartbeats=200000; accepted-strategies=existing-lemma|induction; exact-empty-axiom-report";
 const TERM_CONTRACT: &str =
     "nmlt-init-terms-v1; closed-term-grammar; statement:Prop; empty-axioms; exact-bin-lib-tree";
+/// Lean's 1 GiB default thread stacks cannot fit multiple threads within the
+/// Unix data-segment limit. Set this before Lean's runtime initializes.
+pub const STACK_KIB: &str = "65536";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -119,7 +122,7 @@ impl Toolchain {
         }
         let installation_sha256 = sha256(&manifest);
         let mut command = clean_command(&executable)?;
-        command.arg("--version");
+        command.args(["--threads=1", "--memory=512", "--version"]);
         let mut child = process::Process::start(command, vec![], Duration::from_secs(5))
             .map_err(|e| Error(format!("Lean version probe failed: {e:?}")))?;
         let output = child
@@ -203,11 +206,14 @@ pub(crate) fn executable_digest(path: &Path) -> Result<String, Error> {
 }
 fn clean_command(executable: &Path) -> Result<Command, Error> {
     let mut command = Command::new(executable);
-    command.env_clear().current_dir(
-        executable
-            .parent()
-            .ok_or_else(|| Error("Lean executable has no directory".into()))?,
-    );
+    command
+        .env_clear()
+        .env("LEAN_STACK_SIZE_KB", STACK_KIB)
+        .current_dir(
+            executable
+                .parent()
+                .ok_or_else(|| Error("Lean executable has no directory".into()))?,
+        );
     #[cfg(windows)]
     for name in ["SystemRoot", "WINDIR", "TEMP", "TMP"] {
         if let Some(value) = std::env::var_os(name) {
