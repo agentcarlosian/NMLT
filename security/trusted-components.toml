@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-09-06"
-scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, experimental R2 finite/pure run/replay and bounded local job runtime"
+scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, and the initial bounded R3 local Lean task profile"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -87,6 +87,11 @@ trusted_components = ["toolchain.rust", "rust.job_runtime", "rust.hir", "host.pr
 name = "pinned_init_job_receipt"
 ceiling = "local pinned Lean accepted the generated Init target/candidate under the empty-axiom policy; captured replay is consistency only, not a fresh check, authenticated host event or independent proof audit"
 trusted_components = ["toolchain.rust", "toolchain.lean", "rust.workflow", "rust.job_runtime", "rust.cli", "host.process_supervisor", "build.gates"]
+
+[[claim_profiles]]
+name = "bound_local_lean_proof"
+ceiling = "NanoDA checked the exported proof closure under the selected axiom policy after fresh Lean source rebuilding and a trusted Lean target-binding check; no human approval, statement faithfulness, novelty, runtime attestation or general project integration claim"
+trusted_components = ["toolchain.rust", "toolchain.lean", "lean.local_task_binding", "host.process_supervisor", "build.gates"]
 
 [[components]]
 id = "host.process_supervisor"
@@ -361,6 +366,18 @@ paths = [
   "crates/nmlt-eval/examples/execution_parity.rs",
 ]
 role = "Compose Rust, artifact-reproduction, Lean checks and a scoped finite-value differential check; not a reproducible or signed release pipeline."
+
+[[components]]
+id = "lean.local_task_binding"
+paths = [
+  "crates/nmlt-cli/src/lean_task.rs",
+  "crates/nmlt-cli/src/lean_task/source.rs",
+  "crates/nmlt-cli/src/lean_task/export.rs",
+  "tools/prepare_lean_task_checkers.sh",
+  "tools/check_lean_tasks.py",
+  "tools/check_lean_tasks.sh",
+]
+role = "Capture bounded trusted local Lean sources and target types, keep proof candidates separate from task revisions, enforce axiom and export-root checks, invoke the independent NanoDA kernel, and reconstruct retained proof artifacts. The host, project metaprograms, capture/binding helper, supplied tools and exporter remain trusted; independent proof checking does not establish human statement faithfulness."
 
 [[components]]
 id = "repository.hygiene"

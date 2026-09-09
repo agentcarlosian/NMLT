@@ -66,3 +66,4 @@ evidence.
 | [0028](0028-contained-process-lifecycle.md) | Contained local process lifecycle | Under review |
 | [0029](0029-pinned-init-proof-terms.md) | Pinned Init proof terms | Under review |
 | [0030](0030-durable-source-resumption.md) | Durable source resumption | Under review |
+| [0031](0031-bound-lean-project-tasks.md) | Bound Lean project tasks | Under review |

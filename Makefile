@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda finite-parity execution r0-baseline-tests r0-baselines r2-jobs r2-async r2-lean r2-source-async r2-source-lean r2-project r2-project-lean r2-invariants ci reproduce
+.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda finite-parity execution r0-baseline-tests r0-baselines r2-jobs r2-async r2-lean r2-source-async r2-source-lean r2-project r2-project-lean r2-invariants r2-lean-terms r3-lean-projects ci reproduce
 
 R0_LEAN_TOOLCHAIN = $(strip $(shell cat mechanization/lean/lean-toolchain))
 PYTHON ?= python3
@@ -30,6 +30,7 @@ help:
 	@echo "  r2-project-lean   Exercise the project loop with a locked Lean installation"
 	@echo "  r2-lean-terms    Check variable Init proof terms and saved-result resumption"
 	@echo "  r2-invariants     Check user safety predicates and reachable counterexamples in Lean"
+	@echo "  r3-lean-projects Bind local Lean targets and independently recheck proof artifacts"
 	@echo "  ci                Run the Rust language gate"
 	@echo "  reproduce         Run the complete Rust and Lean gate"
 
@@ -108,6 +109,9 @@ r2-invariants:
 r2-lean-terms:
 	$(PYTHON) tools/check_lean_terms.py --lean-bin "$(R2_LEAN_BIN)"
 
+r3-lean-projects:
+	PYTHON="$(PYTHON)" bash tools/check_lean_tasks.sh "$(R2_LEAN_BIN)"
+
 ci: fmt-check check lint test behavior-artifact public-surface r0-baseline-tests r2-jobs r2-async r2-source-async r2-project
 
-reproduce: ci metatheory nanoda finite-parity execution r0-baselines r2-lean r2-source-lean r2-project-lean r2-invariants r2-lean-terms
+reproduce: ci metatheory nanoda finite-parity execution r0-baselines r2-lean r2-source-lean r2-project-lean r2-invariants r2-lean-terms r3-lean-projects

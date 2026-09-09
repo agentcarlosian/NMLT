@@ -87,3 +87,37 @@ jobs:
 
       - name: Check source safety invariants and counterexamples
         run: python3 tools/check_invariants.py --checker "${{ steps.stage_lean.outputs.path }}/.lake/build/bin/nmlt-invariant-check"
+
+  lean-projects:
+    name: Bound Lean project proofs
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain for CLI and independent checker
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Stage pinned Lean package
+        id: stage_lean
+        run: |
+          lean_package_dir="$(mktemp -d "${RUNNER_TEMP}/nmlt-project-lean.XXXXXX")"
+          cp -a mechanization/lean/. "${lean_package_dir}/"
+          printf 'leanprover/lean4:%s\n' "$(cat mechanization/lean/lean-toolchain)" > "${lean_package_dir}/lean-toolchain"
+          echo "path=${lean_package_dir}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install and build with the pinned Lean toolchain
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1.6.0
+        with:
+          lake-package-directory: ${{ steps.stage_lean.outputs.path }}
+          build: true
+          nanoda: false
+          use-mathlib-cache: false
+          use-github-cache: true
+
+      - name: Bind local Lean tasks and independently recheck final proof artifacts
+        run: make r3-lean-projects

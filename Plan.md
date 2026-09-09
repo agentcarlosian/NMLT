@@ -4,7 +4,7 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Next milestone: R3 — existing Lean projects (planned; R2 local scope complete)
+- Next milestone: R3 — existing Lean projects (first increment in progress; R2 local scope complete)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-09
@@ -79,8 +79,9 @@ explorer supports finite Bool/Unit/enum state. A separate executable-only profil
 now runs functions with scalars, outcomes, records, bounded lists/folds, and
 opt-in local jobs. Affine source controls expose workers and closed Init proof
 terms, with exact dependency identities and durable source/project resumption.
-User safety predicates have a separately checked finite-model route. Existing
-Lean projects and reviewed target environments are the next R3 boundary.
+User safety predicates have a separately checked finite-model route. The first
+R3 profile binds local Lean source projects and fixed targets; broader project
+and editor integration remains in progress.
 Historical independent-checker results do not remove the need for current
 toolchain maintenance.
 
@@ -91,7 +92,7 @@ toolchain maintenance.
 | R0 — Checker and workflow baselines | Complete | Audited baseline | Integration and Lean maintainers |
 | R1 — Unified semantics and finite execution | Complete at finite scope | R0 checker baseline | Lean/semantics and Rust maintainers |
 | R2 — Useful executable language | Completed at local pre-alpha scope on 2026-09-09; see completion audit | R1 for formal execution claims | Compiler/runtime and integration maintainers |
-| R3 — Supported Lean workflows | Planned | R2; adapter prototype can begin in R0 | Lean integration maintainer |
+| R3 — Supported Lean workflows | In progress: bounded local project tasks and independent artifacts | R2; adapter prototype can begin in R0 | Lean integration maintainer |
 | R4 — Discovery workflows | Planned | R3 for integration; domain preparation can start earlier | Mathematical reviewer and integration maintainer |
 | R5 — Three-audience alpha validation | Planned | R2–R4 | Maintainers and independent pilot users |
 
@@ -352,6 +353,15 @@ reuses a successful output, and replays the result without manual JSON editing.
 Document the semantic scope of every exercised construct.
 
 ### R3 — Support existing Lean projects
+
+The first increment implements [bound local Lean tasks](docs/r3-lean-tasks.md)
+under [RFC 0031](rfcs/0031-bound-lean-project-tasks.md): exact declaration types,
+source/module and tool identities, a separate closed proof-term candidate,
+Lean target checks, transitive axiom policy, independent NanoDA artifacts,
+actual dependencies, readable additive patches and fresh source-based rechecking.
+The profile is bounded to trusted local sources and small exported closures.
+R3 is not complete: broader dependencies/exports, editor/REPL integration and
+asynchronous source jobs for these tasks remain outstanding.
 
 - Bind tasks to exact targets, assumptions, definitions, and pinned dependency
   environments; check formal target identity in Lean.

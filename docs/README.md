@@ -45,6 +45,7 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
 
 ## Language and implementation
 
+- [R3 local Lean tasks](r3-lean-tasks.md) — bound project targets, separate candidates, independent proof artifacts and fresh rechecking
 - [R2 local projects](r2-projects.md) — init, locks, run/test/replay, formatting, and structured diagnostics
 - [R2 safety invariants](r2-safety-invariants.md) — exact source predicates, Lean-checked closure, and reachable counterexamples
 - [R2 Lean proof terms](r2-lean-terms.md) — dynamic statements/candidates, pinned dependencies and axiom policy
