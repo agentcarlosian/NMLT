@@ -4,7 +4,7 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Next milestone: R3 — existing Lean projects (first increment in progress; R2 local scope complete)
+- Next milestone: R3 — existing Lean projects (first bounded increment implemented; R2 local scope complete)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-09

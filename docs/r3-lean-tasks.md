@@ -5,6 +5,8 @@ The first R3 increment adds `nmlt lean-task bind`, `prove`, and `recheck` under
 Lean source projects and closed candidate proof terms. An accepted result
 requires a fresh Lean build, exact target binding, a transitive axiom check,
 and an independent NanoDA check of the final exported proof.
+The [validation record](reviews/r3-local-lean-tasks-2026-09-09.md) records the
+executed cases, tool pins and remaining review gates.
 
 Binding a task does not record human approval. A reviewer must select the task
 hash after examining the statement, assumptions, definitions, sources and policy.

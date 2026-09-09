@@ -109,6 +109,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — initial Lean adapter, asynchronous host controls, cancellation, and snapshot validation
 - [R2 eighth-increment evidence](reviews/r2-source-async-increment-2026-09-07.md)
   — scoped source controls and native Windows validation
+- [R3 first-increment evidence](reviews/r3-local-lean-tasks-2026-09-09.md)
+  — bound local Lean targets, independent proof artifacts and fresh rechecks
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)
