@@ -7,7 +7,7 @@
 - Next milestone: R3 — existing Lean projects (planned; R2 local scope complete)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
-- Updated: 2026-09-07
+- Updated: 2026-09-09
 
 This file governs execution priorities and milestone completion. The
 [practical language design](docs/practical-language-plan.md) supplies detailed
@@ -77,9 +77,10 @@ Public documentation must preserve those distinctions.
 The behavioral and retained ordinary compilation routes differ; the reference
 explorer supports finite Bool/Unit/enum state. A separate executable-only profile
 now runs functions with scalars, outcomes, records, bounded lists/folds, and
-opt-in local jobs. Scoped asynchronous source controls now expose workers and
-fixed Lean templates. General Lean input, source resumption, and user-defined
-behavioral property checking remain planned work.
+opt-in local jobs. Affine source controls expose workers and closed Init proof
+terms, with exact dependency identities and durable source/project resumption.
+User safety predicates have a separately checked finite-model route. Existing
+Lean projects and reviewed target environments are the next R3 boundary.
 Historical independent-checker results do not remove the need for current
 toolchain maintenance.
 

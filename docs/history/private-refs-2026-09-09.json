@@ -1,0 +1,108 @@
+{
+  "schema": "nmlt-history-port-v1",
+  "source_repository": "https://github.com/agentcarlosian/NMLT-Private",
+  "destination_repository": "https://github.com/agentcarlosian/NMLT",
+  "public_base": "07b7a8d6ac31f3d02a639dfbd2f64758633bd368",
+  "private_working_snapshot": "3b8d247cfba8b7bc0e87493375a625ddf1bc6f4a",
+  "history_preservation_commit": "824cf30eeae0827103fee6c8130585f50edefd8c",
+  "private_commit_count": 101,
+  "missing_private_commits": [],
+  "refs": [
+    {
+      "private_ref": "refs/heads/codex/artifact-semantic-closure",
+      "object_sha": "438f1151074d9d707171d2f38b287cac6d335e3a",
+      "object_type": "commit",
+      "commit_sha": "438f1151074d9d707171d2f38b287cac6d335e3a"
+    },
+    {
+      "private_ref": "refs/heads/codex/auditNMLT",
+      "object_sha": "1cbed8b66d8d1d5ac22619e245bdd11acb5a7fb7",
+      "object_type": "commit",
+      "commit_sha": "1cbed8b66d8d1d5ac22619e245bdd11acb5a7fb7"
+    },
+    {
+      "private_ref": "refs/heads/codex/bannerupdate",
+      "object_sha": "e9901e9801aa063cff8726c9249dd5e06ef78968",
+      "object_type": "commit",
+      "commit_sha": "e9901e9801aa063cff8726c9249dd5e06ef78968"
+    },
+    {
+      "private_ref": "refs/heads/codex/language-math-pivot",
+      "object_sha": "afe7818e62cbfcd4c466806ca66d7d405347dd05",
+      "object_type": "commit",
+      "commit_sha": "afe7818e62cbfcd4c466806ca66d7d405347dd05"
+    },
+    {
+      "private_ref": "refs/heads/codex/pivot-01-decision",
+      "object_sha": "025daf15920b7e1a61e2d67ba0ea882283e06001",
+      "object_type": "commit",
+      "commit_sha": "025daf15920b7e1a61e2d67ba0ea882283e06001"
+    },
+    {
+      "private_ref": "refs/heads/codex/pivot-02-behavior-core-v1",
+      "object_sha": "3e45da228181c82b7f9568146856f0aed0ed51de",
+      "object_type": "commit",
+      "commit_sha": "3e45da228181c82b7f9568146856f0aed0ed51de"
+    },
+    {
+      "private_ref": "refs/heads/codex/pivot-03-semantic-closure",
+      "object_sha": "297ba4b730b0cace67f3f8e21d509f38bc5f3004",
+      "object_type": "commit",
+      "commit_sha": "297ba4b730b0cace67f3f8e21d509f38bc5f3004"
+    },
+    {
+      "private_ref": "refs/heads/codex/pivot-04-resource-worlds",
+      "object_sha": "2246efc93ae7116b172daa866fd224425554d321",
+      "object_type": "commit",
+      "commit_sha": "2246efc93ae7116b172daa866fd224425554d321"
+    },
+    {
+      "private_ref": "refs/heads/codex/pivot-05-public-surface",
+      "object_sha": "2443db6b67b79546ec5c90d7ff67877007c8d626",
+      "object_type": "commit",
+      "commit_sha": "2443db6b67b79546ec5c90d7ff67877007c8d626"
+    },
+    {
+      "private_ref": "refs/heads/codex/quarantine-grok-resource-pack",
+      "object_sha": "b0338bb81fb3aef9a91394cc0248acd0eede37f7",
+      "object_type": "commit",
+      "commit_sha": "b0338bb81fb3aef9a91394cc0248acd0eede37f7"
+    },
+    {
+      "private_ref": "refs/heads/codex/resource-worlds",
+      "object_sha": "087c3f863e95faf3c9d80fe157b376147c3f2752",
+      "object_type": "commit",
+      "commit_sha": "087c3f863e95faf3c9d80fe157b376147c3f2752"
+    },
+    {
+      "private_ref": "refs/heads/local-box-main",
+      "object_sha": "0e9c5e912c48e7341ae7fb4b9b312335bc2113d0",
+      "object_type": "commit",
+      "commit_sha": "0e9c5e912c48e7341ae7fb4b9b312335bc2113d0"
+    },
+    {
+      "private_ref": "refs/heads/main",
+      "object_sha": "438f1151074d9d707171d2f38b287cac6d335e3a",
+      "object_type": "commit",
+      "commit_sha": "438f1151074d9d707171d2f38b287cac6d335e3a"
+    },
+    {
+      "private_ref": "refs/tags/artifact-semantic-closure-v1",
+      "object_sha": "56e5919201f9d939589edf57e954669bc667dade",
+      "object_type": "tag",
+      "commit_sha": "438f1151074d9d707171d2f38b287cac6d335e3a"
+    },
+    {
+      "private_ref": "refs/tags/build-week-judge-demo-2026",
+      "object_sha": "4a3907eee58342d21f75c355cc76b36b422937df",
+      "object_type": "tag",
+      "commit_sha": "0417f6e16ad64f92f79002293f54fd705c1dbc80"
+    },
+    {
+      "private_ref": "refs/tags/language-math-pivot-v0",
+      "object_sha": "2d92fdc8e0203e4a769bb9907ea17ff5097a71d6",
+      "object_type": "tag",
+      "commit_sha": "afe7818e62cbfcd4c466806ca66d7d405347dd05"
+    }
+  ]
+}
