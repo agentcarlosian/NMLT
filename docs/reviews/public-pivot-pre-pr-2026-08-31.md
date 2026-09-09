@@ -1,8 +1,8 @@
 # Public pivot pre-PR review
 
 Date: 2026-08-31
-Scope: complete active pivot from `origin/main`, including the public-surface
-patch prepared for the final stack layer
+Scope: complete active pivot from `origin/main`, including the uncommitted public
+surface revision
 Status: model-assisted pre-PR review; not a substitute for maintainer or external
 human review
 

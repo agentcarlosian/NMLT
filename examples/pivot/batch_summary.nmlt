@@ -1,0 +1,33 @@
+module Work {
+  record Item { input: Int, fallback: Int }
+
+  fn square(input: Int) -> Outcome<Int> {
+    if input < 0 { Err("negative input") } else { Ok(input * input) }
+  }
+
+  fn resolve(item: Item) -> Outcome<Int> {
+    match square(item.input) {
+      Ok(value) => Ok(value),
+      Err(reason) => square(item.fallback)
+    }
+  }
+}
+
+record Summary { accepted: Int, rejected: Int, total: Int }
+
+fn main(items: List<Work.Item>) -> Summary {
+  fold(items, new Summary { accepted: 0, rejected: 0, total: 0 }, summary, item => {
+    match Work.resolve(item) {
+      Ok(value) => new Summary {
+        accepted: summary.accepted + 1,
+        rejected: summary.rejected,
+        total: summary.total + value
+      },
+      Err(reason) => new Summary {
+        accepted: summary.accepted,
+        rejected: summary.rejected + 1,
+        total: summary.total
+      }
+    }
+  })
+}

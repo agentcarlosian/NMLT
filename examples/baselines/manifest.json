@@ -1,0 +1,30 @@
+{
+  "schema": "nmlt-r0-baselines-v1",
+  "lean_version": "4.33.1",
+  "check_timeout_seconds": 30,
+  "max_heartbeats": 200000,
+  "axiom_policy": "empty",
+  "proof": {
+    "target": "forall n : Nat, 0 + n = n",
+    "max_strategy_attempts": 3,
+    "strategies": ["wrong-term", "existing-lemma", "induction"],
+    "expected": ["rejected", "accepted", "accepted"]
+  },
+  "discovery": {
+    "domain": [0, 1, 2, 3, 4],
+    "max_candidates": 2,
+    "candidates": ["left_projection", "commutative"],
+    "targets": ["forall a b : Nat, a + b = a", "forall a b : Nat, a + b = b + a"],
+    "expected": ["refuted", "known_theorem"]
+  },
+  "worker": {
+    "max_slots": 1,
+    "max_generations_per_scenario": 2,
+    "scenarios": [
+      {"id": "success", "inputs": [3], "expected_status": "succeeded", "expected_result": 9, "expected_spent": 1, "expected_ignored": 0},
+      {"id": "failure", "inputs": [-1], "expected_status": "failed", "expected_result": null, "expected_spent": 1, "expected_ignored": 0},
+      {"id": "cancel_before_dispatch", "inputs": [3], "expected_status": "cancelled", "expected_result": null, "expected_spent": 0, "expected_ignored": 0},
+      {"id": "cancel_late_slot_reuse", "inputs": [4, 5], "expected_status": "succeeded", "expected_result": 25, "expected_spent": 2, "expected_ignored": 2}
+    ]
+  }
+}

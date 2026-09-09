@@ -1,0 +1,10 @@
+import Arithmetic
+
+record Item { input: Int, fallback: Int }
+
+fn resolve(item: Item) -> Outcome<Int> {
+  match Arithmetic.square(item.input) {
+    Ok(value) => Ok(value),
+    Err(reason) => Arithmetic.square(item.fallback)
+  }
+}

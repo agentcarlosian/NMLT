@@ -8,20 +8,41 @@ use nmlt_core::{
     UntypedMember, UntypedRefinementItem, UntypedStatement, UntypedSystem, UntypedUpdateTarget,
     parse_cst, project_untyped,
 };
-use nmlt_hir::sha256_bytes;
+use nmlt_hir::{ResourceDimension, sha256_bytes};
 use nmlt_ir::{
-    BEHAVIOR_CORE_SCHEMA, BehaviorCoreProgram, CoreBehaviorAction, CoreBehaviorBinding,
-    CoreBehaviorState, CoreBehaviorSystem, CoreBehaviorTerm, CoreComposition, CoreConnection,
-    CorePort, CorePortDirection, CoreRefinement, CoreResourceProfile,
+    BEHAVIOR_CORE_SCHEMA, BEHAVIOR_CORE_V2_SCHEMA, BehaviorCoreProgram, CoreBehaviorAction,
+    CoreBehaviorBinding, CoreBehaviorState, CoreBehaviorSystem, CoreBehaviorTerm, CoreComposition,
+    CoreConnection, CorePort, CorePortDirection, CoreRefinement, CoreResourceProfile,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BehaviorDiagnostic {
     code: &'static str,
     message: String,
+    span: Option<nmlt_core::Span>,
+    expected: Option<String>,
+    actual: Option<String>,
 }
 
 impl BehaviorDiagnostic {
+    pub fn span(&self) -> Option<nmlt_core::Span> {
+        self.span
+    }
+    pub fn expected(&self) -> Option<&str> {
+        self.expected.as_deref()
+    }
+    pub fn actual(&self) -> Option<&str> {
+        self.actual.as_deref()
+    }
+    pub(super) fn at(mut self, span: nmlt_core::Span) -> Self {
+        self.span = Some(span);
+        self
+    }
+    pub(super) fn mismatch(mut self, expected: &str, actual: &str) -> Self {
+        self.expected = Some(expected.into());
+        self.actual = Some(actual.into());
+        self
+    }
     #[must_use]
     pub const fn code(&self) -> &'static str {
         self.code
@@ -41,10 +62,13 @@ impl fmt::Display for BehaviorDiagnostic {
 
 impl std::error::Error for BehaviorDiagnostic {}
 
-fn reject(code: &'static str, message: impl Into<String>) -> BehaviorDiagnostic {
+pub(super) fn reject(code: &'static str, message: impl Into<String>) -> BehaviorDiagnostic {
     BehaviorDiagnostic {
         code,
         message: message.into(),
+        span: None,
+        expected: None,
+        actual: None,
     }
 }
 
@@ -53,8 +77,38 @@ pub fn compile_behavior_single(
     repository_path: impl Into<String>,
     exact_bytes: impl Into<Vec<u8>>,
 ) -> Result<BehaviorCoreProgram, BehaviorDiagnostic> {
-    let repository_path = repository_path.into();
-    let exact_bytes = exact_bytes.into();
+    compile_behavior_version(repository_path.into(), exact_bytes.into(), false)
+}
+
+/// Opt-in v2: input capability names persist, while ownership is checked dynamically.
+pub fn compile_behavior_v2(
+    repository_path: impl Into<String>,
+    exact_bytes: impl Into<Vec<u8>>,
+) -> Result<BehaviorCoreProgram, BehaviorDiagnostic> {
+    compile_behavior_version(repository_path.into(), exact_bytes.into(), true)
+}
+
+fn compile_behavior_version(
+    repository_path: String,
+    exact_bytes: Vec<u8>,
+    dynamic: bool,
+) -> Result<BehaviorCoreProgram, BehaviorDiagnostic> {
+    compile_with_properties(repository_path, exact_bytes, dynamic, false)
+        .map(|(program, _)| program)
+}
+
+pub(super) fn compile_with_properties(
+    repository_path: String,
+    exact_bytes: Vec<u8>,
+    dynamic: bool,
+    allow_safety: bool,
+) -> Result<
+    (
+        BehaviorCoreProgram,
+        Vec<(String, nmlt_core::UntypedProperty)>,
+    ),
+    BehaviorDiagnostic,
+> {
     let source = std::str::from_utf8(&exact_bytes)
         .map_err(|_| reject("NMLT-BHV-UTF8", "behavior source is not valid UTF-8"))?;
     let parsed = parse_cst(source);
@@ -81,9 +135,15 @@ pub fn compile_behavior_single(
         .collect::<BTreeSet<_>>();
 
     let mut systems = BTreeMap::new();
+    let mut properties = vec![];
     for system in projection.file.systems() {
-        let system = compile_system(system, &facts)?;
-        if systems.insert(system.name.clone(), system).is_some() {
+        let compiled = compile_system(system, &facts, dynamic, allow_safety)?;
+        for member in &system.members {
+            if let UntypedMember::Property(property) = member {
+                properties.push((compiled.name.clone(), property.clone()));
+            }
+        }
+        if systems.insert(compiled.name.clone(), compiled).is_some() {
             return Err(reject(
                 "NMLT-BHV-DUPLICATE-SYSTEM",
                 "duplicate behavior system name",
@@ -101,15 +161,28 @@ pub fn compile_behavior_single(
     collect_compositions(&projection.file.declarations, &systems, &mut compositions)?;
     let refinements = compile_refinements(projection.file.refinements(), &systems)?;
 
-    Ok(BehaviorCoreProgram {
-        schema: BEHAVIOR_CORE_SCHEMA.to_owned(),
+    let mut program = BehaviorCoreProgram {
+        schema: if dynamic {
+            BEHAVIOR_CORE_V2_SCHEMA
+        } else {
+            BEHAVIOR_CORE_SCHEMA
+        }
+        .to_owned(),
         source_path: repository_path,
         source_sha256: hex_digest(sha256_bytes(&exact_bytes)),
         enums,
         systems,
         compositions,
         refinements,
-    })
+        known_capabilities: BTreeMap::new(),
+        initial_authority: BTreeMap::new(),
+    };
+    if dynamic {
+        program
+            .populate_execution_maps()
+            .map_err(|message| reject("NMLT-BHV-EXECUTION-MAPS", message))?;
+    }
+    Ok((program, properties))
 }
 
 fn collect_enums(
@@ -168,6 +241,8 @@ fn collect_enums(
 fn compile_system(
     system: &UntypedSystem,
     facts: &BTreeSet<String>,
+    dynamic: bool,
+    allow_safety: bool,
 ) -> Result<CoreBehaviorSystem, BehaviorDiagnostic> {
     let name = required_name(
         system.name.as_ref().map(|name| name.text.as_str()),
@@ -213,7 +288,7 @@ fn compile_system(
                             CoreBehaviorState {
                                 name: binding_name,
                                 ty,
-                                initializer,
+                                initializer: render_behavior_term(&initial_ast),
                                 initial_ast,
                             },
                         );
@@ -264,21 +339,37 @@ fn compile_system(
                 );
             }
             UntypedMember::Action(action) => action_sources.push(action),
-            UntypedMember::Observation(observation) => match observation.kind {
-                ObservationKind::Observe => {
-                    observations.extend(observation.names.iter().map(|name| name.text.clone()));
+            UntypedMember::Observation(observation) => {
+                let names = observation.checked_names().ok_or_else(|| {
+                    reject(
+                        "NMLT-BHV-OBSERVATION-SYNTAX",
+                        "behavior observations and hiding require comma-separated names",
+                    )
+                })?;
+                match observation.kind {
+                    ObservationKind::Observe => {
+                        observations.extend(names.into_iter().map(|name| name.text));
+                    }
+                    ObservationKind::Hide if observation.hide_sort == Some(HideSort::Actions) => {
+                        hidden.extend(names.into_iter().map(|name| name.text));
+                    }
+                    ObservationKind::Hide => {
+                        return Err(reject(
+                            "NMLT-BHV-HIDE-KIND",
+                            format!("system '{name}' may hide actions only in this slice"),
+                        ));
+                    }
                 }
-                ObservationKind::Hide if observation.hide_sort == Some(HideSort::Actions) => {
-                    hidden.extend(observation.names.iter().map(|name| name.text.clone()));
-                }
-                ObservationKind::Hide => {
-                    return Err(reject(
-                        "NMLT-BHV-HIDE-KIND",
-                        format!("system '{name}' may hide actions only in this slice"),
-                    ));
-                }
-            },
-            UntypedMember::Property(_) => {}
+            }
+            UntypedMember::Property(property)
+                if allow_safety && property.kind == nmlt_core::PropertyKind::Safety => {}
+            UntypedMember::Property(property) => {
+                return Err(reject(
+                    "NMLT-BHV-UNSUPPORTED-PROPERTY",
+                    format!("system '{name}' has a property outside the behavior-core-v1 profile"),
+                )
+                .at(property.span));
+            }
             UntypedMember::SurfaceOnly(node) => {
                 return Err(reject(
                     "NMLT-BHV-UNSUPPORTED-MEMBER",
@@ -306,9 +397,43 @@ fn compile_system(
         }
     }
 
+    let mut known = capabilities.clone();
+    if dynamic {
+        for action in &action_sources {
+            if action.polarity != Some(SurfacePolarity::Input) {
+                continue;
+            }
+            for parameter in action.supported_parameters() {
+                let binding = required_name(
+                    parameter.name.as_ref().map(|n| n.text.as_str()),
+                    "NMLT-BHV-PARAMETER-NAME",
+                    "action parameter",
+                )?;
+                let ty = raw_required(parameter.declared_type.as_ref(), "NMLT-BHV-PARAMETER-TYPE")?;
+                if ty.starts_with("Once<")
+                    && known
+                        .insert(binding.to_owned(), ty.clone())
+                        .is_some_and(|old| old != ty)
+                {
+                    return Err(reject(
+                        "NMLT-BHV-CAPABILITY-TYPE",
+                        format!("inconsistent capability type for '{name}.{binding}'"),
+                    ));
+                }
+            }
+        }
+    }
     let mut actions = BTreeMap::new();
     for action in action_sources {
-        let action = compile_action(&name, action, &state, &capabilities, &ports, facts, &hidden)?;
+        let action = compile_action(
+            &name,
+            action,
+            &state,
+            (&known, dynamic),
+            &ports,
+            facts,
+            &hidden,
+        )?;
         if actions.insert(action.name.clone(), action).is_some() {
             return Err(reject(
                 "NMLT-BHV-DUPLICATE-ACTION",
@@ -339,11 +464,12 @@ fn compile_action(
     system_name: &str,
     action: &UntypedAction,
     state: &BTreeMap<String, CoreBehaviorState>,
-    capabilities: &BTreeMap<String, String>,
+    authority_context: (&BTreeMap<String, String>, bool),
     ports: &BTreeMap<String, CorePort>,
     facts: &BTreeSet<String>,
     hidden_actions: &BTreeSet<String>,
 ) -> Result<CoreBehaviorAction, BehaviorDiagnostic> {
+    let (capabilities, dynamic) = authority_context;
     let name = required_name(
         action.name.as_ref().map(|name| name.text.as_str()),
         "NMLT-BHV-ACTION-NAME",
@@ -458,6 +584,20 @@ fn compile_action(
         }
     }
 
+    let valid_placement = match direction {
+        None => parameters.is_empty() && outputs.is_empty(),
+        Some(CorePortDirection::Input) => outputs.is_empty(),
+        Some(CorePortDirection::Output) => parameters.is_empty(),
+    };
+    if !valid_placement {
+        return Err(reject(
+            "NMLT-BHV-ACTION-PAYLOAD",
+            format!(
+                "action '{system_name}.{name}' binds or emits a payload forbidden by its direction"
+            ),
+        ));
+    }
+
     let mut consume_counts = BTreeMap::<String, usize>::new();
     for capability in consumed {
         if !capabilities.contains_key(&capability) {
@@ -514,7 +654,8 @@ fn compile_action(
             port,
             &parameters,
             &outputs,
-            capabilities,
+            (capabilities, dynamic),
+            &resources,
         )?;
     }
 
@@ -535,6 +676,11 @@ fn compile_action(
             ))
         })
         .collect::<Result<BTreeMap<_, _>, BehaviorDiagnostic>>()?;
+    let guards = guard_ast.iter().map(render_behavior_term).collect();
+    let updates = update_ast
+        .iter()
+        .map(|(field, term)| (field.clone(), render_behavior_term(term)))
+        .collect();
 
     Ok(CoreBehaviorAction {
         name: name.clone(),
@@ -556,16 +702,34 @@ fn validate_payload_shape(
     port: &CorePort,
     parameters: &[CoreBehaviorBinding],
     outputs: &[String],
-    capabilities: &BTreeMap<String, String>,
+    authority_context: (&BTreeMap<String, String>, bool),
+    resources: &CoreResourceProfile,
 ) -> Result<(), BehaviorDiagnostic> {
+    let (capabilities, dynamic) = authority_context;
     match port.direction {
         CorePortDirection::Input => {
-            let accepted = (port.payload_type == "Unit" && parameters.is_empty())
-                || matches!(parameters, [parameter] if parameter.ty == port.payload_type);
+            let accepted = if port.payload_type == "Unit" {
+                parameters.is_empty() && resources.receives.is_empty()
+            } else {
+                matches!(parameters, [parameter] if parameter.ty == port.payload_type
+                    && resources.receives.len() == 1
+                    && resources.receives.contains(&parameter.name))
+            };
             if !accepted {
                 return Err(reject(
                     "NMLT-BHV-INPUT-PAYLOAD",
                     format!("input '{system}.{action}' parameters do not match its port payload"),
+                ));
+            }
+            if !dynamic
+                && resources
+                    .receives
+                    .iter()
+                    .any(|name| capabilities.contains_key(name))
+            {
+                return Err(reject(
+                    "NMLT-BHV-INPUT-OWNERSHIP",
+                    format!("input '{system}.{action}' receives authority it already owns"),
                 ));
             }
         }
@@ -666,6 +830,12 @@ fn collect_compositions(
                 let first = components.next().expect("two components");
                 let second = components.next().expect("two components");
                 check_capability_partition(&name, systems, &first, &second)?;
+                for connection in &mut connections {
+                    if connection.left_system != first {
+                        std::mem::swap(&mut connection.left_system, &mut connection.right_system);
+                        std::mem::swap(&mut connection.left_action, &mut connection.right_action);
+                    }
+                }
                 if output
                     .insert(
                         name.clone(),
@@ -895,13 +1065,19 @@ fn compile_refinements(
                     }
                 }
                 UntypedRefinementItem::HiddenAction(observation) => {
+                    let names = observation.checked_names().ok_or_else(|| {
+                        reject(
+                            "NMLT-BHV-REFINE-HIDE",
+                            "refinement hiding requires comma-separated action names",
+                        )
+                    })?;
                     if observation.hide_sort != Some(HideSort::Actions) {
                         return Err(reject(
                             "NMLT-BHV-REFINE-HIDE",
                             "refinement may hide actions only",
                         ));
                     }
-                    hidden_actions.extend(observation.names.iter().map(|name| name.text.clone()));
+                    hidden_actions.extend(names.into_iter().map(|name| name.text));
                 }
                 UntypedRefinementItem::SurfaceOnly(_) | UntypedRefinementItem::Error(_) => {
                     return Err(reject(
@@ -910,6 +1086,12 @@ fn compile_refinements(
                     ));
                 }
             }
+        }
+        if state_map.values().collect::<BTreeSet<_>>().len() != state_map.len() {
+            return Err(reject(
+                "NMLT-BHV-STATE-MAP-NONINJECTIVE",
+                "each abstract state field must have exactly one concrete source",
+            ));
         }
         if state_map.keys().collect::<BTreeSet<_>>()
             != concrete.state.keys().collect::<BTreeSet<_>>()
@@ -949,13 +1131,23 @@ fn validate_refinement_actions(
     abstract_system: &CoreBehaviorSystem,
     hidden: &BTreeSet<String>,
 ) -> Result<(), BehaviorDiagnostic> {
+    for name in hidden {
+        if !concrete.actions.contains_key(name) {
+            return Err(reject(
+                "NMLT-BHV-REFINE-HIDDEN-ACTION",
+                format!("hidden action '{concrete_name}.{name}' does not exist"),
+            ));
+        }
+    }
     for (name, concrete_action) in &concrete.actions {
         let is_hidden = concrete_action.hidden || hidden.contains(name);
         if is_hidden {
             if concrete_action
-                .updates
+                .update_ast
                 .iter()
-                .any(|(field, value)| field != value)
+                .any(|(field, value)| {
+                    !matches!(value, CoreBehaviorTerm::Read { field: read, .. } if read == field)
+                })
             {
                 return Err(reject(
                     "NMLT-BHV-HIDDEN-STATE",
@@ -1097,6 +1289,31 @@ fn parse_behavior_term(
     state: &BTreeMap<String, CoreBehaviorState>,
     facts: &BTreeSet<String>,
 ) -> Result<CoreBehaviorTerm, BehaviorDiagnostic> {
+    parse_behavior_term_with_depth(
+        source,
+        expected,
+        state,
+        facts,
+        ResourceDimension::TermDepth.maximum(),
+    )
+}
+
+fn parse_behavior_term_with_depth(
+    source: &str,
+    expected: &str,
+    state: &BTreeMap<String, CoreBehaviorState>,
+    facts: &BTreeSet<String>,
+    remaining_depth: u64,
+) -> Result<CoreBehaviorTerm, BehaviorDiagnostic> {
+    let remaining_depth = remaining_depth.checked_sub(1).ok_or_else(|| {
+        reject(
+            "NMLT-BHV-TERM-DEPTH",
+            format!(
+                "behavior term nesting exceeds the limit of {}",
+                ResourceDimension::TermDepth.maximum()
+            ),
+        )
+    })?;
     let source = source.trim();
     if let Some((left, right)) = source.split_once("==") {
         if expected != "Bool" {
@@ -1107,8 +1324,10 @@ fn parse_behavior_term(
         let operand_type = atomic_term_type(left, state)
             .or_else(|| atomic_term_type(right, state))
             .ok_or_else(|| term_error(source, expected))?;
-        let left = parse_behavior_term(left, &operand_type, state, facts)?;
-        let right = parse_behavior_term(right, &operand_type, state, facts)?;
+        let left =
+            parse_behavior_term_with_depth(left, &operand_type, state, facts, remaining_depth)?;
+        let right =
+            parse_behavior_term_with_depth(right, &operand_type, state, facts, remaining_depth)?;
         return Ok(CoreBehaviorTerm::Equal {
             r#type: "Bool".to_owned(),
             left: Box::new(left),
@@ -1121,7 +1340,13 @@ fn parse_behavior_term(
         }
         return Ok(CoreBehaviorTerm::Not {
             r#type: "Bool".to_owned(),
-            value: Box::new(parse_behavior_term(inner, "Bool", state, facts)?),
+            value: Box::new(parse_behavior_term_with_depth(
+                inner,
+                "Bool",
+                state,
+                facts,
+                remaining_depth,
+            )?),
         });
     }
     match source {
@@ -1165,6 +1390,24 @@ fn parse_behavior_term(
         }
     }
     Err(term_error(source, expected))
+}
+
+// Match Lean's renderTerm; the AST remains authoritative for grouping and types.
+fn render_behavior_term(term: &CoreBehaviorTerm) -> String {
+    match term {
+        CoreBehaviorTerm::Bool { value, .. } => value.to_string(),
+        CoreBehaviorTerm::Unit { .. } => "unit".to_owned(),
+        CoreBehaviorTerm::Enum { constructor, .. } => constructor.clone(),
+        CoreBehaviorTerm::Read { field, .. } => field.clone(),
+        CoreBehaviorTerm::Not { value, .. } => format!("!{}", render_behavior_term(value)),
+        CoreBehaviorTerm::Equal { left, right, .. } => {
+            format!(
+                "{} == {}",
+                render_behavior_term(left),
+                render_behavior_term(right)
+            )
+        }
+    }
 }
 
 fn atomic_term_type(source: &str, state: &BTreeMap<String, CoreBehaviorState>) -> Option<String> {
@@ -1229,6 +1472,35 @@ fn hex_digest(digest: [u8; 32]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn behavior_term_budget_precedes_recursive_descent() {
+        let state = BTreeMap::new();
+        let facts = BTreeSet::new();
+        for (source, budget) in [
+            ("true", 0),
+            ("!true", 1),
+            ("true==false", 1),
+            ("!!false", 2),
+            ("true==false==true", 2),
+        ] {
+            let error =
+                parse_behavior_term_with_depth(source, "Bool", &state, &facts, budget).unwrap_err();
+            assert_eq!(error.code(), "NMLT-BHV-TERM-DEPTH", "{source}");
+        }
+        for (source, budget) in [
+            ("true", 1),
+            ("!true", 2),
+            ("true==false", 2),
+            ("!!false", 3),
+            ("true==false==true", 3),
+        ] {
+            assert!(
+                parse_behavior_term_with_depth(source, "Bool", &state, &facts, budget).is_ok(),
+                "{source}"
+            );
+        }
+    }
 
     #[test]
     fn hidden_resource_failures_have_distinct_codes() {

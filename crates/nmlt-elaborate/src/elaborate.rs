@@ -493,14 +493,14 @@ impl<'a> Builder<'a> {
         witness: DerivationWitness,
         premises: Vec<DerivationNodeId>,
     ) -> Result<TermResult, ElaborationError> {
-        if let Some(expected) = &expected {
-            if *expected != actual {
-                return Err(ElaborationError::TypeMismatch {
-                    origin: hir.id(),
-                    expected: expected.clone(),
-                    actual,
-                });
-            }
+        if let Some(expected) = &expected
+            && *expected != actual
+        {
+            return Err(ElaborationError::TypeMismatch {
+                origin: hir.id(),
+                expected: expected.clone(),
+                actual,
+            });
         }
         let node = CoreNodeId::from_origin(hir.id(), &[])?;
         self.insert_term(CoreTerm::new(

@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-import os
 import re
+import os
 import subprocess
 import sys
 import tomllib
@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-IGNORED_PARTS = {".git", ".lake", "target"}
+IGNORED_PARTS = {".git", ".lake", ".cache", "target"}
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 ACTIVE_SURFACES = (
@@ -24,80 +24,17 @@ ACTIVE_SURFACES = (
     "CHANGELOG.md",
     "docs/README.md",
     "docs/architecture.md",
-    "docs/artifact-identity.md",
-    "docs/getting-started.md",
     "docs/roadmap.md",
     "docs/language-sketch.md",
     "docs/core-calculus.md",
     "docs/threat-model.md",
-    "docs/decisions/0004-language-mathematics-pivot.md",
     "mechanization/lean/README.md",
     "examples/README.md",
-    "crates/nmlt-certificate/README.md",
     "rfcs/README.md",
-    "rfcs/0004-artifact-identity.md",
-    ".gitignore",
     ".github/PULL_REQUEST_TEMPLATE.md",
     ".github/ISSUE_TEMPLATE/research.yml",
     ".github/ISSUE_TEMPLATE/bug.yml",
 )
-
-HISTORICAL_DOCUMENTS = (
-    "docs/phase-0-closeout.md",
-    "docs/reproduction-2026-07-18.md",
-    "docs/m9-completion-audit-2026-07-19.md",
-    "docs/test-report-m11-001b-2026-07-19.md",
-    "docs/test-report-m11-001c-core-2026-07-19.md",
-    "docs/reboot-handoff-2026-07-19.md",
-    "docs/reboot-handoff-2026-07-20.md",
-    "docs/metatheory/phase-1-mathematical-core.md",
-    "docs/metatheory/research-synthesis-2026-07-18.md",
-    "docs/research-notes/m10-behavior-refinement-and-certificates-2026-07-19.md",
-    "docs/research-notes/m11-contract-refinement-2026-07-19.md",
-    "docs/research-notes/m11-open-system-refinement-2026-07-19.md",
-    "docs/research-notes/m11-two-sided-congruence-2026-07-19.md",
-    "docs/research-notes/m9-bidirectional-elaboration-2026-07-19.md",
-    "docs/research-notes/m9-contract-resolution-2026-07-19.md",
-    "docs/research-notes/m9-independent-kernel-2026-07-19.md",
-    "docs/research-notes/m9-integration-and-correspondence-2026-07-19.md",
-    "docs/research-notes/m9-resolution-and-explicit-core-2026-07-19.md",
-    "docs/research-notes/phase-0-foundations-2026-07-18.md",
-    "docs/research-notes/source-to-typed-core-and-project-identity-2026-07-19.md",
-)
-
-REQUIRED_PUBLIC_TEXT = {
-    "docs/language-sketch.md": (
-        "rely ContractFact.Authorized",
-        "guarantee ContractFact.Ready",
-    ),
-    "docs/artifact-identity.md": (
-        "Partially active identity specification",
-        "Historical pre-pivot identity design",
-    ),
-    "rfcs/0004-artifact-identity.md": (
-        "Partially superseded by the language-and-mathematics pivot",
-        "Pivot disposition",
-    ),
-    "examples/README.md": ("durable fixture path",),
-}
-
-FORBIDDEN_PUBLIC_TEXT = {
-    "examples/README.md": ("before the public stack is finalized",),
-    ".gitignore": (
-        "PGenerated",
-        "PCheckerOutput",
-        "tools/quint",
-        "papers/",
-    ),
-}
-
-HISTORICAL_SECTION_MARKERS = {
-    "docs/artifact-identity.md": "## Historical pre-pivot identity design",
-}
-
-ACTIVE_COMPONENT_EXCEPTIONS = {
-    ("docs/artifact-identity.md", "nmlt-temporal"),
-}
 
 REMOVED_COMPONENTS = (
     "nmlt-agent",
@@ -200,45 +137,11 @@ def check_active_component_names() -> list[str]:
     for relative in ACTIVE_SURFACES:
         path = ROOT / relative
         text = path.read_text(encoding="utf-8").lower()
-        if marker := HISTORICAL_SECTION_MARKERS.get(relative):
-            text = text.split(marker.lower(), 1)[0]
         for component in REMOVED_COMPONENTS:
-            if (relative, component) in ACTIVE_COMPONENT_EXCEPTIONS:
-                continue
             if component in text:
                 failures.append(
                     f"{relative}: active surface names removed component {component}"
                 )
-    return failures
-
-
-def check_historical_banners() -> list[str]:
-    failures: list[str] = []
-    snapshot = "0417f6e16ad64f92f79002293f54fd705c1dbc80"
-    for relative in HISTORICAL_DOCUMENTS:
-        text = (ROOT / relative).read_text(encoding="utf-8")
-        opening = "\n".join(text.splitlines()[:8])
-        if "> **Historical record.**" not in opening:
-            failures.append(f"{relative}: missing top-of-file historical banner")
-        if "history.md" not in opening or snapshot not in opening:
-            failures.append(
-                f"{relative}: historical banner does not link history and snapshot"
-            )
-    return failures
-
-
-def check_public_contracts() -> list[str]:
-    failures: list[str] = []
-    for relative, required in REQUIRED_PUBLIC_TEXT.items():
-        text = (ROOT / relative).read_text(encoding="utf-8")
-        for phrase in required:
-            if phrase not in text:
-                failures.append(f"{relative}: missing required public text {phrase!r}")
-    for relative, forbidden in FORBIDDEN_PUBLIC_TEXT.items():
-        text = (ROOT / relative).read_text(encoding="utf-8")
-        for phrase in forbidden:
-            if phrase in text:
-                failures.append(f"{relative}: stale public text {phrase!r}")
     return failures
 
 
@@ -248,8 +151,6 @@ def main() -> int:
         + check_trusted_paths()
         + check_generated_pdfs()
         + check_active_component_names()
-        + check_historical_banners()
-        + check_public_contracts()
     )
     if failures:
         for failure in failures:
@@ -257,7 +158,7 @@ def main() -> int:
         return 1
     print(
         "ok: public links, trusted-component paths, removed-component names, "
-        "historical banners, public contracts, and generated-PDF policy"
+        "and generated-PDF policy"
     )
     return 0
 

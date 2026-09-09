@@ -60,6 +60,18 @@ The retained `nmlt-kernel` checks the ordinary typed-elaboration
 certificate. It does not define behavioral semantics and cannot confer a
 behavior theorem.
 
+### Executable source job boundary
+
+The executable-only [scoped job profile](r2-source-async.md) adds a distinct host
+boundary. Source cannot construct or copy session controls; a checked lexical
+handle must be collected once on every normal path. The CLI binds every source
+operation to its exact attempt and journal transitions, and replay validates
+captured observations before returning recorded polling/cancellation decisions.
+This prevents inconsistent source/session records from being accepted, but does
+not authenticate physical observations, fence copied journals, restore handles
+after restart, or contain process trees. The configured worker/Lean installation
+and its libraries remain trusted local dependencies.
+
 ### Artifact boundary
 
 Artifact JSON is untrusted. Canonical decoding must reject duplicate
@@ -99,11 +111,11 @@ bounded operational inspection. Its output is debugging information with
 |---|---|---|---|
 | Malformed or recovery-dependent source is treated as a program | Wrong source meaning | Lossless CST, explicit diagnostics, projection coverage tests | Fuzzing and stronger resource limits |
 | An artifact copies a legitimate source digest but contains different valid semantics | False translation impression | Documentation limits digest to identification; primary fixture is regenerated and compared | Translation validation or verified compiler |
-| Duplicate or malformed capability/resource identities enter the artifact | Authority ambiguity or fabrication | Canonical decoder and negative fixtures | Expand v2 world/step controls |
-| A hidden action changes control or authority but is called stutter | Unsound weak matching | Hidden-state equality, complete hidden profile-to-empty condition, pointwise authority preservation, consumption controls | Unified behavior and path theorem |
+| Duplicate or malformed capability/resource identities enter the artifact | Authority ambiguity or fabrication | Canonical Rust decoder, independently derived v2 maps, and actual-step/world controls | Extend coverage as the language expands |
+| A hidden action changes control or authority but is called stutter | Unsound weak matching | Full-state agreement in unified lifting; hidden-world mutation and consumption controls | General trace transport remains future work |
 | Product formation drops a wire, mismatches ports, shares ownership, or leaves reliance undischarged | Invalid composition | Formation judgment and boundary-specific controls | Countermodels for claims of theorem-premise necessity |
-| The static and dynamic product layers are presented as already unified | Claim inflation | Architecture and roadmap disclose the split | Integrate dynamic worlds into `Behavior` |
-| The checker reports dynamic execution although it only builds a conditional lifting function | Reachability overclaim | Checker wording says step existence/reachability are unchecked | Artifact-derived initial step witness |
+| Retained v1 evidence is presented as covering the new execution model | Claim inflation | Versioned entry points and distinct v1/v2 claim profiles | Preserve boundaries during future migrations |
+| A conditional lifting function is presented as an executed path | Reachability overclaim | V1 wording stays conditional; v2 checks the initializer and every unified step and derives finite reachability | Per-invocation proof export remains future work |
 | Rust output is presented as Lean acceptance | Trust-boundary confusion | CLI explicitly says when Lean was not invoked; explorer says assurance none | Stable output tests for every command |
 | A proof placeholder or unexpected theorem dependency enters Lean | False theorem confidence | no-`sorry` scan, focused `#print axioms` audit, NanoDA pass | Exact per-theorem allowlist enforcement |
 | CI actions, toolchain downloads, dependencies, or host are compromised | Arbitrary false results | Pinned language versions and action commits, least-privilege checkout | Reproducible bootstrap, SBOM, signing, isolated builders |
@@ -124,6 +136,28 @@ bounded operational inspection. Its output is debugging information with
    theorem dependencies.
 8. The active trusted-component inventory contains only existing paths.
 9. Dated historical records cannot override current claim ceilings.
+
+## Local job and recovery boundary
+
+Source jobs record a versioned process/resource policy and complete pinned Lean
+installation identities. Closed Init term inputs cannot insert arbitrary Lean
+commands or tactics. The empty-axiom report is checked as captured process
+evidence, with the pinned checker and host still trusted. It is not a runtime
+attestation or independent audit of each generated proof.
+
+The source decision journal is flushed around each effect. Resumption preserves
+prior decisions and charged attempts; unresolved effects require explicit
+operator failure acknowledgement. Old dispatched work is never relaunched by
+recovery. Lost collect replies reuse the existing result. Explicit incomplete-tail
+repair preserves the removed suffix and never discards a corrupt complete row.
+Copied or rolled-back stores remain outside local lock fencing, and coherent
+forgeries are not authenticated. See [RFC 0030](../rfcs/0030-durable-source-resumption.md).
+
+The [platform process contract](../rfcs/0028-contained-process-lifecycle.md) is
+not filesystem/network isolation. Windows whole-job resource/parent-death
+coverage and Unix process-group fallback limits must not be presented as equal
+OS guarantees. Current native containment execution evidence is Windows;
+Linux compilation alone is not runtime validation.
 
 ## Residual trust
 

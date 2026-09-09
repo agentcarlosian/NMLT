@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nmlt.dev/schemas/behavior-invariant-witness-v1.schema.json",
+  "title": "NMLT untrusted finite safety closure or counterexample witness",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema", "core_sha256", "invariant_sha256", "claim"],
+  "properties": {
+    "schema": {"const": "behavior-invariant-witness-v1"},
+    "core_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "invariant_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "claim": {"oneOf": [
+      {"type": "object", "additionalProperties": false, "required": ["kind", "states"], "properties": {
+        "kind": {"const": "invariant"},
+        "states": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"$ref": "behavior-execution-v1.schema.json#/properties/states/items"}}
+      }},
+      {"type": "object", "additionalProperties": false, "required": ["kind", "path"], "properties": {
+        "kind": {"const": "counterexample"}, "path": {"$ref": "behavior-execution-v1.schema.json"}
+      }}
+    ]}
+  }
+}

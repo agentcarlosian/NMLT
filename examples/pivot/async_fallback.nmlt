@@ -1,0 +1,32 @@
+// Executable-only: launch two bounded jobs before collecting either one.
+fn main(input: Int, fallback: Int) -> Outcome<Int> {
+  let candidate = job_start_square(input);
+  let backup = job_start_square(fallback);
+  let ready = job_poll(candidate);
+  let first = job_collect(candidate);
+  let second = job_collect(backup);
+  match first {
+    Ok(value) => Ok(value + value),
+    Err(message) => match second {
+      Ok(value) => Ok(value + value),
+      Err(problem) => Err(problem)
+    }
+  }
+}
+
+fn cancel(input: Int) -> Outcome<Int> {
+  let work = job_start_square(input);
+  let cancelled = job_cancel(work);
+  job_collect(work)
+}
+
+fn lean() -> Outcome<Text> {
+  let rejected = job_start_lean("wrong_term");
+  let proof = job_start_lean("existing_lemma");
+  let first = job_collect(rejected);
+  let checked = job_collect(proof);
+  match first {
+    Ok(unexpected) => Err("negative control unexpectedly succeeded"),
+    Err(message) => checked
+  }
+}

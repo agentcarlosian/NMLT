@@ -5,7 +5,7 @@ normative when this overview is incomplete.
 
 ## Behavior
 
-The current finite behavioral object is parameterized by action, capability,
+The retained v1 control object is parameterized by action, capability,
 contract-fact, grade-atom, and observation types. It contains:
 
 ```text
@@ -79,10 +79,39 @@ The dynamic one-step theorem covers:
 - hidden left-local stuttering when the complete concrete resource profile
   refines empty and every capability owner is pointwise unchanged.
 
-This dynamic layer currently defines a second `ProductState` and
-`ProductStep`. It is not itself a `Behavior`, and no theorem yet
-identifies it with the static product. Unifying those layers is the next
-semantic milestone.
+These legacy `ProductState` and `ProductStep` definitions remain unchanged for
+v1 artifact regression evidence.
+
+## Unified R1 behavior
+
+`ResourceDynamics.Behavior` contains the control presentation, a deferred effect
+per action with an agreeing resource profile, and an initial-world predicate.
+Its state is the control state plus one authority world. Its initializer checks
+both, its observation retains control observations and full authority, and its
+completed step requires the control transition and the one shared-world effect.
+
+Atomic effects retain their leaf actor. Binary synchronization applies the
+existing `SyncStep` rule to two atomic participants. An open action survives an
+inner product without attempting an unmatched transfer; an inherited completed
+sync executes once. A completed sync cannot rendezvous again with a third actor.
+The constructor preserves isolated actions' direction, payload and hidden
+classification on both sides.
+
+`legacy_step_iff` is an exact replacement result for leaf pairs;
+`step_projects` maps a dynamic product step to its control product. The new
+`liftParallel` constructs a simulation preserving initialization, observation,
+resource refinement, hidden classification and weak step matching. Its wiring,
+connected-visibility and synchronized-effect premises are explicit. Hidden
+matching requires unchanged authority; an empty aggregate transfer summary is
+insufficient because an inner synchronization may still move authority.
+
+`Path` and `Reachable` use this same completed-step relation. The path theorem
+preserves a vacant capability, and the reachable-state theorem propagates that
+fact from every admitted initial state. Ownership uniqueness follows from the
+functional world representation. The main nested example has explicit formation,
+initialization, and finite execution witnesses; the enclosed inner-sync example
+proves a standalone step. These are not decoded source paths, general trace
+equivalence, fairness, or an NMLT runtime.
 
 ## Artifact closure
 
@@ -95,9 +124,19 @@ the digest written in the artifact. The checker does not re-elaborate source.
 The repository gate provides a narrower reproducibility check for the committed
 fixture by regenerating and byte-comparing its artifact.
 
-The dynamic certificate maps any supplied concrete dynamic step to an abstract
-match. It does not yet construct a step from the decoded initial state or prove
-reachability.
+The retained v1 dynamic certificate maps a supplied concrete step to an abstract
+match. The v2 execution certificate instead carries its actual initializer and
+finite `Path`, with derived reachability, vacancy preservation, unique ownership,
+and an ownership-origin result: final ownership comes from initial ownership or
+a transfer to that actor on the checked path. The primary v2 synchronization
+also produces an initialized abstract step via the unified lifting theorem.
+
+V2 capability and initial-world maps are recomputed from declarations and input
+bindings. Supplied paths name the selected binary composition and bind the core
+bytes by digest. Sentinel control/action indices and unknown authority identities
+are rejected. The compiled Lean decoding/decision procedure remains trusted for
+runtime acceptance; the independent exporter checks package declarations, not a
+separately exported proof file for each CLI invocation.
 
 ## Deferred calculus
 

@@ -1,6 +1,6 @@
 name = "nmlt-mechanization"
 version = "0.0.1"
-defaultTargets = ["NMLT", "nmlt-artifact-check"]
+defaultTargets = ["NMLT", "nmlt-artifact-check", "nmlt-invariant-check"]
 
 [[lean_lib]]
 name = "NMLT"
@@ -8,3 +8,7 @@ name = "NMLT"
 [[lean_exe]]
 name = "nmlt-artifact-check"
 root = "NMLT.Artifact.CheckMain"
+
+[[lean_exe]]
+name = "nmlt-invariant-check"
+root = "NMLT.Artifact.InvariantMain"

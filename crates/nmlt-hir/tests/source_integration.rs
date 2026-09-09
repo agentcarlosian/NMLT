@@ -49,6 +49,29 @@ fn raw_terms_and_action_locals_produce_a_complete_resolution_map() {
 }
 
 #[test]
+fn computed_observations_remain_available_to_term_resolution() {
+    let source = concat!(
+        "system Counter {\n",
+        "  state current: Nat = 0\n",
+        "  observe current /* explanation */, current + 1\n",
+        "}\n",
+    );
+    let projected = project_source_module("Counter", "src/counter.nmlt", source.as_bytes());
+    assert!(projected.projection_issues().is_empty());
+    let program = resolve_modules(vec![projected]).unwrap();
+    verify_resolution_readback(&program).unwrap();
+    assert_eq!(
+        program
+            .resolution_map()
+            .entries()
+            .values()
+            .filter(|entry| entry.spelling() == "current")
+            .count(),
+        2
+    );
+}
+
+#[test]
 fn term_resolution_rejects_unresolved_ambiguous_and_shadowed_names() {
     let unresolved = project_source_module(
         "Unresolved",

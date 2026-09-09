@@ -63,5 +63,20 @@ jobs:
           NANODA_ALLOW_SORRY: "false"
         run: ./tools/check_nanoda.sh "${{ steps.stage_lean.outputs.path }}" NMLT
 
-      - name: Check theorem axioms and matching-source artifact decoding
+      - name: Check theorem axioms and source-bound artifact decoding
         run: ./tools/check_metatheory.sh "${{ steps.stage_lean.outputs.path }}"
+
+      - name: Run the frozen R0 reference workflows
+        run: make r0-baselines
+
+      - name: Check the pinned Lean adapter and asynchronous job controls
+        run: make r2-lean r2-source-lean r2-project-lean r2-lean-terms
+
+      - name: Compare finite Rust exploration with Lean
+        run: bash tools/check_finite_parity.sh "${{ steps.stage_lean.outputs.path }}"
+
+      - name: Check decoded v2 execution and resource graph parity
+        run: bash tools/check_execution.sh "${{ steps.stage_lean.outputs.path }}"
+
+      - name: Check source safety invariants and counterexamples
+        run: python3 tools/check_invariants.py --checker "${{ steps.stage_lean.outputs.path }}/.lake/build/bin/nmlt-invariant-check"

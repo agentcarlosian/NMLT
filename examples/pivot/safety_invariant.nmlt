@@ -1,0 +1,48 @@
+// The finite model permits use only after the receiver has received the permit.
+system Sender {
+  state sent: Bool = false
+  capability permit: Once<Unit>
+  port output send: Once<Unit>
+
+  action output send {
+    require sent == false
+    emit permit
+    consume permit
+    set sent = true
+  }
+  observe sent
+}
+
+system Receiver {
+  state received: Bool = false
+  state used: Bool = false
+  state unreachable: Bool = false
+  port input receive: Once<Unit>
+
+  action input receive(permit: Once<Unit>) {
+    require received == false
+    set received = true
+  }
+  action use {
+    require received == true
+    require used == false
+    consume permit
+    set used = true
+  }
+  // This transition makes plain predicate-only induction insufficient. Its
+  // guard is unreachable; the checked reached-set strengthening excludes it.
+  action unreachable_branch {
+    require unreachable == true
+    set received = false
+    set used = true
+  }
+
+  safety UseAfterReceive = always(used implies received)
+  safety NeverUsed = always(not used)
+  safety AlreadyReceived = always(received)
+  observe received, used
+}
+
+compose Network {
+  connect Sender.send -> Receiver.receive
+}

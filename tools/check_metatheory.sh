@@ -32,15 +32,19 @@ trap cleanup EXIT
 (
   cd "$lean_root"
   lake build
+  lake env lean --run tests/ArtifactInvariants.lean
 )
 
 (
   cd "$lean_root"
   lake exe nmlt-artifact-check "$artifact" \
     "$repo_root/examples/pivot/visible_resource_sync.nmlt"
+  lake exe nmlt-artifact-check \
+    "$repo_root/examples/pivot/canonical_terms_and_wiring.behavior-core-v1.json" \
+    "$repo_root/examples/pivot/canonical_terms_and_wiring.nmlt"
 )
 
-python3 - "$artifact" "$stale_artifact" "$malformed_artifact" \
+"${PYTHON:-python3}" - "$artifact" "$stale_artifact" "$malformed_artifact" \
   "$semantic_mismatch_artifact" "$world_requirement_artifact" <<'PY'
 import json
 import sys
@@ -112,6 +116,38 @@ import NMLT
 #print axioms NMLT.Examples.ResourceWorldTransfer.permit_transfer_lifts_dynamically
 #print axioms NMLT.Counterexamples.ResourceWorldControls.hiddenConsumption_changesWorld
 #print axioms NMLT.Counterexamples.ResourceWorldControls.hiddenConsumption_cannotRefineStutter
+#print axioms NMLT.Behavior.ResourceDynamics.legacy_step_iff
+#print axioms NMLT.Behavior.ResourceDynamics.step_projects
+#print axioms NMLT.Behavior.ResourceDynamics.parallel_init_iff
+#print axioms NMLT.Behavior.ResourceDynamics.parallel_observe
+#print axioms NMLT.Behavior.ResourceDynamics.liftParallel
+#print axioms NMLT.Behavior.ResourceDynamics.ofWorldRefinement
+#print axioms NMLT.Behavior.ResourceDynamics.synchronized_effect_refines
+#print axioms NMLT.Behavior.ResourceDynamics.reachable_no_fabrication
+#print axioms NMLT.Behavior.ResourceDynamics.reachable_unique_owner
+#print axioms NMLT.Artifact.ExecutionClosure.Model.initial_iff
+#print axioms NMLT.Artifact.ExecutionClosure.Model.step_iff
+#print axioms NMLT.Artifact.ExecutionClosure.Model.formed
+#print axioms NMLT.Artifact.ExecutionClosure.Model.path_owned_origin
+#print axioms NMLT.Artifact.ExecutionClosure.Model.sync_left_moves_once
+#print axioms NMLT.Artifact.ExecutionClosure.Model.sync_right_moves_once
+#print axioms NMLT.Artifact.ExecutionWitness.Certificate.reachable
+#print axioms NMLT.Artifact.ExecutionWitness.Certificate.no_fabrication
+#print axioms NMLT.Artifact.ExecutionWitness.Certificate.unique_owner
+#print axioms NMLT.Artifact.ExecutionWitness.Certificate.owner_origin
+#print axioms NMLT.Artifact.ExecutionLift.simulation
+#print axioms NMLT.Artifact.ExecutionLift.simulation_sync_step
+#print axioms NMLT.Examples.NestedResourceDynamics.finite_execution
+#print axioms NMLT.Examples.NestedResourceDynamics.transfer_moves_once
+#print axioms NMLT.Examples.NestedResourceDynamics.inner_open_transfer_requires_peer
+#print axioms NMLT.Examples.NestedResourceDynamics.enclosed_transfer
+#print axioms NMLT.Artifact.FiniteInvariant.states_complete
+#print axioms NMLT.Artifact.FiniteInvariant.actions_complete
+#print axioms NMLT.Artifact.FiniteInvariant.initialization_sound
+#print axioms NMLT.Artifact.FiniteInvariant.preservation_sound
+#print axioms NMLT.Artifact.FiniteInvariant.reachable_safe
+#print axioms NMLT.Artifact.InvariantWitness.Certificate.safe
+#print axioms NMLT.Artifact.InvariantWitness.Counterexample.reachable_violation
 EOF
 (
   cd "$lean_root"

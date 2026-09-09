@@ -146,6 +146,97 @@ fn lone_hide_action_identifier_is_a_state_field_named_action() {
 }
 
 #[test]
+fn checked_name_lists_ignore_trivia_and_preserve_identifier_spans() {
+    let source = concat!(
+        "system S {\n",
+        "  observe first /* café ignored_name */, second // trailing_name\n",
+        "  hide first /* ignored_name */, second\n",
+        "  hide /* leading_name */ action /* ignored_label */ ping, pong\n",
+        "  hide action /* ping */\n",
+        "  hide action, first\n",
+        "}\n",
+    );
+    let parsed = parse_cst(source);
+    assert!(parsed.diagnostics().is_empty());
+    assert_eq!(parsed.root().reconstruct(), source);
+    let projection = project_untyped(&parsed);
+    assert!(projection.is_structurally_complete());
+    let system = projection.file.system_named("S").unwrap();
+    let observations = system
+        .members
+        .iter()
+        .filter_map(|member| match member {
+            UntypedMember::Observation(observation) => Some(observation),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let expected = [
+        (None, vec!["first", "second"]),
+        (Some(HideSort::StateFields), vec!["first", "second"]),
+        (Some(HideSort::Actions), vec!["ping", "pong"]),
+        (Some(HideSort::StateFields), vec!["action"]),
+        (Some(HideSort::StateFields), vec!["action", "first"]),
+    ];
+    assert_eq!(observations.len(), expected.len());
+    for (observation, (sort, names)) in observations.iter().zip(expected) {
+        assert_eq!(observation.hide_sort, sort);
+        let checked = observation.checked_names().unwrap();
+        assert_eq!(checked, observation.names);
+        assert_eq!(
+            checked
+                .iter()
+                .map(|name| name.text.as_str())
+                .collect::<Vec<_>>(),
+            names
+        );
+        for name in checked {
+            assert_eq!(&source[name.span.start..name.span.end], name.text);
+        }
+        let expression = observation.expression.as_ref().unwrap();
+        assert_eq!(
+            &source[expression.source.span.start..expression.source.span.end],
+            expression.source.text
+        );
+    }
+    assert_eq!(
+        observations[0].expression.as_ref().unwrap().source.text,
+        "first /* café ignored_name */, second"
+    );
+}
+
+#[test]
+fn checked_name_lists_require_the_complete_name_grammar() {
+    for declaration in [
+        "observe first + second",
+        "observe first second",
+        "observe first,",
+        "observe first,,second",
+        "observe first.second",
+        "observe \"first\"",
+        "observe first, 7",
+        "observe (first)",
+        "observe first, second + third",
+        "hide action ping + pong",
+        "hide action,",
+        "hide first second",
+    ] {
+        let source = format!("system S {{\n  {declaration}\n}}\n");
+        let parsed = parse_cst(&source);
+        assert!(parsed.diagnostics().is_empty(), "{declaration}");
+        let projection = project_untyped(&parsed);
+        assert!(projection.is_structurally_complete(), "{declaration}");
+        let system = projection.file.system_named("S").unwrap();
+        let UntypedMember::Observation(observation) = &system.members[0] else {
+            panic!("expected observation");
+        };
+        assert!(observation.checked_names().is_none(), "{declaration}");
+        assert!(observation.names.is_empty(), "{declaration}");
+        assert_eq!(observation.hide_sort, None, "{declaration}");
+        assert!(observation.expression.is_some(), "{declaration}");
+    }
+}
+
+#[test]
 fn hidden_wired_actions_flags_hidden_ping_wire() {
     let source = hidden_boundary_source();
     let projection = project_untyped(&parse_cst(&source));

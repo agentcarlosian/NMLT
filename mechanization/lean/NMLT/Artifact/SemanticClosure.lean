@@ -80,7 +80,12 @@ private def unique (names : List String) : List String :=
   names.foldl (fun result name => if result.contains name then result else result ++ [name]) []
 
 def capabilityNames (program : Program) : List String :=
-  unique (program.systems.flatMap fun system => system.capabilities.map Prod.fst)
+  -- Input bindings can name authority that no component initially owns.
+  -- Keep every resource predicate representable without granting ownership.
+  unique ((program.systems.flatMap fun system => system.capabilities.map Prod.fst) ++
+    (program.systems.flatMap fun system => system.actions.flatMap fun action =>
+      action.resources.requires ++ action.resources.consumes ++
+        action.resources.transfers ++ action.resources.receives))
 
 def gradeAtoms (program : Program) : List String :=
   unique (program.systems.flatMap fun system =>
@@ -245,7 +250,8 @@ private def actionPayload
   | some name => (portNamed? system name).map Port.payload |>.getD "Unit"
   | none => "Unit"
 
-def toBehavior
+-- Instance search must see the concrete state type through this constructor.
+@[implicit_reducible] def toBehavior
     (program : Program) (system : System) (actionNames extraHidden : List String) :
     Behavior
       (Fin (actionNames.length + 1))

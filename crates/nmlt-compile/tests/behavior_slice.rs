@@ -32,6 +32,57 @@ fn positive_slice_has_an_exact_canonical_artifact() {
 }
 
 #[test]
+fn canonical_terms_and_bidirectional_wiring_match_the_lean_fixture() {
+    let root = repository_root();
+    let path = "examples/pivot/canonical_terms_and_wiring.nmlt";
+    let source = fs::read_to_string(root.join(path)).unwrap();
+    let program = compile_behavior_single(path, source.as_bytes()).unwrap();
+    let expected = fs::read_to_string(
+        root.join("examples/pivot/canonical_terms_and_wiring.behavior-core-v1.json"),
+    )
+    .unwrap();
+    assert_eq!(program.to_json_pretty(), expected);
+
+    let conventional = source
+        .replace("! false", "!false")
+        .replace("! ready", "!ready")
+        .replace("! done", "!done")
+        .replace("==", " == ")
+        .replace("Phase.Idle", "Idle")
+        .replace("Phase.Ready", "Ready")
+        .replace("()", "unit")
+        .replace("/* phase */", "")
+        .replace("/* reply */", "");
+    let conventional = compile_behavior_single(path, conventional.as_bytes()).unwrap();
+    assert_eq!(program.systems, conventional.systems);
+    assert_eq!(program.compositions, conventional.compositions);
+    assert_ne!(program.source_sha256, conventional.source_sha256);
+
+    assert_eq!(
+        program.systems["Sender"].observations,
+        ["ready", "phase", "marker"]
+    );
+    assert!(program.systems["Receiver"].actions["idle"].hidden);
+    assert!(!program.systems["Receiver"].actions["reply"].hidden);
+    let network = &program.compositions["Network"];
+    assert_eq!(network.left_system, "Receiver");
+    assert_eq!(network.right_system, "Sender");
+    let endpoints = network
+        .connections
+        .iter()
+        .map(|connection| {
+            assert_eq!(connection.left_system, network.left_system);
+            assert_eq!(connection.right_system, network.right_system);
+            (
+                connection.left_action.as_str(),
+                connection.right_action.as_str(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(endpoints, [("receive", "send"), ("reply", "ack")]);
+}
+
+#[test]
 fn negative_slice_reaches_distinct_typed_boundaries() {
     let root = repository_root();
     let cases = [

@@ -7,6 +7,7 @@ use std::fmt::Write as _;
 use serde::{Deserialize, Deserializer};
 
 pub const BEHAVIOR_CORE_SCHEMA: &str = "behavior-core-v1";
+pub const BEHAVIOR_CORE_V2_SCHEMA: &str = "behavior-core-v2";
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
@@ -15,8 +16,8 @@ pub enum CorePortDirection {
     Output,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[derive(Clone, Debug, serde::Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CoreBehaviorTerm {
     Bool {
         r#type: String,
@@ -126,14 +127,16 @@ impl CoreResourceProfile {
             && self.relies.is_empty()
     }
 
-    #[must_use]
-    pub fn parallel(&self, other: &Self) -> Self {
+    /// Combine profiles, returning an error if an exact grade sum exceeds `u64`.
+    pub fn parallel(&self, other: &Self) -> Result<Self, String> {
         let mut grade = self.grade.clone();
         for (atom, value) in &other.grade {
             let entry = grade.entry(atom.clone()).or_default();
-            *entry = entry.saturating_add(*value);
+            *entry = entry
+                .checked_add(*value)
+                .ok_or_else(|| format!("parallel resource grade overflow for '{atom}'"))?;
         }
-        Self {
+        Ok(Self {
             requires: self.requires.union(&other.requires).cloned().collect(),
             consumes: self.consumes.union(&other.consumes).cloned().collect(),
             transfers: BTreeSet::new(),
@@ -146,7 +149,7 @@ impl CoreResourceProfile {
                 .cloned()
                 .collect(),
             guarantees: self.guarantees.union(&other.guarantees).cloned().collect(),
-        }
+        })
     }
 }
 
@@ -216,12 +219,26 @@ pub struct BehaviorCoreProgram {
     pub systems: BTreeMap<String, CoreBehaviorSystem>,
     pub compositions: BTreeMap<String, CoreComposition>,
     pub refinements: Vec<CoreRefinement>,
+    #[serde(default)]
+    pub known_capabilities: BTreeMap<String, BTreeMap<String, String>>,
+    #[serde(default)]
+    pub initial_authority: BTreeMap<String, BTreeMap<String, Option<String>>>,
 }
 
 impl BehaviorCoreProgram {
     /// Decode only the canonical representation produced by `to_json_pretty`.
     /// Lean remains the semantic acceptance authority.
     pub fn from_canonical_json(input: &str) -> Result<Self, String> {
+        Self::decode_version(input, BEHAVIOR_CORE_SCHEMA)
+    }
+
+    pub fn from_canonical_json_v2(input: &str) -> Result<Self, String> {
+        let program = Self::decode_version(input, BEHAVIOR_CORE_V2_SCHEMA)?;
+        program.validate_execution_maps()?;
+        Ok(program)
+    }
+
+    fn decode_version(input: &str, schema: &str) -> Result<Self, String> {
         let mut program: Self = serde_json::from_str(input)
             .map_err(|error| format!("malformed behavior core: {error}"))?;
         for (system_name, system) in &mut program.systems {
@@ -239,7 +256,7 @@ impl BehaviorCoreProgram {
         for (composition_name, composition) in &mut program.compositions {
             composition.name.clone_from(composition_name);
         }
-        if program.schema != BEHAVIOR_CORE_SCHEMA {
+        if program.schema != schema {
             return Err(format!("unsupported behavior schema '{}'", program.schema));
         }
         if program.to_json_pretty() != input {
@@ -276,7 +293,42 @@ impl BehaviorCoreProgram {
         if !self.refinements.is_empty() {
             out.push('\n');
         }
-        out.push_str("  ]\n}\n");
+        out.push_str("  ]");
+        if self.schema == BEHAVIOR_CORE_V2_SCHEMA {
+            out.push_str(",\n  \"known_capabilities\": {");
+            push_map(
+                &mut out,
+                &self.known_capabilities,
+                4,
+                |out, known, indent| {
+                    out.push('{');
+                    push_map(out, known, indent + 2, |out, ty, _| {
+                        push_json_string(out, ty)
+                    });
+                    out.push('\n');
+                    out.push_str(&" ".repeat(indent));
+                    out.push('}');
+                },
+            );
+            out.push_str("\n  },\n  \"initial_authority\": {");
+            push_map(
+                &mut out,
+                &self.initial_authority,
+                4,
+                |out, world, indent| {
+                    out.push('{');
+                    push_map(out, world, indent + 2, |out, owner, _| match owner {
+                        Some(owner) => push_json_string(out, owner),
+                        None => out.push_str("null"),
+                    });
+                    out.push('\n');
+                    out.push_str(&" ".repeat(indent));
+                    out.push('}');
+                },
+            );
+            out.push_str("\n  }");
+        }
+        out.push_str("\n}\n");
         out
     }
 }
@@ -592,9 +644,30 @@ mod tests {
             guarantees: BTreeSet::from(["Ready".to_owned()]),
             ..CoreResourceProfile::default()
         };
-        let product = left.parallel(&right);
+        let product = left.parallel(&right).expect("representable grade sum");
         assert_eq!(product.grade["work"], 3);
         assert!(product.relies.is_empty());
+    }
+
+    #[test]
+    fn parallel_profiles_preserve_exact_grade_limits() {
+        let left = CoreResourceProfile {
+            grade: BTreeMap::from([("work".to_owned(), u64::MAX - 1)]),
+            ..CoreResourceProfile::default()
+        };
+        let right = CoreResourceProfile {
+            grade: BTreeMap::from([("work".to_owned(), 1), ("memory".to_owned(), u64::MAX)]),
+            ..CoreResourceProfile::default()
+        };
+        let product = left.parallel(&right).expect("exact upper bound");
+        assert_eq!(product.grade["work"], u64::MAX);
+        assert_eq!(product.grade["memory"], u64::MAX);
+
+        let before = product.clone();
+        let error = product.parallel(&right).expect_err("sum exceeds u64");
+        assert!(error.contains("grade overflow"));
+        assert!(error.contains("memory"));
+        assert_eq!(product, before);
     }
 
     #[test]
@@ -617,6 +690,8 @@ mod tests {
             )]),
             compositions: BTreeMap::new(),
             refinements: Vec::new(),
+            known_capabilities: BTreeMap::new(),
+            initial_authority: BTreeMap::new(),
         };
         let canonical = program.to_json_pretty();
         assert_eq!(

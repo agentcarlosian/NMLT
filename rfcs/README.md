@@ -49,3 +49,20 @@ evidence.
 | 0011 | Authority-bounded agentic formalization and repair | Postponed |
 | 0012 | Conservative graded-resource modalities | Postponed experiment |
 | 0013 | Integrated source-to-typed-core contract | Accepted |
+| [0014](0014-executable-workflow-profile.md) | Executable workflow profile | Draft |
+| [0015](0015-unified-resource-bearing-behavior.md) | Unified resource-bearing behavior | Under review |
+| [0016](0016-decoded-finite-execution.md) | Decoded finite execution | Under review |
+| [0017](0017-finite-local-run-and-replay.md) | Finite local run and replay | Under review |
+| [0018](0018-bounded-local-job-lifecycle.md) | Bounded local job lifecycle and recovery | Under review |
+| [0019](0019-pure-workflow-source.md) | Pure workflow source, entry points, and replay | Under review |
+| [0020](0020-workflow-records-and-collections.md) | Workflow records and bounded collections | Under review |
+| [0021](0021-workflow-source-packages.md) | Workflow source packages and import-bound replay | Under review |
+| [0022](0022-source-local-job-effects.md) | Source-level bounded local job effects | Under review |
+| [0023](0023-asynchronous-host-and-lean-adapter.md) | Asynchronous host controls and the first Lean adapter | Under review |
+| [0024](0024-scoped-source-job-controls.md) | Scoped asynchronous source job controls | Under review |
+| [0025](0025-local-projects-and-dependency-locks.md) | Local projects and dependency locks | Under review |
+| [0026](0026-finite-source-safety-invariants.md) | Finite source safety invariants | Under review |
+| [0027](0027-affine-job-transfer.md) | Affine job transfer through functions | Under review |
+| [0028](0028-contained-process-lifecycle.md) | Contained local process lifecycle | Under review |
+| [0029](0029-pinned-init-proof-terms.md) | Pinned Init proof terms | Under review |
+| [0030](0030-durable-source-resumption.md) | Durable source resumption | Under review |

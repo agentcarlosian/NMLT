@@ -1,0 +1,31 @@
+{
+  "schema": "behavior-core-v1",
+  "source_path": "examples/pivot/finite_value_cycle.nmlt",
+  "source_sha256": "277884382df541ad91aef90e88bee016982545350f4d1083b9803711acda9c6a",
+  "enums": {
+    "Phase": ["Idle", "Ready"]
+  },
+  "systems": {
+    "ValueCycle": {
+      "state": {
+        "marker": {"type": "Unit", "initial": "unit", "initial_ast": {"kind": "unit", "type": "Unit"}},
+        "phase": {"type": "Phase", "initial": "Idle", "initial_ast": {"kind": "enum", "type": "Phase", "constructor": "Idle"}},
+        "ready": {"type": "Bool", "initial": "!false", "initial_ast": {"kind": "not", "type": "Bool", "value": {"kind": "bool", "type": "Bool", "value": false}}}
+      },
+      "capabilities": {
+      },
+      "ports": {
+      },
+      "actions": {
+        "advance": {"direction": "internal", "hidden": false, "parameters": [], "guards": ["phase == Idle", "ready"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Phase", "field": "phase"}, "right": {"kind": "enum", "type": "Phase", "constructor": "Idle"}}, {"kind": "read", "type": "Bool", "field": "ready"}], "updates": {"marker": "marker", "phase": "Ready", "ready": "!ready"}, "update_ast": {"marker": {"kind": "read", "type": "Unit", "field": "marker"}, "phase": {"kind": "enum", "type": "Phase", "constructor": "Ready"}, "ready": {"kind": "not", "type": "Bool", "value": {"kind": "read", "type": "Bool", "field": "ready"}}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "hold": {"direction": "internal", "hidden": false, "parameters": [], "guards": ["marker == unit"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Unit", "field": "marker"}, "right": {"kind": "unit", "type": "Unit"}}], "updates": {"phase": "phase", "ready": "ready"}, "update_ast": {"phase": {"kind": "read", "type": "Phase", "field": "phase"}, "ready": {"kind": "read", "type": "Bool", "field": "ready"}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "invert": {"direction": "internal", "hidden": false, "parameters": [], "guards": [], "guard_ast": [], "updates": {"ready": "!ready"}, "update_ast": {"ready": {"kind": "not", "type": "Bool", "value": {"kind": "read", "type": "Bool", "field": "ready"}}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}},
+        "reset": {"direction": "internal", "hidden": false, "parameters": [], "guards": ["phase == Ready", "!ready"], "guard_ast": [{"kind": "equal", "type": "Bool", "left": {"kind": "read", "type": "Phase", "field": "phase"}, "right": {"kind": "enum", "type": "Phase", "constructor": "Ready"}}, {"kind": "not", "type": "Bool", "value": {"kind": "read", "type": "Bool", "field": "ready"}}], "updates": {"phase": "Idle", "ready": "!ready"}, "update_ast": {"phase": {"kind": "enum", "type": "Phase", "constructor": "Idle"}, "ready": {"kind": "not", "type": "Bool", "value": {"kind": "read", "type": "Bool", "field": "ready"}}}, "outputs": [], "resources": {"requires": [], "consumes": [], "transfers": [], "receives": [], "grade": {}, "relies": [], "guarantees": []}}
+      },
+      "observe": ["marker", "phase", "ready"]
+    }
+  },
+  "compositions": {
+  },
+  "refinements": [  ]
+}

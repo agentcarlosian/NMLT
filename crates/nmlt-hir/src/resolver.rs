@@ -1064,14 +1064,14 @@ fn validate_reference(
             source_len: origin.exact_bytes.len(),
         });
     }
-    if let Some(qualifier) = &reference.qualifier {
-        if !is_identifier(qualifier) {
-            return Err(LookupError::InvalidReferenceIdentifier {
-                logical_module: origin.logical_module.clone(),
-                identifier: qualifier.clone(),
-                context: "module qualifier".to_owned(),
-            });
-        }
+    if let Some(qualifier) = &reference.qualifier
+        && !is_identifier(qualifier)
+    {
+        return Err(LookupError::InvalidReferenceIdentifier {
+            logical_module: origin.logical_module.clone(),
+            identifier: qualifier.clone(),
+            context: "module qualifier".to_owned(),
+        });
     }
     if let Some(violation) = def_path_violation(&reference.key.path) {
         return Err(LookupError::InvalidReferencePath {
