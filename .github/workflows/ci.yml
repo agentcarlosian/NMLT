@@ -65,6 +65,9 @@ jobs:
           use-mathlib-cache: false
           use-github-cache: true
 
+      - name: Calibrate contained Lean startup
+        run: python3 tools/diagnose_lean_startup.py "$(elan run leanprover/lean4:v4.33.1 lean --print-prefix)/bin/lean"
+
       - name: Independently check Lean declarations with pinned nanoda
         env:
           NANODA_ALLOW_SORRY: "false"
