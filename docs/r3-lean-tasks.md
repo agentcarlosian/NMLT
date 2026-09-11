@@ -1,4 +1,12 @@
-# Bound tasks in local Lean projects
+# Bound Lean project workflows
+
+The current R3 workflow supports pinned native Lake projects, captured
+dependencies, native editor workspaces, explicit task revisions and asynchronous
+project proofs under [RFC 0036](../rfcs/0036-native-lean-project-workflows.md).
+Every accepted result requires a fresh Lean reconstruction, exact target
+comparison, the selected transitive axiom policy and independent NanoDA
+checking. [The completion audit](reviews/r3-completion-audit-2026-09-11.md)
+distinguishes executed evidence from remaining work and review.
 
 The first R3 increment adds `nmlt lean-task bind`, `prove`, and `recheck` under
 [RFC 0031](../rfcs/0031-bound-lean-project-tasks.md). It supports trusted local
@@ -190,11 +198,150 @@ toolchain shadowing, casing mismatches, path escapes and linked source paths
 Dynamic file/module access performed by trusted project metaprograms remains
 within the host trust boundary described below.
 
-New task artifacts use version 2, with an optional discovery report. New result
-artifacts use version 4 to record the file export, capture policy and complete
-proof dependency graph.
+New task artifacts use version 3, with optional discovery, native Lake and
+revision metadata. New result artifacts use version 5.
 Explicit-module v1 project manifests remain supported. Old saved task/result
 artifacts continue to require their retained original CLI executable.
+
+## Native Lake projects and libraries
+
+[The Lake example](../examples/lean-lake-project/nmlt-lean.json) uses ordinary
+package configuration, a source directory and a vendored path dependency.
+[The Mathlib example](../examples/lean-mathlib-project/nmlt-lean.json) pins
+Mathlib v4.33.1 at commit `0df444a360eaa60ab8c11dca51a86af692955474` and its
+transitive package lock. Both select targets with:
+
+```json
+{
+  "schema": "nmlt-lean-project-v3",
+  "target_module": "App.Goals",
+  "target": "App.zero_offset",
+  "permitted_axioms": []
+}
+```
+
+For Mathlib the target is `App.choose_nothing`. The source project's
+`lean-toolchain` must select Lean 4.33.1. Bind it using the same command as the
+local examples, with the native project directory. Lake resolves its existing
+lock; locked Git packages must match clean full commits. The result captures
+configuration, lock and package input bytes under `lake-sources`. Builds and
+fresh rechecks use reconstructed packages with native Lake path overrides,
+original package options and plugins. Cached compiled modules are excluded.
+Tracked upstream JavaScript and other legitimate build inputs are retained.
+
+The Lake example accepts `fun n => Support.shift_eq n`; the Mathlib example
+accepts `fun n => Nat.choose_zero_right n`. Neither requires a permitted axiom.
+An imported library may contain drafts outside the selected proof closure;
+using `sorryAx` in the final closure is always rejected.
+
+## Proof files, native automation and editors
+
+Write an ordinary proof body in `proof.lean`, then generate its candidate:
+
+```bash
+target/debug/nmlt lean-task candidate \
+  --task target/reviewed-task/task.json --task-sha256 "$TASK_HASH" \
+  --proof proof.lean --output candidate.json
+target/debug/nmlt lean-task workspace \
+  --task target/reviewed-task/task.json --task-sha256 "$TASK_HASH" \
+  --lean-bin "$LEAN_BIN" --output target/editor-workspace
+```
+
+Open `target/editor-workspace/build` as a normal Lean project. Native
+`lake serve` supplies editor diagnostics, hover information and proof goals.
+Edit `NMLTProof.lean`, preserving its generated imports and target wrapper.
+The candidate command also accepts this full file and rejects changes outside
+the proof body. The workspace is a draft with `status: context_only`; use
+`lean-task prove` to produce an accepted result.
+
+Candidates may be closed terms or bounded `by` blocks. For the Lake example:
+
+```lean
+by
+  intro n
+  exact Support.shift_eq n
+```
+
+Supported steps are `intro`, `exact`, `apply`, `simp only [names]`,
+`simpa only [names]`, `assumption`, `rfl`, `constructor`, `omega`, `grind` and
+`decide`. Each line is one supported step. Terms and names are validated;
+there are at most 32 steps and 8 KiB of proof text. Automation is compiled by
+native Lean and must pass the same final policy and independent check. Some
+automation needs `propext`, `Quot.sound` or `Classical.choice`; the task's
+explicit policy determines whether that proof is accepted.
+
+## Explicit revisions
+
+Change the authoring project's statement, definitions, sources or policy, write
+a reason in `revision-reason.txt`, then bind the change explicitly:
+
+```bash
+target/debug/nmlt lean-task revise \
+  --task target/reviewed-task/task.json --task-sha256 "$TASK_HASH" \
+  --project examples/lean-lake-project --reason revision-reason.txt \
+  --lean-bin "$LEAN_BIN" --output target/revised-task
+```
+
+`revision.json` and `revision.md` link the parent and new task hashes and state
+that dependent acceptance is invalid for the revised task. Old records remain
+about their original snapshot. A no-op revision, old candidate, or old result
+selected with the new hash is rejected. Select the new task after reviewing the
+change; a generalization does not automatically discharge the old obligation.
+
+## Asynchronous source proofs
+
+Create a registry outside the candidate channel. Paths are relative to its
+file, or absolute; replace the tool paths and selected task hash:
+
+```toml
+schema = "nmlt-lean-project-jobs-v1"
+lean_bin = "/path/to/lean"
+exporter = "/path/to/lean4export"
+nanoda = "/path/to/nanoda_bin"
+timeout_ms = 1800000
+
+[[tasks]]
+alias = "offset"
+task = "target/reviewed-task/task.json"
+task_sha256 = "REPLACE_WITH_THE_SELECTED_TASK_HASH"
+```
+
+`job_start_lean_project(alias, proof)` returns an affine `Job<Text>`. Poll,
+cancel and collect it with the existing job controls. Source `Text` values
+retain their 4 KiB bound. The
+[source example](../examples/pivot/lean_project.nmlt) includes a checked proof,
+repair after a failed candidate, and cancellation:
+
+```bash
+target/debug/nmlt run examples/pivot/lean_project.nmlt \
+  --entry repair --arg 'alias="offset"' \
+  --arg 'proof="fun n => Support.shift_eq n"' \
+  --max-steps 200 --emit-run target/proof-jobs.json \
+  --jobs-dir target/proof-jobs --job-slots 1 --max-jobs 3 \
+  --job-timeout-ms 30000 --lean-projects project-proofs.toml
+```
+
+Project manifests can set `tools.lean_projects = "project-proofs.toml"`;
+`nmlt lock` binds the registry and task inputs. The registry's deadline applies
+to project workers; the ordinary job deadline remains separate. The session
+retains the exact CLI, task inputs and checker identities. Successful proof
+receipts identify `projects/results/<dispatch digest>/result.json`, including
+its result and export hashes. The source record retains `assurance: none` for
+scheduling; its accepted proof artifact carries the independent check.
+
+`nmlt replay target/proof-jobs.json --source examples/pivot/lean_project.nmlt`
+checks decisions, receipts and retained artifacts without running Lean. Keep
+the referenced jobs directory with the source record when relocating it.
+Use the result bundle's retained CLI with `lean-task recheck` for a fresh
+independent check.
+
+`jobs-recover` classifies unfinished dispatches. `jobs-resume` checks retained
+inputs, tool pins and accepted artifacts before continuing the saved source.
+It never relaunches a dispatched old attempt. Unknown work requires explicit
+operator reconciliation and can be settled only as failed, retaining its
+charge. A temporary build directory or late physical proof file cannot settle
+an unknown attempt. On Windows the worker records a short temporary workspace
+and retains the checked bundle under its dispatch ID before returning success.
 
 ## Larger proof exports
 
@@ -302,6 +449,18 @@ are identities, not signatures. NanoDA establishes proof validity for the
 exported declarations under the selected axioms; human faithfulness, novelty
 and usefulness are separate reviews.
 
-R3 remains in progress. Mathlib-scale package resolution and exports,
-editor/REPL integration, broader proof automation, and asynchronous `.nmlt`
-jobs for these project tasks are not implemented by this increment.
+Native Lake tasks use a separate project profile: at most 64 dependencies,
+32,768 captured files, 16 MiB per file and 512 MiB of source inputs. Each project
+stage has a 30-minute deadline and an 8 GiB OS resource policy. Lake exports use
+a separate 64 MiB raw-file limit. Project registries support sixteen aliases;
+the session input snapshot is bounded to 65,536 files and 1 GiB total. These
+limits do not expand ordinary R2 jobs or local explicit/discovery proof checking.
+The final native Lake build of an editor workspace also uses the project
+process profile, including workspaces created from explicit/discovered tasks;
+the workspace records this policy and remains unchecked context.
+On Windows, native build/checker stages retain their one-core cap. The worker
+coordinator adds no second CPU rate cap, because nested Windows quotas multiply;
+its separate policy still bounds memory, process count, deadline and tree cleanup.
+Native Lake build hooks and package code remain trusted host code. The
+[completion audit](reviews/r3-completion-audit-2026-09-11.md) records the exact
+executed scope and remaining verification or review work.

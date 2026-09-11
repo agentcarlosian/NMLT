@@ -119,7 +119,7 @@ def main():
     command("repaired-proof", ["prove", "--task", task_path, "--task-sha256", pin,
                                "--candidate", candidate, *tool_args, "--output", evidence / "repaired-proof"])
     record = read(evidence / "repaired-proof/result.json")
-    assert record["schema"] == "nmlt-lean-result-v4" and record["status"] == "independently_checked"
+    assert record["schema"] == "nmlt-lean-result-v5" and record["status"] == "independently_checked"
     assert lemma in record["proof"]["proof_references"]
     command("fresh-proof", ["recheck", "--record", evidence / "repaired-proof/result.json",
                             "--task-sha256", pin, *tool_args, "--output", evidence / "fresh-proof"])

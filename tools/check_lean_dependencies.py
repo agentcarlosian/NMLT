@@ -107,7 +107,7 @@ def main():
                       "--output", evidence / "bound"])
     task = read(evidence / "bound/task.json")
     pin = (evidence / "bound/task.sha256").read_text(encoding="utf-8").strip()
-    assert digest(task) == pin and task["schema"] == "nmlt-lean-task-v2"
+    assert digest(task) == pin and task["schema"] == "nmlt-lean-task-v3"
     candidate = evidence / "candidate.json"
     write(candidate, {"schema": "nmlt-lean-proof-candidate-v1", "task_sha256": pin,
                       "proof": "fun box => Graph.checked box"})
@@ -115,7 +115,7 @@ def main():
                       "--candidate", candidate, *tool_args, "--output", evidence / "proof"])
     record = read(evidence / "proof/result.json")
     graph = record["proof_dependencies"]
-    assert record["schema"] == "nmlt-lean-result-v4" and record["status"] == "independently_checked"
+    assert record["schema"] == "nmlt-lean-result-v5" and record["status"] == "independently_checked"
     assert graph == read(evidence / "proof/proof-dependencies.json")
     assert graph["schema"] == "nmlt-lean-proof-dependencies-v1"
     assert graph["export_sha256"] == record["export_sha256"]
@@ -207,7 +207,7 @@ def main():
           "rejected": rejected, "checked_declarations": len(nodes), "lean_reference_parity": len(nodes),
           "export_bytes": record["export_bytes"], "export_sha256": record["export_sha256"]})
     print(f"evidence: {evidence.relative_to(ROOT)}", flush=True)
-    print("scope: actual exported declaration references; draft plans are separate; R3 remains in progress", flush=True)
+    print("scope: actual exported declaration references, independently of draft plans", flush=True)
 
 
 if __name__ == "__main__":

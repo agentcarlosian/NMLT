@@ -1,7 +1,5 @@
 //! Bounded declaration lookup in a freshly rebuilt, bound Lean environment.
-use super::{
-    Result, Run, Task, discovery, err, lean, name, parse_marker, retain_cli, write_json, write_new,
-};
+use super::{Result, Run, Task, err, lean, name, parse_marker, retain_cli, write_json, write_new};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -114,17 +112,20 @@ struct Record {
     stages: Vec<super::Stage>,
 }
 
-pub(super) fn run(task: Task, query: Query, executable: &Path, output: &Path) -> Result<()> {
+pub(super) fn run(
+    task: Task,
+    query: Query,
+    executable: &Path,
+    output: &Path,
+    origin: &Path,
+) -> Result<()> {
     let digest = task.digest()?;
     let toolchain = lean::Toolchain::open(executable).map_err(err)?;
     if *toolchain.identity() != task.lean {
         return Err("Lean installation differs from the bound task".into());
     }
     let mut run = Run::new(output, executable)?;
-    if let Some(closure) = &task.discovery {
-        discovery::verify(closure, &task.manifest, &task.sources, &mut run)?;
-    }
-    run.build(&task.sources)?;
+    task.prepare(origin, &mut run)?;
     if run.target(&task.manifest)? != task.target {
         return Err("Lean target identity differs from the bound task".into());
     }
@@ -133,6 +134,9 @@ pub(super) fn run(task: Task, query: Query, executable: &Path, output: &Path) ->
     let context: Context = parse_marker(&output.stdout, "NMLT_INSPECT=")?;
     context.validate(&query, &task.manifest.permitted_axioms)?;
     toolchain.verify_unchanged().map_err(err)?;
+    if let Some(lake) = &task.lake {
+        lake.verify_run(&run)?;
+    }
     let record = Record {
         schema: "nmlt-lean-inspection-v1",
         status: "context_only",

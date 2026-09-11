@@ -71,3 +71,4 @@ evidence.
 | [0033](0033-bounded-lean-proof-exports.md) | Bounded Lean proof exports | Under review |
 | [0034](0034-lean-proof-dependency-graphs.md) | Lean proof dependency graphs | Under review |
 | [0035](0035-bound-lean-inspection-and-diagnostics.md) | Bound Lean inspection and diagnostics | Under review |
+| [0036](0036-native-lean-project-workflows.md) | Native Lean project workflows | Under review |

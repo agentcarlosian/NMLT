@@ -1,0 +1,10 @@
+{
+  "version": "1.2.0",
+  "packagesDir": ".lake/packages",
+  "packages": [{
+    "type": "path", "name": "support", "scope": "", "dir": "vendor/support",
+    "configFile": "lakefile.toml", "manifestFile": "lake-manifest.json", "inherited": false
+  }],
+  "name": "bound_example",
+  "lakeDir": ".lake"
+}

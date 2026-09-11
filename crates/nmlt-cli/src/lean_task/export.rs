@@ -21,7 +21,7 @@ pub(super) struct Tools {
     exporter: PathBuf,
     nanoda: PathBuf,
 }
-const ADAPTER: &str = "lean4export NMLTProof -- NMLTChecked.result; byte-exact raw stdout file <= 16777216 bytes; SHA-256 and byte-count receipt; stderr <= 65536 bytes; nmlt-lean-proof-dependencies-v1; explicit constants/projections/reductions/literal-support/export-groups";
+const ADAPTER: &str = "lean4export NMLTProof -- NMLTChecked.result; byte-exact raw stdout file <= 16777216 bytes for local tasks or <= 67108864 bytes for Lake tasks; SHA-256 and byte-count receipt; stderr <= 65536 bytes; nmlt-lean-proof-dependencies-v1; explicit constants/projections/reductions/literal-support/export-groups";
 impl Tools {
     pub fn open(exporter: &Path, nanoda: &Path) -> Result<Self> {
         let exporter = exporter.canonicalize().map_err(err)?;
@@ -69,7 +69,12 @@ impl Tools {
             }
         }
         let captured = run.execute_export(command)?;
-        let bytes = read_bounded(&export_file, process::FILE_BYTES)?;
+        let limit = if run.project_processes {
+            process::PROJECT_FILE_BYTES
+        } else {
+            process::FILE_BYTES
+        };
+        let bytes = read_bounded(&export_file, limit)?;
         let digest = sha256(&bytes);
         if captured.bytes != bytes.len() as u64 || captured.sha256 != digest {
             return Err("export file differs from its completed raw capture".into());
@@ -99,8 +104,7 @@ impl Tools {
         let output = run.execute("nanoda", checker)?;
         let count = success_count(&output.stdout, &output.stderr)?;
         if count != declarations.len() as u64
-            || identity::file(&export_file, process::FILE_BYTES).map_err(err)?
-                != (captured.bytes, digest.clone())
+            || identity::file(&export_file, limit).map_err(err)? != (captured.bytes, digest.clone())
         {
             return Err("independent checker count or exported input changed".into());
         }
@@ -121,7 +125,7 @@ pub(super) struct Checked {
     pub dependencies: dependencies::Graph,
 }
 
-fn success_count(stdout: &[u8], stderr: &[u8]) -> Result<u64> {
+pub(super) fn success_count(stdout: &[u8], stderr: &[u8]) -> Result<u64> {
     if !stderr.is_empty() {
         return Err("independent checker emitted unexpected diagnostics".into());
     }
@@ -134,12 +138,12 @@ fn success_count(stdout: &[u8], stderr: &[u8]) -> Result<u64> {
     count.ok_or_else(|| "independent checker did not report an exact successful check".into())
 }
 
-struct Inspected {
-    declarations: Vec<String>,
-    dependencies: dependencies::Graph,
+pub(super) struct Inspected {
+    pub declarations: Vec<String>,
+    pub dependencies: dependencies::Graph,
 }
 
-fn inspect_export(bytes: &[u8]) -> Result<Inspected> {
+pub(super) fn inspect_export(bytes: &[u8]) -> Result<Inspected> {
     let text = std::str::from_utf8(bytes).map_err(err)?;
     let mut names = BTreeMap::from([(0, String::new())]);
     let mut expressions = BTreeMap::new();

@@ -54,7 +54,7 @@ def main():
         output = evidence / label
         command(label, ["bind", "--project", project, "--lean-bin", args.lean_bin.resolve(), "--output", output])
         task = read(output / "task.json")
-        assert task["schema"] == "nmlt-lean-task-v2" and task["discovery"] is None
+        assert task["schema"] == "nmlt-lean-task-v3" and task["discovery"] is None
         pin = (output / "task.sha256").read_text(encoding="utf-8").strip()
         assert digest(task) == pin
         return output / "task.json", pin
@@ -66,7 +66,7 @@ def main():
                         *tool_args, "--output", evidence / label], expected, contains)
         if expected:
             result = read(evidence / label / "result.json")
-            assert result["schema"] == "nmlt-lean-result-v4"
+            assert result["schema"] == "nmlt-lean-result-v5"
             assert result["status"] == "independently_checked"
             assert result["task_sha256"] == pin
             assert result["checked_declarations"] == len(result["exported_declarations"]) > 0
@@ -161,7 +161,7 @@ def main():
                "fresh_rechecks": ["fresh"], "rejected": rejected}
     write(evidence / "summary.json", summary)
     print(f"evidence: {evidence.relative_to(ROOT)}", flush=True)
-    print("scope: bounded trusted local Lean projects; independent exported proofs; R3 integration remains in progress", flush=True)
+    print("scope: bounded trusted local Lean projects and independently checked exported proofs", flush=True)
 
 if __name__ == "__main__":
     main()

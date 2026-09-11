@@ -210,6 +210,7 @@ fn captured_timeout_reply_is_retried_only_after_explicit_reconciliation() {
     observation.completion = Err(process::Failure {
         kind: process::FailureKind::Timeout,
         child_reaped: true,
+        detail: None,
     });
     fs::write(
         jobs.join("evidence-2.json"),

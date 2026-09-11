@@ -57,7 +57,8 @@ synchronization also lifts through the unified refinement theorem with an
 initialized abstract image. [RFC 0015](../rfcs/0015-unified-resource-bearing-behavior.md)
 and [RFC 0016](../rfcs/0016-decoded-finite-execution.md) remain Under review.
 The [completion evidence](reviews/r1-finite-execution-2026-09-06.md) records the
-passed M1–M3 gates; the authoritative execution plan keeps R2 as the next milestone.
+passed M1–M3 gates; R2 subsequently completed on 2026-09-09. The authoritative
+execution plan records the current next milestone.
 
 Implement the existing M1–M3 in reviewable increments:
 
@@ -153,10 +154,13 @@ constants, projections, reductions, literal support and export groups remain
 distinct from draft proof planning.
 The fifth increment adds declaration lookup in reconstructed tasks, located
 native Lean diagnostics and a checked repair exercise, with an initial local
-CLI/REPL/LeanInteract comparison. Persistent editor and REPL integration remains
-separate work.
-R3 remains in progress; the integration and scale
-requirements below remain the milestone's complete gate.
+CLI/REPL/LeanInteract comparison. The final integration adds native pinned Lake
+packages, an ordinary editor workspace with actual LSP interaction, structured
+automation, explicit revisions and durable asynchronous project proofs under
+[RFC 0036](../rfcs/0036-native-lean-project-workflows.md).
+The [completion audit](reviews/r3-completion-audit-2026-09-11.md) records the
+executed Mathlib and source-job checks and the remaining final verification.
+The integration and scale requirements below remain the complete gate.
 
 Owners: Lean integration maintainer. Dependencies: R2; a batch adapter spike and baseline can start in R0.
 

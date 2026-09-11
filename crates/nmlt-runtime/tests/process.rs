@@ -1,4 +1,6 @@
-use nmlt_runtime::process::{FILE_BYTES, FailureKind, FileProcess, PIPE_BYTES, Process};
+use nmlt_runtime::process::{
+    FILE_BYTES, FailureKind, FileProcess, PIPE_BYTES, PROJECT_FILE_BYTES, Process,
+};
 use std::io::{Read, Write};
 use std::process::Command;
 use std::time::{Duration, Instant};
@@ -23,9 +25,23 @@ fn process_probe() {
         return;
     };
     match mode.as_str() {
+        "nested-project" => {
+            for _ in 0..12 {
+                let mut child = Process::start_project(
+                    probe("input"),
+                    b"hello".to_vec(),
+                    Duration::from_secs(60),
+                )
+                .unwrap();
+                let output = child.wait().as_ref().unwrap();
+                assert_eq!(output.exit_code, Some(0));
+                assert!(String::from_utf8_lossy(&output.stdout).contains("received"));
+            }
+            print!("nested-project-complete");
+        }
         "file-bytes" => {
             let count: usize = std::env::var("NMLT_FILE_COUNT").unwrap().parse().unwrap();
-            assert!(count <= FILE_BYTES as usize + PIPE_BYTES);
+            assert!(count <= PROJECT_FILE_BYTES as usize + PIPE_BYTES);
             let pattern = if std::env::var_os("NMLT_FILE_NO_LINES").is_some() {
                 b"x".as_slice()
             } else {
@@ -129,6 +145,91 @@ fn file_probe(count: usize) -> Command {
     let mut command = probe("file-bytes");
     command.env("NMLT_FILE_COUNT", count.to_string());
     command
+}
+
+#[test]
+fn project_profile_is_explicit_and_does_not_validate_as_an_ordinary_job() {
+    assert!(Process::start(probe("input"), b"hello".to_vec(), Duration::from_secs(60)).is_err());
+    let mut child =
+        Process::start_project(probe("input"), b"hello".to_vec(), Duration::from_secs(60)).unwrap();
+    child.policy().validate_project().unwrap();
+    assert!(child.policy().validate().is_err());
+    assert_eq!(child.policy().memory_bytes, 8 * 1024 * 1024 * 1024);
+    let mut changed = child.policy().clone();
+    changed.memory_bytes -= 1;
+    assert!(changed.validate_project().is_err());
+    let output = child.wait().as_ref().unwrap();
+    assert_eq!(output.exit_code, Some(0));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("received"));
+    assert!(Process::start_project(probe("input"), vec![], Duration::from_secs(1801)).is_err());
+}
+
+#[test]
+fn project_workers_can_supervise_sequential_nested_project_processes() {
+    let mut child =
+        Process::start_project_worker(probe("nested-project"), vec![], Duration::from_secs(60))
+            .unwrap();
+    child.policy().validate_project_worker().unwrap();
+    assert!(child.policy().validate_project().is_err());
+    assert!(child.policy().validate().is_err());
+    let output = child.wait().as_ref().unwrap();
+    assert_eq!(
+        output.exit_code,
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("nested-project-complete"));
+}
+
+#[test]
+fn project_file_capture_uses_its_own_bounded_receipt_and_policy() {
+    let directory = std::env::temp_dir().join(format!(
+        "nmlt-project-file-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("larger.bin");
+    let mut child = FileProcess::start_project(
+        file_probe(FILE_BYTES as usize + 2048),
+        vec![],
+        Duration::from_secs(60),
+        &path,
+    )
+    .unwrap();
+    child.policy().validate_project().unwrap();
+    assert!(child.policy().validate().is_err());
+    let mut changed = child.policy().clone();
+    changed.max_stdout_bytes += 1;
+    assert!(changed.validate_project().is_err());
+    let output = child.wait().as_ref().unwrap();
+    assert_eq!(output.output.exit_code, Some(0));
+    assert!(output.file.bytes > FILE_BYTES);
+    assert!(output.file.validate().is_err());
+    output.file.validate_project().unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(bytes.len() as u64, output.file.bytes);
+    assert_eq!(nmlt_runtime::sha256(&bytes), output.file.sha256);
+    let mut excessive = FileProcess::start_project(
+        file_probe(PROJECT_FILE_BYTES as usize + 1),
+        vec![],
+        Duration::from_secs(60),
+        &directory.join("excess.bin"),
+    )
+    .unwrap();
+    let failure = excessive.wait().as_ref().unwrap_err();
+    assert_eq!(failure.kind, FailureKind::OutputLimit);
+    assert!(failure.child_reaped);
+    assert!(
+        std::fs::metadata(directory.join("excess.bin"))
+            .unwrap()
+            .len()
+            <= PROJECT_FILE_BYTES
+    );
 }
 
 #[test]
@@ -274,6 +375,41 @@ fn file_capture_cancellation_and_root_exit_reap_descendants() {
         }
         std::thread::sleep(Duration::from_millis(1000));
         assert!(!marker.exists(), "{action} left a descendant alive");
+    }
+}
+
+#[test]
+fn project_profiles_cancel_and_reap_the_complete_child_tree() {
+    for kind in ["process", "file", "worker"] {
+        let marker = marker(&format!("project-{kind}-cancel"));
+        let mut command = probe("descendant");
+        command.env("NMLT_PROCESS_MARKER", &marker);
+        let failure = if kind == "file" {
+            let path = marker.with_extension("stdout");
+            let mut child =
+                FileProcess::start_project(command, vec![], Duration::from_secs(60), &path)
+                    .unwrap();
+            child.policy().validate_project().unwrap();
+            await_ready(&marker);
+            child.cancel().as_ref().unwrap_err().clone()
+        } else {
+            let mut child = if kind == "worker" {
+                Process::start_project_worker(command, vec![], Duration::from_secs(60)).unwrap()
+            } else {
+                Process::start_project(command, vec![], Duration::from_secs(60)).unwrap()
+            };
+            if kind == "worker" {
+                child.policy().validate_project_worker().unwrap();
+            } else {
+                child.policy().validate_project().unwrap();
+            }
+            await_ready(&marker);
+            child.cancel().as_ref().unwrap_err().clone()
+        };
+        assert!(failure.child_reaped);
+        assert_eq!(failure.kind, FailureKind::Cancelled);
+        std::thread::sleep(Duration::from_millis(1000));
+        assert!(!marker.exists(), "project profile left a descendant alive");
     }
 }
 

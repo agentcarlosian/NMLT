@@ -74,7 +74,21 @@ impl Request {
         if self.reserved_work == 0 {
             return Err(Error("work reservation must be positive".into()));
         }
-        self.input.validate()
+        if self.adapter == crate::project_proof::adapter() {
+            let Value::Text(text) = &self.input else {
+                return Err(Error("project proof requires text".into()));
+            };
+            if text.len() > 32768 {
+                return Err(Error("project proof input exceeds 32768 bytes".into()));
+            }
+            let request: crate::project_proof::Request = serde_json::from_str(text)?;
+            if request.input()? != self.input {
+                return Err(Error("project proof request is not canonical".into()));
+            }
+            Ok(())
+        } else {
+            self.input.validate()
+        }
     }
     pub(crate) fn input_digest(&self) -> Result<String, Error> {
         Ok(sha256(&serde_json::to_vec(&self.input)?))

@@ -39,6 +39,11 @@ run_meta do
 }
 
 pub(super) fn proof(target: &Target, term: &str) -> Result<String> {
+    let automation_import = if term.starts_with("by\n") {
+        "import Lean.Elab.Tactic\n"
+    } else {
+        ""
+    };
     if target
         .level_params
         .iter()
@@ -65,7 +70,7 @@ pub(super) fn proof(target: &Target, term: &str) -> Result<String> {
         .join(", ");
     Ok(format!(
         r#"import NMLTTask
-set_option autoImplicit false
+{automation_import}set_option autoImplicit false
 set_option maxHeartbeats 200000
 theorem NMLTChecked.result{universes} : NMLTTask.target{universes} := {term}
 

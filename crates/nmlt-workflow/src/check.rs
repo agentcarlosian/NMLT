@@ -127,6 +127,7 @@ pub(super) fn compile_raw(
             jobs: false,
             async_jobs: false,
             lean_jobs: false,
+            project_jobs: false,
         };
         let mut env = f
             .parameters
@@ -153,6 +154,7 @@ pub(super) fn compile_raw(
             jobs: checker.jobs,
             async_jobs: checker.async_jobs,
             lean_jobs: checker.lean_jobs,
+            project_jobs: checker.project_jobs,
         });
         edges.push(checker.calls);
     }
@@ -166,6 +168,7 @@ pub(super) fn compile_raw(
             functions[i].jobs |= edges[i].iter().any(|j| functions[*j].jobs);
             functions[i].async_jobs |= edges[i].iter().any(|j| functions[*j].async_jobs);
             functions[i].lean_jobs |= edges[i].iter().any(|j| functions[*j].lean_jobs);
+            functions[i].project_jobs |= edges[i].iter().any(|j| functions[*j].project_jobs);
         }
     }
     Ok(Program {
@@ -300,6 +303,7 @@ struct Checker<'a> {
     jobs: bool,
     async_jobs: bool,
     lean_jobs: bool,
+    project_jobs: bool,
 }
 impl Checker<'_> {
     fn term(
@@ -408,21 +412,29 @@ impl Checker<'_> {
                     TypedKind::Fold(Box::new(items), Box::new(initial), Box::new(body)),
                 )
             }
-            ExprKind::Call(name, args) if name == "job_start_lean_check" => {
+            ExprKind::Call(name, args)
+                if name == "job_start_lean_check" || name == "job_start_lean_project" =>
+            {
                 if args.len() != 2 {
                     return Err(error(
                         expr.span,
-                        "job_start_lean_check requires statement and proof Text arguments",
+                        "Lean check requires statement/registered project alias and proof Text arguments",
                     ));
                 }
                 let statement = self.term(&args[0], Some(&Type::Text), env, depth + 1)?;
                 let proof = self.term(&args[1], Some(&Type::Text), env, depth + 1)?;
                 self.jobs = true;
                 self.async_jobs = true;
-                self.lean_jobs = true;
+                let project = name == "job_start_lean_project";
+                self.lean_jobs |= !project;
+                self.project_jobs |= project;
                 (
                     Type::Job(Box::new(Type::Text)),
-                    TypedKind::JobLeanCheck(Box::new(statement), Box::new(proof)),
+                    if project {
+                        TypedKind::JobLeanProject(Box::new(statement), Box::new(proof))
+                    } else {
+                        TypedKind::JobLeanCheck(Box::new(statement), Box::new(proof))
+                    },
                 )
             }
             ExprKind::Call(name, args)

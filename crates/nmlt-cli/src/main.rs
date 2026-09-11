@@ -24,7 +24,7 @@ mod workflow;
 const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
-  nmlt lean-task <bind|inspect|prove|recheck> --help     Inspect bound tasks and independently check proofs\n\
+  nmlt lean-task <bind|revise|candidate|workspace|inspect|prove|recheck> --help  Develop and independently check bound Lean proofs\n\
   nmlt init <new-directory>                             Create a runnable project and tests\n\
   nmlt lock [project-directory]                        Pin imported sources and local tools\n\
   nmlt check-project [project-directory]               Check project types, inputs, and lock\n\
@@ -49,7 +49,7 @@ Usage:\n\
   nmlt jobs-recover <jobs-dir>                            Classify unfinished work without redispatch\n\
   nmlt jobs-resume <jobs-dir> --emit-run <new.json> [--lean-bin <path>] [--acknowledge-uncertain-effects <reason>] Resume saved source\n\
   nmlt jobs-repair <jobs-dir> --acknowledge-incomplete-tail <reason> Quarantine incomplete final appends\n\
-  nmlt run <source.nmlt> --entry <name> ... --job-slots <1..4> [--lean-bin <path>] Execute scoped async jobs\n\
+  nmlt run <source.nmlt> --entry <name> ... --job-slots <1..4> [--lean-bin <path>] [--lean-projects <registry.toml>] Execute scoped async jobs\n\
   nmlt replay <record.json> --source <source.nmlt>         Replay with the same executable\n\
   nmlt version                                           Print the frontend version\n\
   nmlt help                                              Show this help\n\n\
@@ -81,6 +81,9 @@ fn main() -> ExitCode {
 fn dispatch(arguments: Vec<std::ffi::OsString>) -> Result<(), diagnostics::Error> {
     let command = arguments.first().and_then(|a| a.to_str()).unwrap_or("help");
     match command {
+        "__lean-project-worker" => {
+            return lean_task::jobs::worker(&arguments[1..]).map_err(Into::into);
+        }
         "lean-task" => return lean_task::command(&arguments[1..]).map_err(Into::into),
         "check-invariant" => return invariant::command(&arguments[1..]),
         "resume" => return project::resume(&arguments[1..]),

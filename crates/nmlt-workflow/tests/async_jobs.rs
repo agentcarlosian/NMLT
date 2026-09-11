@@ -25,7 +25,9 @@ impl JobHost for Host {
             JobOperation::Collect => Ok(match &self.requests[id as usize] {
                 JobRequest::Square(i) if *i < 0 => Value::Err("negative input".into()),
                 JobRequest::Square(i) => Value::Ok(Box::new(Value::Int(i * i))),
-                JobRequest::Lean(_) | JobRequest::LeanCheck { .. } => {
+                JobRequest::Lean(_)
+                | JobRequest::LeanCheck { .. }
+                | JobRequest::LeanProject { .. } => {
                     Value::Ok(Box::new(Value::Text("receipt".into())))
                 }
             }),
@@ -55,6 +57,42 @@ fn lean_terms_are_typed_dynamic_inputs_and_handles_transfer() {
     );
     assert_eq!(host.calls, vec![(0, JobOperation::Collect)]);
     assert!(compile("fn main() -> Outcome<Text> { let h = job_start_lean_check(2, \"True.intro\"); job_collect(h) }").is_err());
+}
+
+#[test]
+fn project_alias_and_proof_transfer_through_affine_typed_jobs() {
+    let program = compile(include_str!("../../../examples/pivot/lean_project.nmlt")).unwrap();
+    assert!(program.requires_project_jobs("repair").unwrap());
+    assert!(!program.requires_lean_jobs("repair").unwrap());
+    assert!(program.requires_async_jobs("check").unwrap());
+    let inputs = Inputs::from([
+        ("alias".into(), Value::Text("offset".into())),
+        (
+            "proof".into(),
+            Value::Text("fun n => Support.shift_eq n".into()),
+        ),
+    ]);
+    let mut host = Host::default();
+    let result = execute_with_host(&program, "check", &inputs, 100, &mut host).unwrap();
+    assert!(result.stop.returned());
+    assert_eq!(
+        host.requests,
+        vec![JobRequest::LeanProject {
+            alias: "offset".into(),
+            proof: "fun n => Support.shift_eq n".into()
+        }]
+    );
+    assert_eq!(
+        host.calls,
+        vec![(0, JobOperation::Poll), (0, JobOperation::Collect)]
+    );
+    for source in [
+        "fn main() -> Outcome<Text> { let h = job_start_lean_project(2, \"True.intro\"); job_collect(h) }",
+        "fn main() -> Outcome<Text> { let h = job_start_lean_project(\"offset\", \"True.intro\"); let first = job_collect(h); job_collect(h) }",
+        "fn main() -> Text { let h = job_start_lean_project(\"offset\", \"True.intro\"); \"leaked handle\" }",
+    ] {
+        assert!(compile(source).is_err(), "{source}");
+    }
 }
 
 #[test]

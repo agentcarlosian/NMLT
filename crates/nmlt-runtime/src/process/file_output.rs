@@ -1,5 +1,5 @@
 //! Bounded byte-exact file capture with the same process-tree supervisor.
-use super::{Failure, FailureKind, Output, PIPE_BYTES, Policy, Process, failure};
+use super::{Failure, FailureKind, Output, PIPE_BYTES, Policy, Process, Profile, failure};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::{File, OpenOptions};
@@ -14,6 +14,7 @@ use tokio::io::AsyncWrite;
 use tokio_util::sync::CancellationToken;
 
 pub const FILE_BYTES: u64 = 16 * 1024 * 1024;
+pub const PROJECT_FILE_BYTES: u64 = 64 * 1024 * 1024;
 pub const FILE_CONTRACT: &str = "nmlt-contained-file-process-v1;processkit-3.3.4;raw-stdout-file-16777216;raw-stderr-65536;line-assembly-65536;tree-kill-before-pipe-drain;explicit-environment;no-filesystem-or-network-sandbox";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -25,8 +26,16 @@ pub struct FilePolicy {
 }
 impl FilePolicy {
     pub fn validate(&self) -> std::result::Result<(), crate::Error> {
-        self.process.validate_contract(FILE_CONTRACT)?;
-        if self.max_stdout_bytes != FILE_BYTES || self.max_stderr_bytes != PIPE_BYTES {
+        self.validate_profile(Profile::Ordinary)
+    }
+    pub fn validate_project(&self) -> std::result::Result<(), crate::Error> {
+        self.validate_profile(Profile::Project)
+    }
+    fn validate_profile(&self, profile: Profile) -> std::result::Result<(), crate::Error> {
+        self.process.validate_profile(profile, true)?;
+        if self.max_stdout_bytes != profile.stdout_file_bytes()
+            || self.max_stderr_bytes != PIPE_BYTES
+        {
             return Err(crate::Error("unsupported file capture limits".into()));
         }
         Ok(())
@@ -41,7 +50,13 @@ pub struct FileReceipt {
 }
 impl FileReceipt {
     pub fn validate(&self) -> std::result::Result<(), crate::Error> {
-        if self.bytes > FILE_BYTES
+        self.validate_limit(FILE_BYTES)
+    }
+    pub fn validate_project(&self) -> std::result::Result<(), crate::Error> {
+        self.validate_limit(PROJECT_FILE_BYTES)
+    }
+    fn validate_limit(&self, limit: u64) -> std::result::Result<(), crate::Error> {
+        if self.bytes > limit
             || self.sha256.len() != 64
             || !self
                 .sha256
@@ -82,14 +97,37 @@ impl FileProcess {
         timeout: Duration,
         path: &Path,
     ) -> std::result::Result<Self, Failure> {
-        if input.len() > PIPE_BYTES || timeout.is_zero() || timeout > Duration::from_secs(30) {
+        Self::start_profile(command, input, timeout, path, Profile::Ordinary)
+    }
+
+    /// Project-file policy: at most 64 MiB of stdout, with the explicitly
+    /// selected project process bounds. Ordinary file capture remains 16 MiB.
+    pub fn start_project(
+        command: Command,
+        input: Vec<u8>,
+        timeout: Duration,
+        path: &Path,
+    ) -> std::result::Result<Self, Failure> {
+        Self::start_profile(command, input, timeout, path, Profile::Project)
+    }
+
+    fn start_profile(
+        command: Command,
+        input: Vec<u8>,
+        timeout: Duration,
+        path: &Path,
+        profile: Profile,
+    ) -> std::result::Result<Self, Failure> {
+        if input.len() > PIPE_BYTES || timeout.is_zero() || timeout > profile.timeout() {
             return Err(failure(FailureKind::Io, true));
         }
-        let capture = FileCapture::new(path).map_err(|_| failure(FailureKind::Io, true))?;
-        let process = Process::start_capture(command, input, timeout, Some(capture.clone()))?;
+        let mut capture = FileCapture::new(path).map_err(|_| failure(FailureKind::Io, true))?;
+        capture.limit = profile.stdout_file_bytes();
+        let process =
+            Process::start_capture(command, input, timeout, Some(capture.clone()), profile)?;
         let policy = FilePolicy {
             process: process.policy().clone(),
-            max_stdout_bytes: FILE_BYTES,
+            max_stdout_bytes: profile.stdout_file_bytes(),
             max_stderr_bytes: PIPE_BYTES,
         };
         Ok(Self {
@@ -151,6 +189,7 @@ struct State {
 #[derive(Clone)]
 pub(super) struct FileCapture {
     state: Arc<Mutex<State>>,
+    limit: u64,
     pub(super) cancel: CancellationToken,
 }
 impl FileCapture {
@@ -165,6 +204,7 @@ impl FileCapture {
         let sync = options.open(path)?;
         let file = tokio::fs::File::from_std(sync.try_clone()?);
         Ok(Self {
+            limit: FILE_BYTES,
             state: Arc::new(Mutex::new(State {
                 file,
                 sync,
@@ -219,7 +259,7 @@ impl AsyncWrite for FileCapture {
         bytes: &[u8],
     ) -> Poll<io::Result<usize>> {
         let mut state = self.state.lock().expect("file capture lock");
-        if state.bytes.saturating_add(bytes.len() as u64) > FILE_BYTES {
+        if state.bytes.saturating_add(bytes.len() as u64) > self.limit {
             state.overflow = true;
             self.cancel.cancel();
             return Poll::Ready(Err(io::Error::other("raw stdout file bound exceeded")));
@@ -303,6 +343,7 @@ mod tests {
         // A real read-only descriptor gives a portable failed disk write,
         // including implementations that report it only during flush.
         let mut capture = FileCapture {
+            limit: FILE_BYTES,
             state: Arc::new(Mutex::new(State {
                 file: tokio::fs::File::from_std(sync.try_clone().unwrap()),
                 sync,

@@ -47,7 +47,7 @@ def main():
                       "--output", evidence / "bound"])
     task = read(evidence / "bound/task.json")
     pin = (evidence / "bound/task.sha256").read_text(encoding="utf-8").strip()
-    assert digest(task) == pin and task["schema"] == "nmlt-lean-task-v2"
+    assert digest(task) == pin and task["schema"] == "nmlt-lean-task-v3"
     term = "fun a => fun b => fun c => Nat.mul_assoc a b c"
     candidate = evidence / "candidate.json"
     write(candidate, {"schema": "nmlt-lean-proof-candidate-v1", "task_sha256": pin, "proof": term})
@@ -56,7 +56,7 @@ def main():
     record = read(evidence / "proof/result.json")
     export = evidence / "proof/build/environment.ndjson"
     raw = export.read_bytes()
-    assert record["schema"] == "nmlt-lean-result-v4" and record["status"] == "independently_checked"
+    assert record["schema"] == "nmlt-lean-result-v5" and record["status"] == "independently_checked"
     assert 65536 < len(raw) == record["export_bytes"] <= 16 * 1024 * 1024
     assert hashlib.sha256(raw).hexdigest() == record["export_sha256"]
     assert record["checked_declarations"] == len(record["exported_declarations"]) > 0
@@ -158,7 +158,7 @@ def main():
           "rejected": rejected, "checked_declarations": record["checked_declarations"],
           "export_bytes": len(raw), "export_sha256": record["export_sha256"]})
     print(f"evidence: {evidence.relative_to(ROOT)}", flush=True)
-    print("scope: byte-exact proof exports up to 16 MiB; R3 integration remains in progress", flush=True)
+    print("scope: byte-exact proof exports up to 16 MiB for the local-source profile", flush=True)
 
 
 if __name__ == "__main__":

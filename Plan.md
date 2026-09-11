@@ -4,7 +4,7 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Next milestone: R3 — existing Lean projects (bounded local proof and inspection workflows implemented; R2 local scope complete)
+- Next milestone: R3 — existing Lean projects (native workflows implemented; final reproduction and exit audit in progress)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-11
@@ -80,8 +80,8 @@ now runs functions with scalars, outcomes, records, bounded lists/folds, and
 opt-in local jobs. Affine source controls expose workers and closed Init proof
 terms, with exact dependency identities and durable source/project resumption.
 User safety predicates have a separately checked finite-model route. The first
-R3 profile binds local Lean source projects and fixed targets; broader project
-and editor integration remains in progress.
+R3 profile now binds native Lean/Lake projects and fixed targets, with editor,
+automation and asynchronous proof workflows under final verification.
 Historical independent-checker results do not remove the need for current
 toolchain maintenance.
 
@@ -92,7 +92,7 @@ toolchain maintenance.
 | R0 — Checker and workflow baselines | Complete | Audited baseline | Integration and Lean maintainers |
 | R1 — Unified semantics and finite execution | Complete at finite scope | R0 checker baseline | Lean/semantics and Rust maintainers |
 | R2 — Useful executable language | Completed at local pre-alpha scope on 2026-09-09; see completion audit | R1 for formal execution claims | Compiler/runtime and integration maintainers |
-| R3 — Supported Lean workflows | In progress: bounded local project tasks and independent artifacts | R2; adapter prototype can begin in R0 | Lean integration maintainer |
+| R3 — Supported Lean workflows | Native project, editor, automation, revision and asynchronous workflows implemented; final exit checks running | R2; adapter prototype can begin in R0 | Lean integration maintainer |
 | R4 — Discovery workflows | Planned | R3 for integration; domain preparation can start earlier | Mathematical reviewer and integration maintainer |
 | R5 — Three-audience alpha validation | Planned | R2–R4 | Maintainers and independent pilot users |
 
@@ -381,8 +381,15 @@ diagnostics under [RFC 0035](rfcs/0035-bound-lean-inspection-and-diagnostics.md)
 The [local validation record](docs/reviews/r3-lean-inspection-2026-09-11.md) covers
 inspection, located candidate repair and an initial CLI/REPL/LeanInteract
 comparison. Retrieval context cannot become proof acceptance.
-R3 is not complete: package resolution and library-scale validation, editor/REPL integration and
-asynchronous source jobs for these tasks remain outstanding.
+The final integration implements native pinned Lake package reconstruction,
+ordinary editor workspaces and actual LSP interaction, structured native proof
+automation, explicit revision lineage and asynchronous source/project proof
+jobs under [RFC 0036](rfcs/0036-native-lean-project-workflows.md). Focused checks
+include a pinned Mathlib environment and fresh independent checking of every
+accepted native-development and source-job proof. The
+[completion audit](docs/reviews/r3-completion-audit-2026-09-11.md) tracks the
+remaining full reproduction and final frozen-set checks. The complete exit gate
+below remains authoritative.
 
 - Bind tasks to exact targets, assumptions, definitions, and pinned dependency
   environments; check formal target identity in Lean.
