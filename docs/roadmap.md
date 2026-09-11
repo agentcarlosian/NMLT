@@ -30,7 +30,8 @@ per-file resolution, and version 3 replay over the complete import closure.
 R3 is in progress. Its [first local Lean task profile](r3-lean-tasks.md) binds
 exact targets and saved source environments, checks separate candidates, and
 exports independently checked proofs with fresh rechecking and readable patches.
-The current profile has explicit small-project and proof-export bounds.
+The current profile also discovers local source imports across selected source
+and vendor roots. Small-project and proof-export bounds remain explicit.
 
 ## Now: make the pivot publicly coherent
 

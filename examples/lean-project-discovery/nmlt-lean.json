@@ -1,0 +1,7 @@
+{
+  "schema": "nmlt-lean-project-v2",
+  "source_roots": ["src", "vendor/support"],
+  "target_module": "App.Goals",
+  "target": "App.checked_value",
+  "permitted_axioms": []
+}

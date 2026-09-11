@@ -9,3 +9,4 @@ nanoda="$RUN/tools/nanoda/target/release/nanoda_bin"
 if [[ -f "$exporter.exe" ]]; then exporter+=".exe"; fi
 if [[ -f "$nanoda.exe" ]]; then nanoda+=".exe"; fi
 "${PYTHON:-python3}" tools/check_lean_tasks.py --lean-bin "$LEAN_BIN" --exporter "$exporter" --nanoda "$nanoda"
+"${PYTHON:-python3}" tools/check_lean_imports.py --lean-bin "$LEAN_BIN" --exporter "$exporter" --nanoda "$nanoda"

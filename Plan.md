@@ -4,10 +4,10 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Next milestone: R3 — existing Lean projects (first bounded increment implemented; R2 local scope complete)
+- Next milestone: R3 — existing Lean projects (bound tasks and local import discovery implemented; R2 local scope complete)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
-- Updated: 2026-09-09
+- Updated: 2026-09-11
 
 This file governs execution priorities and milestone completion. The
 [practical language design](docs/practical-language-plan.md) supplies detailed
@@ -360,7 +360,11 @@ source/module and tool identities, a separate closed proof-term candidate,
 Lean target checks, transitive axiom policy, independent NanoDA artifacts,
 actual dependencies, readable additive patches and fresh source-based rechecking.
 The profile is bounded to trusted local sources and small exported closures.
-R3 is not complete: broader dependencies/exports, editor/REPL integration and
+The second increment adds automatic source import discovery with Lean's native
+header parser under [RFC 0032](rfcs/0032-lean-source-import-discovery.md). It
+supports explicitly selected source directories and vendored roots, records
+the import closure, and reparses saved headers before proof reconstruction.
+R3 is not complete: package resolution/larger exports, editor/REPL integration and
 asynchronous source jobs for these tasks remain outstanding.
 
 - Bind tasks to exact targets, assumptions, definitions, and pinned dependency

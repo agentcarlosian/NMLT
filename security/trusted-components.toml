@@ -373,11 +373,13 @@ paths = [
   "crates/nmlt-cli/src/lean_task.rs",
   "crates/nmlt-cli/src/lean_task/source.rs",
   "crates/nmlt-cli/src/lean_task/export.rs",
+  "crates/nmlt-cli/src/lean_task/discovery.rs",
   "tools/prepare_lean_task_checkers.sh",
   "tools/check_lean_tasks.py",
+  "tools/check_lean_imports.py",
   "tools/check_lean_tasks.sh",
 ]
-role = "Capture bounded trusted local Lean sources and target types, keep proof candidates separate from task revisions, enforce axiom and export-root checks, invoke the independent NanoDA kernel, and reconstruct retained proof artifacts. The host, project metaprograms, capture/binding helper, supplied tools and exporter remain trusted; independent proof checking does not establish human statement faithfulness."
+role = "Capture bounded trusted local Lean sources and target types, discover local source imports with the pinned Lean/Lake parser, keep proof candidates separate from task revisions, enforce axiom and export-root checks, invoke the independent NanoDA kernel, and reconstruct retained proof artifacts. Source import closure is distinct from actual proof dependencies. The host, project metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent proof checking does not establish human statement faithfulness."
 
 [[components]]
 id = "repository.hygiene"

@@ -55,7 +55,7 @@ exact .nmlt bytes
 | Local source jobs | Opt-in `job_square` uses bounded attempts, a durable journal, validated subprocess results, timeout/output limits, replay without redispatch, and recovery inspection; executable-only |
 | Source jobs | Typed worker and pinned Init proof-term jobs; affine transfer through functions/folds; poll/cancel/collect, durable decisions, explicit uncertainty and source/project resumption; executable-only |
 | Projects | `init`, `lock`, `run`, `test`, `replay`, `resume`, `fmt`, and `check-project`; complete source/tool identities and structured diagnostics |
-| Local Lean tasks | `lean-task bind/prove/recheck`; fixed declaration types, saved trusted source modules, closed proof terms, actual dependencies and independent NanoDA checking; initial bounded R3 profile |
+| Local Lean tasks | `lean-task bind/prove/recheck`; native import discovery across selected source/vendor roots, fixed targets, saved sources, closed proof terms, actual dependencies and independent NanoDA checking; bounded R3 profile |
 | User safety properties | Exact source predicates with Lean-checked initialization/preservation or an initialized finite counterexample; decoded finite scope |
 | Pure source workflows | Named entries, structured inputs, records, bounded lists/folds, local modules, acyclic functions, typed outcomes, matching, execution/replay; executable-only, no host jobs |
 
@@ -73,8 +73,9 @@ executable-only; they do not automatically inherit finite model proofs.
 R2 is complete at local pre-alpha scope. The
 [R2 audit](docs/r2-completion-tracker.md) and
 [validation record](docs/reviews/r2-completion-2026-09-09.md) record its full scope
-and reproduction evidence. The first [R3 increment](docs/r3-lean-tasks.md)
-binds local Lean targets and independently checks saved proof artifacts.
+and reproduction evidence. The current [R3 profile](docs/r3-lean-tasks.md)
+discovers local source imports, binds Lean targets and independently checks
+saved proof artifacts.
 R3 remains in progress; larger libraries, editor integration and asynchronous
 project-proof jobs are later work.
 

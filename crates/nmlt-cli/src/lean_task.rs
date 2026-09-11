@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
+mod discovery;
 mod export;
 mod source;
 
@@ -19,7 +20,7 @@ Bound local Lean tasks (trusted project code; closed candidate proof terms):
   nmlt lean-task bind --project DIR --lean-bin FILE --output NEW_DIR
   nmlt lean-task prove --task task.json --task-sha256 HASH --candidate candidate.json --lean-bin FILE --exporter FILE --nanoda FILE --output NEW_DIR
   nmlt lean-task recheck --record result.json --task-sha256 HASH --lean-bin FILE --exporter FILE --nanoda FILE --output NEW_DIR
-Projects declare ordered local modules, target and axiom policy in nmlt-lean.json.
+Projects select explicit modules or source roots, target and axiom policy in nmlt-lean.json.
 Binding is not human approval. Select the task hash outside the candidate channel.
 ";
 
@@ -94,11 +95,12 @@ struct Task {
     sources: Vec<Source>,
     lean: lean::Identity,
     target: Target,
+    discovery: Option<discovery::Closure>,
 }
 impl Task {
     fn validate(&self) -> Result<()> {
         self.manifest.validate()?;
-        if self.schema != "nmlt-lean-task-v1"
+        if self.schema != "nmlt-lean-task-v2"
             || self.implementation_sha256 != implementation()?
             || self.sources.len() != self.manifest.modules.len()
             || self.target.declaration != self.manifest.target
@@ -123,6 +125,9 @@ impl Task {
             {
                 return Err("task sources differ from the declared bounded module sequence".into());
             }
+        }
+        if let Some(closure) = &self.discovery {
+            closure.validate(&self.manifest, &self.sources)?;
         }
         Ok(())
     }
@@ -237,7 +242,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         None
     };
     let (task, candidate) = if let Some(record) = &previous {
-        if record.schema != "nmlt-lean-result-v1"
+        if record.schema != "nmlt-lean-result-v2"
             || record.status != "independently_checked"
             || record.task_sha256 != digest
         {
@@ -277,7 +282,70 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
 
 fn bind(project: &Path, executable: &Path, output: &Path) -> Result<()> {
     let project = project.canonicalize().map_err(err)?;
-    let manifest: Manifest = read_json(&project.join("nmlt-lean.json"), 16 * 1024)?;
+    let input: serde_json::Value = read_json(&project.join("nmlt-lean.json"), 16 * 1024)?;
+    enum SourcePlan {
+        Explicit(Manifest),
+        Discovered(discovery::Configuration),
+    }
+    let plan = match input["schema"].as_str() {
+        Some("nmlt-lean-project-v1") => {
+            let manifest: Manifest = serde_json::from_value(input).map_err(err)?;
+            manifest.validate()?;
+            SourcePlan::Explicit(manifest)
+        }
+        Some("nmlt-lean-project-v2") => {
+            let configuration: discovery::Configuration =
+                serde_json::from_value(input).map_err(err)?;
+            configuration.validate()?;
+            SourcePlan::Discovered(configuration)
+        }
+        _ => return Err("unsupported Lean project manifest schema".into()),
+    };
+    let toolchain = lean::Toolchain::open(executable).map_err(err)?;
+    let mut run = Run::new(output, executable)?;
+    let (manifest, sources, discovery) = match plan {
+        SourcePlan::Discovered(configuration) => {
+            let (manifest, sources, closure) =
+                discovery::capture(&project, configuration, &mut run)?;
+            (manifest, sources, Some(closure))
+        }
+        SourcePlan::Explicit(manifest) => {
+            let sources = explicit_sources(&project, &manifest)?;
+            (manifest, sources, None)
+        }
+    };
+    run.build(&sources)?;
+    let target = run.target(&manifest)?;
+    let task = Task {
+        schema: "nmlt-lean-task-v2".into(),
+        implementation_sha256: implementation()?,
+        manifest,
+        sources,
+        lean: toolchain.identity().clone(),
+        target,
+        discovery,
+    };
+    task.validate()?;
+    toolchain.verify_unchanged().map_err(err)?;
+    retain_cli(&run.directory, &task.implementation_sha256)?;
+    if let Some(closure) = &task.discovery {
+        write_json(&run.directory.join("source-imports.json"), closure)?;
+    }
+    write_json(&run.directory.join("task.json"), &task)?;
+    write_json(&run.directory.join("build-log.json"), &run.stages)?;
+    let digest = task.digest()?;
+    write_new(
+        &run.directory.join("task.sha256"),
+        format!("{digest}\n").as_bytes(),
+    )?;
+    println!(
+        "bound_task: {digest}\ntask: {}",
+        run.directory.join("task.json").display()
+    );
+    Ok(())
+}
+
+fn explicit_sources(project: &Path, manifest: &Manifest) -> Result<Vec<Source>> {
     manifest.validate()?;
     let mut sources = vec![];
     let mut total = 0usize;
@@ -287,7 +355,7 @@ fn bind(project: &Path, executable: &Path, output: &Path) -> Result<()> {
             .map_err(err)?
             .file_type()
             .is_symlink()
-            || !path.canonicalize().map_err(err)?.starts_with(&project)
+            || !path.canonicalize().map_err(err)?.starts_with(project)
         {
             return Err("project source escapes its root or is a link".into());
         }
@@ -301,33 +369,7 @@ fn bind(project: &Path, executable: &Path, output: &Path) -> Result<()> {
             text,
         });
     }
-    let toolchain = lean::Toolchain::open(executable).map_err(err)?;
-    let mut run = Run::new(output, executable)?;
-    run.build(&sources)?;
-    let target = run.target(&manifest)?;
-    let task = Task {
-        schema: "nmlt-lean-task-v1".into(),
-        implementation_sha256: implementation()?,
-        manifest,
-        sources,
-        lean: toolchain.identity().clone(),
-        target,
-    };
-    task.validate()?;
-    toolchain.verify_unchanged().map_err(err)?;
-    retain_cli(&run.directory, &task.implementation_sha256)?;
-    write_json(&run.directory.join("task.json"), &task)?;
-    write_json(&run.directory.join("build-log.json"), &run.stages)?;
-    let digest = task.digest()?;
-    write_new(
-        &run.directory.join("task.sha256"),
-        format!("{digest}\n").as_bytes(),
-    )?;
-    println!(
-        "bound_task: {digest}\ntask: {}",
-        run.directory.join("task.json").display()
-    );
-    Ok(())
+    Ok(sources)
 }
 
 fn prove(
@@ -345,6 +387,9 @@ fn prove(
         return Err("Lean installation differs from the bound task".into());
     }
     let mut run = Run::new(output, executable)?;
+    if let Some(closure) = &task.discovery {
+        discovery::verify(closure, &task.manifest, &task.sources, &mut run)?;
+    }
     run.build(&task.sources)?;
     let actual = run.target(&task.manifest)?;
     if actual != task.target {
@@ -365,7 +410,7 @@ fn prove(
     toolchain.verify_unchanged().map_err(err)?;
     tools.verify_unchanged()?;
     let record = ResultRecord {
-        schema: "nmlt-lean-result-v1".into(),
+        schema: "nmlt-lean-result-v2".into(),
         status: "independently_checked".into(),
         task_sha256: digest.clone(),
         task,
@@ -388,6 +433,9 @@ fn prove(
         return Err("fresh proof artifacts differ from the retained acceptance record".into());
     }
     retain_cli(&run.directory, &record.task.implementation_sha256)?;
+    if let Some(closure) = &record.task.discovery {
+        write_json(&run.directory.join("source-imports.json"), closure)?;
+    }
     write_new(
         &run.directory.join("proof.patch"),
         source::patch(&source::target(&record.task.manifest), &record.proof_source).as_bytes(),
@@ -592,7 +640,11 @@ fn write_new(path: &Path, bytes: &[u8]) -> Result<()> {
     file.sync_all().map_err(err)
 }
 fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
-    write_new(path, &serde_json::to_vec_pretty(value).map_err(err)?)
+    let bytes = serde_json::to_vec_pretty(value).map_err(err)?;
+    if bytes.len() as u64 > MAX_JSON {
+        return Err("retained JSON artifact exceeds its 64 MiB input bound".into());
+    }
+    write_new(path, &bytes)
 }
 fn parse_marker<T: DeserializeOwned>(bytes: &[u8], marker: &str) -> Result<T> {
     let text = std::str::from_utf8(bytes).map_err(err)?;

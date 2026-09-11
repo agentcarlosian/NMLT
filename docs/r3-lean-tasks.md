@@ -8,6 +8,10 @@ and an independent NanoDA check of the final exported proof.
 The [validation record](reviews/r3-local-lean-tasks-2026-09-09.md) records the
 executed cases, tool pins and remaining review gates.
 
+The second increment adds automatic local source import discovery under
+[RFC 0032](../rfcs/0032-lean-source-import-discovery.md), including source
+directories and explicitly selected vendored dependencies.
+
 Binding a task does not record human approval. A reviewer must select the task
 hash after examining the statement, assumptions, definitions, sources and policy.
 The candidate channel then supplies only a proof for that selected hash.
@@ -79,6 +83,54 @@ but works after the original project is edited or removed. Invoke the retained
 `nmlt`/`nmlt.exe` if the current checkout's executable has changed. Old subprocess logs
 are diagnostic history; fresh checking establishes the new acceptance.
 
+## Discovering project imports
+
+The [discovery example](../examples/lean-project-discovery/nmlt-lean.json) selects
+two source roots instead of listing every module:
+
+```json
+{
+  "schema": "nmlt-lean-project-v2",
+  "source_roots": ["src", "vendor/support"],
+  "target_module": "App.Goals",
+  "target": "App.checked_value",
+  "permitted_axioms": []
+}
+```
+
+Run the same binding command against that project:
+
+```bash
+target/debug/nmlt lean-task bind \
+  --project examples/lean-project-discovery --lean-bin "$LEAN_BIN" \
+  --output target/discovered-task
+```
+
+Lean identifies imports from captured source copies. NMLT resolves them against
+the selected roots and pinned standard library, then builds local sources in
+dependency order. For this example the order is `Support.Core`,
+`App.Definitions`, `App.Goals`; `App.Unused` is outside the closure. The candidate
+proof is `fun n => App.value_eq n`. Use the same `prove` and `recheck` commands
+above with the discovered task and its separately selected hash.
+
+Inspect `source-imports.json` alongside `task.json`. The import report records
+source roots and Lean's complete import headers, including implicit imports and
+`public`/`meta`/`all` flags. Proving and rechecking regenerate those headers from
+the saved sources and compare the closure before compiling. The original source
+and vendor directories can be unavailable during rechecking.
+
+Roots use normalized paths relative to the project; `.` selects the project
+directory. An existing ordinary vendored directory under `.lake/packages` can
+also be selected. Source bytes pin the dependency snapshot. Lake lockfiles,
+download hooks and package resolution are not interpreted by this profile.
+Ambiguous module matches, import cycles, missing imports, module/file aliases,
+toolchain shadowing, casing mismatches, path escapes and linked source paths
+(including Windows junctions) are errors. Root order does not resolve ambiguity.
+
+New task/result artifacts use version 2, with an optional discovery report.
+Explicit-module v1 project manifests remain supported. Old saved task/result
+artifacts continue to require their retained original CLI executable.
+
 ## What is fixed and what can change
 
 The task hash binds all listed modules, their order, the exact selected
@@ -87,6 +139,9 @@ the CLI implementation and the permitted axioms. A change creates a new task.
 Old acceptance remains about its original snapshot and does not migrate to a
 changed statement or definition. Candidates cannot select another statement,
 revise imports, or add checking options.
+For a discovered project it also binds the selected roots and native import
+headers. Source imports describe the build environment; the result's proof
+references and exported declarations describe actual proof dependencies.
 
 Only a selected subset of `propext`, `Quot.sound`, and `Classical.choice` may
 be permitted. `sorryAx` is always forbidden. The example's placeholder goals
@@ -95,7 +150,7 @@ Unresolved draft lemmas cannot become a completed root through bookkeeping.
 
 ## Current bounds and trust
 
-This increment supports at most 64 ordered local modules, 1 MiB per module,
+The profile supports at most 64 ordered local modules, 1 MiB per module,
 16 MiB of source in total, the existing 4 KiB closed proof-term grammar, and
 64 KiB of raw output per process. The independent export also has that 64 KiB
 bound; larger proof closures are rejected. Each process has a 30-second
@@ -104,7 +159,9 @@ limit is 768 MiB: the Linux target helper exceeded 512 MiB and measured about
 596 MiB peak resident memory during calibration. The OS bounds remain 1 GiB
 for a Windows process job and 2 GiB per POSIX process data segment. Lean thread
 stacks are explicitly 64 MiB. Metadata and universe-name limits may reject complex
-targets. Such rejection is not a claim that the target is false.
+targets. Such rejection is not a claim that the target is false. Discovery
+allows at most 16 roots, 256 imports per module and 4,096 entries in each
+traversed source directory. Root paths are at most 1,024 bytes and 16 components.
 
 The project is trusted host code: imports, initializers, elaborators and
 instances can execute during a build. Process supervision is not filesystem
@@ -114,6 +171,6 @@ are identities, not signatures. NanoDA establishes proof validity for the
 exported declarations under the selected axioms; human faithfulness, novelty
 and usefulness are separate reviews.
 
-R3 remains in progress. Mathlib-scale dependency discovery and exports,
+R3 remains in progress. Mathlib-scale package resolution and exports,
 editor/REPL integration, broader proof automation, and asynchronous `.nmlt`
 jobs for these project tasks are not implemented by this increment.

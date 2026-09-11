@@ -165,8 +165,12 @@ identifies the tested commits and platform-specific evidence.
 The [R3 local task profile](r3-lean-tasks.md) builds trusted Lean source modules
 from a bound snapshot. A candidate supplies only a closed proof term for an
 externally selected task hash. Source, definition, statement, universe or policy
-revisions change that identity. Lean checks the selected target, and NanoDA
+  revisions change that identity. Lean checks the selected target, and NanoDA
 independently checks the final exported proof closure under its axiom policy.
+Automatic source import discovery uses the pinned Lean/Lake header parser and
+explicit local source roots. The saved task binds the resulting source closure,
+and proof reconstruction checks its headers and dependency order again. This
+source import graph is separate from the actual exported proof dependencies.
 Project initializers/elaborators, host capture and target binding, tool delivery
 and the exporter remain trusted. The profile does not isolate arbitrary
 unreviewed Lean source from the filesystem or network, and an independent proof
