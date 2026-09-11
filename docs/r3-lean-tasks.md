@@ -26,6 +26,11 @@ value, reduction, projection and literal-support references. Its
 [validation record](reviews/r3-proof-dependencies-2026-09-11.md) includes a
 comparison with Lean's own reference collectors.
 
+The fifth increment adds declaration lookup and native compilation diagnostics
+under [RFC 0035](../rfcs/0035-bound-lean-inspection-and-diagnostics.md). Its
+[validation record](reviews/r3-lean-inspection-2026-09-11.md) also compares the
+normal CLI, direct REPL and LeanInteract on a fixed local task set.
+
 Binding a task does not record human approval. A reviewer must select the task
 hash after examining the statement, assumptions, definitions, sources and policy.
 The candidate channel then supplies only a proof for that selected hash.
@@ -96,6 +101,48 @@ selected task hash and the same trusted tool installations/CLI executable,
 but works after the original project is edited or removed. Invoke the retained
 `nmlt`/`nmlt.exe` if the current checkout's executable has changed. Old subprocess logs
 are diagnostic history; fresh checking establishes the new acceptance.
+
+## Finding declarations and reading errors
+
+Inspect the saved task before choosing a candidate:
+
+```bash
+TASK_HASH="$(cat target/reviewed-task/task.sha256)"
+target/debug/nmlt lean-task inspect \
+  --task target/reviewed-task/task.json --task-sha256 "$TASK_HASH" \
+  --prefix Example. --limit 16 --lean-bin "$LEAN_BIN" \
+  --output target/task-context
+```
+
+`context.md` and `inspection.json` show matching declarations, their originating
+modules, types, universe parameters and transitive axioms. The example returns
+seven declarations: `Example.offset_eq` has an empty axiom set, while the draft
+`Example.zero_offset` and `Example.borrowed` depend on `sorryAx`. The response
+records the total match count and whether the requested limit omitted entries.
+`Nat.zero_add` is an example prefix for a toolchain declaration.
+
+The inspection has `status: context_only` and `assurance: none`. The signature
+and axiom annotation help select a candidate. Proof acceptance for the selected
+target requires submitting the term through `lean-task prove`, which
+rebuilds the task and performs all existing target, axiom and independent checks.
+
+An inspection bundle retains `task.json`, `task.sha256`, the exact CLI and source
+copies. Repeat the command using those copies and a new output directory even
+when the original project and bind directory are unavailable. Inspection still
+builds trusted project code; its imports and metaprograms have the same host
+trust boundary as proving.
+
+Compilation writes `diagnostics-N.json` beside raw `stage-N.json` evidence. For
+example, a rejected `fun n => n` candidate produces a located type error in
+`build/NMLTProof.lean`. Each diagnostic report identifies the captured source by
+SHA-256. Valid ranges for that file include UTF-8 byte offsets. Native line
+numbers start at one and columns count Unicode scalar values from zero; these
+are not LSP UTF-16 offsets. Synthetic, foreign or invalid positions remain
+unmapped. Other stdout is counted and retained in the raw stage.
+
+Warnings are preserved without becoming proof acceptance. A source project's
+unused draft goals may produce `sorry` warnings while a separate closed proof
+passes the final transitive-axiom and independent checks.
 
 ## Discovering project imports
 

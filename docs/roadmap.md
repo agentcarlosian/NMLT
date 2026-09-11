@@ -35,6 +35,8 @@ and vendor roots, and streams proof exports up to 16 MiB to files with exact
 byte counts and digests. Accepted results also retain readable declaration
 dependency graphs, reconstructed during fresh rechecking. Small-project and
 proof-export bounds remain explicit.
+Bound declaration lookup and native diagnostic ranges now support candidate
+repair, with context kept separate from independent proof acceptance.
 
 ## Now: make the pivot publicly coherent
 

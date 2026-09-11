@@ -4,7 +4,7 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Next milestone: R3 — existing Lean projects (bound tasks, import discovery, bounded exports and proof dependency graphs implemented; R2 local scope complete)
+- Next milestone: R3 — existing Lean projects (bounded local proof and inspection workflows implemented; R2 local scope complete)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-11
@@ -376,6 +376,11 @@ The fourth increment adds actual declaration dependency graphs under
 projection names, reductions, literal support and export groups kept distinct.
 The [local validation record](docs/reviews/r3-proof-dependencies-2026-09-11.md)
 records complete graph reconstruction and reference comparison with Lean.
+The fifth increment adds bound declaration lookup and native Lean compilation
+diagnostics under [RFC 0035](rfcs/0035-bound-lean-inspection-and-diagnostics.md).
+The [local validation record](docs/reviews/r3-lean-inspection-2026-09-11.md) covers
+inspection, located candidate repair and an initial CLI/REPL/LeanInteract
+comparison. Retrieval context cannot become proof acceptance.
 R3 is not complete: package resolution and library-scale validation, editor/REPL integration and
 asynchronous source jobs for these tasks remain outstanding.
 

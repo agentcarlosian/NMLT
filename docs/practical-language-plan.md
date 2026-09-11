@@ -151,6 +151,10 @@ The fourth increment derives complete declaration dependency graphs from the
 checked export, with readable reports and fresh graph comparison. Explicit
 constants, projections, reductions, literal support and export groups remain
 distinct from draft proof planning.
+The fifth increment adds declaration lookup in reconstructed tasks, located
+native Lean diagnostics and a checked repair exercise, with an initial local
+CLI/REPL/LeanInteract comparison. Persistent editor and REPL integration remains
+separate work.
 R3 remains in progress; the integration and scale
 requirements below remain the milestone's complete gate.
 

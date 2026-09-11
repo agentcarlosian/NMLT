@@ -4,6 +4,11 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Added bounded `lean-task inspect` declaration lookup, saved context bundles,
+  and native Lean diagnostics tied to captured source bytes (RFC 0035). Includes
+  a checked repair workflow and a local CLI/REPL/LeanInteract comparison.
+  Inspection has `assurance: none`; accepted task/result formats remain v2/v4.
+
 - Added R3 proof dependency graphs with separate type/value constants, recursor
   reductions, projection types, literal support and export groups (RFC 0034).
   Results now use version 4 and retain a graph plus linked readable report;

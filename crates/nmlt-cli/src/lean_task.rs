@@ -10,8 +10,10 @@ use std::process::Command;
 use std::time::Duration;
 
 mod dependencies;
+mod diagnostics;
 mod discovery;
 mod export;
+mod inspection;
 mod source;
 
 const MAX_JSON: u64 = 64 * 1024 * 1024;
@@ -20,6 +22,7 @@ const EXPORT_PATH: &str = "build/environment.ndjson";
 const HELP: &str = "\
 Bound local Lean tasks (trusted project code; closed candidate proof terms):
   nmlt lean-task bind --project DIR --lean-bin FILE --output NEW_DIR
+  nmlt lean-task inspect --task task.json --task-sha256 HASH --prefix NAME --limit 1..16 --lean-bin FILE --output NEW_DIR
   nmlt lean-task prove --task task.json --task-sha256 HASH --candidate candidate.json --lean-bin FILE --exporter FILE --nanoda FILE --output NEW_DIR
   nmlt lean-task recheck --record result.json --task-sha256 HASH --lean-bin FILE --exporter FILE --nanoda FILE --output NEW_DIR
 Projects select explicit modules or source roots, target and axiom policy in nmlt-lean.json.
@@ -250,6 +253,14 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
     let action = args[0].to_str().ok_or("command must be UTF-8")?;
     let allowed: &[&str] = match action {
         "bind" => &["--project", "--lean-bin", "--output"],
+        "inspect" => &[
+            "--task",
+            "--task-sha256",
+            "--prefix",
+            "--limit",
+            "--lean-bin",
+            "--output",
+        ],
         "prove" => &[
             "--task",
             "--task-sha256",
@@ -295,8 +306,25 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
     {
         return Err("task hash requires 64 lowercase hexadecimal digits".into());
     }
+    if action == "inspect" {
+        let query = inspection::Query::new(
+            options["--prefix"].to_str().ok_or("prefix must be UTF-8")?,
+            options["--limit"].to_str().ok_or("limit must be UTF-8")?,
+        )?;
+        let task: Task = read_json(&options["--task"], MAX_JSON)?;
+        task.validate()?;
+        if task.digest()? != digest {
+            return Err("retained task does not match the selected task hash".into());
+        }
+        return inspection::run(task, query, &lean, &options["--output"]);
+    }
     let previous: Option<ResultRecord> = if action == "recheck" {
         let value: serde_json::Value = read_json(&options["--record"], MAX_JSON)?;
+        if value["schema"] == "nmlt-lean-inspection-v1" {
+            return Err(
+                "declaration context is not a proof acceptance record; use lean-task prove".into(),
+            );
+        }
         if value["schema"] != "nmlt-lean-result-v4" {
             return Err(
                 "unsupported Lean result version; use its retained original CLI executable".into(),
@@ -587,6 +615,18 @@ impl Run {
         Ok(command)
     }
     fn execute(&mut self, name: &str, command: Command) -> Result<process::Output> {
+        let output = self.capture(name, command)?;
+        if output.exit_code != Some(0) {
+            return Err(format!(
+                "{name} rejected the task/proof:\n{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+        Ok(output)
+    }
+
+    fn capture(&mut self, name: &str, command: Command) -> Result<process::Output> {
         let mut child = process::Process::start(command, vec![], Duration::from_secs(30))
             .map_err(|e| format!("{name}: {e:?}"))?;
         let policy = child.policy().clone();
@@ -608,13 +648,6 @@ impl Run {
                 .join(format!("stage-{}.json", self.stages.len())),
             self.stages.last().unwrap(),
         )?;
-        if output.exit_code != Some(0) {
-            return Err(format!(
-                "{name} rejected the task/proof:\n{}{}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
-            ));
-        }
         Ok(output)
     }
 
@@ -667,6 +700,7 @@ impl Run {
         let mut command = self.command()?;
         command
             .args([
+                "--json",
                 "--threads=1",
                 "--memory=768",
                 "-DmaxHeartbeats=200000",
@@ -674,7 +708,27 @@ impl Run {
             ])
             .arg(relative.with_extension("olean"))
             .arg(relative);
-        self.execute(module, command)
+        let output = self.capture(module, command)?;
+        let report = diagnostics::Report::parse(module, text, &path, self.stages.len(), &output)?;
+        let report_path = self
+            .directory
+            .join(format!("diagnostics-{}.json", self.stages.len()));
+        write_json(&report_path, &report)?;
+        if output.exit_code != Some(0) || report.has_errors() {
+            let mut detail = report.error_text();
+            if detail.is_empty() {
+                detail = format!(
+                    "{}{}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            return Err(format!(
+                "{module} rejected the task/proof:\n{detail}\nStructured Lean diagnostics: {}",
+                report_path.display()
+            ));
+        }
+        Ok(output)
     }
     fn target(&mut self, manifest: &Manifest) -> Result<Target> {
         let text = source::target(manifest);
@@ -769,8 +823,8 @@ fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
     write_new(path, &bytes)
 }
 fn parse_marker<T: DeserializeOwned>(bytes: &[u8], marker: &str) -> Result<T> {
-    let text = std::str::from_utf8(bytes).map_err(err)?;
-    let mut rows = text.lines().filter_map(|l| l.strip_prefix(marker));
+    let values = diagnostics::metadata_rows(bytes, marker)?;
+    let mut rows = values.iter();
     let value = decode_json(rows.next().ok_or("missing Lean metadata")?.as_bytes())?;
     if rows.next().is_some() {
         return Err("duplicate Lean metadata".into());

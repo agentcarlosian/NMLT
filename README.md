@@ -55,7 +55,7 @@ exact .nmlt bytes
 | Local source jobs | Opt-in `job_square` uses bounded attempts, a durable journal, validated subprocess results, timeout/output limits, replay without redispatch, and recovery inspection; executable-only |
 | Source jobs | Typed worker and pinned Init proof-term jobs; affine transfer through functions/folds; poll/cancel/collect, durable decisions, explicit uncertainty and source/project resumption; executable-only |
 | Projects | `init`, `lock`, `run`, `test`, `replay`, `resume`, `fmt`, and `check-project`; complete source/tool identities and structured diagnostics |
-| Local Lean tasks | `lean-task bind/prove/recheck`; native import discovery across selected source/vendor roots, fixed targets, saved sources, closed proof terms, actual dependencies and independent NanoDA checking; bounded R3 profile |
+| Local Lean tasks | `lean-task bind/inspect/prove/recheck`; source import discovery, bound targets, declaration context, native diagnostics, saved proofs, actual dependencies and independent NanoDA checking; bounded R3 profile |
 | User safety properties | Exact source predicates with Lean-checked initialization/preservation or an initialized finite counterexample; decoded finite scope |
 | Pure source workflows | Named entries, structured inputs, records, bounded lists/folds, local modules, acyclic functions, typed outcomes, matching, execution/replay; executable-only, no host jobs |
 
@@ -77,6 +77,8 @@ and reproduction evidence. The current [R3 profile](docs/r3-lean-tasks.md)
 discovers local source imports, binds Lean targets and independently checks
 saved proof artifacts, with bounded file exports up to 16 MiB and readable
 graphs of actual declaration dependencies.
+Declaration lookup and located native Lean diagnostics support candidate repair;
+context retrieval remains separate from proof acceptance.
 R3 remains in progress; larger libraries, editor integration and asynchronous
 project-proof jobs are later work.
 

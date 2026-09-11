@@ -117,6 +117,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — bounded file exports, exact capture receipts and larger independently checked proofs
 - [R3 fourth-increment evidence](reviews/r3-proof-dependencies-2026-09-11.md)
   — actual declaration dependency graphs, Lean reference parity and fresh reconstruction
+- [R3 fifth-increment evidence](reviews/r3-lean-inspection-2026-09-11.md)
+  — bound declaration lookup, native diagnostics, checked repair and interface comparison
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

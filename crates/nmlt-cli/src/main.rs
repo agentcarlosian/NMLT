@@ -24,7 +24,7 @@ mod workflow;
 const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
-  nmlt lean-task <bind|prove|recheck> --help             Bind and independently check a local Lean task\n\
+  nmlt lean-task <bind|inspect|prove|recheck> --help     Inspect bound tasks and independently check proofs\n\
   nmlt init <new-directory>                             Create a runnable project and tests\n\
   nmlt lock [project-directory]                        Pin imported sources and local tools\n\
   nmlt check-project [project-directory]               Check project types, inputs, and lock\n\

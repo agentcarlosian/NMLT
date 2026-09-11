@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-09-06"
-scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, and bounded R3 local Lean tasks with source import discovery, file exports and actual proof dependency graphs"
+scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, and bounded R3 local Lean tasks with source discovery, file exports, proof dependency graphs, declaration context and native diagnostics"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -97,6 +97,16 @@ trusted_components = ["toolchain.rust", "toolchain.lean", "lean.local_task_bindi
 id = "host.process_supervisor"
 paths = ["crates/nmlt-runtime/Cargo.toml", "Cargo.lock", "crates/nmlt-runtime/src/process.rs", "crates/nmlt-runtime/src/process/file_output.rs", "rfcs/0028-contained-process-lifecycle.md", "rfcs/0033-bounded-lean-proof-exports.md"]
 role = "Pinned ProcessKit 3.3.4 and the OS provide the recorded process/tree resource policy. A distinct file policy captures up to 16 MiB of exact stdout with byte-count/hash receipts and explicit sink-failure/EOF-flush checks; ordinary process limits remain unchanged. Windows Job Objects and Unix process-group/rlimit fallback have distinct limits. Filesystem/network access, system libraries and concurrent filesystem stability remain outside this containment contract."
+
+[[claim_profiles]]
+name = "bound_lean_declaration_context"
+ceiling = "fresh Lean source/target reconstruction and bounded declaration/axiom metadata; assurance none, no proof acceptance or human approval"
+trusted_components = ["toolchain.rust", "toolchain.lean", "lean.local_task_binding", "host.process_supervisor"]
+
+[[components]]
+id = "reference.lean_interfaces"
+paths = ["tools/compare_lean_interfaces.py", "docs/reviews/r3-lean-inspection-2026-09-11.md"]
+role = "Optional fixed-case comparison of CLI, community REPL and LeanInteract observations with recorded versions and build overlay. These are frontend observations only, with no independent proof, performance or containment-equivalence claim; Python dependencies, the prepared REPL and host remain trusted."
 
 [[claim_profiles]]
 name = "retained_elaboration_metatheory"
@@ -375,14 +385,17 @@ paths = [
   "crates/nmlt-cli/src/lean_task/export.rs",
   "crates/nmlt-cli/src/lean_task/discovery.rs",
   "crates/nmlt-cli/src/lean_task/dependencies.rs",
+  "crates/nmlt-cli/src/lean_task/diagnostics.rs",
+  "crates/nmlt-cli/src/lean_task/inspection.rs",
   "tools/prepare_lean_task_checkers.sh",
   "tools/check_lean_tasks.py",
   "tools/check_lean_imports.py",
   "tools/check_lean_exports.py",
   "tools/check_lean_dependencies.py",
+  "tools/check_lean_inspection.py",
   "tools/check_lean_tasks.sh",
 ]
-role = "Capture bounded trusted local Lean sources and target types, discover local source imports with the pinned Lean/Lake parser, keep proof candidates separate from task revisions, enforce axiom and export-root checks, compare bounded file-export identities before and after independent NanoDA checking, derive separate constant/projection/reduction/literal/group dependency data, and reconstruct retained proof artifacts and graphs. Source import closure and draft plans are distinct from exported proof dependencies. Graph extraction describes export syntax, including redundant fields; it is not another independent proof checker. The host, project metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent proof checking does not establish human statement faithfulness."
+role = "Capture bounded trusted local Lean sources and target types, discover local source imports with the pinned Lean/Lake parser, keep proof candidates separate from task revisions, enforce axiom and export-root checks, compare bounded file-export identities before and after independent NanoDA checking, derive separate constant/projection/reduction/literal/group dependency data, and reconstruct retained proof artifacts and graphs. Declaration lookup and mapped native diagnostics are context with assurance none. Source import closure and draft plans are distinct from exported proof dependencies. Graph extraction describes export syntax, including redundant fields; it is not another independent proof checker. The host, project metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent proof checking does not establish human statement faithfulness."
 
 [[components]]
 id = "repository.hygiene"

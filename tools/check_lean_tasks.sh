@@ -12,3 +12,4 @@ if [[ -f "$nanoda.exe" ]]; then nanoda+=".exe"; fi
 "${PYTHON:-python3}" tools/check_lean_imports.py --lean-bin "$LEAN_BIN" --exporter "$exporter" --nanoda "$nanoda"
 "${PYTHON:-python3}" tools/check_lean_exports.py --lean-bin "$LEAN_BIN" --exporter "$exporter" --nanoda "$nanoda"
 "${PYTHON:-python3}" tools/check_lean_dependencies.py --lean-bin "$LEAN_BIN" --exporter "$exporter" --nanoda "$nanoda"
+"${PYTHON:-python3}" tools/check_lean_inspection.py --lean-bin "$LEAN_BIN" --exporter "$exporter" --nanoda "$nanoda"
