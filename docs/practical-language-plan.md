@@ -159,8 +159,11 @@ packages, an ordinary editor workspace with actual LSP interaction, structured
 automation, explicit revisions and durable asynchronous project proofs under
 [RFC 0036](../rfcs/0036-native-lean-project-workflows.md).
 The [completion audit](reviews/r3-completion-audit-2026-09-11.md) records the
-executed Mathlib and source-job checks and the remaining final verification.
-The integration and scale requirements below remain the complete gate.
+passing full reproduction, final native/Mathlib set and combined Mathlib source
+job. Every accepted proof in those sets passed fresh independent rechecking.
+R3 completed at local pre-alpha scope on 2026-09-11 against the integration and
+scale requirements below. Independent human/publication review and RFC
+acceptance remain separate.
 
 Owners: Lean integration maintainer. Dependencies: R2; a batch adapter spike and baseline can start in R0.
 

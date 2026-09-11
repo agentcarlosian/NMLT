@@ -80,8 +80,9 @@ Explicit revisions invalidate acceptance for changed tasks. Registered project
 proofs use the same durable source/project controls as other jobs. Declaration
 lookup and editor state remain context; accepted results require the final
 Lean, axiom-policy and NanoDA checks. The
-[R3 audit](docs/reviews/r3-completion-audit-2026-09-11.md) records completed
-focused evidence and the final verification still in progress.
+[R3 audit](docs/reviews/r3-completion-audit-2026-09-11.md) records the passing
+full reproduction and fresh checks of the frozen native and Mathlib proof
+sets. R3 is complete at local pre-alpha scope; R4 is the next milestone.
 
 The behavioral milestone is finite, binary, and safety-oriented. The source digest
 identifies the source bytes presented to Lean; the repository separately

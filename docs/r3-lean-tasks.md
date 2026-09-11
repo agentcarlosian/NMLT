@@ -463,4 +463,4 @@ coordinator adds no second CPU rate cap, because nested Windows quotas multiply;
 its separate policy still bounds memory, process count, deadline and tree cleanup.
 Native Lake build hooks and package code remain trusted host code. The
 [completion audit](reviews/r3-completion-audit-2026-09-11.md) records the exact
-executed scope and remaining verification or review work.
+executed scope, platform limits and separate review obligations.
