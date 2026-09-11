@@ -141,7 +141,10 @@ Lifecycle controls must include a delayed result from a previous occupant of a r
 
 The first [bounded local-task increment](r3-lean-tasks.md) implements source and
 target binding, separate proof candidates, actual dependency exports and fresh
-independent proof rechecking. R3 remains in progress; the integration and scale
+independent proof rechecking. The second increment discovers source imports
+with the pinned Lean/Lake parser across explicitly selected local/vendor roots
+and checks the retained closure again during proof reconstruction.
+R3 remains in progress; the integration and scale
 requirements below remain the milestone's complete gate.
 
 Owners: Lean integration maintainer. Dependencies: R2; a batch adapter spike and baseline can start in R0.

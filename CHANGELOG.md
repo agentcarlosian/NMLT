@@ -4,6 +4,13 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Added R3 source import discovery with the pinned Lean/Lake header parser:
+  source directories and explicitly selected vendored roots, dependency-ordered
+  snapshots, retained import reports and fresh header/closure comparison
+  (RFC 0032). Task/result formats move to version 2; old records require their
+  retained original executable. The explicit-module v1 project manifest remains
+  supported, and broader R3 integration remains in progress.
+
 - Started R3 with bound tasks in trusted local Lean projects: explicit source
   snapshots, a separately selected task hash, closed proof candidates, final
   proof exports checked by NanoDA, additive Lean patches, and fresh rechecking
