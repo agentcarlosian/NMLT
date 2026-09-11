@@ -9,7 +9,7 @@
 RFC 0031 requires a manually ordered list of local Lean modules. Existing
 projects commonly use a source directory and vendored dependencies, making
 that list tedious to maintain and easy to leave incomplete. Add a source-root
-manifest that discovers exactly the local import closure of the target module.
+manifest that discovers the static local header-import closure of the target module.
 
 Use the pinned Lean executable's `--deps-json` interface and its
 [Lean/Lake header parser](https://github.com/leanprover/lean4/blob/819816b2e0a3bf405af45ae5c7af2491d8f5bee6/src/Lean/Elab/ParseImportsFast.lean).
@@ -30,7 +30,8 @@ package's Git revision. The original explicit-module v1 manifest remains support
 All roots are considered when resolving a reachable module. Multiple matches
 are an error, even when their bytes are identical. Local modules cannot shadow
 the pinned toolchain's compiled modules. Missing imports, cycles, casing aliases,
-one canonical source path assigned multiple module names, path traversal, symbolic links
+one canonical source path assigned multiple module names, path traversal,
+symbolic links
 and Windows junctions/reparse points are rejected. Overlapping roots are
 permitted only when reachable module resolution and file identities are unique.
 
@@ -80,6 +81,8 @@ The 768 MiB Lean memory limit, OS process bounds, 30-second process deadlines,
 unchanged. Complex headers or larger proof closures can still exceed these
 bounds and are rejected. The project, parser, capture/target binding, host and
 exporter remain trusted. Process supervision is not filesystem/network isolation.
+Dynamic file/module access performed by project metaprograms remains part of
+that trusted host boundary; header discovery does not capture those accesses.
 
 ## Validation and remaining work
 
@@ -88,7 +91,8 @@ module/public/meta imports and an unrelated module. It must bind in dependency
 order, produce a NanoDA-checked proof, and recheck with the working project
 unavailable. Negative cases cover changed dependency bytes, rehashed false
 header metadata, extraneous sources, reordered imports, missing imports, cycles,
-cached objects without source, ambiguous roots, file aliases, toolchain shadowing, header errors, root escape,
+cached objects without source, ambiguous roots, file aliases, toolchain shadowing,
+header errors, root escape,
 module casing and linked roots (including a real Windows junction).
 
 R3 remains in progress. Package resolution and larger exports, broader proof

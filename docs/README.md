@@ -111,6 +111,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — scoped source controls and native Windows validation
 - [R3 first-increment evidence](reviews/r3-local-lean-tasks-2026-09-09.md)
   — bound local Lean targets, independent proof artifacts and fresh rechecks
+- [R3 second-increment evidence](reviews/r3-import-discovery-2026-09-11.md)
+  — native source import discovery, vendor roots and retained closure checks
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

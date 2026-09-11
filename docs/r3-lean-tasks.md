@@ -11,6 +11,8 @@ executed cases, tool pins and remaining review gates.
 The second increment adds automatic local source import discovery under
 [RFC 0032](../rfcs/0032-lean-source-import-discovery.md), including source
 directories and explicitly selected vendored dependencies.
+Its [validation record](reviews/r3-import-discovery-2026-09-11.md) includes
+the complete Windows reproduction, Linux CI and import-discovery controls.
 
 Binding a task does not record human approval. A reviewer must select the task
 hash after examining the statement, assumptions, definitions, sources and policy.
@@ -106,7 +108,7 @@ target/debug/nmlt lean-task bind \
   --output target/discovered-task
 ```
 
-Lean identifies imports from captured source copies. NMLT resolves them against
+Lean identifies static header imports from captured source copies. NMLT resolves them against
 the selected roots and pinned standard library, then builds local sources in
 dependency order. For this example the order is `Support.Core`,
 `App.Definitions`, `App.Goals`; `App.Unused` is outside the closure. The candidate
@@ -126,6 +128,8 @@ download hooks and package resolution are not interpreted by this profile.
 Ambiguous module matches, import cycles, missing imports, module/file aliases,
 toolchain shadowing, casing mismatches, path escapes and linked source paths
 (including Windows junctions) are errors. Root order does not resolve ambiguity.
+Dynamic file/module access performed by trusted project metaprograms remains
+within the host trust boundary described below.
 
 New task/result artifacts use version 2, with an optional discovery report.
 Explicit-module v1 project manifests remain supported. Old saved task/result

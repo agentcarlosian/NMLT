@@ -12,7 +12,10 @@ The pre-alpha CLI exposes:
 - `run --entry` and `typecheck --profile workflow` for source functions and effect summaries;
 - `run --entry ... --jobs-dir ... --max-jobs ... --job-timeout-ms ...` for bounded local jobs;
 - `jobs-recover` for unfinished journal classification without redispatch; and
-- `replay` for record consistency with the exact source and executable.
+- `replay` for record consistency with the exact source and executable;
+- `lean-task bind/prove/recheck` for local Lean source discovery, bound targets,
+  independent proof checking and fresh reconstruction from saved artifacts; and
+- `check-invariant` for Lean-checked finite safety invariants or counterexamples.
 
 The [R2 guide](../../docs/r2-local-execution.md) describes options, JSON results,
 partial runs, and the experimental finite scope. `run` and `replay` always
@@ -26,6 +29,9 @@ effects, durable context, supervision, collection, and journal replay without
 launching workers. Workflow typecheck output is version 4; pure runs remain
 version 3 and local job runs use their own version 1 profile.
 
-Lean is not invoked by these commands. Use the separate
-`nmlt-artifact-check` executable for Lean artifact interpretation and
-conditional theorem-premise checking.
+Structural checking and exploration do not invoke Lean. Source workflows can
+invoke configured worker or Lean adapters. The [R3 guide](../../docs/r3-lean-tasks.md)
+covers explicit modules or automatically discovered imports across selected
+source/vendor roots, retained import reports and independent NanoDA checking.
+The standalone `nmlt-artifact-check` executable handles Lean artifact
+interpretation and conditional theorem-premise checking.

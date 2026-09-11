@@ -364,6 +364,8 @@ The second increment adds automatic source import discovery with Lean's native
 header parser under [RFC 0032](rfcs/0032-lean-source-import-discovery.md). It
 supports explicitly selected source directories and vendored roots, records
 the import closure, and reparses saved headers before proof reconstruction.
+The [second-increment validation record](docs/reviews/r3-import-discovery-2026-09-11.md)
+records the complete Windows and Linux gates and the discovery controls.
 R3 is not complete: package resolution/larger exports, editor/REPL integration and
 asynchronous source jobs for these tasks remain outstanding.
 
