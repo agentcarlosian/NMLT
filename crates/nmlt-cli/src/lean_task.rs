@@ -15,6 +15,7 @@ mod source;
 
 const MAX_JSON: u64 = 64 * 1024 * 1024;
 const MAX_SOURCE: u64 = 1024 * 1024;
+const EXPORT_PATH: &str = "build/environment.ndjson";
 const HELP: &str = "\
 Bound local Lean tasks (trusted project code; closed candidate proof terms):
   nmlt lean-task bind --project DIR --lean-bin FILE --output NEW_DIR
@@ -164,6 +165,14 @@ struct ProofMetadata {
 struct Stage {
     name: String,
     output: process::Output,
+    stdout_file: Option<FileArtifact>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FileArtifact {
+    path: String,
+    receipt: process::FileReceipt,
+    policy: process::FilePolicy,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -177,10 +186,37 @@ struct ResultRecord {
     proof: ProofMetadata,
     tools: export::Identity,
     export_sha256: String,
+    export_bytes: u64,
     exported_declarations: Vec<String>,
     checked_declarations: u64,
     process_policy: process::Policy,
     stages: Vec<Stage>,
+}
+
+impl ResultRecord {
+    fn validate_export_capture(&self) -> Result<()> {
+        let mut files = self
+            .stages
+            .iter()
+            .filter(|stage| stage.stdout_file.is_some());
+        let stage = files.next().ok_or("missing retained export capture")?;
+        let file = stage.stdout_file.as_ref().unwrap();
+        file.policy.validate().map_err(err)?;
+        file.receipt.validate().map_err(err)?;
+        if files.next().is_some()
+            || stage.name != "lean4export"
+            || file.path != EXPORT_PATH
+            || stage.output.exit_code != Some(0)
+            || !stage.output.stdout.is_empty()
+            || !stage.output.stderr.is_empty()
+            || file.receipt.bytes == 0
+            || file.receipt.bytes != self.export_bytes
+            || file.receipt.sha256 != self.export_sha256
+        {
+            return Err("retained export capture does not match the accepted artifact".into());
+        }
+        Ok(())
+    }
 }
 
 pub(super) fn command(args: &[OsString]) -> Result<()> {
@@ -237,18 +273,25 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         return Err("task hash requires 64 lowercase hexadecimal digits".into());
     }
     let previous: Option<ResultRecord> = if action == "recheck" {
-        Some(read_json(&options["--record"], MAX_JSON)?)
+        let value: serde_json::Value = read_json(&options["--record"], MAX_JSON)?;
+        if value["schema"] != "nmlt-lean-result-v3" {
+            return Err(
+                "unsupported Lean result version; use its retained original CLI executable".into(),
+            );
+        }
+        Some(serde_json::from_value(value).map_err(err)?)
     } else {
         None
     };
     let (task, candidate) = if let Some(record) = &previous {
-        if record.schema != "nmlt-lean-result-v2"
+        if record.schema != "nmlt-lean-result-v3"
             || record.status != "independently_checked"
             || record.task_sha256 != digest
         {
             return Err("unsupported result or selected task mismatch".into());
         }
         record.process_policy.validate().map_err(err)?;
+        record.validate_export_capture()?;
         (record.task.clone(), record.candidate.clone())
     } else {
         (
@@ -410,7 +453,7 @@ fn prove(
     toolchain.verify_unchanged().map_err(err)?;
     tools.verify_unchanged()?;
     let record = ResultRecord {
-        schema: "nmlt-lean-result-v2".into(),
+        schema: "nmlt-lean-result-v3".into(),
         status: "independently_checked".into(),
         task_sha256: digest.clone(),
         task,
@@ -419,14 +462,17 @@ fn prove(
         proof: metadata,
         tools: tools.identity,
         export_sha256: exported.sha256,
+        export_bytes: exported.bytes,
         exported_declarations: exported.declarations,
         checked_declarations: exported.count,
         process_policy: run.policy.ok_or("missing process policy")?,
         stages: run.stages,
     };
+    record.validate_export_capture()?;
     if let Some(old) = previous
         && (old.proof != record.proof
             || old.export_sha256 != record.export_sha256
+            || old.export_bytes != record.export_bytes
             || old.exported_declarations != record.exported_declarations
             || old.checked_declarations != record.checked_declarations)
     {
@@ -519,6 +565,7 @@ impl Run {
         self.stages.push(Stage {
             name: name.into(),
             output: output.clone(),
+            stdout_file: None,
         });
         write_json(
             &self
@@ -534,6 +581,46 @@ impl Run {
             ));
         }
         Ok(output)
+    }
+
+    fn execute_export(&mut self, command: Command) -> Result<process::FileReceipt> {
+        let mut child = process::FileProcess::start(
+            command,
+            vec![],
+            Duration::from_secs(30),
+            &self.directory.join(EXPORT_PATH),
+        )
+        .map_err(|e| format!("lean4export: {e:?}"))?;
+        let policy = child.policy().clone();
+        policy.validate().map_err(err)?;
+        let observation = child.wait().clone();
+        write_json(
+            &self.directory.join("export-observation.json"),
+            &observation,
+        )?;
+        let captured = observation.map_err(|e| format!("lean4export: {e:?}"))?;
+        self.stages.push(Stage {
+            name: "lean4export".into(),
+            output: captured.output.clone(),
+            stdout_file: Some(FileArtifact {
+                path: EXPORT_PATH.into(),
+                receipt: captured.file.clone(),
+                policy,
+            }),
+        });
+        write_json(
+            &self
+                .directory
+                .join(format!("stage-{}.json", self.stages.len())),
+            self.stages.last().unwrap(),
+        )?;
+        if captured.output.exit_code != Some(0) || !captured.output.stderr.is_empty() {
+            return Err(format!(
+                "lean4export rejected the task/proof:\n{}",
+                String::from_utf8_lossy(&captured.output.stderr)
+            ));
+        }
+        Ok(captured.file)
     }
     fn compile(&mut self, module: &str, text: &str) -> Result<process::Output> {
         let relative = module_path(module);

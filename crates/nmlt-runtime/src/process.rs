@@ -13,6 +13,12 @@ use std::time::{Duration, Instant};
 use tokio::io::AsyncWrite;
 use tokio_util::sync::CancellationToken;
 
+mod file_output;
+use file_output::FileCapture;
+pub use file_output::{
+    FILE_BYTES, FILE_CONTRACT, FileOutput, FilePolicy, FileProcess, FileReceipt,
+};
+
 pub const PIPE_BYTES: usize = 65_536;
 pub const CONTRACT: &str = "nmlt-contained-process-v1;processkit-3.3.4;raw-pipes-65536;tree-kill-before-pipe-drain;explicit-environment;no-filesystem-or-network-sandbox";
 
@@ -33,11 +39,14 @@ pub struct Policy {
 
 impl Policy {
     pub fn validate(&self) -> std::result::Result<(), crate::Error> {
+        self.validate_contract(CONTRACT)
+    }
+    fn validate_contract(&self, contract: &str) -> std::result::Result<(), crate::Error> {
         let windows = self.mechanism == "job_object";
         let known = ["job_object", "cgroup_v2", "process_group", "process_reaper"]
             .contains(&self.mechanism.as_str());
         if !known
-            || self.contract != CONTRACT
+            || self.contract != contract
             || self.filesystem_sandbox
             || self.network_sandbox
             || self.memory_bytes
@@ -121,6 +130,15 @@ impl Process {
         input: Vec<u8>,
         timeout: Duration,
     ) -> std::result::Result<Self, Failure> {
+        Self::start_capture(command, input, timeout, None)
+    }
+
+    fn start_capture(
+        command: Command,
+        input: Vec<u8>,
+        timeout: Duration,
+        file: Option<FileCapture>,
+    ) -> std::result::Result<Self, Failure> {
         if input.len() > PIPE_BYTES || timeout.is_zero() || timeout > Duration::from_secs(30) {
             return Err(failure(FailureKind::Io, true));
         }
@@ -179,7 +197,7 @@ impl Process {
                         return;
                     }
                 };
-                let result = runtime.block_on(supervise(spec, timeout, cancelled, ready));
+                let result = runtime.block_on(supervise(spec, timeout, cancelled, ready, file));
                 let _ = send.send(result);
             })
             .map_err(|_| failure(FailureKind::Io, true))?;
@@ -275,6 +293,7 @@ async fn supervise(
     timeout: Duration,
     cancelled: Receiver<()>,
     ready: mpsc::SyncSender<std::result::Result<Policy, Failure>>,
+    file: Option<FileCapture>,
 ) -> Result {
     let options = processkit::ProcessGroupOptions::default().shutdown_timeout(Duration::ZERO);
     #[cfg(windows)]
@@ -291,7 +310,12 @@ async fn supervise(
         }
     };
     let policy = Policy {
-        contract: CONTRACT.into(),
+        contract: if file.is_some() {
+            FILE_CONTRACT
+        } else {
+            CONTRACT
+        }
+        .into(),
         mechanism: group.mechanism().name().into(),
         memory_bytes: if cfg!(windows) {
             1024 * 1024 * 1024
@@ -327,13 +351,24 @@ async fn supervise(
         filesystem_sandbox: false,
         network_sandbox: false,
     };
-    let token = CancellationToken::new();
+    let token = file
+        .as_ref()
+        .map(|file| file.cancel.clone())
+        .unwrap_or_default();
     let stderr = Capture {
         bytes: Arc::new(Mutex::new(vec![])),
         overflow: Arc::new(AtomicBool::new(false)),
         cancel: token.clone(),
     };
     let spec = spec.cancel_on(token.clone()).stderr_raw_tee(stderr.clone());
+    let spec = if let Some(file) = &file {
+        // The raw tee runs on the line pump. Drain it with a small line-assembly
+        // bound while the file sink independently limits all raw stdout bytes.
+        spec.stdout_raw_tee(file.clone())
+            .output_buffer(processkit::OutputBufferPolicy::bounded(0).with_max_bytes(PIPE_BYTES))
+    } else {
+        spec
+    };
     let running = match group.start(&spec).await {
         Ok(running) => running,
         Err(error) => {
@@ -358,7 +393,30 @@ async fn supervise(
     };
     let deadline = Instant::now() + timeout.saturating_sub(running.elapsed());
     let _ = ready.send(Ok(policy));
-    let output = running.output_bytes();
+    struct Completed {
+        code: Option<i32>,
+        timed_out: bool,
+        truncated: bool,
+        stdout: Vec<u8>,
+    }
+    let file_mode = file.is_some();
+    let output = async {
+        if file_mode {
+            running.drain().await.map(|outcome| Completed {
+                code: outcome.code(),
+                timed_out: outcome.timed_out(),
+                truncated: false,
+                stdout: vec![],
+            })
+        } else {
+            running.output_bytes().await.map(|result| Completed {
+                code: result.code(),
+                timed_out: result.timed_out(),
+                truncated: result.truncated(),
+                stdout: result.into_stdout(),
+            })
+        }
+    };
     tokio::pin!(output);
     let mut detached = false;
     let mut expired = false;
@@ -408,7 +466,7 @@ async fn supervise(
             }
         }
     };
-    if result.as_ref().is_ok_and(|r| !r.timed_out()) {
+    if result.as_ref().is_ok_and(|r| !r.timed_out) {
         let settle = Instant::now() + Duration::from_millis(100);
         loop {
             match group.members() {
@@ -437,6 +495,9 @@ async fn supervise(
     if stderr.overflow.load(Ordering::Acquire) {
         return Err(failure(FailureKind::OutputLimit, clean));
     }
+    if let Some(kind) = file.as_ref().and_then(FileCapture::failure) {
+        return Err(failure(kind, clean));
+    }
     if expired {
         return Err(failure(FailureKind::Timeout, clean));
     }
@@ -445,14 +506,14 @@ async fn supervise(
     }
     match result {
         Ok(result) => {
-            if result.timed_out() {
+            if result.timed_out {
                 return Err(failure(FailureKind::Timeout, clean));
             }
-            if result.truncated() {
+            if result.truncated {
                 return Err(failure(FailureKind::OutputLimit, clean));
             }
-            let exit_code = result.code();
-            let stdout = result.into_stdout();
+            let exit_code = result.code;
+            let stdout = result.stdout;
             let stderr = std::mem::take(&mut *stderr.bytes.lock().expect("capture lock"));
             if stdout.len() > PIPE_BYTES {
                 return Err(failure(FailureKind::OutputLimit, clean));

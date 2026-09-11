@@ -4,7 +4,7 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Next milestone: R3 — existing Lean projects (bound tasks and local import discovery implemented; R2 local scope complete)
+- Next milestone: R3 — existing Lean projects (bound tasks, import discovery and bounded file exports implemented; R2 local scope complete)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-11
@@ -359,14 +359,19 @@ under [RFC 0031](rfcs/0031-bound-lean-project-tasks.md): exact declaration types
 source/module and tool identities, a separate closed proof-term candidate,
 Lean target checks, transitive axiom policy, independent NanoDA artifacts,
 actual dependencies, readable additive patches and fresh source-based rechecking.
-The profile is bounded to trusted local sources and small exported closures.
+The profile is bounded to trusted local sources and bounded exported closures.
 The second increment adds automatic source import discovery with Lean's native
 header parser under [RFC 0032](rfcs/0032-lean-source-import-discovery.md). It
 supports explicitly selected source directories and vendored roots, records
 the import closure, and reparses saved headers before proof reconstruction.
 The [second-increment validation record](docs/reviews/r3-import-discovery-2026-09-11.md)
 records the complete Windows and Linux gates and the discovery controls.
-R3 is not complete: package resolution/larger exports, editor/REPL integration and
+The third increment adds byte-exact file exports up to 16 MiB under
+[RFC 0033](rfcs/0033-bounded-lean-proof-exports.md), with captured byte counts,
+digests and independent rechecking. Its
+[local validation record](docs/reviews/r3-bounded-exports-2026-09-11.md) records
+the larger proof fixture and failure controls.
+R3 is not complete: package resolution and library-scale validation, editor/REPL integration and
 asynchronous source jobs for these tasks remain outstanding.
 
 - Bind tasks to exact targets, assumptions, definitions, and pinned dependency

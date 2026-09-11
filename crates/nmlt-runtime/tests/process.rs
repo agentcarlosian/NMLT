@@ -1,4 +1,4 @@
-use nmlt_runtime::process::{FailureKind, PIPE_BYTES, Process};
+use nmlt_runtime::process::{FILE_BYTES, FailureKind, FileProcess, PIPE_BYTES, Process};
 use std::io::{Read, Write};
 use std::process::Command;
 use std::time::{Duration, Instant};
@@ -23,6 +23,28 @@ fn process_probe() {
         return;
     };
     match mode.as_str() {
+        "file-bytes" => {
+            let count: usize = std::env::var("NMLT_FILE_COUNT").unwrap().parse().unwrap();
+            assert!(count <= FILE_BYTES as usize + PIPE_BYTES);
+            let pattern = if std::env::var_os("NMLT_FILE_NO_LINES").is_some() {
+                b"x".as_slice()
+            } else {
+                b"\x00\xff\r\nraw\rbytes".as_slice()
+            };
+            let block = (0..8192)
+                .map(|n| pattern[n % pattern.len()])
+                .collect::<Vec<_>>();
+            let mut stdout = std::io::stdout().lock();
+            let mut sent = 0;
+            while sent < count {
+                let size = (count - sent).min(block.len());
+                stdout.write_all(&block[..size]).unwrap();
+                sent += size;
+            }
+            stdout.flush().unwrap();
+            // Omit the test harness footer so the emitted bytes are deterministic.
+            std::process::exit(0);
+        }
         "sleep" => std::thread::sleep(Duration::from_secs(5)),
         "stdout" => {
             let _ = std::io::stdout().write_all(&vec![b'x'; PIPE_BYTES * 2]);
@@ -100,6 +122,158 @@ fn process_probe() {
             print!("process-ceiling-enforced");
         }
         _ => panic!("unknown mode"),
+    }
+}
+
+fn file_probe(count: usize) -> Command {
+    let mut command = probe("file-bytes");
+    command.env("NMLT_FILE_COUNT", count.to_string());
+    command
+}
+
+#[test]
+fn file_capture_preserves_raw_bytes_and_keeps_the_regular_policy_distinct() {
+    let prefix = Process::start(file_probe(0), vec![], Duration::from_secs(5))
+        .unwrap()
+        .wait()
+        .as_ref()
+        .unwrap()
+        .stdout
+        .clone();
+    let path = marker("raw-file");
+    let count = 2 * PIPE_BYTES + 19;
+    let mut child =
+        FileProcess::start(file_probe(count), vec![], Duration::from_secs(5), &path).unwrap();
+    child.policy().validate().unwrap();
+    assert!(child.policy().process.validate().is_err());
+    let mut altered_policy = child.policy().clone();
+    altered_policy.max_stdout_bytes += 1;
+    assert!(altered_policy.validate().is_err());
+    let result = child.wait().as_ref().unwrap();
+    assert_eq!(result.output.exit_code, Some(0));
+    assert!(result.output.stdout.is_empty());
+    assert!(result.output.stderr.is_empty());
+    let bytes = std::fs::read(&path).unwrap();
+    let pattern = b"\x00\xff\r\nraw\rbytes";
+    let mut expected = prefix;
+    expected.extend((0..count).map(|n| pattern[(n % 8192) % pattern.len()]));
+    assert_eq!(bytes, expected);
+    assert_eq!(result.file.bytes, bytes.len() as u64);
+    assert_eq!(result.file.sha256, nmlt_runtime::sha256(&bytes));
+    result.file.validate().unwrap();
+}
+
+#[test]
+fn file_capture_enforces_exact_byte_ceiling_and_stderr_bound() {
+    let prefix_len = Process::start(file_probe(0), vec![], Duration::from_secs(5))
+        .unwrap()
+        .wait()
+        .as_ref()
+        .unwrap()
+        .stdout
+        .len();
+    let exact = marker("file-exact");
+    let mut child = FileProcess::start(
+        file_probe(FILE_BYTES as usize - prefix_len),
+        vec![],
+        Duration::from_secs(10),
+        &exact,
+    )
+    .unwrap();
+    assert_eq!(child.wait().as_ref().unwrap().file.bytes, FILE_BYTES);
+    assert_eq!(std::fs::metadata(exact).unwrap().len(), FILE_BYTES);
+
+    let over = marker("file-over");
+    let mut child = FileProcess::start(
+        file_probe(FILE_BYTES as usize - prefix_len + 1),
+        vec![],
+        Duration::from_secs(10),
+        &over,
+    )
+    .unwrap();
+    let failure = child.wait().as_ref().unwrap_err();
+    assert_eq!(failure.kind, FailureKind::OutputLimit);
+    assert!(failure.child_reaped);
+    assert!(std::fs::metadata(over).unwrap().len() <= FILE_BYTES);
+
+    let stderr = marker("file-stderr");
+    let mut child =
+        FileProcess::start(probe("stderr"), vec![], Duration::from_secs(5), &stderr).unwrap();
+    assert_eq!(
+        child.wait().as_ref().unwrap_err().kind,
+        FailureKind::OutputLimit
+    );
+}
+
+#[test]
+fn file_capture_preserves_exit_status_and_does_not_overwrite_destinations() {
+    let path = marker("existing-file");
+    std::fs::write(&path, b"preserve").unwrap();
+    assert!(FileProcess::start(probe("exit"), vec![], Duration::from_secs(5), &path).is_err());
+    assert_eq!(std::fs::read(path).unwrap(), b"preserve");
+    let path = marker("rejected-file");
+    let mut child =
+        FileProcess::start(probe("exit"), vec![], Duration::from_secs(5), &path).unwrap();
+    let output = child.wait().as_ref().unwrap();
+    assert_eq!(output.output.exit_code, Some(1));
+    assert!(String::from_utf8_lossy(&output.output.stderr).contains("rejected"));
+    assert_eq!(
+        output.file.sha256,
+        nmlt_runtime::sha256(&std::fs::read(path).unwrap())
+    );
+}
+
+#[test]
+fn file_capture_preserves_a_line_larger_than_the_decoded_buffer() {
+    let prefix = Process::start(file_probe(0), vec![], Duration::from_secs(5))
+        .unwrap()
+        .wait()
+        .as_ref()
+        .unwrap()
+        .stdout
+        .clone();
+    let path = marker("newline-free-file");
+    let count = 3 * PIPE_BYTES + 7;
+    let mut command = file_probe(count);
+    command.env("NMLT_FILE_NO_LINES", "1");
+    let mut child = FileProcess::start(command, vec![], Duration::from_secs(5), &path).unwrap();
+    let result = child.wait().as_ref().unwrap();
+    let mut expected = prefix;
+    expected.extend(vec![b'x'; count]);
+    assert_eq!(std::fs::read(path).unwrap(), expected);
+    assert_eq!(result.file.sha256, nmlt_runtime::sha256(&expected));
+    assert_eq!(result.file.bytes, expected.len() as u64);
+}
+
+#[test]
+fn file_capture_cancellation_and_root_exit_reap_descendants() {
+    for action in ["timeout", "cancel", "drop", "root-exit"] {
+        let marker = marker(&format!("file-{action}"));
+        let path = marker.with_extension("stdout");
+        let mut command = probe(if action == "root-exit" {
+            "orphan"
+        } else {
+            "descendant"
+        });
+        command.env("NMLT_PROCESS_MARKER", &marker);
+        let timeout = if action == "timeout" {
+            Duration::from_millis(200)
+        } else {
+            Duration::from_secs(5)
+        };
+        let mut child = FileProcess::start(command, vec![], timeout, &path).unwrap();
+        await_ready(&marker);
+        match action {
+            "cancel" => {
+                assert!(child.cancel().is_err());
+            }
+            "drop" => drop(child),
+            _ => {
+                assert!(child.wait().is_err());
+            }
+        }
+        std::thread::sleep(Duration::from_millis(1000));
+        assert!(!marker.exists(), "{action} left a descendant alive");
     }
 }
 

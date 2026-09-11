@@ -66,12 +66,13 @@ def main():
                         *tool_args, "--output", evidence / label], expected, contains)
         if expected:
             result = read(evidence / label / "result.json")
-            assert result["schema"] == "nmlt-lean-result-v2"
+            assert result["schema"] == "nmlt-lean-result-v3"
             assert result["status"] == "independently_checked"
             assert result["task_sha256"] == pin
             assert result["checked_declarations"] == len(result["exported_declarations"]) > 0
             export_file = evidence / label / "build/environment.ndjson"
             assert hashlib.sha256(export_file.read_bytes()).hexdigest() == result["export_sha256"]
+            assert export_file.stat().st_size == result["export_bytes"]
             assert result["proof"]["root"] == "NMLTChecked.result"
             assert "sorryAx" not in result["proof"]["axioms"]
             assert "NMLTTask.target" in result["exported_declarations"]

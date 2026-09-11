@@ -14,6 +14,12 @@ directories and explicitly selected vendored dependencies.
 Its [validation record](reviews/r3-import-discovery-2026-09-11.md) includes
 the complete Windows reproduction, Linux CI and import-discovery controls.
 
+The third increment streams proof exports to bounded files under
+[RFC 0033](../rfcs/0033-bounded-lean-proof-exports.md). Exports may contain up to
+16 MiB, with exact byte counts and SHA-256 receipts retained in the result.
+The [validation record](reviews/r3-bounded-exports-2026-09-11.md) records local
+process, artifact and independent proof checks.
+
 Binding a task does not record human approval. A reviewer must select the task
 hash after examining the statement, assumptions, definitions, sources and policy.
 The candidate channel then supplies only a proof for that selected hash.
@@ -131,9 +137,36 @@ toolchain shadowing, casing mismatches, path escapes and linked source paths
 Dynamic file/module access performed by trusted project metaprograms remains
 within the host trust boundary described below.
 
-New task/result artifacts use version 2, with an optional discovery report.
+New task artifacts use version 2, with an optional discovery report. New result
+artifacts use version 3 to record the file export and its capture policy.
 Explicit-module v1 project manifests remain supported. Old saved task/result
 artifacts continue to require their retained original CLI executable.
+
+## Larger proof exports
+
+The [larger-export example](../examples/lean-project-large-export/nmlt-lean.json)
+selects `Large.multiplication`, with candidate
+`fun a => fun b => fun c => Nat.mul_assoc a b c`. Bind, prove and recheck it with
+the commands above, substituting this project and the newly selected task hash.
+Its proof closure contains 97 declarations and exports 136,729 bytes, exceeding
+the earlier 64 KiB bound. Its manifest explicitly permits `propext`, which this
+closure needs; removing that permission rejects the proof.
+
+The export is `build/environment.ndjson` inside the result directory. The
+`lean4export` stage records a `stdout_file` containing its relative path, capture
+policy, byte count and SHA-256 digest; its ordinary stdout field is empty.
+The result's `export_bytes` and `export_sha256` must match that receipt. NMLT
+compares the saved bytes with the receipt before inspecting the declaration
+closure, runs NanoDA, and checks the file identity again before acceptance.
+Fresh rechecking creates a new export from the saved sources and compares it
+with the recorded identity.
+
+Raw stdout streams directly to a newly created file. Capture must reach a clean
+EOF and flush successfully; timeout, cancellation, excess output and file I/O
+errors prevent a capture receipt and a successful proof result. A failed run
+can retain a bounded partial file for diagnosis. A complete capture still
+preserves the process exit status, and proof acceptance requires exit zero and
+empty stderr. The capture receipt identifies bytes; it does not certify a proof.
 
 ## What is fixed and what can change
 
@@ -156,8 +189,11 @@ Unresolved draft lemmas cannot become a completed root through bookkeeping.
 
 The profile supports at most 64 ordered local modules, 1 MiB per module,
 16 MiB of source in total, the existing 4 KiB closed proof-term grammar, and
-64 KiB of raw output per process. The independent export also has that 64 KiB
-bound; larger proof closures are rejected. Each process has a 30-second
+64 KiB of raw output for ordinary processes. Only the independent proof export
+uses the separate file policy: at most 16 MiB raw stdout, 64 KiB raw stderr and
+a 64 KiB line-assembly buffer. The declaration parser still reads the bounded
+export into memory; this is not a constant-memory proof checker.
+Larger closures are rejected. Each process has a 30-second
 deadline and the existing process memory/cleanup policy. Lean's own memory
 limit is 768 MiB: the Linux target helper exceeded 512 MiB and measured about
 596 MiB peak resident memory during calibration. The OS bounds remain 1 GiB

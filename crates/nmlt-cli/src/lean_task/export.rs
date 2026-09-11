@@ -1,5 +1,5 @@
-use super::{MAX_JSON, Result, Run, decode_json, err, read_bounded, write_json, write_new};
-use nmlt_runtime::{identity, lean, sha256};
+use super::{EXPORT_PATH, Result, Run, decode_json, err, read_bounded, write_json, write_new};
+use nmlt_runtime::{identity, lean, process, sha256};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -19,7 +19,7 @@ pub(super) struct Tools {
     exporter: PathBuf,
     nanoda: PathBuf,
 }
-const ADAPTER: &str = "lean4export NMLTProof -- NMLTChecked.result; raw stdout <= 65536 bytes";
+const ADAPTER: &str = "lean4export NMLTProof -- NMLTChecked.result; byte-exact raw stdout file <= 16777216 bytes; SHA-256 and byte-count receipt; stderr <= 65536 bytes";
 impl Tools {
     pub fn open(exporter: &Path, nanoda: &Path) -> Result<Self> {
         let exporter = exporter.canonicalize().map_err(err)?;
@@ -53,7 +53,7 @@ impl Tools {
         Ok(())
     }
     pub fn check(&self, run: &mut Run, axioms: &[String]) -> Result<Checked> {
-        let export_file = run.build.join("environment.ndjson");
+        let export_file = run.directory.join(EXPORT_PATH);
         write_new(&run.build.join("roots.txt"), b"NMLTChecked.result\n")?;
         let environment = run.command()?;
         let mut command = std::process::Command::new(&self.exporter);
@@ -66,14 +66,13 @@ impl Tools {
                 command.env(key, value);
             }
         }
-        let exported = run.execute("lean4export", command)?;
-        if !exported.stderr.is_empty() {
-            return Err("exporter emitted unexpected diagnostics".into());
-        }
-        let bytes = exported.stdout;
-        write_new(&export_file, &bytes)?;
-        let declarations = inspect_export(&bytes)?;
+        let captured = run.execute_export(command)?;
+        let bytes = read_bounded(&export_file, process::FILE_BYTES)?;
         let digest = sha256(&bytes);
+        if captured.bytes != bytes.len() as u64 || captured.sha256 != digest {
+            return Err("export file differs from its completed raw capture".into());
+        }
+        let declarations = inspect_export(&bytes)?;
         let config = json!({
             "export_file_path": "environment.ndjson", "use_stdin": false,
             "permitted_axioms": axioms, "unpermitted_axiom_hard_error": true,
@@ -97,7 +96,8 @@ impl Tools {
         let output = run.execute("nanoda", checker)?;
         let count = success_count(&output.stdout, &output.stderr)?;
         if count != declarations.len() as u64
-            || sha256(&read_bounded(&export_file, MAX_JSON)?) != digest
+            || identity::file(&export_file, process::FILE_BYTES).map_err(err)?
+                != (captured.bytes, digest.clone())
         {
             return Err("independent checker count or exported input changed".into());
         }
@@ -105,6 +105,7 @@ impl Tools {
             sha256: digest,
             declarations,
             count,
+            bytes: captured.bytes,
         })
     }
 }
@@ -112,6 +113,7 @@ pub(super) struct Checked {
     pub sha256: String,
     pub declarations: Vec<String>,
     pub count: u64,
+    pub bytes: u64,
 }
 
 fn success_count(stdout: &[u8], stderr: &[u8]) -> Result<u64> {

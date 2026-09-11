@@ -144,6 +144,9 @@ target binding, separate proof candidates, actual dependency exports and fresh
 independent proof rechecking. The second increment discovers source imports
 with the pinned Lean/Lake parser across explicitly selected local/vendor roots
 and checks the retained closure again during proof reconstruction.
+The third increment captures exact proof exports up to 16 MiB in bounded files,
+records byte counts and digests, and repeats independent checking on a fresh
+reconstruction; ordinary process limits are unchanged.
 R3 remains in progress; the integration and scale
 requirements below remain the milestone's complete gate.
 

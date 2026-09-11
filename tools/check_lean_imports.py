@@ -80,7 +80,7 @@ def main():
     assert any(i["isMeta"] and i["isExported"] for i in closure["modules"][-1]["header"]["imports"])
     assert "App.Unused" not in task["manifest"]["modules"]
     accepted = prove("proof", task, pin)
-    assert accepted["schema"] == "nmlt-lean-result-v2"
+    assert accepted["schema"] == "nmlt-lean-result-v3"
     assert accepted["status"] == "independently_checked"
     assert accepted["task"]["discovery"] == closure
     assert accepted["checked_declarations"] == len(accepted["exported_declarations"]) > 0

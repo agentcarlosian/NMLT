@@ -4,10 +4,16 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Added bounded R3 proof exports up to 16 MiB, streamed to files with exact
+  SHA-256/byte-count receipts and checked again around independent NanoDA
+  validation (RFC 0033). Result format is now version 3; task format remains
+  version 2. Ordinary process/R2 limits remain unchanged. Includes a real
+  136,729-byte proof closure, fresh rechecking and capture rejection controls.
+
 - Added R3 source import discovery with the pinned Lean/Lake header parser:
   source directories and explicitly selected vendored roots, dependency-ordered
   snapshots, retained import reports and fresh header/closure comparison
-  (RFC 0032). Task/result formats move to version 2; old records require their
+  (RFC 0032). This introduced task/result version 2; old records require their
   retained original executable. The explicit-module v1 project manifest remains
   supported, and broader R3 integration remains in progress.
 
