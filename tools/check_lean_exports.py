@@ -56,7 +56,7 @@ def main():
     record = read(evidence / "proof/result.json")
     export = evidence / "proof/build/environment.ndjson"
     raw = export.read_bytes()
-    assert record["schema"] == "nmlt-lean-result-v3" and record["status"] == "independently_checked"
+    assert record["schema"] == "nmlt-lean-result-v4" and record["status"] == "independently_checked"
     assert 65536 < len(raw) == record["export_bytes"] <= 16 * 1024 * 1024
     assert hashlib.sha256(raw).hexdigest() == record["export_sha256"]
     assert record["checked_declarations"] == len(record["exported_declarations"]) > 0

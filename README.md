@@ -75,7 +75,8 @@ R2 is complete at local pre-alpha scope. The
 [validation record](docs/reviews/r2-completion-2026-09-09.md) record its full scope
 and reproduction evidence. The current [R3 profile](docs/r3-lean-tasks.md)
 discovers local source imports, binds Lean targets and independently checks
-saved proof artifacts, with bounded file exports up to 16 MiB.
+saved proof artifacts, with bounded file exports up to 16 MiB and readable
+graphs of actual declaration dependencies.
 R3 remains in progress; larger libraries, editor integration and asynchronous
 project-proof jobs are later work.
 

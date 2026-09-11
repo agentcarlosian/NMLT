@@ -66,7 +66,7 @@ def main():
                         *tool_args, "--output", evidence / label], expected, contains)
         if expected:
             result = read(evidence / label / "result.json")
-            assert result["schema"] == "nmlt-lean-result-v3"
+            assert result["schema"] == "nmlt-lean-result-v4"
             assert result["status"] == "independently_checked"
             assert result["task_sha256"] == pin
             assert result["checked_declarations"] == len(result["exported_declarations"]) > 0
@@ -77,6 +77,8 @@ def main():
             assert "sorryAx" not in result["proof"]["axioms"]
             assert "NMLTTask.target" in result["exported_declarations"]
             assert (evidence / label / "proof.patch").is_file()
+            assert read(evidence / label / "proof-dependencies.json") == result["proof_dependencies"]
+            assert [node["name"] for node in result["proof_dependencies"]["nodes"]] == result["exported_declarations"]
             return result
 
     task, pin = bind("bound")
@@ -90,6 +92,7 @@ def main():
                       *tool_args, "--output", evidence / "fresh"],
             executable=evidence / "definition" / binary.name)
     assert read(evidence / "fresh/result.json")["export_sha256"] == original["export_sha256"]
+    assert read(evidence / "fresh/result.json")["proof_dependencies"] == original["proof_dependencies"]
     assert moved.resolve().is_relative_to(evidence.resolve()) and project.parent.resolve() == evidence.resolve()
     moved.rename(project)
 

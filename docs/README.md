@@ -115,6 +115,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — native source import discovery, vendor roots and retained closure checks
 - [R3 third-increment evidence](reviews/r3-bounded-exports-2026-09-11.md)
   — bounded file exports, exact capture receipts and larger independently checked proofs
+- [R3 fourth-increment evidence](reviews/r3-proof-dependencies-2026-09-11.md)
+  — actual declaration dependency graphs, Lean reference parity and fresh reconstruction
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

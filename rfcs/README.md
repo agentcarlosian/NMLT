@@ -69,3 +69,4 @@ evidence.
 | [0031](0031-bound-lean-project-tasks.md) | Bound Lean project tasks | Under review |
 | [0032](0032-lean-source-import-discovery.md) | Lean source import discovery | Under review |
 | [0033](0033-bounded-lean-proof-exports.md) | Bounded Lean proof exports | Under review |
+| [0034](0034-lean-proof-dependency-graphs.md) | Lean proof dependency graphs | Under review |

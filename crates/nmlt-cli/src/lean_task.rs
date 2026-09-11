@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
+mod dependencies;
 mod discovery;
 mod export;
 mod source;
@@ -189,11 +190,33 @@ struct ResultRecord {
     export_bytes: u64,
     exported_declarations: Vec<String>,
     checked_declarations: u64,
+    proof_dependencies: dependencies::Graph,
     process_policy: process::Policy,
     stages: Vec<Stage>,
 }
 
 impl ResultRecord {
+    fn validate_dependencies(&self) -> Result<()> {
+        let graph = &self.proof_dependencies;
+        graph.validate()?;
+        if graph.export_sha256 != self.export_sha256
+            || graph
+                .nodes
+                .iter()
+                .map(|node| &node.name)
+                .collect::<Vec<_>>()
+                != self.exported_declarations.iter().collect::<Vec<_>>()
+            || graph.node(&graph.root)?.type_references != [graph.target.clone()]
+            || graph.node(&graph.root)?.value_references != self.proof.proof_references
+            || graph.node(&graph.target)?.value_references != self.task.target.type_references
+        {
+            return Err(
+                "proof dependency graph differs from the bound export or Lean references".into(),
+            );
+        }
+        Ok(())
+    }
+
     fn validate_export_capture(&self) -> Result<()> {
         let mut files = self
             .stages
@@ -274,7 +297,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
     }
     let previous: Option<ResultRecord> = if action == "recheck" {
         let value: serde_json::Value = read_json(&options["--record"], MAX_JSON)?;
-        if value["schema"] != "nmlt-lean-result-v3" {
+        if value["schema"] != "nmlt-lean-result-v4" {
             return Err(
                 "unsupported Lean result version; use its retained original CLI executable".into(),
             );
@@ -284,7 +307,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         None
     };
     let (task, candidate) = if let Some(record) = &previous {
-        if record.schema != "nmlt-lean-result-v3"
+        if record.schema != "nmlt-lean-result-v4"
             || record.status != "independently_checked"
             || record.task_sha256 != digest
         {
@@ -292,6 +315,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         }
         record.process_policy.validate().map_err(err)?;
         record.validate_export_capture()?;
+        record.validate_dependencies()?;
         (record.task.clone(), record.candidate.clone())
     } else {
         (
@@ -453,7 +477,7 @@ fn prove(
     toolchain.verify_unchanged().map_err(err)?;
     tools.verify_unchanged()?;
     let record = ResultRecord {
-        schema: "nmlt-lean-result-v3".into(),
+        schema: "nmlt-lean-result-v4".into(),
         status: "independently_checked".into(),
         task_sha256: digest.clone(),
         task,
@@ -465,15 +489,18 @@ fn prove(
         export_bytes: exported.bytes,
         exported_declarations: exported.declarations,
         checked_declarations: exported.count,
+        proof_dependencies: exported.dependencies,
         process_policy: run.policy.ok_or("missing process policy")?,
         stages: run.stages,
     };
     record.validate_export_capture()?;
+    record.validate_dependencies()?;
     if let Some(old) = previous
         && (old.proof != record.proof
             || old.export_sha256 != record.export_sha256
             || old.export_bytes != record.export_bytes
             || old.exported_declarations != record.exported_declarations
+            || old.proof_dependencies != record.proof_dependencies
             || old.checked_declarations != record.checked_declarations)
     {
         return Err("fresh proof artifacts differ from the retained acceptance record".into());
@@ -489,6 +516,14 @@ fn prove(
     write_new(
         &run.directory.join("explanation.md"),
         source::explanation(&record).as_bytes(),
+    )?;
+    write_new(
+        &run.directory.join("proof-dependencies.json"),
+        &record.proof_dependencies.json()?,
+    )?;
+    write_new(
+        &run.directory.join("proof-dependencies.md"),
+        record.proof_dependencies.markdown()?.as_bytes(),
     )?;
     // Publish acceptance only after all accompanying artifacts are durable.
     write_json(&run.directory.join("result.json"), &record)?;

@@ -4,9 +4,15 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Added R3 proof dependency graphs with separate type/value constants, recursor
+  reductions, projection types, literal support and export groups (RFC 0034).
+  Results now use version 4 and retain a graph plus linked readable report;
+  fresh rechecks reconstruct and compare the complete graph. A real mixed
+  Lean fixture also compares every node's references with Lean's collectors.
+
 - Added bounded R3 proof exports up to 16 MiB, streamed to files with exact
   SHA-256/byte-count receipts and checked again around independent NanoDA
-  validation (RFC 0033). Result format is now version 3; task format remains
+  validation (RFC 0033). This introduced result version 3; task format remains
   version 2. Ordinary process/R2 limits remain unchanged. Includes a real
   136,729-byte proof closure, fresh rechecking and capture rejection controls.
 

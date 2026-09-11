@@ -1,4 +1,6 @@
-use super::{EXPORT_PATH, Result, Run, decode_json, err, read_bounded, write_json, write_new};
+use super::{
+    EXPORT_PATH, Result, Run, decode_json, dependencies, err, read_bounded, write_json, write_new,
+};
 use nmlt_runtime::{identity, lean, process, sha256};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -19,7 +21,7 @@ pub(super) struct Tools {
     exporter: PathBuf,
     nanoda: PathBuf,
 }
-const ADAPTER: &str = "lean4export NMLTProof -- NMLTChecked.result; byte-exact raw stdout file <= 16777216 bytes; SHA-256 and byte-count receipt; stderr <= 65536 bytes";
+const ADAPTER: &str = "lean4export NMLTProof -- NMLTChecked.result; byte-exact raw stdout file <= 16777216 bytes; SHA-256 and byte-count receipt; stderr <= 65536 bytes; nmlt-lean-proof-dependencies-v1; explicit constants/projections/reductions/literal-support/export-groups";
 impl Tools {
     pub fn open(exporter: &Path, nanoda: &Path) -> Result<Self> {
         let exporter = exporter.canonicalize().map_err(err)?;
@@ -72,7 +74,8 @@ impl Tools {
         if captured.bytes != bytes.len() as u64 || captured.sha256 != digest {
             return Err("export file differs from its completed raw capture".into());
         }
-        let declarations = inspect_export(&bytes)?;
+        let inspected = inspect_export(&bytes)?;
+        let declarations = inspected.declarations;
         let config = json!({
             "export_file_path": "environment.ndjson", "use_stdin": false,
             "permitted_axioms": axioms, "unpermitted_axiom_hard_error": true,
@@ -106,6 +109,7 @@ impl Tools {
             declarations,
             count,
             bytes: captured.bytes,
+            dependencies: inspected.dependencies,
         })
     }
 }
@@ -114,6 +118,7 @@ pub(super) struct Checked {
     pub declarations: Vec<String>,
     pub count: u64,
     pub bytes: u64,
+    pub dependencies: dependencies::Graph,
 }
 
 fn success_count(stdout: &[u8], stderr: &[u8]) -> Result<u64> {
@@ -129,18 +134,25 @@ fn success_count(stdout: &[u8], stderr: &[u8]) -> Result<u64> {
     count.ok_or_else(|| "independent checker did not report an exact successful check".into())
 }
 
-fn inspect_export(bytes: &[u8]) -> Result<Vec<String>> {
+struct Inspected {
+    declarations: Vec<String>,
+    dependencies: dependencies::Graph,
+}
+
+fn inspect_export(bytes: &[u8]) -> Result<Inspected> {
     let text = std::str::from_utf8(bytes).map_err(err)?;
     let mut names = BTreeMap::from([(0, String::new())]);
     let mut expressions = BTreeMap::new();
     let mut declarations = BTreeSet::new();
     let mut metadata = false;
     let mut root = false;
+    let mut graph = dependencies::Builder::default();
     for (index, row) in text.lines().enumerate() {
         if index >= 500_000 || row.len() > 1024 * 1024 {
             return Err("export exceeds structural limits".into());
         }
         let value: Value = decode_json(row.as_bytes())?;
+        graph.observe(&value)?;
         if let Some(meta) = value.get("meta") {
             if index != 0
                 || meta["format"]["version"] != "3.1.0"
@@ -218,7 +230,11 @@ fn inspect_export(bytes: &[u8]) -> Result<Vec<String>> {
     if !metadata || !root || !declarations.contains("NMLTTask.target") {
         return Err("independent export is empty or missing its fixed root/target".into());
     }
-    Ok(declarations.into_iter().collect())
+    let dependencies = graph.finish(&names, sha256(bytes))?;
+    Ok(Inspected {
+        declarations: declarations.into_iter().collect(),
+        dependencies,
+    })
 }
 fn number(value: &Value) -> Result<u64> {
     value
@@ -279,7 +295,10 @@ mod tests {
             "{\"ie\":1,\"const\":{\"name\":2,\"us\":[]}}\n",
             "{\"thm\":{\"name\":4,\"type\":1,\"value\":0}}\n"
         );
-        assert_eq!(inspect_export(text.as_bytes()).unwrap().len(), 2);
+        assert_eq!(
+            inspect_export(text.as_bytes()).unwrap().declarations.len(),
+            2
+        );
         assert!(inspect_export(text.replace("\"result\"", "\"other\"").as_bytes()).is_err());
         assert!(inspect_export(text.replace("\"type\":1", "\"type\":0").as_bytes()).is_err());
         assert!(inspect_export(text.replace("\"target\"", "\"changed\"").as_bytes()).is_err());

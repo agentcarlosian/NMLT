@@ -20,6 +20,12 @@ The third increment streams proof exports to bounded files under
 The [validation record](reviews/r3-bounded-exports-2026-09-11.md) records local
 process, artifact and independent proof checks.
 
+The fourth increment records actual proof dependency graphs under
+[RFC 0034](../rfcs/0034-lean-proof-dependency-graphs.md), with separate type,
+value, reduction, projection and literal-support references. Its
+[validation record](reviews/r3-proof-dependencies-2026-09-11.md) includes a
+comparison with Lean's own reference collectors.
+
 Binding a task does not record human approval. A reviewer must select the task
 hash after examining the statement, assumptions, definitions, sources and policy.
 The candidate channel then supplies only a proof for that selected hash.
@@ -138,7 +144,8 @@ Dynamic file/module access performed by trusted project metaprograms remains
 within the host trust boundary described below.
 
 New task artifacts use version 2, with an optional discovery report. New result
-artifacts use version 3 to record the file export and its capture policy.
+artifacts use version 4 to record the file export, capture policy and complete
+proof dependency graph.
 Explicit-module v1 project manifests remain supported. Old saved task/result
 artifacts continue to require their retained original CLI executable.
 
@@ -167,6 +174,40 @@ errors prevent a capture receipt and a successful proof result. A failed run
 can retain a bounded partial file for diagnosis. A complete capture still
 preserves the process exit status, and proof acceptance requires exit zero and
 empty stderr. The capture receipt identifies bytes; it does not certify a proof.
+
+## Reading the proof dependency graph
+
+Each accepted result includes `proof-dependencies.json` and the linked report
+`proof-dependencies.md`. The same graph is embedded in `result.json` and tied
+to the checked export digest. Every exported declaration has a node; its
+`type_references` and `value_references` record explicit constants in its type
+and stored value. `reduction_references` records recursor-rule constructors and
+constants in rule right sides. `projection_references` identifies projection
+type names, which Lean's ordinary constant collector treats separately.
+
+`literal_support` records the declarations retained for native numeric/string
+literals. `groups` records inductive blocks and the primitive quotient package.
+Group membership differs from a direct reference. Recursive declarations and
+recursors can contain cycles; the graph is not a draft proof plan or a schedule,
+and the exported set is not claimed to be minimal.
+Declaration names are labels within this checked export; they are not guaranteed
+to round-trip as Lean source identifiers. Ambiguous labels or a mismatch with
+Lean's bound metadata are rejected.
+
+The [dependency example](../examples/lean-project-dependencies/nmlt-lean.json)
+selects `Graph.goal`; its candidate is `fun box => Graph.checked box`. It
+combines a structure projection, mutually defined tree/forest types, an opaque
+definition, string/numeric literals and quotients. The checked export has 397
+declarations and 587,108 bytes under the empty-axiom policy. The unused draft
+goals do not enter the accepted graph. For example, `Graph.word` has no explicit
+value constants but has literal support from `Char.ofNat` and `String.ofList`.
+
+Fresh rechecking derives another graph from the rebuilt proof and requires
+equality with the graph embedded in the result. It regenerates both report
+files. Editing a derived report does not change the embedded graph; reading
+the report is not itself fresh checking. NanoDA checks proof validity, while
+the graph describes the export's syntax, including redundant data that the
+kernel may rederive. The parser and readable report remain implementation trust.
 
 ## What is fixed and what can change
 
@@ -202,6 +243,9 @@ stacks are explicitly 64 MiB. Metadata and universe-name limits may reject compl
 targets. Such rejection is not a claim that the target is false. Discovery
 allows at most 16 roots, 256 imports per module and 4,096 entries in each
 traversed source directory. Root paths are at most 1,024 bytes and 16 components.
+Dependency graphs allow 16,384 declarations, 262,144 reference/group-member
+entries, 8 MiB of name text and 16,777,216 expression visits. The JSON graph and
+readable report each have a 16 MiB output bound; exceeding it rejects the result.
 
 The project is trusted host code: imports, initializers, elaborators and
 instances can execute during a build. Process supervision is not filesystem

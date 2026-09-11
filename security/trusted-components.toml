@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-09-06"
-scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, and bounded R3 local Lean tasks with source import discovery and file exports"
+scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, and bounded R3 local Lean tasks with source import discovery, file exports and actual proof dependency graphs"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -374,13 +374,15 @@ paths = [
   "crates/nmlt-cli/src/lean_task/source.rs",
   "crates/nmlt-cli/src/lean_task/export.rs",
   "crates/nmlt-cli/src/lean_task/discovery.rs",
+  "crates/nmlt-cli/src/lean_task/dependencies.rs",
   "tools/prepare_lean_task_checkers.sh",
   "tools/check_lean_tasks.py",
   "tools/check_lean_imports.py",
   "tools/check_lean_exports.py",
+  "tools/check_lean_dependencies.py",
   "tools/check_lean_tasks.sh",
 ]
-role = "Capture bounded trusted local Lean sources and target types, discover local source imports with the pinned Lean/Lake parser, keep proof candidates separate from task revisions, enforce axiom and export-root checks, compare bounded file-export identities before and after independent NanoDA checking, and reconstruct retained proof artifacts. Source import closure is distinct from actual proof dependencies. The host, project metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent proof checking does not establish human statement faithfulness."
+role = "Capture bounded trusted local Lean sources and target types, discover local source imports with the pinned Lean/Lake parser, keep proof candidates separate from task revisions, enforce axiom and export-root checks, compare bounded file-export identities before and after independent NanoDA checking, derive separate constant/projection/reduction/literal/group dependency data, and reconstruct retained proof artifacts and graphs. Source import closure and draft plans are distinct from exported proof dependencies. Graph extraction describes export syntax, including redundant fields; it is not another independent proof checker. The host, project metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent proof checking does not establish human statement faithfulness."
 
 [[components]]
 id = "repository.hygiene"

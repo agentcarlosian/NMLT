@@ -32,7 +32,9 @@ exact targets and saved source environments, checks separate candidates, and
 exports independently checked proofs with fresh rechecking and readable patches.
 The current profile also discovers local source imports across selected source
 and vendor roots, and streams proof exports up to 16 MiB to files with exact
-byte counts and digests. Small-project and proof-export bounds remain explicit.
+byte counts and digests. Accepted results also retain readable declaration
+dependency graphs, reconstructed during fresh rechecking. Small-project and
+proof-export bounds remain explicit.
 
 ## Now: make the pivot publicly coherent
 

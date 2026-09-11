@@ -4,7 +4,7 @@
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
   and received-capability continuation; v1 retains its conditional witnesses
-- Next milestone: R3 — existing Lean projects (bound tasks, import discovery and bounded file exports implemented; R2 local scope complete)
+- Next milestone: R3 — existing Lean projects (bound tasks, import discovery, bounded exports and proof dependency graphs implemented; R2 local scope complete)
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-11
@@ -371,6 +371,11 @@ The third increment adds byte-exact file exports up to 16 MiB under
 digests and independent rechecking. Its
 [local validation record](docs/reviews/r3-bounded-exports-2026-09-11.md) records
 the larger proof fixture and failure controls.
+The fourth increment adds actual declaration dependency graphs under
+[RFC 0034](rfcs/0034-lean-proof-dependency-graphs.md), with explicit constants,
+projection names, reductions, literal support and export groups kept distinct.
+The [local validation record](docs/reviews/r3-proof-dependencies-2026-09-11.md)
+records complete graph reconstruction and reference comparison with Lean.
 R3 is not complete: package resolution and library-scale validation, editor/REPL integration and
 asynchronous source jobs for these tasks remain outstanding.
 
