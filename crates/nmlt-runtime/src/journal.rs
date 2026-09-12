@@ -118,10 +118,44 @@ fn check_links(_file: &File) -> std::io::Result<()> {
     Ok(())
 }
 
+// Closing one descriptor need not release its lock while a concurrent process
+// start still holds an inherited copy. Tie unlocking to this owner's lifetime,
+// including constructor errors after acquisition, rather than the last copy.
+struct LockedFile(File);
+
+impl LockedFile {
+    fn acquire(file: File) -> Result<Self, Error> {
+        file.try_lock()
+            .map_err(|e| Error(format!("journal lock unavailable: {e}")))?;
+        Ok(Self(file))
+    }
+}
+
+impl std::ops::Deref for LockedFile {
+    type Target = File;
+
+    fn deref(&self) -> &File {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for LockedFile {
+    fn deref_mut(&mut self) -> &mut File {
+        &mut self.0
+    }
+}
+
+impl Drop for LockedFile {
+    fn drop(&mut self) {
+        // File closing remains the fallback if the OS refuses the unlock.
+        let _ = self.0.unlock();
+    }
+}
+
 /// Single writer over one cooperating local filesystem. Never Clone; never
 /// replace/unlink the locked file. A copied or rolled-back journal is not fenced.
 pub struct Journal {
-    file: File,
+    file: LockedFile,
     lifecycle: Lifecycle,
     tail_sha256: String,
     length: u64,
@@ -137,13 +171,13 @@ impl Journal {
             spec,
         };
         let bytes = canonical(&header)?;
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create_new(true)
-            .open(path)?;
-        file.try_lock()
-            .map_err(|e| Error(format!("journal lock unavailable: {e}")))?;
+        let mut file = LockedFile::acquire(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create_new(true)
+                .open(path)?,
+        )?;
         check_links(&file)?;
         file.write_all(&bytes)?;
         file.write_all(b"\n")?;
@@ -198,16 +232,15 @@ impl Journal {
         expected: &RunSpec,
         repair: Option<&str>,
     ) -> Result<(Self, Option<std::path::PathBuf>), Error> {
-        let mut file = OpenOptions::new().read(true).write(true).open(path)?;
+        let file = OpenOptions::new().read(true).write(true).open(path)?;
         check_links(&file)?;
-        file.try_lock()
-            .map_err(|e| Error(format!("journal lock unavailable: {e}")))?;
+        let mut file = LockedFile::acquire(file)?;
         check_links(&file)?;
         if file.metadata()?.len() > MAX_BYTES {
             return Err(Error("journal exceeds byte bound".into()));
         }
         let mut bytes = Vec::new();
-        (&mut file).take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
+        (&mut *file).take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
         let mut quarantine = None;
         if bytes.last() != Some(&b'\n')
             && let Some(reason) = repair
@@ -256,7 +289,7 @@ impl Journal {
         check_links(&self.file)?;
         self.file.seek(SeekFrom::Start(0))?;
         let mut bytes = Vec::new();
-        (&mut self.file)
+        (&mut *self.file)
             .take(MAX_BYTES + 1)
             .read_to_end(&mut bytes)?;
         let (state, tail, _) = decode_log(&bytes, self.lifecycle.spec())?;
@@ -355,6 +388,24 @@ mod tests {
             dir.join(format!("{}-{unique}.jsonl", std::process::id())),
             spec,
         )
+    }
+
+    #[test]
+    fn dropping_journal_releases_lock_even_with_a_duplicate_descriptor() {
+        let (path, spec) = fixture();
+        let journal = Journal::create(&path, spec.clone()).unwrap();
+        // Model the descriptor another thread's child can inherit between
+        // process creation and exec. It must not prolong the owner's lock.
+        let inherited = journal.file.try_clone().unwrap();
+        assert!(Journal::open(&path, &spec).is_err());
+        drop(journal);
+        let restored = Journal::open(&path, &spec).unwrap();
+        assert!(Journal::open(&path, &spec).is_err());
+        drop(inherited);
+        // Closing that old descriptor must not release the new owner's lock.
+        assert!(Journal::open(&path, &spec).is_err());
+        drop(restored);
+        Journal::open(&path, &spec).unwrap();
     }
 
     #[test]
