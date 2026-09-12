@@ -4,6 +4,11 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Release the journal writer lock when its owner is dropped, even if a
+  duplicated or inherited file descriptor remains open. This fixes a restart
+  failure during concurrent process creation without retrying lock acquisition
+  or weakening exclusive ownership.
+
 - Completed R3 at local pre-alpha scope with pinned native Lake/Mathlib
   environments, ordinary editor workspaces, structured proof automation,
   explicit task revisions and durable source/project proof jobs (RFC 0036).
