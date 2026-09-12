@@ -70,7 +70,7 @@ def main():
     # Even a malformed unrelated source does not belong to the selected closure.
     (original_project / "src/App/Unused.lean").write_text("import Missing.Unreachable\n", encoding="utf-8")
     task, pin = bind("bound", original_project)
-    assert task["schema"] == "nmlt-lean-task-v2"
+    assert task["schema"] == "nmlt-lean-task-v3"
     assert task["manifest"]["modules"] == ["Support.Core", "App.Definitions", "App.Goals"]
     closure = task["discovery"]
     assert closure == read(evidence / "bound/source-imports.json")
@@ -80,7 +80,7 @@ def main():
     assert any(i["isMeta"] and i["isExported"] for i in closure["modules"][-1]["header"]["imports"])
     assert "App.Unused" not in task["manifest"]["modules"]
     accepted = prove("proof", task, pin)
-    assert accepted["schema"] == "nmlt-lean-result-v2"
+    assert accepted["schema"] == "nmlt-lean-result-v5"
     assert accepted["status"] == "independently_checked"
     assert accepted["task"]["discovery"] == closure
     assert accepted["checked_declarations"] == len(accepted["exported_declarations"]) > 0
@@ -190,7 +190,7 @@ def main():
           "rejected": rejected, "source_modules": task["manifest"]["modules"],
           "checked_declarations": accepted["checked_declarations"], "export_sha256": accepted["export_sha256"]})
     print(f"evidence: {evidence.relative_to(ROOT)}", flush=True)
-    print("scope: native Lean import discovery in explicitly selected local source roots; R3 remains in progress", flush=True)
+    print("scope: native Lean import discovery in explicitly selected local source roots", flush=True)
 
 
 if __name__ == "__main__":

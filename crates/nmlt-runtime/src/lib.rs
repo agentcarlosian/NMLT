@@ -11,6 +11,7 @@ pub mod lean;
 mod lean_term;
 mod lifecycle;
 pub mod process;
+pub mod project_proof;
 mod protocol;
 pub mod session;
 mod session_store;

@@ -27,11 +27,17 @@ constructs currently have an executable-only interpretation.
 The [source package increment](r2-source-packages.md) adds reusable libraries,
 per-file resolution, and version 3 replay over the complete import closure.
 
-R3 is in progress. Its [first local Lean task profile](r3-lean-tasks.md) binds
-exact targets and saved source environments, checks separate candidates, and
-exports independently checked proofs with fresh rechecking and readable patches.
-The current profile also discovers local source imports across selected source
-and vendor roots. Small-project and proof-export bounds remain explicit.
+R3 completed at local pre-alpha scope on 2026-09-11; see the
+[completion audit](reviews/r3-completion-audit-2026-09-11.md). Its
+[Lean project profile](r3-lean-tasks.md) binds exact targets and pinned local or
+native Lake environments, including the exercised Mathlib environment. Native
+editor workspaces, declaration lookup and diagnostics support proof development;
+structured automation, explicit revisions and durable source/project jobs
+share the final target, axiom-policy and NanoDA checks. Accepted artifacts
+retain readable patches and actual dependency graphs, and the frozen set
+passes fresh reconstruction from retained inputs. Resource bounds and the
+distinction between editing context and proof acceptance remain explicit.
+R4 discovery workflows are the next milestone.
 
 ## Now: make the pivot publicly coherent
 

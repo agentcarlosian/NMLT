@@ -1,0 +1,6 @@
+{
+  "schema": "nmlt-lean-project-v3",
+  "target_module": "App.Goals",
+  "target": "App.zero_offset",
+  "permitted_axioms": []
+}

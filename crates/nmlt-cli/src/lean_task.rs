@@ -9,15 +9,28 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
+mod candidate;
+use candidate::Candidate;
+mod dependencies;
+mod diagnostics;
 mod discovery;
 mod export;
+mod inspection;
+pub(crate) mod jobs;
+mod lake;
 mod source;
+mod workspace;
 
 const MAX_JSON: u64 = 64 * 1024 * 1024;
 const MAX_SOURCE: u64 = 1024 * 1024;
+const EXPORT_PATH: &str = "build/environment.ndjson";
 const HELP: &str = "\
-Bound local Lean tasks (trusted project code; closed candidate proof terms):
+Bound Lean projects (trusted project code; closed terms and bounded native automation):
   nmlt lean-task bind --project DIR --lean-bin FILE --output NEW_DIR
+  nmlt lean-task revise --task task.json --task-sha256 HASH --project DIR --reason FILE --lean-bin FILE --output NEW_DIR
+  nmlt lean-task candidate --task task.json --task-sha256 HASH --proof FILE --output NEW_FILE
+  nmlt lean-task workspace --task task.json --task-sha256 HASH --lean-bin FILE --output NEW_DIR
+  nmlt lean-task inspect --task task.json --task-sha256 HASH --prefix NAME --limit 1..16 --lean-bin FILE --output NEW_DIR
   nmlt lean-task prove --task task.json --task-sha256 HASH --candidate candidate.json --lean-bin FILE --exporter FILE --nanoda FILE --output NEW_DIR
   nmlt lean-task recheck --record result.json --task-sha256 HASH --lean-bin FILE --exporter FILE --nanoda FILE --output NEW_DIR
 Projects select explicit modules or source roots, target and axiom policy in nmlt-lean.json.
@@ -96,11 +109,37 @@ struct Task {
     lean: lean::Identity,
     target: Target,
     discovery: Option<discovery::Closure>,
+    lake: Option<lake::Snapshot>,
+    revision: Option<Revision>,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Revision {
+    parent_task_sha256: String,
+    parent_target: Target,
+    reason: String,
+}
+
 impl Task {
     fn validate(&self) -> Result<()> {
         self.manifest.validate()?;
-        if self.schema != "nmlt-lean-task-v2"
+        if let Some(revision) = &self.revision
+            && (revision.parent_task_sha256.len() != 64
+                || !revision
+                    .parent_task_sha256
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                || revision.reason.trim().is_empty()
+                || revision.reason.len() > 4096
+                || !name(&revision.parent_target.declaration)
+                || !name(&revision.parent_target.module)
+                || revision.parent_target.type_repr.is_empty()
+                || revision.parent_target.type_repr.len() > 48 * 1024)
+        {
+            return Err("invalid task revision identity or reason".into());
+        }
+        if self.schema != "nmlt-lean-task-v3"
             || self.implementation_sha256 != implementation()?
             || self.sources.len() != self.manifest.modules.len()
             || self.target.declaration != self.manifest.target
@@ -129,26 +168,28 @@ impl Task {
         if let Some(closure) = &self.discovery {
             closure.validate(&self.manifest, &self.sources)?;
         }
+        if let Some(lake) = &self.lake {
+            if self.discovery.is_some() {
+                return Err("Lake and explicit-root discovery cannot be combined".into());
+            }
+            lake.validate(&self.manifest, &self.sources)?;
+        }
+        Ok(())
+    }
+    fn prepare(&self, origin: &Path, run: &mut Run) -> Result<()> {
+        run.project_processes = self.lake.is_some();
+        if let Some(lake) = &self.lake {
+            lake.restore(origin, run)?;
+        } else {
+            if let Some(closure) = &self.discovery {
+                discovery::verify(closure, &self.manifest, &self.sources, run)?;
+            }
+            run.build(&self.sources)?;
+        }
         Ok(())
     }
     fn digest(&self) -> Result<String> {
         Ok(sha256(&serde_json::to_vec(self).map_err(err)?))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Candidate {
-    schema: String,
-    task_sha256: String,
-    proof: String,
-}
-impl Candidate {
-    fn validate(&self, digest: &str) -> Result<String> {
-        if self.schema != "nmlt-lean-proof-candidate-v1" || self.task_sha256 != digest {
-            return Err("candidate does not refer to the selected task hash".into());
-        }
-        lean::render_proof_term(&self.proof).map_err(err)
     }
 }
 
@@ -164,6 +205,14 @@ struct ProofMetadata {
 struct Stage {
     name: String,
     output: process::Output,
+    stdout_file: Option<FileArtifact>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FileArtifact {
+    path: String,
+    receipt: process::FileReceipt,
+    policy: process::FilePolicy,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -177,13 +226,70 @@ struct ResultRecord {
     proof: ProofMetadata,
     tools: export::Identity,
     export_sha256: String,
+    export_bytes: u64,
     exported_declarations: Vec<String>,
     checked_declarations: u64,
+    proof_dependencies: dependencies::Graph,
     process_policy: process::Policy,
     stages: Vec<Stage>,
 }
 
+impl ResultRecord {
+    fn validate_dependencies(&self) -> Result<()> {
+        let graph = &self.proof_dependencies;
+        graph.validate()?;
+        if graph.export_sha256 != self.export_sha256
+            || graph
+                .nodes
+                .iter()
+                .map(|node| &node.name)
+                .collect::<Vec<_>>()
+                != self.exported_declarations.iter().collect::<Vec<_>>()
+            || graph.node(&graph.root)?.type_references != [graph.target.clone()]
+            || graph.node(&graph.root)?.value_references != self.proof.proof_references
+            || graph.node(&graph.target)?.value_references != self.task.target.type_references
+        {
+            return Err(
+                "proof dependency graph differs from the bound export or Lean references".into(),
+            );
+        }
+        Ok(())
+    }
+
+    fn validate_export_capture(&self) -> Result<()> {
+        let mut files = self
+            .stages
+            .iter()
+            .filter(|stage| stage.stdout_file.is_some());
+        let stage = files.next().ok_or("missing retained export capture")?;
+        let file = stage.stdout_file.as_ref().unwrap();
+        if self.task.lake.is_some() {
+            file.policy.validate_project().map_err(err)?;
+            file.receipt.validate_project().map_err(err)?;
+        } else {
+            file.policy.validate().map_err(err)?;
+            file.receipt.validate().map_err(err)?;
+        }
+        if files.next().is_some()
+            || stage.name != "lean4export"
+            || file.path != EXPORT_PATH
+            || stage.output.exit_code != Some(0)
+            || !stage.output.stdout.is_empty()
+            || !stage.output.stderr.is_empty()
+            || file.receipt.bytes == 0
+            || file.receipt.bytes != self.export_bytes
+            || file.receipt.sha256 != self.export_sha256
+        {
+            return Err("retained export capture does not match the accepted artifact".into());
+        }
+        Ok(())
+    }
+}
+
 pub(super) fn command(args: &[OsString]) -> Result<()> {
+    if args == [OsString::from("_lake-environment")] {
+        return lake::print_environment();
+    }
     if args.is_empty() || args.iter().any(|a| a == "--help") {
         print!("{HELP}");
         return Ok(());
@@ -191,6 +297,24 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
     let action = args[0].to_str().ok_or("command must be UTF-8")?;
     let allowed: &[&str] = match action {
         "bind" => &["--project", "--lean-bin", "--output"],
+        "revise" => &[
+            "--task",
+            "--task-sha256",
+            "--project",
+            "--reason",
+            "--lean-bin",
+            "--output",
+        ],
+        "candidate" => &["--task", "--task-sha256", "--proof", "--output"],
+        "workspace" => &["--task", "--task-sha256", "--lean-bin", "--output"],
+        "inspect" => &[
+            "--task",
+            "--task-sha256",
+            "--prefix",
+            "--limit",
+            "--lean-bin",
+            "--output",
+        ],
         "prove" => &[
             "--task",
             "--task-sha256",
@@ -222,9 +346,13 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
     if !rest.is_empty() || options.len() != allowed.len() {
         return Err(HELP.into());
     }
-    let lean = options["--lean-bin"].canonicalize().map_err(err)?;
     if action == "bind" {
-        return bind(&options["--project"], &lean, &options["--output"]);
+        return bind(
+            &options["--project"],
+            &options["--lean-bin"].canonicalize().map_err(err)?,
+            &options["--output"],
+            None,
+        );
     }
     let digest = options["--task-sha256"]
         .to_str()
@@ -236,19 +364,101 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
     {
         return Err("task hash requires 64 lowercase hexadecimal digits".into());
     }
+    if action == "candidate" {
+        let task: Task = read_json(&options["--task"], MAX_JSON)?;
+        task.validate()?;
+        if task.digest()? != digest {
+            return Err("retained task does not match the selected task hash".into());
+        }
+        let source =
+            String::from_utf8(read_bounded(&options["--proof"], 16 * 1024)?).map_err(err)?;
+        let candidate = Candidate::from_file(digest, &source, &task.target)?;
+        write_json(&options["--output"], &candidate)?;
+        println!(
+            "candidate: {}\nstatus: unchecked",
+            options["--output"].display()
+        );
+        return Ok(());
+    }
+    let lean = options["--lean-bin"].canonicalize().map_err(err)?;
+    if action == "revise" {
+        let parent: Task = read_json(&options["--task"], MAX_JSON)?;
+        parent.validate()?;
+        if parent.digest()? != digest {
+            return Err("retained task does not match the selected task hash".into());
+        }
+        let reason = String::from_utf8(read_bounded(&options["--reason"], 4096)?).map_err(err)?;
+        if reason.trim().is_empty() {
+            return Err("task revision requires a reason".into());
+        }
+        return bind(
+            &options["--project"],
+            &lean,
+            &options["--output"],
+            Some((parent, reason)),
+        );
+    }
+    if action == "workspace" {
+        let task: Task = read_json(&options["--task"], MAX_JSON)?;
+        task.validate()?;
+        if task.digest()? != digest {
+            return Err("retained task does not match the selected task hash".into());
+        }
+        return workspace::run(
+            task,
+            &lean,
+            &options["--output"],
+            options["--task"].parent().unwrap_or(Path::new(".")),
+        );
+    }
+    if action == "inspect" {
+        let query = inspection::Query::new(
+            options["--prefix"].to_str().ok_or("prefix must be UTF-8")?,
+            options["--limit"].to_str().ok_or("limit must be UTF-8")?,
+        )?;
+        let task: Task = read_json(&options["--task"], MAX_JSON)?;
+        task.validate()?;
+        if task.digest()? != digest {
+            return Err("retained task does not match the selected task hash".into());
+        }
+        return inspection::run(
+            task,
+            query,
+            &lean,
+            &options["--output"],
+            options["--task"].parent().unwrap_or(Path::new(".")),
+        );
+    }
     let previous: Option<ResultRecord> = if action == "recheck" {
-        Some(read_json(&options["--record"], MAX_JSON)?)
+        let value: serde_json::Value = read_json(&options["--record"], MAX_JSON)?;
+        if value["schema"] == "nmlt-lean-inspection-v1" {
+            return Err(
+                "declaration context is not a proof acceptance record; use lean-task prove".into(),
+            );
+        }
+        if value["schema"] != "nmlt-lean-result-v5" {
+            return Err(
+                "unsupported Lean result version; use its retained original CLI executable".into(),
+            );
+        }
+        Some(serde_json::from_value(value).map_err(err)?)
     } else {
         None
     };
     let (task, candidate) = if let Some(record) = &previous {
-        if record.schema != "nmlt-lean-result-v2"
+        if record.schema != "nmlt-lean-result-v5"
             || record.status != "independently_checked"
             || record.task_sha256 != digest
         {
             return Err("unsupported result or selected task mismatch".into());
         }
-        record.process_policy.validate().map_err(err)?;
+        if record.task.lake.is_some() {
+            record.process_policy.validate_project().map_err(err)?;
+        } else {
+            record.process_policy.validate().map_err(err)?;
+        }
+        record.validate_export_capture()?;
+        record.validate_dependencies()?;
         (record.task.clone(), record.candidate.clone())
     } else {
         (
@@ -270,22 +480,43 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
             return Err("retained proof source was altered".into());
         }
     }
-    prove(
+    let record = prove(
         task,
         candidate,
         &lean,
         tools,
         &options["--output"],
         previous.as_ref(),
-    )
+        options[if previous.is_some() {
+            "--record"
+        } else {
+            "--task"
+        }]
+        .parent()
+        .unwrap_or(Path::new(".")),
+    )?;
+    println!(
+        "independently_checked: {}\ntask: {}\ndeclarations: {}\nresult: {}",
+        record.proof.root,
+        record.task_sha256,
+        record.checked_declarations,
+        options["--output"].join("result.json").display()
+    );
+    Ok(())
 }
 
-fn bind(project: &Path, executable: &Path, output: &Path) -> Result<()> {
+fn bind(
+    project: &Path,
+    executable: &Path,
+    output: &Path,
+    parent: Option<(Task, String)>,
+) -> Result<()> {
     let project = project.canonicalize().map_err(err)?;
     let input: serde_json::Value = read_json(&project.join("nmlt-lean.json"), 16 * 1024)?;
     enum SourcePlan {
         Explicit(Manifest),
         Discovered(discovery::Configuration),
+        Lake(lake::Configuration),
     }
     let plan = match input["schema"].as_str() {
         Some("nmlt-lean-project-v1") => {
@@ -299,33 +530,72 @@ fn bind(project: &Path, executable: &Path, output: &Path) -> Result<()> {
             configuration.validate()?;
             SourcePlan::Discovered(configuration)
         }
+        Some("nmlt-lean-project-v3") => {
+            let configuration: lake::Configuration = serde_json::from_value(input).map_err(err)?;
+            configuration.validate()?;
+            SourcePlan::Lake(configuration)
+        }
         _ => return Err("unsupported Lean project manifest schema".into()),
     };
     let toolchain = lean::Toolchain::open(executable).map_err(err)?;
     let mut run = Run::new(output, executable)?;
-    let (manifest, sources, discovery) = match plan {
+    run.project_processes = matches!(&plan, SourcePlan::Lake(_));
+    let (manifest, sources, discovery, lake) = match plan {
         SourcePlan::Discovered(configuration) => {
             let (manifest, sources, closure) =
                 discovery::capture(&project, configuration, &mut run)?;
-            (manifest, sources, Some(closure))
+            (manifest, sources, Some(closure), None)
         }
         SourcePlan::Explicit(manifest) => {
             let sources = explicit_sources(&project, &manifest)?;
-            (manifest, sources, None)
+            (manifest, sources, None, None)
+        }
+        SourcePlan::Lake(configuration) => {
+            let (manifest, sources, lake) = lake::capture(&project, configuration, &mut run)?;
+            (manifest, sources, None, Some(lake))
         }
     };
-    run.build(&sources)?;
+    if lake.is_none() {
+        run.build(&sources)?;
+    }
     let target = run.target(&manifest)?;
     let task = Task {
-        schema: "nmlt-lean-task-v2".into(),
+        schema: "nmlt-lean-task-v3".into(),
         implementation_sha256: implementation()?,
         manifest,
         sources,
         lean: toolchain.identity().clone(),
         target,
         discovery,
+        lake,
+        revision: parent
+            .as_ref()
+            .map(|(task, reason)| -> Result<Revision> {
+                Ok(Revision {
+                    parent_task_sha256: task.digest()?,
+                    parent_target: task.target.clone(),
+                    reason: reason.clone(),
+                })
+            })
+            .transpose()?,
     };
+    if let Some((parent, _)) = &parent
+        && parent.manifest == task.manifest
+        && parent.sources == task.sources
+        && parent.lean == task.lean
+        && parent.target == task.target
+        && parent.discovery == task.discovery
+        && parent.lake == task.lake
+    {
+        return Err(
+            "task revision did not change the selected statement, context, sources or environment"
+                .into(),
+        );
+    }
     task.validate()?;
+    if let Some(lake) = &task.lake {
+        lake.verify_run(&run)?;
+    }
     toolchain.verify_unchanged().map_err(err)?;
     retain_cli(&run.directory, &task.implementation_sha256)?;
     if let Some(closure) = &task.discovery {
@@ -334,6 +604,17 @@ fn bind(project: &Path, executable: &Path, output: &Path) -> Result<()> {
     write_json(&run.directory.join("task.json"), &task)?;
     write_json(&run.directory.join("build-log.json"), &run.stages)?;
     let digest = task.digest()?;
+    if let Some((parent, _)) = &parent {
+        write_json(&run.directory.join("parent-task.json"), parent)?;
+        write_json(
+            &run.directory.join("revision.json"),
+            &serde_json::json!({
+                "schema":"nmlt-lean-task-revision-v1", "parent_task_sha256":parent.digest()?, "task_sha256":digest,
+                "revision":task.revision, "dependent_acceptance":"invalidated_for_revised_task"
+            }),
+        )?;
+        write_new(&run.directory.join("revision.md"), format!("# Explicit Lean task revision\n\nPrevious task: `{}`.\n\nRevised task: `{digest}`.\n\n{}\n\nEvery result bound to the previous task hash remains historical evidence for that previous task. It does not count as acceptance for this revised task. Dependent candidates and results must use the revised hash and pass fresh checking.\n", parent.digest()?, task.revision.as_ref().expect("revision").reason).as_bytes())?;
+    }
     write_new(
         &run.directory.join("task.sha256"),
         format!("{digest}\n").as_bytes(),
@@ -379,7 +660,8 @@ fn prove(
     tools: export::Tools,
     output: &Path,
     previous: Option<&ResultRecord>,
-) -> Result<()> {
+    origin: &Path,
+) -> Result<ResultRecord> {
     let digest = task.digest()?;
     let proof = candidate.validate(&digest)?;
     let toolchain = lean::Toolchain::open(executable).map_err(err)?;
@@ -387,10 +669,7 @@ fn prove(
         return Err("Lean installation differs from the bound task".into());
     }
     let mut run = Run::new(output, executable)?;
-    if let Some(closure) = &task.discovery {
-        discovery::verify(closure, &task.manifest, &task.sources, &mut run)?;
-    }
-    run.build(&task.sources)?;
+    task.prepare(origin, &mut run)?;
     let actual = run.target(&task.manifest)?;
     if actual != task.target {
         return Err("Lean target identity differs from the bound task".into());
@@ -409,8 +688,11 @@ fn prove(
     let exported = tools.check(&mut run, &task.manifest.permitted_axioms)?;
     toolchain.verify_unchanged().map_err(err)?;
     tools.verify_unchanged()?;
+    if let Some(lake) = &task.lake {
+        lake.verify_run(&run)?;
+    }
     let record = ResultRecord {
-        schema: "nmlt-lean-result-v2".into(),
+        schema: "nmlt-lean-result-v5".into(),
         status: "independently_checked".into(),
         task_sha256: digest.clone(),
         task,
@@ -419,20 +701,31 @@ fn prove(
         proof: metadata,
         tools: tools.identity,
         export_sha256: exported.sha256,
+        export_bytes: exported.bytes,
         exported_declarations: exported.declarations,
         checked_declarations: exported.count,
+        proof_dependencies: exported.dependencies,
         process_policy: run.policy.ok_or("missing process policy")?,
         stages: run.stages,
     };
+    record.validate_export_capture()?;
+    record.validate_dependencies()?;
     if let Some(old) = previous
         && (old.proof != record.proof
             || old.export_sha256 != record.export_sha256
+            || old.export_bytes != record.export_bytes
             || old.exported_declarations != record.exported_declarations
+            || old.proof_dependencies != record.proof_dependencies
             || old.checked_declarations != record.checked_declarations)
     {
         return Err("fresh proof artifacts differ from the retained acceptance record".into());
     }
     retain_cli(&run.directory, &record.task.implementation_sha256)?;
+    write_json(&run.directory.join("task.json"), &record.task)?;
+    write_new(
+        &run.directory.join("task.sha256"),
+        format!("{digest}\n").as_bytes(),
+    )?;
     if let Some(closure) = &record.task.discovery {
         write_json(&run.directory.join("source-imports.json"), closure)?;
     }
@@ -444,15 +737,17 @@ fn prove(
         &run.directory.join("explanation.md"),
         source::explanation(&record).as_bytes(),
     )?;
+    write_new(
+        &run.directory.join("proof-dependencies.json"),
+        &record.proof_dependencies.json()?,
+    )?;
+    write_new(
+        &run.directory.join("proof-dependencies.md"),
+        record.proof_dependencies.markdown()?.as_bytes(),
+    )?;
     // Publish acceptance only after all accompanying artifacts are durable.
     write_json(&run.directory.join("result.json"), &record)?;
-    println!(
-        "independently_checked: {}\ntask: {digest}\ndeclarations: {}\nresult: {}",
-        record.proof.root,
-        record.checked_declarations,
-        run.directory.join("result.json").display()
-    );
-    Ok(())
+    Ok(record)
 }
 
 struct Run {
@@ -461,6 +756,11 @@ struct Run {
     executable: PathBuf,
     stages: Vec<Stage>,
     policy: Option<process::Policy>,
+    project_processes: bool,
+    lake_project: Option<PathBuf>,
+    library_paths: Vec<PathBuf>,
+    source_paths: Vec<PathBuf>,
+    loader_paths: Vec<PathBuf>,
 }
 impl Run {
     fn new(path: &Path, executable: &Path) -> Result<Self> {
@@ -475,6 +775,11 @@ impl Run {
             executable: executable.to_path_buf(),
             stages: vec![],
             policy: None,
+            project_processes: false,
+            lake_project: None,
+            library_paths: vec![],
+            source_paths: vec![],
+            loader_paths: vec![],
         })
     }
     fn build(&mut self, sources: &[Source]) -> Result<()> {
@@ -491,12 +796,25 @@ impl Run {
             .parent()
             .ok_or("Lean executable has no parent")?;
         let root = bin.parent().ok_or("Lean installation has no root")?;
+        let libraries = std::iter::once(self.build.clone()).chain(self.library_paths.clone());
+        let sources = std::iter::once(self.build.clone()).chain(self.source_paths.clone());
+        let loader = std::iter::once(bin.to_path_buf()).chain(self.loader_paths.clone());
         command
             .env("LEAN_SYSROOT", root)
-            .env("LEAN_PATH", &self.build)
+            .env("LEAN_PATH", std::env::join_paths(libraries).map_err(err)?)
+            .env("LEAN_SRC_PATH", std::env::join_paths(sources).map_err(err)?)
             .env("LEAN_STACK_SIZE_KB", lean::STACK_KIB)
             .env("MIMALLOC_ARENA_RESERVE", lean::ARENA_KIB)
-            .env("PATH", bin);
+            .env("LEAN_NUM_THREADS", "1")
+            .env("PATH", std::env::join_paths(loader).map_err(err)?)
+            .env(
+                "LD_LIBRARY_PATH",
+                std::env::join_paths(&self.loader_paths).map_err(err)?,
+            )
+            .env(
+                "DYLD_LIBRARY_PATH",
+                std::env::join_paths(&self.loader_paths).map_err(err)?,
+            );
         #[cfg(windows)]
         for key in ["SystemRoot", "WINDIR", "TEMP", "TMP"] {
             if let Some(value) = std::env::var_os(key) {
@@ -506,26 +824,7 @@ impl Run {
         Ok(command)
     }
     fn execute(&mut self, name: &str, command: Command) -> Result<process::Output> {
-        let mut child = process::Process::start(command, vec![], Duration::from_secs(30))
-            .map_err(|e| format!("{name}: {e:?}"))?;
-        let policy = child.policy().clone();
-        policy.validate().map_err(err)?;
-        self.policy = Some(policy);
-        let output = child
-            .wait()
-            .as_ref()
-            .map_err(|e| format!("{name}: {e:?}"))?
-            .clone();
-        self.stages.push(Stage {
-            name: name.into(),
-            output: output.clone(),
-        });
-        write_json(
-            &self
-                .directory
-                .join(format!("stage-{}.json", self.stages.len())),
-            self.stages.last().unwrap(),
-        )?;
+        let output = self.capture(name, command)?;
         if output.exit_code != Some(0) {
             return Err(format!(
                 "{name} rejected the task/proof:\n{}{}",
@@ -535,6 +834,83 @@ impl Run {
         }
         Ok(output)
     }
+
+    fn capture(&mut self, name: &str, command: Command) -> Result<process::Output> {
+        let started = if self.project_processes {
+            process::Process::start_project(command, vec![], Duration::from_secs(1800))
+        } else {
+            process::Process::start(command, vec![], Duration::from_secs(30))
+        };
+        let mut child = started.map_err(|e| format!("{name}: {e:?}"))?;
+        let policy = child.policy().clone();
+        if self.project_processes {
+            policy.validate_project().map_err(err)?;
+        } else {
+            policy.validate().map_err(err)?;
+        }
+        self.policy = Some(policy);
+        let output = child
+            .wait()
+            .as_ref()
+            .map_err(|e| format!("{name}: {e:?}"))?
+            .clone();
+        self.stages.push(Stage {
+            name: name.into(),
+            output: output.clone(),
+            stdout_file: None,
+        });
+        write_json(
+            &self
+                .directory
+                .join(format!("stage-{}.json", self.stages.len())),
+            self.stages.last().unwrap(),
+        )?;
+        Ok(output)
+    }
+
+    fn execute_export(&mut self, command: Command) -> Result<process::FileReceipt> {
+        let path = self.directory.join(EXPORT_PATH);
+        let started = if self.project_processes {
+            process::FileProcess::start_project(command, vec![], Duration::from_secs(1800), &path)
+        } else {
+            process::FileProcess::start(command, vec![], Duration::from_secs(30), &path)
+        };
+        let mut child = started.map_err(|e| format!("lean4export: {e:?}"))?;
+        let policy = child.policy().clone();
+        if self.project_processes {
+            policy.validate_project().map_err(err)?;
+        } else {
+            policy.validate().map_err(err)?;
+        }
+        let observation = child.wait().clone();
+        write_json(
+            &self.directory.join("export-observation.json"),
+            &observation,
+        )?;
+        let captured = observation.map_err(|e| format!("lean4export: {e:?}"))?;
+        self.stages.push(Stage {
+            name: "lean4export".into(),
+            output: captured.output.clone(),
+            stdout_file: Some(FileArtifact {
+                path: EXPORT_PATH.into(),
+                receipt: captured.file.clone(),
+                policy,
+            }),
+        });
+        write_json(
+            &self
+                .directory
+                .join(format!("stage-{}.json", self.stages.len())),
+            self.stages.last().unwrap(),
+        )?;
+        if captured.output.exit_code != Some(0) || !captured.output.stderr.is_empty() {
+            return Err(format!(
+                "lean4export rejected the task/proof:\n{}",
+                String::from_utf8_lossy(&captured.output.stderr)
+            ));
+        }
+        Ok(captured.file)
+    }
     fn compile(&mut self, module: &str, text: &str) -> Result<process::Output> {
         let relative = module_path(module);
         let path = self.build.join(&relative);
@@ -542,17 +918,43 @@ impl Run {
             fs::create_dir_all(parent).map_err(err)?;
         }
         write_new(&path, text.as_bytes())?;
-        let mut command = self.command()?;
-        command
-            .args([
-                "--threads=1",
-                "--memory=768",
-                "-DmaxHeartbeats=200000",
-                "-o",
-            ])
-            .arg(relative.with_extension("olean"))
-            .arg(relative);
-        self.execute(module, command)
+        let command = if self.lake_project.is_some() {
+            lake::compile_command(self, &path)?
+        } else {
+            let mut command = self.command()?;
+            command
+                .args([
+                    "--json",
+                    "--threads=1",
+                    "--memory=768",
+                    "-DmaxHeartbeats=200000",
+                    "-o",
+                ])
+                .arg(relative.with_extension("olean"))
+                .arg(relative);
+            command
+        };
+        let output = self.capture(module, command)?;
+        let report = diagnostics::Report::parse(module, text, &path, self.stages.len(), &output)?;
+        let report_path = self
+            .directory
+            .join(format!("diagnostics-{}.json", self.stages.len()));
+        write_json(&report_path, &report)?;
+        if output.exit_code != Some(0) || report.has_errors() {
+            let mut detail = report.error_text();
+            if detail.is_empty() {
+                detail = format!(
+                    "{}{}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            return Err(format!(
+                "{module} rejected the task/proof:\n{detail}\nStructured Lean diagnostics: {}",
+                report_path.display()
+            ));
+        }
+        Ok(output)
     }
     fn target(&mut self, manifest: &Manifest) -> Result<Target> {
         let text = source::target(manifest);
@@ -647,8 +1049,8 @@ fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
     write_new(path, &bytes)
 }
 fn parse_marker<T: DeserializeOwned>(bytes: &[u8], marker: &str) -> Result<T> {
-    let text = std::str::from_utf8(bytes).map_err(err)?;
-    let mut rows = text.lines().filter_map(|l| l.strip_prefix(marker));
+    let values = diagnostics::metadata_rows(bytes, marker)?;
+    let mut rows = values.iter();
     let value = decode_json(rows.next().ok_or("missing Lean metadata")?.as_bytes())?;
     if rows.next().is_some() {
         return Err("duplicate Lean metadata".into());
@@ -697,15 +1099,13 @@ mod tests {
     }
     #[test]
     fn candidates_cannot_revise_statements_pins_or_commands() {
-        let mut candidate = Candidate {
-            schema: "nmlt-lean-proof-candidate-v1".into(),
+        let candidate = Candidate::Term {
             task_sha256: "a".repeat(64),
             proof: "fun n => Eq.refl n".into(),
         };
         assert!(candidate.validate(&"a".repeat(64)).is_ok());
         assert!(candidate.validate(&"b".repeat(64)).is_err());
-        candidate.proof = "by sorry".into();
-        assert!(candidate.validate(&"a".repeat(64)).is_err());
+        assert!(Candidate::from_proof(&"a".repeat(64), "by sorry").is_err());
         assert!(decode_json::<Candidate>(br#"{"schema":"nmlt-lean-proof-candidate-v1","task_sha256":"x","proof":"True.intro","statement":"True"}"#).is_err());
         assert!(
             decode_json::<Candidate>(

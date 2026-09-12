@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-09-06"
-scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, and the initial bounded R3 local Lean task profile"
+scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, and R3 bound Lean/Lake tasks, native proof development, explicit revisions and asynchronous project proofs"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -90,13 +90,23 @@ trusted_components = ["toolchain.rust", "toolchain.lean", "rust.workflow", "rust
 
 [[claim_profiles]]
 name = "bound_local_lean_proof"
-ceiling = "NanoDA checked the exported proof closure under the selected axiom policy after fresh Lean source rebuilding and a trusted Lean target-binding check; no human approval, statement faithfulness, novelty, runtime attestation or general project integration claim"
+ceiling = "NanoDA checked the exported proof closure under the selected axiom policy after fresh pinned Lean/Lake reconstruction and a trusted Lean target-binding check; no human approval, statement faithfulness, novelty, authenticated runtime history or unlimited package compatibility claim"
 trusted_components = ["toolchain.rust", "toolchain.lean", "lean.local_task_binding", "host.process_supervisor", "build.gates"]
 
 [[components]]
 id = "host.process_supervisor"
-paths = ["crates/nmlt-runtime/Cargo.toml", "Cargo.lock", "crates/nmlt-runtime/src/process.rs", "rfcs/0028-contained-process-lifecycle.md"]
-role = "Pinned ProcessKit 3.3.4 and the OS provide the recorded process/tree resource policy. Windows Job Objects and Unix process-group/rlimit fallback have distinct limits. Filesystem/network access, system libraries and concurrent filesystem stability remain outside this containment contract."
+paths = ["crates/nmlt-runtime/Cargo.toml", "Cargo.lock", "crates/nmlt-runtime/src/process.rs", "crates/nmlt-runtime/src/process/file_output.rs", "crates/nmlt-runtime/src/process/profile.rs", "rfcs/0028-contained-process-lifecycle.md", "rfcs/0033-bounded-lean-proof-exports.md", "rfcs/0036-native-lean-project-workflows.md"]
+role = "Pinned ProcessKit 3.3.4 and the OS provide the recorded process/tree resource policy. Ordinary file capture is bounded to 16 MiB; separate project profiles permit 30-minute/8-GiB work and 64-MiB file capture. The fixed project worker coordinator adds no Windows CPU rate cap around already-capped build/checker stages, avoiding nested quota multiplication; its memory, process-count, deadline and tree-cleanup bounds remain explicit. Byte-count/hash receipts require bounded pipes and successful sink flush/EOF. Ordinary R2 limits remain unchanged. Windows Job Objects and Unix process-group/rlimit fallback have distinct limits. Filesystem/network access, system libraries and concurrent filesystem stability remain outside containment."
+
+[[claim_profiles]]
+name = "bound_lean_declaration_context"
+ceiling = "fresh Lean source/target reconstruction and bounded declaration/axiom metadata; assurance none, no proof acceptance or human approval"
+trusted_components = ["toolchain.rust", "toolchain.lean", "lean.local_task_binding", "host.process_supervisor"]
+
+[[components]]
+id = "reference.lean_interfaces"
+paths = ["tools/compare_lean_interfaces.py", "docs/reviews/r3-lean-inspection-2026-09-11.md"]
+role = "Optional fixed-case comparison of CLI, community REPL and LeanInteract observations with recorded versions and build overlay. These are frontend observations only, with no independent proof, performance or containment-equivalence claim; Python dependencies, the prepared REPL and host remain trusted."
 
 [[claim_profiles]]
 name = "retained_elaboration_metatheory"
@@ -265,6 +275,7 @@ paths = [
   "crates/nmlt-runtime/src/lean_term.rs",
   "crates/nmlt-runtime/src/session_store.rs",
   "crates/nmlt-runtime/src/session.rs",
+  "crates/nmlt-runtime/src/project_proof.rs",
   "crates/nmlt-runtime/src/identity.rs",
   "crates/nmlt-runtime/examples/local_worker.rs",
   "crates/nmlt-runtime/examples/async_jobs.rs",
@@ -272,7 +283,7 @@ paths = [
   "tools/check_async_jobs.py",
   "tools/check_lean_terms.py",
 ]
-role = "Bound local control and response identities, flush dispatch/evidence before settlement, restore private handles under a journal lock, require explicit uncertainty acknowledgements, and validate worker or closed Init-term observations. Complete bin/lib identities, the pinned Lean checker, ProcessKit and OS observations remain named host trust boundaries; no exactly-once claim."
+role = "Bound local control and response identities, flush dispatch/evidence before settlement, restore private handles under a journal lock, require explicit uncertainty acknowledgements, and validate square, closed Init-term or registered project-proof observations. Project receipts have fixed alias/task/dispatch/artifact identities; the CLI additionally validates their proof bundles. Complete bin/lib identities, trusted worker code, pinned checkers, ProcessKit and OS observations remain named host trust boundaries; no exactly-once claim."
 
 [[components]]
 id = "rust.workflow"
@@ -374,12 +385,25 @@ paths = [
   "crates/nmlt-cli/src/lean_task/source.rs",
   "crates/nmlt-cli/src/lean_task/export.rs",
   "crates/nmlt-cli/src/lean_task/discovery.rs",
+  "crates/nmlt-cli/src/lean_task/dependencies.rs",
+  "crates/nmlt-cli/src/lean_task/diagnostics.rs",
+  "crates/nmlt-cli/src/lean_task/inspection.rs",
+  "crates/nmlt-cli/src/lean_task/lake.rs",
+  "crates/nmlt-cli/src/lean_task/candidate.rs",
+  "crates/nmlt-cli/src/lean_task/workspace.rs",
+  "crates/nmlt-cli/src/lean_task/jobs.rs",
   "tools/prepare_lean_task_checkers.sh",
   "tools/check_lean_tasks.py",
   "tools/check_lean_imports.py",
+  "tools/check_lean_exports.py",
+  "tools/check_lean_dependencies.py",
+  "tools/check_lean_inspection.py",
+  "tools/check_lean_lake.py",
+  "tools/check_lean_lsp.py",
+  "tools/check_lean_project_jobs.py",
   "tools/check_lean_tasks.sh",
 ]
-role = "Capture bounded trusted local Lean sources and target types, discover local source imports with the pinned Lean/Lake parser, keep proof candidates separate from task revisions, enforce axiom and export-root checks, invoke the independent NanoDA kernel, and reconstruct retained proof artifacts. Source import closure is distinct from actual proof dependencies. The host, project metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent proof checking does not establish human statement faithfulness."
+role = "Capture bounded trusted Lean sources, native Lake configurations, locked package provenance and target types; reconstruct with native package options; keep terms, structured automation and explicit revisions separate; provide ordinary editor workspaces; enforce axiom/export-root checks and independent NanoDA checking. Validate source-job receipts against retained proof records, export bytes, task/tool pins and actual constant/projection/reduction/literal/group dependencies. Declaration lookup, editor state and mapped diagnostics are context with assurance none. Source imports and draft plans are distinct from actual proof dependencies. Graph extraction describes export syntax, not an independent proof checker. The host, project configurations/metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent checking does not establish human statement faithfulness."
 
 [[components]]
 id = "repository.hygiene"

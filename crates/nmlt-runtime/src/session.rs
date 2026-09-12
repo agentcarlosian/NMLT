@@ -3,7 +3,8 @@
 use crate::session_store::{self as store, Evidence as StoredEvidence, Stored};
 use crate::{
     Command, Control, Dispatch, Error, Journal, Lifecycle, Limits, Outcome, Phase, Receipt,
-    Request, Response, ResponseOutcome, RunSpec, Value, lean, process, sha256, worker,
+    Request, Response, ResponseOutcome, RunSpec, Value, lean, process, project_proof, sha256,
+    worker,
 };
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -42,6 +43,8 @@ pub struct Configuration {
     pub bounds: Bounds,
     pub square_executable_sha256: Option<String>,
     pub lean: Option<lean::Identity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projects: Option<project_proof::Identity>,
 }
 impl Configuration {
     fn validate(&self) -> Result<(), Error> {
@@ -70,6 +73,9 @@ impl Configuration {
                 },
             )?
             .input()?;
+        }
+        if let Some(identity) = &self.projects {
+            identity.validate()?;
         }
         Ok(())
     }
@@ -174,6 +180,7 @@ pub struct Session {
     journal: Journal,
     square: Option<SquareTool>,
     lean: Option<lean::Toolchain>,
+    projects: Option<project_proof::Tool>,
     instance: Arc<()>,
     tasks: Vec<Task>,
     observations: Vec<Observation>,
@@ -189,6 +196,25 @@ impl Session {
         square: Option<SquareTool>,
         lean: Option<lean::Toolchain>,
     ) -> Result<Self, Error> {
+        Self::create_with_projects(
+            directory,
+            run_id,
+            parent_context_sha256,
+            bounds,
+            square,
+            lean,
+            None,
+        )
+    }
+    pub fn create_with_projects(
+        directory: &Path,
+        run_id: String,
+        parent_context_sha256: String,
+        bounds: Bounds,
+        square: Option<SquareTool>,
+        lean: Option<lean::Toolchain>,
+        projects: Option<project_proof::Tool>,
+    ) -> Result<Self, Error> {
         use std::io::Write;
         let configuration = Configuration {
             schema: "nmlt-async-session-v3".into(),
@@ -197,6 +223,7 @@ impl Session {
             bounds,
             square_executable_sha256: square.as_ref().map(|s| s.identity.clone()),
             lean: lean.as_ref().map(|s| s.identity().clone()),
+            projects: projects.as_ref().map(|s| s.identity().clone()),
         };
         configuration.validate()?;
         let spec = RunSpec {
@@ -210,6 +237,10 @@ impl Session {
         };
         manifest.validate()?;
         std::fs::create_dir(directory)?;
+        let projects = projects
+            .as_ref()
+            .map(|tool| tool.retain(&directory.join("projects")))
+            .transpose()?;
         let mut file = std::fs::File::create_new(directory.join("manifest.json"))?;
         file.write_all(&serde_json::to_vec(&manifest)?)?;
         file.sync_all()?;
@@ -226,6 +257,7 @@ impl Session {
             journal,
             square,
             lean,
+            projects,
             instance: Arc::new(()),
             tasks: vec![],
             observations: vec![],
@@ -272,24 +304,35 @@ impl Session {
         square: Option<SquareTool>,
         lean: Option<lean::Toolchain>,
     ) -> Result<Self, Error> {
+        Self::resume_with_projects(directory, parent_context, square, lean, None)
+    }
+    pub fn resume_with_projects(
+        directory: &Path,
+        parent_context: &str,
+        square: Option<SquareTool>,
+        lean: Option<lean::Toolchain>,
+        projects: Option<project_proof::Tool>,
+    ) -> Result<Self, Error> {
         let manifest: Manifest = store::read(&directory.join("manifest.json"), 65_536)?;
         manifest.validate()?;
         if manifest.configuration.parent_context_sha256 != parent_context
             || manifest.configuration.square_executable_sha256
                 != square.as_ref().map(|t| t.identity.clone())
             || manifest.configuration.lean != lean.as_ref().map(|t| t.identity().clone())
+            || manifest.configuration.projects != projects.as_ref().map(|t| t.identity().clone())
         {
             return Err(Error(
                 "resumption context or exact tool identities differ".into(),
             ));
         }
-        Self::restore(directory, manifest, square, lean)
+        Self::restore(directory, manifest, square, lean, projects)
     }
     fn restore(
         directory: &Path,
         manifest: Manifest,
         square: Option<SquareTool>,
         lean: Option<lean::Toolchain>,
+        projects: Option<project_proof::Tool>,
     ) -> Result<Self, Error> {
         let mut journal = Journal::open_existing(&directory.join("journal.jsonl"), &manifest.spec)?;
         let (_, mut commands) =
@@ -317,6 +360,7 @@ impl Session {
             journal,
             square,
             lean,
+            projects,
             instance: Arc::new(()),
             tasks: vec![],
             observations,
@@ -352,6 +396,9 @@ impl Session {
     }
 
     fn verify_retained_inputs(&self) -> Result<(), Error> {
+        if let Some(identity) = &self.manifest.configuration.projects {
+            project_proof::Tool::restore(&self.directory.join("projects"), identity)?;
+        }
         if let Some(identity) = &self.manifest.configuration.lean {
             let files: Vec<crate::identity::FileIdentity> = store::read(
                 &self.directory.join("lean-installation.json"),
@@ -449,6 +496,15 @@ impl Session {
                     return Err(Error("resumed Lean source identity differs".into()));
                 }
                 self.launch(index, command, |_| stdin)?;
+            } else if attempt.request.adapter == project_proof::adapter() {
+                let command = self
+                    .projects
+                    .as_ref()
+                    .ok_or_else(|| Error("project tool missing".into()))?
+                    .command(&self.directory.join("projects"))?;
+                self.launch(index, command, |dispatch| {
+                    serde_json::to_vec(dispatch).expect("dispatch")
+                })?;
             } else {
                 return Err(Error("unsupported resumed adapter".into()));
             }
@@ -618,13 +674,29 @@ impl Session {
             }
             return Err(error);
         }
+        let project = dispatch.binding.adapter == project_proof::adapter();
         self.tasks[index].dispatch = Some(dispatch);
         self.tasks[index].control = control;
-        let launched = process::Process::start(
-            command,
-            input,
-            Duration::from_millis(self.manifest.configuration.bounds.timeout_ms),
-        );
+        let launched = if project {
+            process::Process::start_project_worker(
+                command,
+                input,
+                Duration::from_millis(
+                    self.manifest
+                        .configuration
+                        .projects
+                        .as_ref()
+                        .ok_or_else(|| Error("missing project policy".into()))?
+                        .timeout_ms,
+                ),
+            )
+        } else {
+            process::Process::start(
+                command,
+                input,
+                Duration::from_millis(self.manifest.configuration.bounds.timeout_ms),
+            )
+        };
         let (process, failed) = match launched {
             Ok(process) => (Some(process), None),
             Err(error) => (None, Some(error)),
@@ -658,6 +730,28 @@ impl Session {
     }
     pub fn start_lean(&mut self, task: &str, strategy: lean::Strategy) -> Result<Handle, Error> {
         self.start_lean_candidate(task, lean::Candidate::Template { strategy })
+    }
+    pub fn start_project_proof(
+        &mut self,
+        task: &str,
+        alias: &str,
+        proof: &str,
+    ) -> Result<Handle, Error> {
+        let tool = self
+            .projects
+            .as_ref()
+            .ok_or_else(|| Error("project proofs are not configured".into()))?;
+        let input = tool.identity().request(alias, proof)?.input()?;
+        let command = tool.command(&self.directory.join("projects"))?;
+        let request = Request {
+            adapter: project_proof::adapter(),
+            context_sha256: self.manifest.spec.context_sha256.clone(),
+            input,
+            reserved_work: 1,
+        };
+        self.start(task, request, command, |dispatch| {
+            serde_json::to_vec(dispatch).expect("dispatch")
+        })
     }
     pub fn start_lean_candidate(
         &mut self,
@@ -890,6 +984,14 @@ fn check_dispatch(configuration: &Configuration, dispatch: &Dispatch) -> Result<
         {
             return Err(Error("Lean request or toolchain identity mismatch".into()));
         }
+    } else if dispatch.binding.adapter == project_proof::adapter() {
+        project_proof::request(
+            configuration
+                .projects
+                .as_ref()
+                .ok_or_else(|| Error("unconfigured project proof dispatch".into()))?,
+            dispatch,
+        )?;
     } else {
         return Err(Error("unsupported asynchronous adapter".into()));
     }
@@ -901,7 +1003,18 @@ fn response(
     cancelled: bool,
 ) -> Result<Option<Response>, Error> {
     check_dispatch(configuration, &observation.dispatch)?;
+    if let Err(failure) = &observation.completion
+        && failure
+            .detail
+            .as_ref()
+            .is_some_and(|s| s.is_empty() || s.len() > 4096)
+    {
+        return Err(Error("invalid process failure diagnostic".into()));
+    }
     match &observation.policy {
+        Some(policy) if observation.dispatch.binding.adapter == project_proof::adapter() => {
+            policy.validate_project_worker()?
+        }
         Some(policy) => policy.validate()?,
         None if matches!(
             &observation.completion,
@@ -949,6 +1062,16 @@ fn response(
             return Ok(None);
         }
         Ok(Some(expected))
+    } else if observation.dispatch.binding.adapter == project_proof::adapter() {
+        Ok(project_proof::response(
+            configuration
+                .projects
+                .as_ref()
+                .ok_or_else(|| Error("project identity missing".into()))?,
+            &observation.dispatch,
+            output,
+        )
+        .ok())
     } else {
         let Value::Text(input) = &observation.dispatch.input else {
             unreachable!()
@@ -1056,6 +1179,10 @@ pub fn verify_snapshot(snapshot: &Snapshot) -> Result<Lifecycle, Error> {
 /// Recover captured settlements and classify unresolved work without tool
 /// authority. No process is rediscovered or dispatched by this inspection.
 pub fn recover(directory: &Path) -> Result<Lifecycle, Error> {
+    verify_snapshot(&recover_snapshot(directory)?)
+}
+/// As above, retaining the observations for adapter-specific artifact checks.
+pub fn recover_snapshot(directory: &Path) -> Result<Snapshot, Error> {
     use std::io::Read;
     let mut bytes = vec![];
     std::fs::File::open(directory.join("manifest.json"))?
@@ -1069,9 +1196,7 @@ pub fn recover(directory: &Path) -> Result<Lifecycle, Error> {
         return Err(Error("session manifest is not canonical".into()));
     }
     manifest.validate()?;
-    Ok(Session::restore(directory, manifest, None, None)?
-        .state()
-        .clone())
+    Session::restore(directory, manifest, None, None, None)?.snapshot()
 }
 
 #[cfg(test)]
@@ -1256,7 +1381,8 @@ mod tests {
             &session.observations()[0].completion,
             Err(process::Failure {
                 kind: process::FailureKind::Timeout,
-                child_reaped: true
+                child_reaped: true,
+                ..
             })
         ));
         assert_eq!(
@@ -1298,6 +1424,7 @@ mod tests {
         changed.observations[0].completion = Err(process::Failure {
             kind: process::FailureKind::Cancelled,
             child_reaped: false,
+            detail: None,
         });
         assert!(verify_snapshot(&changed).is_err());
         let mut changed = original.clone();

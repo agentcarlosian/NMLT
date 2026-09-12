@@ -54,7 +54,7 @@ def main():
         output = evidence / label
         command(label, ["bind", "--project", project, "--lean-bin", args.lean_bin.resolve(), "--output", output])
         task = read(output / "task.json")
-        assert task["schema"] == "nmlt-lean-task-v2" and task["discovery"] is None
+        assert task["schema"] == "nmlt-lean-task-v3" and task["discovery"] is None
         pin = (output / "task.sha256").read_text(encoding="utf-8").strip()
         assert digest(task) == pin
         return output / "task.json", pin
@@ -66,16 +66,19 @@ def main():
                         *tool_args, "--output", evidence / label], expected, contains)
         if expected:
             result = read(evidence / label / "result.json")
-            assert result["schema"] == "nmlt-lean-result-v2"
+            assert result["schema"] == "nmlt-lean-result-v5"
             assert result["status"] == "independently_checked"
             assert result["task_sha256"] == pin
             assert result["checked_declarations"] == len(result["exported_declarations"]) > 0
             export_file = evidence / label / "build/environment.ndjson"
             assert hashlib.sha256(export_file.read_bytes()).hexdigest() == result["export_sha256"]
+            assert export_file.stat().st_size == result["export_bytes"]
             assert result["proof"]["root"] == "NMLTChecked.result"
             assert "sorryAx" not in result["proof"]["axioms"]
             assert "NMLTTask.target" in result["exported_declarations"]
             assert (evidence / label / "proof.patch").is_file()
+            assert read(evidence / label / "proof-dependencies.json") == result["proof_dependencies"]
+            assert [node["name"] for node in result["proof_dependencies"]["nodes"]] == result["exported_declarations"]
             return result
 
     task, pin = bind("bound")
@@ -89,6 +92,7 @@ def main():
                       *tool_args, "--output", evidence / "fresh"],
             executable=evidence / "definition" / binary.name)
     assert read(evidence / "fresh/result.json")["export_sha256"] == original["export_sha256"]
+    assert read(evidence / "fresh/result.json")["proof_dependencies"] == original["proof_dependencies"]
     assert moved.resolve().is_relative_to(evidence.resolve()) and project.parent.resolve() == evidence.resolve()
     moved.rename(project)
 
@@ -157,7 +161,7 @@ def main():
                "fresh_rechecks": ["fresh"], "rejected": rejected}
     write(evidence / "summary.json", summary)
     print(f"evidence: {evidence.relative_to(ROOT)}", flush=True)
-    print("scope: bounded trusted local Lean projects; independent exported proofs; R3 integration remains in progress", flush=True)
+    print("scope: bounded trusted local Lean projects and independently checked exported proofs", flush=True)
 
 if __name__ == "__main__":
     main()

@@ -3,8 +3,8 @@
 - Status: active execution plan for pre-alpha language and mathematics research
 - Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
 - Current result: unified resource-aware semantics, decoded finite execution,
-  and received-capability continuation; v1 retains its conditional witnesses
-- Next milestone: R3 — existing Lean projects (bound tasks and local import discovery implemented; R2 local scope complete)
+  executable source/project workflows and independently checked native Lean proofs
+- Next milestone: R4 — discovery workflows
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
 - Updated: 2026-09-11
@@ -79,9 +79,10 @@ explorer supports finite Bool/Unit/enum state. A separate executable-only profil
 now runs functions with scalars, outcomes, records, bounded lists/folds, and
 opt-in local jobs. Affine source controls expose workers and closed Init proof
 terms, with exact dependency identities and durable source/project resumption.
-User safety predicates have a separately checked finite-model route. The first
-R3 profile binds local Lean source projects and fixed targets; broader project
-and editor integration remains in progress.
+User safety predicates have a separately checked finite-model route. The
+completed R3 profile binds native Lean/Lake projects and fixed targets, with
+editor, automation, revision and asynchronous proof workflows. Its accepted
+frozen proof set passes fresh independent checking from retained inputs.
 Historical independent-checker results do not remove the need for current
 toolchain maintenance.
 
@@ -92,7 +93,7 @@ toolchain maintenance.
 | R0 — Checker and workflow baselines | Complete | Audited baseline | Integration and Lean maintainers |
 | R1 — Unified semantics and finite execution | Complete at finite scope | R0 checker baseline | Lean/semantics and Rust maintainers |
 | R2 — Useful executable language | Completed at local pre-alpha scope on 2026-09-09; see completion audit | R1 for formal execution claims | Compiler/runtime and integration maintainers |
-| R3 — Supported Lean workflows | In progress: bounded local project tasks and independent artifacts | R2; adapter prototype can begin in R0 | Lean integration maintainer |
+| R3 — Supported Lean workflows | Completed at local pre-alpha scope on 2026-09-11; see completion audit | R2; adapter prototype can begin in R0 | Lean integration maintainer |
 | R4 — Discovery workflows | Planned | R3 for integration; domain preparation can start earlier | Mathematical reviewer and integration maintainer |
 | R5 — Three-audience alpha validation | Planned | R2–R4 | Maintainers and independent pilot users |
 
@@ -359,15 +360,39 @@ under [RFC 0031](rfcs/0031-bound-lean-project-tasks.md): exact declaration types
 source/module and tool identities, a separate closed proof-term candidate,
 Lean target checks, transitive axiom policy, independent NanoDA artifacts,
 actual dependencies, readable additive patches and fresh source-based rechecking.
-The profile is bounded to trusted local sources and small exported closures.
+The profile is bounded to trusted local sources and bounded exported closures.
 The second increment adds automatic source import discovery with Lean's native
 header parser under [RFC 0032](rfcs/0032-lean-source-import-discovery.md). It
 supports explicitly selected source directories and vendored roots, records
 the import closure, and reparses saved headers before proof reconstruction.
 The [second-increment validation record](docs/reviews/r3-import-discovery-2026-09-11.md)
 records the complete Windows and Linux gates and the discovery controls.
-R3 is not complete: package resolution/larger exports, editor/REPL integration and
-asynchronous source jobs for these tasks remain outstanding.
+The third increment adds byte-exact file exports up to 16 MiB under
+[RFC 0033](rfcs/0033-bounded-lean-proof-exports.md), with captured byte counts,
+digests and independent rechecking. Its
+[local validation record](docs/reviews/r3-bounded-exports-2026-09-11.md) records
+the larger proof fixture and failure controls.
+The fourth increment adds actual declaration dependency graphs under
+[RFC 0034](rfcs/0034-lean-proof-dependency-graphs.md), with explicit constants,
+projection names, reductions, literal support and export groups kept distinct.
+The [local validation record](docs/reviews/r3-proof-dependencies-2026-09-11.md)
+records complete graph reconstruction and reference comparison with Lean.
+The fifth increment adds bound declaration lookup and native Lean compilation
+diagnostics under [RFC 0035](rfcs/0035-bound-lean-inspection-and-diagnostics.md).
+The [local validation record](docs/reviews/r3-lean-inspection-2026-09-11.md) covers
+inspection, located candidate repair and an initial CLI/REPL/LeanInteract
+comparison. Retrieval context cannot become proof acceptance.
+The final integration implements native pinned Lake package reconstruction,
+ordinary editor workspaces and actual LSP interaction, structured native proof
+automation, explicit revision lineage and asynchronous source/project proof
+jobs under [RFC 0036](rfcs/0036-native-lean-project-workflows.md). Focused checks
+include a pinned Mathlib environment and fresh independent checking of every
+accepted native-development and source-job proof. The
+[completion audit](docs/reviews/r3-completion-audit-2026-09-11.md) records the
+passing full reproduction, final frozen set and combined Mathlib source job.
+Every accepted proof in these sets passed fresh independent rechecking. R3
+completed at local pre-alpha scope on 2026-09-11 against the exit gate below;
+RFC acceptance and independent human/publication review remain separate.
 
 - Bind tasks to exact targets, assumptions, definitions, and pinned dependency
   environments; check formal target identity in Lean.

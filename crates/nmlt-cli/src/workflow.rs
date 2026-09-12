@@ -160,6 +160,7 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
     let (mut entry, mut limit, mut output) = (None, None, None);
     let (mut jobs_dir, mut max_jobs, mut job_timeout_ms) = (None, None, None);
     let (mut slots, mut lean_bin) = (None, None);
+    let mut lean_projects = None;
     let mut project_context = None;
     let mut raw_inputs = std::collections::BTreeMap::new();
     let mut pairs = args[1..].chunks_exact(2);
@@ -198,6 +199,9 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
                 );
             }
             Some("--lean-bin") if lean_bin.is_none() => lean_bin = Some(PathBuf::from(&pair[1])),
+            Some("--lean-projects") if lean_projects.is_none() => {
+                lean_projects = Some(PathBuf::from(&pair[1]))
+            }
             Some("--max-jobs") if max_jobs.is_none() => {
                 max_jobs = Some(
                     pair[1]
@@ -275,12 +279,15 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
                         .ok_or("async source jobs require --job-timeout-ms")?,
                 },
                 lean: lean_bin,
+                projects: lean_projects,
                 project_context,
             },
         );
     }
-    if slots.is_some() || lean_bin.is_some() {
-        return Err("--job-slots and --lean-bin require a source job entry".into());
+    if slots.is_some() || lean_bin.is_some() || lean_projects.is_some() {
+        return Err(
+            "--job-slots, --lean-bin and --lean-projects require a source job entry".into(),
+        );
     }
     if jobs_dir.is_some() || max_jobs.is_some() || job_timeout_ms.is_some() {
         let options = super::jobs::Options {
@@ -358,6 +365,7 @@ pub(super) fn replay_or_finite(args: &[OsString]) -> Result<(), String> {
         return super::async_jobs::replay(
             &bounded_read(Path::new(path), super::async_jobs::MAX_BYTES)?,
             Path::new(source),
+            Path::new(path),
         );
     }
     if format.schema == super::jobs::SCHEMA {

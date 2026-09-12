@@ -18,6 +18,7 @@ pub enum JobRequest {
     Square(i64),
     Lean(String),
     LeanCheck { statement: String, proof: String },
+    LeanProject { alias: String, proof: String },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -220,20 +221,29 @@ impl Machine<'_> {
         self.steps += 1;
         let overflow = || Stop::IntegerOverflow { at: node.span };
         let value = match &node.kind {
-            TypedKind::JobLeanCheck(statement, proof) => {
+            TypedKind::JobLeanCheck(statement, proof)
+            | TypedKind::JobLeanProject(statement, proof) => {
                 let Value::Text(statement) = self.data(statement, env, depth + 1)? else {
                     unreachable!()
                 };
                 let Value::Text(proof) = self.data(proof, env, depth + 1)? else {
                     unreachable!()
                 };
-                let id = self
-                    .host
-                    .start(JobRequest::LeanCheck { statement, proof }, node.span)
-                    .map_err(|reason| Stop::JobStopped {
-                        at: node.span,
-                        reason,
-                    })?;
+                let request = if matches!(&node.kind, TypedKind::JobLeanProject(..)) {
+                    JobRequest::LeanProject {
+                        alias: statement,
+                        proof,
+                    }
+                } else {
+                    JobRequest::LeanCheck { statement, proof }
+                };
+                let id =
+                    self.host
+                        .start(request, node.span)
+                        .map_err(|reason| Stop::JobStopped {
+                            at: node.span,
+                            reason,
+                        })?;
                 return Ok(StackValue::Job(id));
             }
             TypedKind::JobStart(input, lean) => {

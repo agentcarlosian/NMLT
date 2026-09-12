@@ -55,7 +55,7 @@ exact .nmlt bytes
 | Local source jobs | Opt-in `job_square` uses bounded attempts, a durable journal, validated subprocess results, timeout/output limits, replay without redispatch, and recovery inspection; executable-only |
 | Source jobs | Typed worker and pinned Init proof-term jobs; affine transfer through functions/folds; poll/cancel/collect, durable decisions, explicit uncertainty and source/project resumption; executable-only |
 | Projects | `init`, `lock`, `run`, `test`, `replay`, `resume`, `fmt`, and `check-project`; complete source/tool identities and structured diagnostics |
-| Local Lean tasks | `lean-task bind/prove/recheck`; native import discovery across selected source/vendor roots, fixed targets, saved sources, closed proof terms, actual dependencies and independent NanoDA checking; bounded R3 profile |
+| Lean projects | `lean-task bind/revise/candidate/workspace/inspect/prove/recheck`; pinned Lake dependencies, native editor and automation workflows, asynchronous project proofs, actual dependencies and independent NanoDA checking |
 | User safety properties | Exact source predicates with Lean-checked initialization/preservation or an initialized finite counterexample; decoded finite scope |
 | Pure source workflows | Named entries, structured inputs, records, bounded lists/folds, local modules, acyclic functions, typed outcomes, matching, execution/replay; executable-only, no host jobs |
 
@@ -74,10 +74,15 @@ R2 is complete at local pre-alpha scope. The
 [R2 audit](docs/r2-completion-tracker.md) and
 [validation record](docs/reviews/r2-completion-2026-09-09.md) record its full scope
 and reproduction evidence. The current [R3 profile](docs/r3-lean-tasks.md)
-discovers local source imports, binds Lean targets and independently checks
-saved proof artifacts.
-R3 remains in progress; larger libraries, editor integration and asynchronous
-project-proof jobs are later work.
+binds exact Lean targets and pinned Lake environments, supports native editor
+development and automation, and independently checks retained proof artifacts.
+Explicit revisions invalidate acceptance for changed tasks. Registered project
+proofs use the same durable source/project controls as other jobs. Declaration
+lookup and editor state remain context; accepted results require the final
+Lean, axiom-policy and NanoDA checks. The
+[R3 audit](docs/reviews/r3-completion-audit-2026-09-11.md) records the passing
+full reproduction and fresh checks of the frozen native and Mathlib proof
+sets. R3 is complete at local pre-alpha scope; R4 is the next milestone.
 
 The behavioral milestone is finite, binary, and safety-oriented. The source digest
 identifies the source bytes presented to Lean; the repository separately

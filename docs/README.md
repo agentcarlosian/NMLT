@@ -113,6 +113,14 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — bound local Lean targets, independent proof artifacts and fresh rechecks
 - [R3 second-increment evidence](reviews/r3-import-discovery-2026-09-11.md)
   — native source import discovery, vendor roots and retained closure checks
+- [R3 third-increment evidence](reviews/r3-bounded-exports-2026-09-11.md)
+  — bounded file exports, exact capture receipts and larger independently checked proofs
+- [R3 fourth-increment evidence](reviews/r3-proof-dependencies-2026-09-11.md)
+  — actual declaration dependency graphs, Lean reference parity and fresh reconstruction
+- [R3 fifth-increment evidence](reviews/r3-lean-inspection-2026-09-11.md)
+  — bound declaration lookup, native diagnostics, checked repair and interface comparison
+- [R3 completion audit](reviews/r3-completion-audit-2026-09-11.md)
+  — native Lake/Mathlib, editor and asynchronous workflows, full reproduction and fresh proof checks
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

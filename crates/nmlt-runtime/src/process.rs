@@ -13,6 +13,15 @@ use std::time::{Duration, Instant};
 use tokio::io::AsyncWrite;
 use tokio_util::sync::CancellationToken;
 
+mod file_output;
+mod profile;
+use file_output::FileCapture;
+pub use file_output::{
+    FILE_BYTES, FILE_CONTRACT, FileOutput, FilePolicy, FileProcess, FileReceipt, PROJECT_FILE_BYTES,
+};
+use profile::Profile;
+pub use profile::{PROJECT_CONTRACT, PROJECT_FILE_CONTRACT, PROJECT_WORKER_CONTRACT};
+
 pub const PIPE_BYTES: usize = 65_536;
 pub const CONTRACT: &str = "nmlt-contained-process-v1;processkit-3.3.4;raw-pipes-65536;tree-kill-before-pipe-drain;explicit-environment;no-filesystem-or-network-sandbox";
 
@@ -33,19 +42,29 @@ pub struct Policy {
 
 impl Policy {
     pub fn validate(&self) -> std::result::Result<(), crate::Error> {
+        self.validate_profile(Profile::Ordinary, false)
+    }
+    /// A separately selected resource policy for bound project builds/jobs.
+    /// Ordinary R2 sessions continue to require `validate` and cannot adopt it.
+    pub fn validate_project(&self) -> std::result::Result<(), crate::Error> {
+        self.validate_profile(Profile::Project, false)
+    }
+    pub fn validate_project_worker(&self) -> std::result::Result<(), crate::Error> {
+        self.validate_profile(Profile::ProjectWorker, false)
+    }
+    fn validate_profile(
+        &self,
+        profile: Profile,
+        file: bool,
+    ) -> std::result::Result<(), crate::Error> {
         let windows = self.mechanism == "job_object";
         let known = ["job_object", "cgroup_v2", "process_group", "process_reaper"]
             .contains(&self.mechanism.as_str());
         if !known
-            || self.contract != CONTRACT
+            || self.contract != profile.contract(file)
             || self.filesystem_sandbox
             || self.network_sandbox
-            || self.memory_bytes
-                != if windows {
-                    1024 * 1024 * 1024
-                } else {
-                    2 * 1024 * 1024 * 1024
-                }
+            || self.memory_bytes != profile.memory(windows)
             || self.memory_scope
                 != if windows {
                     "whole_job_commit"
@@ -55,15 +74,15 @@ impl Policy {
             || self.max_processes != if windows { Some(16) } else { None }
             || self.cpu_limit
                 != if windows {
-                    "one_core_whole_job"
+                    profile.windows_cpu_limit().into()
                 } else {
-                    "32_seconds_per_process"
+                    format!("{}_seconds_per_process", profile.cpu_seconds())
                 }
             || self.max_file_bytes
                 != if windows {
                     None
                 } else {
-                    Some(64 * 1024 * 1024)
+                    Some(profile.file_bytes())
                 }
             || if windows {
                 self.parent_death != "whole_job"
@@ -94,6 +113,8 @@ pub enum FailureKind {
 pub struct Failure {
     pub kind: FailureKind,
     pub child_reaped: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -121,7 +142,37 @@ impl Process {
         input: Vec<u8>,
         timeout: Duration,
     ) -> std::result::Result<Self, Failure> {
-        if input.len() > PIPE_BYTES || timeout.is_zero() || timeout > Duration::from_secs(30) {
+        Self::start_capture(command, input, timeout, None, Profile::Ordinary)
+    }
+
+    /// Explicit project policy: up to 30 minutes and 8 GiB, with the same
+    /// bounded pipes, cancellation and process-tree cleanup mechanisms.
+    pub fn start_project(
+        command: Command,
+        input: Vec<u8>,
+        timeout: Duration,
+    ) -> std::result::Result<Self, Failure> {
+        Self::start_capture(command, input, timeout, None, Profile::Project)
+    }
+    /// Coordinator for a fixed worker that contains every proof stage. Windows
+    /// nested CPU quotas multiply, so the coordinator adds no second rate cap.
+    /// All other project limits and complete-tree cleanup remain in force.
+    pub fn start_project_worker(
+        command: Command,
+        input: Vec<u8>,
+        timeout: Duration,
+    ) -> std::result::Result<Self, Failure> {
+        Self::start_capture(command, input, timeout, None, Profile::ProjectWorker)
+    }
+
+    fn start_capture(
+        command: Command,
+        input: Vec<u8>,
+        timeout: Duration,
+        file: Option<FileCapture>,
+        profile: Profile,
+    ) -> std::result::Result<Self, Failure> {
+        if input.len() > PIPE_BYTES || timeout.is_zero() || timeout > profile.timeout() {
             return Err(failure(FailureKind::Io, true));
         }
         let mut spec = processkit::Command::new(command.get_program())
@@ -157,11 +208,11 @@ impl Process {
         {
             use processkit::RlimitResource as R;
             spec = spec
-                .rlimit(R::Data, 2 * 1024 * 1024 * 1024, 2 * 1024 * 1024 * 1024)
-                .rlimit(R::Cpu, 32, 32)
+                .rlimit(R::Data, profile.memory(false), profile.memory(false))
+                .rlimit(R::Cpu, profile.cpu_seconds(), profile.cpu_seconds())
                 .rlimit(R::Core, 0, 0)
-                .rlimit(R::FileSize, 64 * 1024 * 1024, 64 * 1024 * 1024)
-                .rlimit(R::NoFile, 256, 256);
+                .rlimit(R::FileSize, profile.file_bytes(), profile.file_bytes())
+                .rlimit(R::NoFile, profile.open_files(), profile.open_files());
         }
         let (cancel, cancelled) = mpsc::channel();
         let (send, receive) = mpsc::channel();
@@ -179,7 +230,8 @@ impl Process {
                         return;
                     }
                 };
-                let result = runtime.block_on(supervise(spec, timeout, cancelled, ready));
+                let result =
+                    runtime.block_on(supervise(spec, timeout, cancelled, ready, file, profile));
                 let _ = send.send(result);
             })
             .map_err(|_| failure(FailureKind::Io, true))?;
@@ -238,7 +290,23 @@ impl Drop for Process {
     }
 }
 fn failure(kind: FailureKind, child_reaped: bool) -> Failure {
-    Failure { kind, child_reaped }
+    Failure {
+        kind,
+        child_reaped,
+        detail: None,
+    }
+}
+fn described_failure(
+    kind: FailureKind,
+    child_reaped: bool,
+    profile: Profile,
+    detail: impl std::fmt::Display,
+) -> Failure {
+    let mut value = failure(kind, child_reaped);
+    if profile != Profile::Ordinary {
+        value.detail = Some(detail.to_string().chars().take(1000).collect());
+    }
+    value
 }
 
 #[derive(Clone)]
@@ -275,29 +343,35 @@ async fn supervise(
     timeout: Duration,
     cancelled: Receiver<()>,
     ready: mpsc::SyncSender<std::result::Result<Policy, Failure>>,
+    file: Option<FileCapture>,
+    profile: Profile,
 ) -> Result {
     let options = processkit::ProcessGroupOptions::default().shutdown_timeout(Duration::ZERO);
     #[cfg(windows)]
-    let options = options
-        .max_memory(1024 * 1024 * 1024)
-        .max_processes(16)
-        .cpu_quota(1.0);
+    let options = options.max_memory(profile.memory(true)).max_processes(16);
+    #[cfg(windows)]
+    let options = if profile == Profile::ProjectWorker {
+        options
+    } else {
+        options.cpu_quota(1.0)
+    };
     let group = match processkit::ProcessGroup::with_options(options) {
         Ok(group) => group,
-        Err(_) => {
-            let error = failure(FailureKind::Io, true);
+        Err(cause) => {
+            let error = described_failure(
+                FailureKind::Io,
+                true,
+                profile,
+                format!("creating process group: {cause}"),
+            );
             let _ = ready.send(Err(error.clone()));
             return Err(error);
         }
     };
     let policy = Policy {
-        contract: CONTRACT.into(),
+        contract: profile.contract(file.is_some()).into(),
         mechanism: group.mechanism().name().into(),
-        memory_bytes: if cfg!(windows) {
-            1024 * 1024 * 1024
-        } else {
-            2 * 1024 * 1024 * 1024
-        },
+        memory_bytes: profile.memory(cfg!(windows)),
         memory_scope: if cfg!(windows) {
             "whole_job_commit"
         } else {
@@ -314,37 +388,49 @@ async fn supervise(
         }
         .into(),
         cpu_limit: if cfg!(windows) {
-            "one_core_whole_job"
+            profile.windows_cpu_limit().into()
         } else {
-            "32_seconds_per_process"
-        }
-        .into(),
+            format!("{}_seconds_per_process", profile.cpu_seconds())
+        },
         max_file_bytes: if cfg!(windows) {
             None
         } else {
-            Some(64 * 1024 * 1024)
+            Some(profile.file_bytes())
         },
         filesystem_sandbox: false,
         network_sandbox: false,
     };
-    let token = CancellationToken::new();
+    let token = file
+        .as_ref()
+        .map(|file| file.cancel.clone())
+        .unwrap_or_default();
     let stderr = Capture {
         bytes: Arc::new(Mutex::new(vec![])),
         overflow: Arc::new(AtomicBool::new(false)),
         cancel: token.clone(),
     };
     let spec = spec.cancel_on(token.clone()).stderr_raw_tee(stderr.clone());
+    let spec = if let Some(file) = &file {
+        // The raw tee runs on the line pump. Drain it with a small line-assembly
+        // bound while the file sink independently limits all raw stdout bytes.
+        spec.stdout_raw_tee(file.clone())
+            .output_buffer(processkit::OutputBufferPolicy::bounded(0).with_max_bytes(PIPE_BYTES))
+    } else {
+        spec
+    };
     let running = match group.start(&spec).await {
         Ok(running) => running,
         Err(error) => {
             let known_not_started = matches!(error.kind(), processkit::ErrorKind::NotFound);
-            let failure = failure(
+            let failure = described_failure(
                 if known_not_started {
                     FailureKind::Spawn
                 } else {
                     FailureKind::Io
                 },
                 known_not_started,
+                profile,
+                format!("starting contained process: {error}"),
             );
             let _ = ready.send(Err(failure.clone()));
             return Err(failure);
@@ -358,7 +444,30 @@ async fn supervise(
     };
     let deadline = Instant::now() + timeout.saturating_sub(running.elapsed());
     let _ = ready.send(Ok(policy));
-    let output = running.output_bytes();
+    struct Completed {
+        code: Option<i32>,
+        timed_out: bool,
+        truncated: bool,
+        stdout: Vec<u8>,
+    }
+    let file_mode = file.is_some();
+    let output = async {
+        if file_mode {
+            running.drain().await.map(|outcome| Completed {
+                code: outcome.code(),
+                timed_out: outcome.timed_out(),
+                truncated: false,
+                stdout: vec![],
+            })
+        } else {
+            running.output_bytes().await.map(|result| Completed {
+                code: result.code(),
+                timed_out: result.timed_out(),
+                truncated: result.truncated(),
+                stdout: result.into_stdout(),
+            })
+        }
+    };
     tokio::pin!(output);
     let mut detached = false;
     let mut expired = false;
@@ -408,7 +517,7 @@ async fn supervise(
             }
         }
     };
-    if result.as_ref().is_ok_and(|r| !r.timed_out()) {
+    if result.as_ref().is_ok_and(|r| !r.timed_out) {
         let settle = Instant::now() + Duration::from_millis(100);
         loop {
             match group.members() {
@@ -432,27 +541,40 @@ async fn supervise(
         }
     };
     if !clean {
-        return Err(failure(FailureKind::Io, false));
+        return Err(described_failure(
+            FailureKind::Io,
+            false,
+            profile,
+            "process group did not become empty after termination",
+        ));
     }
     if stderr.overflow.load(Ordering::Acquire) {
         return Err(failure(FailureKind::OutputLimit, clean));
+    }
+    if let Some(kind) = file.as_ref().and_then(FileCapture::failure) {
+        return Err(failure(kind, clean));
     }
     if expired {
         return Err(failure(FailureKind::Timeout, clean));
     }
     if detached {
-        return Err(failure(FailureKind::Io, clean));
+        return Err(described_failure(
+            FailureKind::Io,
+            clean,
+            profile,
+            "descendants remained after the root process exited",
+        ));
     }
     match result {
         Ok(result) => {
-            if result.timed_out() {
+            if result.timed_out {
                 return Err(failure(FailureKind::Timeout, clean));
             }
-            if result.truncated() {
+            if result.truncated {
                 return Err(failure(FailureKind::OutputLimit, clean));
             }
-            let exit_code = result.code();
-            let stdout = result.into_stdout();
+            let exit_code = result.code;
+            let stdout = result.stdout;
             let stderr = std::mem::take(&mut *stderr.bytes.lock().expect("capture lock"));
             if stdout.len() > PIPE_BYTES {
                 return Err(failure(FailureKind::OutputLimit, clean));
@@ -472,7 +594,12 @@ async fn supervise(
                     _ => FailureKind::Io,
                 },
             };
-            Err(failure(kind, clean && (killed || !error.is_teardown())))
+            Err(described_failure(
+                kind,
+                clean && (killed || !error.is_teardown()),
+                profile,
+                error,
+            ))
         }
     }
 }

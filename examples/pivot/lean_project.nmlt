@@ -1,0 +1,37 @@
+// Aliases select tasks from the operator's pinned project registry.
+fn submit(alias: Text, proof: Text) -> Job<Text> {
+  job_start_lean_project(alias, proof)
+}
+
+fn check(alias: Text, proof: Text) -> Outcome<Text> {
+  let handle = submit(alias, proof);
+  let ready = job_poll(handle);
+  job_collect(handle)
+}
+
+fn repair(alias: Text, proof: Text) -> Outcome<Text> {
+  match check(alias, "True.intro") {
+    Ok(receipt) => Ok(receipt),
+    Err(message) => check(alias, proof)
+  }
+}
+
+fn cancel(alias: Text, proof: Text) -> Outcome<Text> {
+  let handle = submit(alias, proof);
+  let cancelled = job_cancel(handle);
+  job_collect(handle)
+}
+
+fn verified(alias: Text, proof: Text) -> Bool {
+  match check(alias, proof) {
+    Ok(receipt) => true,
+    Err(message) => false
+  }
+}
+
+fn parallel(alias: Text, proof: Text) -> Outcome<Text> {
+  let valid = submit(alias, proof);
+  let invalid = submit(alias, "True.intro");
+  let rejected = job_collect(invalid);
+  job_collect(valid)
+}

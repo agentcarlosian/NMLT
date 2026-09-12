@@ -1,0 +1,5 @@
+name = "support"
+
+[[lean_lib]]
+name = "Support"
+srcDir = "lib"

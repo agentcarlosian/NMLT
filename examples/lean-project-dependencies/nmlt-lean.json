@@ -1,0 +1,7 @@
+{
+  "schema": "nmlt-lean-project-v2",
+  "source_roots": ["."],
+  "target_module": "Graph.Goals",
+  "target": "Graph.goal",
+  "permitted_axioms": []
+}

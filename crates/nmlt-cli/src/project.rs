@@ -43,6 +43,8 @@ struct Jobs {
 struct Tools {
     #[serde(default)]
     lean: Option<PathBuf>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    lean_projects: Option<PathBuf>,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -66,6 +68,8 @@ struct Lock {
     implementation_sha256: String,
     dependencies: Vec<SourceIdentity>,
     lean: Option<LeanLock>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    projects: Option<nmlt_runtime::project_proof::Identity>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -183,6 +187,13 @@ impl Project {
     fn lean_path(&self) -> Option<PathBuf> {
         self.manifest.tools.lean.as_ref().map(|p| self.root.join(p))
     }
+    fn projects_path(&self) -> Option<PathBuf> {
+        self.manifest
+            .tools
+            .lean_projects
+            .as_ref()
+            .map(|p| self.root.join(p))
+    }
     fn capture_lock(&self) -> Result<Lock, Error> {
         let lean = self
             .lean_path()
@@ -199,6 +210,12 @@ impl Project {
             implementation_sha256: runtime::implementation_digest()?,
             dependencies: self.program.sources().iter().skip(1).cloned().collect(),
             lean,
+            projects: self
+                .projects_path()
+                .as_deref()
+                .map(super::lean_task::jobs::open)
+                .transpose()?
+                .map(|t| t.identity().clone()),
         };
         if serde_json::to_vec(&lock)?.len() > 24 * 1024 * 1024 {
             return Err("dependency lock exceeds 24 MiB".into());
@@ -257,6 +274,12 @@ impl Project {
             return Err(Error::new(
                 "NMLT-LEAN-CONFIG",
                 "Lean entry requires tools.lean",
+            ));
+        }
+        if self.program.requires_project_jobs(entry)? && self.projects_path().is_none() {
+            return Err(Error::new(
+                "NMLT-LEAN-CONFIG",
+                "project proof entry requires tools.lean_projects",
             ));
         }
         Ok(inputs)
@@ -358,6 +381,12 @@ impl Project {
                 command
                     .arg("--lean-bin")
                     .arg(self.lean_path().ok_or("missing Lean")?);
+            }
+            if self.program.requires_project_jobs(entry)? {
+                command.arg("--lean-projects").arg(
+                    self.projects_path()
+                        .ok_or("missing project proof registry")?,
+                );
             }
         }
         let output = command.output()?;
@@ -475,6 +504,21 @@ fn bind(project: &Project, record: &Record, execution: &Json) -> Result<(), Erro
             return Err(Error::new(
                 "NMLT-PROJECT-REPLAY",
                 "project Lean identity mismatch",
+            ));
+        }
+    }
+    if project.program.requires_project_jobs(&record.entry)? {
+        let projects = record
+            .lock
+            .projects
+            .as_ref()
+            .ok_or("project record lacks bound proof registry")?;
+        if execution["snapshot"]["manifest"]["configuration"]["projects"] != json!(projects)
+            || context["projects"] != json!(projects)
+        {
+            return Err(Error::new(
+                "NMLT-PROJECT-REPLAY",
+                "project proof registry identity mismatch",
             ));
         }
     }

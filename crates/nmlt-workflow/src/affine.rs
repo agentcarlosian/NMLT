@@ -41,7 +41,7 @@ fn join(at: Location, left: &[Local], right: &[Local]) -> Result<(), Diagnostic>
 fn visit(node: &Typed, env: &mut Vec<Local>) -> Result<(), Diagnostic> {
     match &node.kind {
         TypedKind::JobStart(input, _) => visit(input, env)?,
-        TypedKind::JobLeanCheck(statement, proof) => {
+        TypedKind::JobLeanCheck(statement, proof) | TypedKind::JobLeanProject(statement, proof) => {
             visit(statement, env)?;
             visit(proof, env)?;
         }

@@ -165,6 +165,13 @@ impl Program {
             .map(|f| f.lean_jobs)
             .ok_or_else(|| format!("unknown workflow entry `{entry}`"))
     }
+    pub fn requires_project_jobs(&self, entry: &str) -> Result<bool, String> {
+        self.functions
+            .iter()
+            .find(|f| f.name == entry)
+            .map(|f| f.project_jobs)
+            .ok_or_else(|| format!("unknown workflow entry `{entry}`"))
+    }
     /// Conservative, transitive effect summary, including unselected branches.
     pub fn requires_jobs(&self, entry: &str) -> Result<bool, String> {
         self.functions
@@ -226,6 +233,7 @@ struct Function {
     jobs: bool,
     async_jobs: bool,
     lean_jobs: bool,
+    project_jobs: bool,
 }
 #[derive(Clone, Debug, Serialize)]
 struct Typed {
@@ -237,6 +245,7 @@ struct Typed {
 enum TypedKind {
     JobStart(Box<Typed>, bool),
     JobLeanCheck(Box<Typed>, Box<Typed>),
+    JobLeanProject(Box<Typed>, Box<Typed>),
     JobControl(JobOperation, usize),
     JobSquare(Box<Typed>),
     Literal(Value),

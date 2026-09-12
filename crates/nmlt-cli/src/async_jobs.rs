@@ -23,6 +23,7 @@ pub(super) struct Options {
     pub directory: PathBuf,
     pub bounds: session::Bounds,
     pub lean: Option<PathBuf>,
+    pub projects: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -40,6 +41,8 @@ struct Context {
     inputs: Inputs,
     max_steps: u32,
     bounds: session::Bounds,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    projects: Option<rt::project_proof::Identity>,
 }
 impl Context {
     fn digest(&self) -> String {
@@ -47,6 +50,9 @@ impl Context {
     }
     fn validate(&self) -> Result<(), String> {
         super::workflow::validate_project_context(&self.project_context_sha256)?;
+        if let Some(identity) = &self.projects {
+            identity.validate().map_err(|e| e.to_string())?;
+        }
         if self.schema != "nmlt-async-source-context-v2"
             || self.assurance != "none"
             || self.implementation_sha256 != implementation_digest()?
@@ -77,6 +83,7 @@ impl Context {
         manifest.validate().map_err(|e| e.to_string())?;
         if manifest.configuration.parent_context_sha256 != self.digest()
             || manifest.configuration.bounds != self.bounds
+            || manifest.configuration.projects != self.projects
             || manifest.configuration.square_executable_sha256.as_ref()
                 != Some(&self.implementation_sha256)
         {
@@ -116,6 +123,8 @@ struct Record {
     trace: String,
     snapshot: session::Snapshot,
     execution: Execution,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    project_session: Option<String>,
 }
 
 fn exact<T: for<'de> Deserialize<'de> + Serialize>(bytes: &[u8]) -> Result<T, String> {
@@ -153,6 +162,17 @@ fn strategy(name: &str) -> Result<rt::lean::Strategy, String> {
 fn request(manifest: &session::Manifest, input: &JobRequest) -> Result<rt::Request, String> {
     let (adapter, input) = match input {
         JobRequest::Square(i) => (rt::worker::adapter(), rt::Value::Int(*i)),
+        JobRequest::LeanProject { alias, proof } => (
+            rt::project_proof::adapter(),
+            manifest
+                .configuration
+                .projects
+                .as_ref()
+                .ok_or("project proof tool is not configured")?
+                .request(alias, proof)
+                .and_then(|r| r.input())
+                .map_err(|e| e.to_string())?,
+        ),
         JobRequest::Lean(_) | JobRequest::LeanCheck { .. } => {
             let request = rt::lean::Request::new(
                 manifest
@@ -224,6 +244,17 @@ pub(super) fn run(
     if program.requires_lean_jobs(&entry)? && options.lean.is_none() {
         return Err("source Lean jobs require --lean-bin with the pinned direct executable".into());
     }
+    if program.requires_project_jobs(&entry)? && options.projects.is_none() {
+        return Err(
+            "source project proofs require --lean-projects with a pinned task registry".into(),
+        );
+    }
+    let projects = options
+        .projects
+        .as_deref()
+        .map(super::lean_task::jobs::open)
+        .transpose()?;
+    let project_session = project_session(output, &options.directory, projects.is_some())?;
     let context = Context {
         schema: "nmlt-async-source-context-v2".into(),
         assurance: "none".into(),
@@ -236,6 +267,7 @@ pub(super) fn run(
         inputs,
         max_steps,
         bounds: options.bounds,
+        projects: projects.as_ref().map(|t| t.identity().clone()),
     };
     context.validate()?;
     let square = session::SquareTool::open(&std::env::current_exe().map_err(|e| e.to_string())?)
@@ -253,13 +285,14 @@ pub(super) fn run(
     let run_id = format!("source-{}-{nonce}", std::process::id());
     let mut output =
         File::create_new(output).map_err(|e| format!("could not create new async record: {e}"))?;
-    let session = session::Session::create(
+    let session = session::Session::create_with_projects(
         &options.directory,
         run_id,
         context.digest(),
         context.bounds.clone(),
         Some(square),
         lean,
+        projects,
     )
     .map_err(|e| e.to_string())?;
     persist(
@@ -280,6 +313,10 @@ pub(super) fn run(
         prefix_len: 0,
         cursor: 0,
         fatal: None,
+        projects_directory: context
+            .projects
+            .as_ref()
+            .map(|_| options.directory.join("projects")),
     };
     let execution = nmlt_workflow::execute_with_host(
         program,
@@ -301,9 +338,15 @@ pub(super) fn run(
         trace: host.ledger.text(),
         snapshot,
         execution,
+        project_session,
     };
     // Check the same operation/journal contract before publishing a live record.
     validate(&record)?;
+    super::lean_task::jobs::validate_snapshot(
+        &options.directory.join("projects"),
+        &record.snapshot,
+        false,
+    )?;
     print!("{}", persist(&mut output, &record, MAX_BYTES)?);
     if record.execution.stop.returned() {
         Ok(())
@@ -319,6 +362,7 @@ struct Live {
     prefix_len: usize,
     cursor: usize,
     fatal: Option<String>,
+    projects_directory: Option<PathBuf>,
 }
 impl Live {
     fn perform(&mut self, call: Call, at: Location) -> Result<Reply, JobError> {
@@ -420,6 +464,9 @@ impl Live {
                 let task = format!("source-job-{job}");
                 let started = match input {
                     JobRequest::Square(i) => self.session.start_square(&task, *i),
+                    JobRequest::LeanProject { alias, proof } => {
+                        self.session.start_project_proof(&task, alias, proof)
+                    }
                     JobRequest::Lean(_) | JobRequest::LeanCheck { .. } => {
                         self.session.start_lean_candidate(
                             &task,
@@ -480,6 +527,14 @@ impl Live {
                     }
                     JobError::HostFailure
                 })??;
+                if let Some(directory) = &self.projects_directory {
+                    let snapshot = self.session.snapshot().map_err(|_| JobError::HostFailure)?;
+                    super::lean_task::jobs::validate_snapshot(directory, &snapshot, false)
+                        .map_err(|e| {
+                            self.fatal = Some(e);
+                            JobError::HostFailure
+                        })?;
+                }
                 Ok(Reply::Value { value: result })
             }
         }
@@ -629,12 +684,77 @@ impl Calls for Replay<'_> {
 job_host!(Replay<'_>);
 
 fn validate(record: &Record) -> Result<(), String> {
+    if record.project_session.is_some() != record.context.projects.is_some()
+        || record.project_session.as_ref().is_some_and(|p| {
+            p.is_empty()
+                || p.len() > 4096
+                || p.contains(['\\', ':', '\0'])
+                || p.split('/')
+                    .any(|s| s.is_empty() || s == "." || (s != ".." && s.ends_with([' ', '.'])))
+        })
+    {
+        return Err("invalid project proof session artifact path".into());
+    }
     validation::record(record)
 }
 
-pub(super) fn replay(bytes: &[u8], source: &Path) -> Result<(), String> {
+fn project_session(
+    output: &Path,
+    directory: &Path,
+    required: bool,
+) -> Result<Option<String>, String> {
+    if !required {
+        return Ok(None);
+    }
+    let parent = |p: &Path| {
+        p.parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new("."))
+            .canonicalize()
+            .map_err(|e| e.to_string())
+    };
+    let origin = parent(output)?;
+    let target = parent(directory)?.join(
+        directory
+            .file_name()
+            .ok_or("jobs directory requires a name")?,
+    );
+    let from: Vec<_> = origin.components().collect();
+    let to: Vec<_> = target.components().collect();
+    let common = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
+    if common == 0 || from.first() != to.first() {
+        return Err("project proof records and sessions must share a filesystem volume".into());
+    }
+    let mut relative = vec!["..".to_owned(); from.len() - common];
+    for component in &to[common..] {
+        relative.push(
+            component
+                .as_os_str()
+                .to_str()
+                .ok_or("project session path is not UTF-8")?
+                .into(),
+        );
+    }
+    if relative.is_empty() {
+        return Err("project proof record cannot replace its session directory".into());
+    }
+    Ok(Some(relative.join("/")))
+}
+
+pub(super) fn replay(bytes: &[u8], source: &Path, record_path: &Path) -> Result<(), String> {
     let record: Record = exact(bytes)?;
     validate(&record)?;
+    if let Some(directory) = &record.project_session {
+        super::lean_task::jobs::validate_snapshot(
+            &record_path
+                .parent()
+                .unwrap_or(Path::new("."))
+                .join(directory)
+                .join("projects"),
+            &record.snapshot,
+            false,
+        )?;
+    }
     let logical = &record
         .context
         .sources
@@ -678,7 +798,9 @@ pub(super) fn recover(directory: &Path) -> Result<(), String> {
     let manifest: session::Manifest =
         exact(&bounded_read(&directory.join("manifest.json"), 65_536)?)?;
     context.bind(&manifest)?;
-    let state = session::recover(directory).map_err(|e| e.to_string())?;
+    let snapshot = session::recover_snapshot(directory).map_err(|e| e.to_string())?;
+    super::lean_task::jobs::validate_snapshot(&directory.join("projects"), &snapshot, false)?;
+    let state = session::verify_snapshot(&snapshot).map_err(|e| e.to_string())?;
     println!(
         "{}",
         serde_json::json!({"schema":"nmlt-async-source-recovery-v1", "assurance":"none", "state":state,
@@ -797,8 +919,25 @@ pub(super) fn resume_source(
         .map(rt::lean::Toolchain::open)
         .transpose()
         .map_err(|e| e.to_string())?;
-    let mut session = session::Session::resume(directory, &context.digest(), Some(square), lean)
-        .map_err(|e| e.to_string())?;
+    let project_session = project_session(output, directory, context.projects.is_some())?;
+    let projects = context
+        .projects
+        .as_ref()
+        .map(|identity| super::lean_task::jobs::restore(&directory.join("projects"), identity))
+        .transpose()?;
+    let mut session = session::Session::resume_with_projects(
+        directory,
+        &context.digest(),
+        Some(square),
+        lean,
+        projects,
+    )
+    .map_err(|e| e.to_string())?;
+    super::lean_task::jobs::validate_snapshot(
+        &directory.join("projects"),
+        &session.snapshot().map_err(|e| e.to_string())?,
+        false,
+    )?;
     let mut ledger = Ledger::open(&directory.join("source-journal.jsonl"), &context.digest())?;
     validation::trace(
         &context,
@@ -844,6 +983,10 @@ pub(super) fn resume_source(
         prefix_len,
         cursor: 0,
         fatal: None,
+        projects_directory: context
+            .projects
+            .as_ref()
+            .map(|_| directory.join("projects")),
     };
     let execution = nmlt_workflow::execute_with_host(
         &program,
@@ -865,8 +1008,14 @@ pub(super) fn resume_source(
         trace: host.ledger.text(),
         snapshot: host.session.snapshot().map_err(|e| e.to_string())?,
         execution,
+        project_session,
     };
     validate(&record)?;
+    super::lean_task::jobs::validate_snapshot(
+        &directory.join("projects"),
+        &record.snapshot,
+        false,
+    )?;
     print!("{}", persist(&mut output, &record, MAX_BYTES)?);
     if record.execution.stop.returned() {
         Ok(())
