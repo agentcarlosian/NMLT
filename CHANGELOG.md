@@ -4,10 +4,18 @@ NMLT is pre-alpha and does not yet promise compatibility.
 
 ## Unreleased
 
+- Completed R3 at local pre-alpha scope with pinned native Lake/Mathlib
+  environments, ordinary editor workspaces, structured proof automation,
+  explicit task revisions and durable source/project proof jobs (RFC 0036).
+  Tasks/results now use v3/v5. The full reproduction gate and all 13 final
+  accepted proof/fresh-recheck pairs passed. See the
+  [completion audit](docs/reviews/r3-completion-audit-2026-09-11.md).
+  Earlier R3 entries below describe the incremental implementation history.
+
 - Added bounded `lean-task inspect` declaration lookup, saved context bundles,
   and native Lean diagnostics tied to captured source bytes (RFC 0035). Includes
   a checked repair workflow and a local CLI/REPL/LeanInteract comparison.
-  Inspection has `assurance: none`; accepted task/result formats remain v2/v4.
+  Inspection has `assurance: none`; this increment used task/result v2/v4.
 
 - Added R3 proof dependency graphs with separate type/value constants, recursor
   reductions, projection types, literal support and export groups (RFC 0034).

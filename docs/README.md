@@ -119,6 +119,8 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
   — actual declaration dependency graphs, Lean reference parity and fresh reconstruction
 - [R3 fifth-increment evidence](reviews/r3-lean-inspection-2026-09-11.md)
   — bound declaration lookup, native diagnostics, checked repair and interface comparison
+- [R3 completion audit](reviews/r3-completion-audit-2026-09-11.md)
+  — native Lake/Mathlib, editor and asynchronous workflows, full reproduction and fresh proof checks
 - [Executable workflow profile](../rfcs/0014-executable-workflow-profile.md)
   — Draft design for the proposed shared language and runtime
 - [Unified resource-bearing behavior](../rfcs/0015-unified-resource-bearing-behavior.md)

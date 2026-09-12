@@ -164,9 +164,12 @@ The Lean installation digest is
 Every result also retains separate exporter, exporter-library, NanoDA and
 adapter digests, since independent builds need not have identical executable
 bytes. Linux cross-compilation passed after the editor correction; this is
-not a claim of new native Linux execution. No remote CI ran for this change.
+not a claim of new native Linux execution. No remote CI had run at this local
+completion checkpoint; subsequent PR checks are separate evidence.
 
 RFC acceptance and independent human/publication review are not claimed by
 these automated checks. As in the completed R1/R2 milestones, they remain
 separate from the local implementation and explicit executable exit gate.
-No remote CI, push or pull request was requested or performed for this work.
+At the local completion checkpoint, no remote CI, push or pull request had
+been requested or performed. Independent adversarial and cross-family
+publication review remain open gates for the subsequent PR review.
