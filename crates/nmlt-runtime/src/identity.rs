@@ -42,7 +42,7 @@ pub fn file(path: &Path, max_bytes: u64) -> Result<(u64, String), Error> {
     if bytes != metadata.len() {
         return Err(Error("file changed size during identity capture".into()));
     }
-    Ok((bytes, format!("{:x}", digest.finalize())))
+    Ok((bytes, crate::digest_hex(&digest.finalize())))
 }
 
 /// Capture every file in the selected installation subdirectories. Names and

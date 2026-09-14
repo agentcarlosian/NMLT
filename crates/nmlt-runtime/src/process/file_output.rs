@@ -247,7 +247,7 @@ impl FileCapture {
         }
         Ok(FileReceipt {
             bytes: state.bytes,
-            sha256: format!("{:x}", state.digest.clone().finalize()),
+            sha256: crate::digest_hex(&state.digest.clone().finalize()),
         })
     }
 }

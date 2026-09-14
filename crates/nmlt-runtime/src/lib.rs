@@ -43,10 +43,17 @@ impl From<serde_json::Error> for Error {
 
 #[must_use]
 pub fn sha256(bytes: &[u8]) -> String {
-    nmlt_hir::sha256_bytes(bytes)
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect()
+    digest_hex(&nmlt_hir::sha256_bytes(bytes))
+}
+
+fn digest_hex(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut result = String::with_capacity(bytes.len() * 2);
+    for &byte in bytes {
+        result.push(HEX[(byte >> 4) as usize] as char);
+        result.push(HEX[(byte & 15) as usize] as char);
+    }
+    result
 }
 
 fn valid_digest(value: &str) -> bool {
