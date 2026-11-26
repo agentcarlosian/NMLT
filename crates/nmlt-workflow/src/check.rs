@@ -128,6 +128,7 @@ pub(super) fn compile_raw(
             async_jobs: false,
             lean_jobs: false,
             project_jobs: false,
+            custom_jobs: false,
         };
         let mut env = f
             .parameters
@@ -155,6 +156,7 @@ pub(super) fn compile_raw(
             async_jobs: checker.async_jobs,
             lean_jobs: checker.lean_jobs,
             project_jobs: checker.project_jobs,
+            custom_jobs: checker.custom_jobs,
         });
         edges.push(checker.calls);
     }
@@ -169,6 +171,7 @@ pub(super) fn compile_raw(
             functions[i].async_jobs |= edges[i].iter().any(|j| functions[*j].async_jobs);
             functions[i].lean_jobs |= edges[i].iter().any(|j| functions[*j].lean_jobs);
             functions[i].project_jobs |= edges[i].iter().any(|j| functions[*j].project_jobs);
+            functions[i].custom_jobs |= edges[i].iter().any(|j| functions[*j].custom_jobs);
         }
     }
     Ok(Program {
@@ -304,6 +307,7 @@ struct Checker<'a> {
     async_jobs: bool,
     lean_jobs: bool,
     project_jobs: bool,
+    custom_jobs: bool,
 }
 impl Checker<'_> {
     fn term(
@@ -410,6 +414,23 @@ impl Checker<'_> {
                 (
                     initial.ty.clone(),
                     TypedKind::Fold(Box::new(items), Box::new(initial), Box::new(body)),
+                )
+            }
+            ExprKind::Call(name, args) if name == "job_start_adapter" => {
+                if args.len() != 2 {
+                    return Err(error(
+                        expr.span,
+                        "job_start_adapter requires alias and input Text arguments",
+                    ));
+                }
+                let alias = self.term(&args[0], Some(&Type::Text), env, depth + 1)?;
+                let input = self.term(&args[1], Some(&Type::Text), env, depth + 1)?;
+                self.jobs = true;
+                self.async_jobs = true;
+                self.custom_jobs = true;
+                (
+                    Type::Job(Box::new(Type::Text)),
+                    TypedKind::JobCustom(Box::new(alias), Box::new(input)),
                 )
             }
             ExprKind::Call(name, args)

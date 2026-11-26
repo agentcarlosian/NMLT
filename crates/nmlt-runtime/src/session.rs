@@ -3,8 +3,8 @@
 use crate::session_store::{self as store, Evidence as StoredEvidence, Stored};
 use crate::{
     Command, Control, Dispatch, Error, Journal, Lifecycle, Limits, Outcome, Phase, Receipt,
-    Request, Response, ResponseOutcome, RunSpec, Value, lean, process, project_proof, sha256,
-    worker,
+    Request, Response, ResponseOutcome, RunSpec, Value, custom_adapter, lean, process,
+    project_proof, sha256, worker,
 };
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -45,6 +45,8 @@ pub struct Configuration {
     pub lean: Option<lean::Identity>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub projects: Option<project_proof::Identity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adapters: Option<custom_adapter::Identity>,
 }
 impl Configuration {
     fn validate(&self) -> Result<(), Error> {
@@ -75,6 +77,9 @@ impl Configuration {
             .input()?;
         }
         if let Some(identity) = &self.projects {
+            identity.validate()?;
+        }
+        if let Some(identity) = &self.adapters {
             identity.validate()?;
         }
         Ok(())
@@ -181,6 +186,7 @@ pub struct Session {
     square: Option<SquareTool>,
     lean: Option<lean::Toolchain>,
     projects: Option<project_proof::Tool>,
+    adapters: Option<custom_adapter::Registry>,
     instance: Arc<()>,
     tasks: Vec<Task>,
     observations: Vec<Observation>,
@@ -215,6 +221,28 @@ impl Session {
         lean: Option<lean::Toolchain>,
         projects: Option<project_proof::Tool>,
     ) -> Result<Self, Error> {
+        Self::create_with_tools(
+            directory,
+            run_id,
+            parent_context_sha256,
+            bounds,
+            square,
+            lean,
+            projects,
+            None,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_with_tools(
+        directory: &Path,
+        run_id: String,
+        parent_context_sha256: String,
+        bounds: Bounds,
+        square: Option<SquareTool>,
+        lean: Option<lean::Toolchain>,
+        projects: Option<project_proof::Tool>,
+        adapters: Option<custom_adapter::Registry>,
+    ) -> Result<Self, Error> {
         use std::io::Write;
         let configuration = Configuration {
             schema: "nmlt-async-session-v3".into(),
@@ -224,6 +252,7 @@ impl Session {
             square_executable_sha256: square.as_ref().map(|s| s.identity.clone()),
             lean: lean.as_ref().map(|s| s.identity().clone()),
             projects: projects.as_ref().map(|s| s.identity().clone()),
+            adapters: adapters.as_ref().map(|a| a.identity().clone()),
         };
         configuration.validate()?;
         let spec = RunSpec {
@@ -258,6 +287,7 @@ impl Session {
             square,
             lean,
             projects,
+            adapters,
             instance: Arc::new(()),
             tasks: vec![],
             observations: vec![],
@@ -313,6 +343,16 @@ impl Session {
         lean: Option<lean::Toolchain>,
         projects: Option<project_proof::Tool>,
     ) -> Result<Self, Error> {
+        Self::resume_with_tools(directory, parent_context, square, lean, projects, None)
+    }
+    pub fn resume_with_tools(
+        directory: &Path,
+        parent_context: &str,
+        square: Option<SquareTool>,
+        lean: Option<lean::Toolchain>,
+        projects: Option<project_proof::Tool>,
+        adapters: Option<custom_adapter::Registry>,
+    ) -> Result<Self, Error> {
         let manifest: Manifest = store::read(&directory.join("manifest.json"), 65_536)?;
         manifest.validate()?;
         if manifest.configuration.parent_context_sha256 != parent_context
@@ -320,12 +360,13 @@ impl Session {
                 != square.as_ref().map(|t| t.identity.clone())
             || manifest.configuration.lean != lean.as_ref().map(|t| t.identity().clone())
             || manifest.configuration.projects != projects.as_ref().map(|t| t.identity().clone())
+            || manifest.configuration.adapters != adapters.as_ref().map(|t| t.identity().clone())
         {
             return Err(Error(
                 "resumption context or exact tool identities differ".into(),
             ));
         }
-        Self::restore(directory, manifest, square, lean, projects)
+        Self::restore(directory, manifest, square, lean, projects, adapters)
     }
     fn restore(
         directory: &Path,
@@ -333,6 +374,7 @@ impl Session {
         square: Option<SquareTool>,
         lean: Option<lean::Toolchain>,
         projects: Option<project_proof::Tool>,
+        adapters: Option<custom_adapter::Registry>,
     ) -> Result<Self, Error> {
         let mut journal = Journal::open_existing(&directory.join("journal.jsonl"), &manifest.spec)?;
         let (_, mut commands) =
@@ -361,6 +403,7 @@ impl Session {
             square,
             lean,
             projects,
+            adapters,
             instance: Arc::new(()),
             tasks: vec![],
             observations,
@@ -502,6 +545,19 @@ impl Session {
                     .as_ref()
                     .ok_or_else(|| Error("project tool missing".into()))?
                     .command(&self.directory.join("projects"))?;
+                self.launch(index, command, |dispatch| {
+                    serde_json::to_vec(dispatch).expect("dispatch")
+                })?;
+            } else if attempt.request.adapter == custom_adapter::adapter() {
+                let Value::Text(input) = &attempt.request.input else {
+                    return Err(Error("invalid resumed custom adapter input".into()));
+                };
+                let req: custom_adapter::Request = serde_json::from_str(input)?;
+                let (command, _) = self
+                    .adapters
+                    .as_ref()
+                    .ok_or_else(|| Error("custom adapter registry missing".into()))?
+                    .command(&req.alias)?;
                 self.launch(index, command, |dispatch| {
                     serde_json::to_vec(dispatch).expect("dispatch")
                 })?;
@@ -675,6 +731,26 @@ impl Session {
             return Err(error);
         }
         let project = dispatch.binding.adapter == project_proof::adapter();
+        let custom_timeout_ms = if dispatch.binding.adapter == custom_adapter::adapter() {
+            let Value::Text(raw) = &dispatch.input else {
+                return Err(Error("custom adapter input must be text".into()));
+            };
+            let req: custom_adapter::Request = serde_json::from_str(raw)?;
+            let entry = self
+                .manifest
+                .configuration
+                .adapters
+                .as_ref()
+                .ok_or_else(|| Error("missing custom adapter configuration".into()))?
+                .entry(&req.alias)?;
+            Some(
+                entry
+                    .timeout_ms
+                    .min(self.manifest.configuration.bounds.timeout_ms),
+            )
+        } else {
+            None
+        };
         self.tasks[index].dispatch = Some(dispatch);
         self.tasks[index].control = control;
         let launched = if project {
@@ -694,7 +770,9 @@ impl Session {
             process::Process::start(
                 command,
                 input,
-                Duration::from_millis(self.manifest.configuration.bounds.timeout_ms),
+                Duration::from_millis(
+                    custom_timeout_ms.unwrap_or(self.manifest.configuration.bounds.timeout_ms),
+                ),
             )
         };
         let (process, failed) = match launched {
@@ -745,6 +823,28 @@ impl Session {
         let command = tool.command(&self.directory.join("projects"))?;
         let request = Request {
             adapter: project_proof::adapter(),
+            context_sha256: self.manifest.spec.context_sha256.clone(),
+            input,
+            reserved_work: 1,
+        };
+        self.start(task, request, command, |dispatch| {
+            serde_json::to_vec(dispatch).expect("dispatch")
+        })
+    }
+    pub fn start_custom_adapter(
+        &mut self,
+        task: &str,
+        alias: &str,
+        input_text: &str,
+    ) -> Result<Handle, Error> {
+        let registry = self
+            .adapters
+            .as_ref()
+            .ok_or_else(|| Error("custom adapters are not configured".into()))?;
+        let input = registry.identity().request(alias, input_text)?.input()?;
+        let (command, _) = registry.command(alias)?;
+        let request = Request {
+            adapter: custom_adapter::adapter(),
             context_sha256: self.manifest.spec.context_sha256.clone(),
             input,
             reserved_work: 1,
@@ -992,6 +1092,14 @@ fn check_dispatch(configuration: &Configuration, dispatch: &Dispatch) -> Result<
                 .ok_or_else(|| Error("unconfigured project proof dispatch".into()))?,
             dispatch,
         )?;
+    } else if dispatch.binding.adapter == custom_adapter::adapter() {
+        custom_adapter::request(
+            configuration
+                .adapters
+                .as_ref()
+                .ok_or_else(|| Error("unconfigured custom adapter dispatch".into()))?,
+            dispatch,
+        )?;
     } else {
         return Err(Error("unsupported asynchronous adapter".into()));
     }
@@ -1068,6 +1176,16 @@ fn response(
                 .projects
                 .as_ref()
                 .ok_or_else(|| Error("project identity missing".into()))?,
+            &observation.dispatch,
+            output,
+        )
+        .ok())
+    } else if observation.dispatch.binding.adapter == custom_adapter::adapter() {
+        Ok(custom_adapter::response(
+            configuration
+                .adapters
+                .as_ref()
+                .ok_or_else(|| Error("custom adapter identity missing".into()))?,
             &observation.dispatch,
             output,
         )
@@ -1196,7 +1314,7 @@ pub fn recover_snapshot(directory: &Path) -> Result<Snapshot, Error> {
         return Err(Error("session manifest is not canonical".into()));
     }
     manifest.validate()?;
-    Session::restore(directory, manifest, None, None, None)?.snapshot()
+    Session::restore(directory, manifest, None, None, None, None)?.snapshot()
 }
 
 #[cfg(test)]

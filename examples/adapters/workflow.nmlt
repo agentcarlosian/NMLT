@@ -1,0 +1,14 @@
+// Demonstrates affine handle checking and fallback over pluggable subprocess adapters (RFC 0042).
+fn run_with_fallback(primary: Text, backup: Text) -> Outcome<Text> {
+  let first = job_start_adapter("checker", primary);
+  let second = job_start_adapter("checker", backup);
+  let first_result = job_collect(first);
+  let second_result = job_collect(second);
+  match first_result {
+    Ok(value) => Ok(value),
+    Err(message) => match second_result {
+      Ok(value) => Ok(value),
+      Err(other) => Err(other)
+    }
+  }
+}

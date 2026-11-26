@@ -9,6 +9,7 @@ use nmlt_core::{Diagnostic, ParsedFile, lex_source, parse_source};
 use nmlt_eval::{ExploreConfig, explore};
 use nmlt_ir::BehaviorCoreProgram;
 
+mod adapters;
 mod async_jobs;
 mod diagnostics;
 mod formatting;
@@ -51,9 +52,9 @@ Usage:\n\
   nmlt run <source.nmlt> --entry <name> --max-steps <n> --emit-run <new.json> [--arg name=value] Execute pure functions\n\
   nmlt run <source.nmlt> --entry <name> ... --jobs-dir <new-dir> --max-jobs <1..16> --job-timeout-ms <1..30000> Execute local jobs\n\
   nmlt jobs-recover <jobs-dir>                            Classify unfinished work without redispatch\n\
-  nmlt jobs-resume <jobs-dir> --emit-run <new.json> [--lean-bin <path>] [--acknowledge-uncertain-effects <reason>] Resume saved source\n\
+  nmlt jobs-resume <jobs-dir> --emit-run <new.json> [--lean-bin <path>] [--adapters <file.toml>] [--acknowledge-uncertain-effects <reason>] Resume saved source\n\
   nmlt jobs-repair <jobs-dir> --acknowledge-incomplete-tail <reason> Quarantine incomplete final appends\n\
-  nmlt run <source.nmlt> --entry <name> ... --job-slots <1..4> [--lean-bin <path>] [--lean-projects <registry.toml>] Execute scoped async jobs\n\
+  nmlt run <source.nmlt> --entry <name> ... --job-slots <1..4> [--lean-bin <path>] [--lean-projects <registry.toml>] [--adapters <file.toml>] Execute scoped async jobs\n\
   nmlt replay <record.json> --source <source.nmlt>         Replay with the same executable\n\
   nmlt version                                           Print the frontend version\n\
   nmlt help                                              Show this help\n\n\

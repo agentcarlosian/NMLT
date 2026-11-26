@@ -27,7 +27,8 @@ impl JobHost for Host {
                 JobRequest::Square(i) => Value::Ok(Box::new(Value::Int(i * i))),
                 JobRequest::Lean(_)
                 | JobRequest::LeanCheck { .. }
-                | JobRequest::LeanProject { .. } => {
+                | JobRequest::LeanProject { .. }
+                | JobRequest::CustomAdapter { .. } => {
                     Value::Ok(Box::new(Value::Text("receipt".into())))
                 }
             }),
@@ -57,6 +58,34 @@ fn lean_terms_are_typed_dynamic_inputs_and_handles_transfer() {
     );
     assert_eq!(host.calls, vec![(0, JobOperation::Collect)]);
     assert!(compile("fn main() -> Outcome<Text> { let h = job_start_lean_check(2, \"True.intro\"); job_collect(h) }").is_err());
+}
+
+#[test]
+fn custom_adapter_jobs_require_custom_flag_and_affine_consumption() {
+    let program = compile(
+        "fn helper(x: Text) -> Job<Text> { job_start_adapter(\"checker\", x) }\n\
+         fn main(x: Text) -> Outcome<Text> { let h = helper(x); job_collect(h) }\n",
+    )
+    .unwrap();
+    assert!(program.requires_jobs("main").unwrap());
+    assert!(program.requires_async_jobs("main").unwrap());
+    assert!(program.requires_custom_jobs("main").unwrap());
+    assert!(!program.requires_lean_jobs("main").unwrap());
+    assert!(!program.requires_project_jobs("main").unwrap());
+    let inputs = Inputs::from([("x".into(), Value::Text("payload".into()))]);
+    let mut host = Host::default();
+    let result = execute_with_host(&program, "main", &inputs, 100, &mut host).unwrap();
+    assert!(result.stop.returned());
+    assert_eq!(
+        host.requests,
+        vec![JobRequest::CustomAdapter {
+            alias: "checker".into(),
+            input: "payload".into()
+        }]
+    );
+    // Affine linearity: dropping or double-collecting a custom adapter handle fails typechecking.
+    assert!(compile("fn bad(x: Text) -> Int { let h = job_start_adapter(\"a\", x); 1 }").is_err());
+    assert!(compile("fn bad(x: Text) -> Outcome<Text> { let h = job_start_adapter(\"a\", x); let a = job_collect(h); job_collect(h) }").is_err());
 }
 
 #[test]

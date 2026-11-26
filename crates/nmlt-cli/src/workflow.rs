@@ -161,6 +161,7 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
     let (mut jobs_dir, mut max_jobs, mut job_timeout_ms) = (None, None, None);
     let (mut slots, mut lean_bin) = (None, None);
     let mut lean_projects = None;
+    let mut adapters_file = None;
     let mut project_context = None;
     let mut raw_inputs = std::collections::BTreeMap::new();
     let mut pairs = args[1..].chunks_exact(2);
@@ -201,6 +202,9 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
             Some("--lean-bin") if lean_bin.is_none() => lean_bin = Some(PathBuf::from(&pair[1])),
             Some("--lean-projects") if lean_projects.is_none() => {
                 lean_projects = Some(PathBuf::from(&pair[1]))
+            }
+            Some("--adapters") if adapters_file.is_none() => {
+                adapters_file = Some(PathBuf::from(&pair[1]))
             }
             Some("--max-jobs") if max_jobs.is_none() => {
                 max_jobs = Some(
@@ -280,13 +284,15 @@ pub(super) fn run(args: &[OsString]) -> Result<(), String> {
                 },
                 lean: lean_bin,
                 projects: lean_projects,
+                adapters: adapters_file,
                 project_context,
             },
         );
     }
-    if slots.is_some() || lean_bin.is_some() || lean_projects.is_some() {
+    if slots.is_some() || lean_bin.is_some() || lean_projects.is_some() || adapters_file.is_some() {
         return Err(
-            "--job-slots, --lean-bin and --lean-projects require a source job entry".into(),
+            "--job-slots, --lean-bin, --lean-projects and --adapters require a source job entry"
+                .into(),
         );
     }
     if jobs_dir.is_some() || max_jobs.is_some() || job_timeout_ms.is_some() {
