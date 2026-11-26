@@ -75,3 +75,4 @@ evidence.
 | [0037](0037-console-free-contained-windows-processes.md) | Console-free contained Windows processes | Under review |
 | [0038](0038-candidate-selected-lean-tactic-imports.md) | Candidate-selected Lean tactic imports | Under review |
 | [0039](0039-guarded-lean-tactic-scripts.md) | Guarded Lean 4 tactic scripts | Under review |
+| [0040](0040-lean-tool-bootstrap-and-ergonomics.md) | Lean tool bootstrap and ergonomic `lean-task` defaults | Under review |

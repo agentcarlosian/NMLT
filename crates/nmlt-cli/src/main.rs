@@ -19,11 +19,13 @@ mod lean_task;
 mod project;
 mod runtime;
 mod strict_json;
+mod tools;
 mod workflow;
 
 const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
+  nmlt tools <status|setup> [--dir DIR] [--json]       Inspect or bootstrap pinned lean4export + nanoda\n\
   nmlt lean-task <bind|revise|candidate|workspace|inspect|prove|recheck> --help  Develop and independently check bound Lean proofs\n\
   nmlt init <new-directory>                             Create a runnable project and tests\n\
   nmlt lock [project-directory]                        Pin imported sources and local tools\n\
@@ -62,7 +64,7 @@ fn main() -> ExitCode {
     if json {
         arguments.remove(0);
     }
-    match dispatch(arguments) {
+    match dispatch(arguments, json) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             if json {
@@ -78,12 +80,13 @@ fn main() -> ExitCode {
     }
 }
 
-fn dispatch(arguments: Vec<std::ffi::OsString>) -> Result<(), diagnostics::Error> {
+fn dispatch(arguments: Vec<std::ffi::OsString>, json: bool) -> Result<(), diagnostics::Error> {
     let command = arguments.first().and_then(|a| a.to_str()).unwrap_or("help");
     match command {
         "__lean-project-worker" => {
             return lean_task::jobs::worker(&arguments[1..]).map_err(Into::into);
         }
+        "tools" => return tools::command(&arguments[1..], json).map_err(Into::into),
         "lean-task" => return lean_task::command(&arguments[1..]).map_err(Into::into),
         "check-invariant" => return invariant::command(&arguments[1..]),
         "resume" => return project::resume(&arguments[1..]),
