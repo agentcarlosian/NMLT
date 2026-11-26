@@ -40,6 +40,11 @@ be replaced with durable `getting-started`, `open-systems`, and
   worker, handles failure with a bounded fallback, and reuses its collected value.
   The [source job guide](../docs/r2-source-jobs.md) covers opt-in bounds and replay.
 
+The `discovery/` contract and `evaluation/` corpus are active, exposed research
+and engineering fixtures described by the [R4 workflows](../docs/r4-discovery-workflows.md)
+and [R5 protocol](../docs/r5-evaluation-protocol.md). They retain their explicit
+finite bounds and checker requirements; they are not independent-user evidence.
+
 The other directories are retained language-design and lossless-frontend
 fixtures. Many use surface forms intentionally outside the first finite
 behavioral slice. They are not executable semantic examples and do not inherit
@@ -48,5 +53,5 @@ the Lean theorem.
 The pre-pivot composition and provider examples are historical syntax fixtures.
 The old canonical corpus records frontend breadth, not current behavioral
 semantics or model-check support. Active semantic claims use only the canonical
-`pivot/` source/artifact fixtures and the Lean definitions, with each check's
+`pivot/` and `evaluation/` source/artifact fixtures and the Lean definitions, with each check's
 stated scope.

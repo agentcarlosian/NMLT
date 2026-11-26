@@ -48,7 +48,14 @@ postponed RFC remains a research lead and is not an implied commitment.
 Changes to type checking, Lean semantic authority, artifact interpretation,
 refinement, or assurance wording require two independent reviews once the
 project has more than one maintainer. Until then, they require an RFC or
-written decision record plus a recorded adversarial review.
+written decision record plus a recorded adversarial review. For the current
+solo-maintainer project, that review may be a separate maintainer critique
+and/or AI-assisted review, with its method, findings and limits disclosed.
+It is not independent human review. Unavailable external reviewers, users or
+audience recruitment do not block solo milestone completion or publication;
+reproducible correctness, negative-control, compatibility and trust checks do.
+Independent kernel and NanoDA verification are technical checks and remain
+required wherever a claim relies on them. External feedback is optional.
 
 The public language-and-mathematics pivot is recorded in
 [decision 0004](docs/decisions/0004-language-mathematics-pivot.md). Historical

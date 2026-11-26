@@ -1,0 +1,25 @@
+{
+  "schema": "nmlt-solo-packet-v1",
+  "question": "Can one operator reuse checked static composition reasoning, repair and revise a native proof, and recover bounded executable workflows?",
+  "roles": {
+    "mathematician": ["calibration", "modified_input", "invalid_control", "second_use"],
+    "Lean developer": ["proof_repair", "context_revision", "fresh_recheck", "interruption", "recovery", "second_use"],
+    "software engineer": ["modified_input", "failure", "cancellation", "replay", "recovery", "second_use"]
+  },
+  "mathematical_reuse": "NMLT.Discovery.NestedReuse: lift the existing visibility lemma twice, exhibit an initialized nested step and resource bound, refute formation and a smaller advertised bound.",
+  "native_task": "Example.zero_offset, reusing Example.offset_eq; then explicitly revise the offset definition and successor target in a second question",
+  "negative_controls": {"math-bound-and-formation": "checked_refutation", "wrong-term": "type_rejection", "stale-candidate": "stale_identity_rejection"},
+  "proof_rechecks": ["repair", "revised-proof", "native-source"],
+  "worker_inputs": [[-3, 5], [-4, 7]],
+  "worker_expected_outputs": [50, 98],
+  "native_candidate_budget": 2,
+  "native_timeout_seconds": 1800,
+  "command_timeout_seconds": 2400,
+  "worker_timeout_seconds": 30,
+  "interruption_trigger": "A durable native proof worker work record and reconstructed project directory exist before terminating only the source coordinator.",
+  "interruption_wait_seconds": 180,
+  "measures": ["command wall seconds", "commands and failed attempts", "source edits", "explicit uncertainty acknowledgements", "second-use identity", "unknown manual time and unmeasured CPU/memory/token usage"],
+  "comparison": "Separate matched recorded replay: two paired repeats, library/NMLT then NMLT/library, identical candidates and checker policy. No live model or human-time target.",
+  "operator": "single maintainer with AI assistance; not independent human participants",
+  "limits": ["known exposed tasks", "no novelty or external usability claim", "raw static nested example is not a formed source product", "host workflow has assurance none", "manual time and population speedup unmeasured"]
+}

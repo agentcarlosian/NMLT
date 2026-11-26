@@ -7,7 +7,7 @@
 - Next milestone: R4 — discovery workflows
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
-- Updated: 2026-09-11
+- Updated: 2026-10-03
 
 This file governs execution priorities and milestone completion. The
 [practical language design](docs/practical-language-plan.md) supplies detailed
@@ -94,8 +94,8 @@ toolchain maintenance.
 | R1 — Unified semantics and finite execution | Complete at finite scope | R0 checker baseline | Lean/semantics and Rust maintainers |
 | R2 — Useful executable language | Completed at local pre-alpha scope on 2026-09-09; see completion audit | R1 for formal execution claims | Compiler/runtime and integration maintainers |
 | R3 — Supported Lean workflows | Completed at local pre-alpha scope on 2026-09-11; see completion audit | R2; adapter prototype can begin in R0 | Lean integration maintainer |
-| R4 — Discovery workflows | Planned | R3 for integration; domain preparation can start earlier | Mathematical reviewer and integration maintainer |
-| R5 — Three-audience alpha validation | Planned | R2–R4 | Maintainers and independent pilot users |
+| R4 - Discovery workflows | Checked calibration implemented; solo second-use evidence pending | R3 for integration | Solo maintainer, with tool-assisted critique |
+| R5 - Three-audience alpha validation | Engineering corpus/replay prepared; solo operational walkthroughs pending | R2-R4 | Solo maintainer exercising all three roles |
 
 Mark a milestone complete only when its exit gate has recorded evidence.
 
@@ -122,7 +122,7 @@ Committed as `f966758` before beginning R1.
   evolution, and the proposed extension to ADR 0004. Draft status is not acceptance.
 - Completed: [role-based pilot cards and forms](docs/r0-pilot-protocol.md).
   Identifying or recruiting specific participants is not required for R0;
-  independent user evaluation remains later work.
+  external user evaluation is optional later work, not a milestone prerequisite.
 
 Exit gate: a fresh checker compatibility record, three runnable baseline
 examples, and specific user friction that NMLT will attempt to reduce.
@@ -412,55 +412,74 @@ Exit gate: every reported success independently rechecks without the generating
 model session. Worker success or an empty tactic-goal list is insufficient.
 Replay checks recorded artifacts; it need not regenerate model responses.
 
-### R4 — Make discovery a first-class workflow
+### R4 - Make discovery a first-class workflow
 
-- Distinguish conjectures, bounded computational evidence, checked
-  counterexamples, Lean theorems, and novelty/usefulness review.
-- Calibrate by reproducing a known result before claiming discovery ability.
-- Investigate the sufficient premises of an NMLT composition law against
-  deterministic analysis and ordinary Lean automation. Necessity countermodels
-  must satisfy retained assumptions and falsify the fixed conclusion; require
-  admitted initial states and enabled behavior to check non-vacuity.
-- Search for worker-protocol improvements against frozen inputs, environment
-  traces, and required outcomes. Check every case within declared bounds before
-  scoring; reject added deadlocks or cheap failures replacing required success.
-- Run an outward-facing finite-construction experiment with an exact predicate
-  and mathematical reviewer. Hold out sizes and distinguish individual objects
-  from proved parameterized families.
-- Record prior-art searches and human assessment separately from proof
-  acceptance. Failed search remains unknown; new formalization is not
-  automatically new mathematics.
+The [bounded discovery workflows](docs/r4-discovery-workflows.md) provide known-result
+calibration, all 16 fixed composition-premise subsets, a finite worker-policy
+search, and checked graph objects with explicit cycle isomorphisms. These are
+developer-exposed results. R4 completion requires a recorded second use and an
+explanation of its practical mathematical value; rerunning the same cases is
+insufficient. External mathematical feedback is welcome but is not a gate for
+this solo-maintained project.
 
-Exit gate: reproduce a known result and obtain at least one useful checked
-generalization, counterexample, or construction that a reviewer can explain
-and reuse. No deadline guarantees a new theorem. Bounded completion checks
-do not establish general liveness.
+- Keep conjectures, bounded computation, checked refutations, theorems, and
+  novelty/usefulness judgments distinct. Failed search remains unknown.
+- Freeze the question, conclusion, assumptions, candidate family, inputs and
+  stop rules before comparing outcomes. Reproduce a known result first.
+- Check countermodels against the retained hypotheses and fixed conclusion,
+  with admitted initial states and enabled behavior to rule out vacuity.
+- Check all cases in a bounded worker search before scoring; reject added
+  deadlock, missing work, and cheap failure replacing required success.
+- Check constructions against exact predicates. Distinguish object counts,
+  isomorphic rediscovery, size holdouts, and theorems about all parameters.
+- Execute a second use of a checked lemma, counterexample method, or construction
+  in a different question/example. Record what can be reused and its premises.
+- Record explanations, prior-art searches, failed attempts, and explicit limits.
+  A new formalization or known cycle is not evidence of mathematical novelty.
 
-### R5 — Demonstrate usefulness for all three audiences
+Exit gate: reproducible known-result calibration; one exact checked
+generalization, refutation, or construction; a successfully executed second use;
+and a written account of assumptions, usefulness within that example, bounds,
+and prior-art limits. Lean/kernel and independent NanoDA checks remain required.
+Use the [solo validation protocol](docs/solo-validation.md). Self/AI review does
+not establish independent human assessment or general usefulness. No milestone
+guarantees a new theorem, and bounded completion does not prove general liveness.
 
-- R0 freezes the small public calibration corpus. Before comparative testing,
-  finalize and freeze a separate evaluation corpus: proposed scope is 30 Lean
-  tasks, 12 finite behavior scenarios plus invalid controls, and three
-  calibrated discovery exercises. These remain targets, not existing benchmarks.
-- Separate tuning from evaluation projects; report finite bounds, rejected
-  attempts, unknown outcomes, and contamination limitations.
-- Require every reported proof/trace success to recheck and every specified
-  invalid control to be rejected, with actual denominators reported.
-- Compare with a library-only baseline using identical adapters, orchestration,
-  prompts, retrieval, caching, models, and checking policy. Separate language
-  gains from improvements to the proving system.
-- Use recorded-response replay and paired repeated live runs; measure setup,
-  hands-on time, resource use, diagnosis, proof maintenance, and reuse.
-- Have at least one independent user per audience install, modify, run, and
-  explain its workflow; treat this as qualitative pilot evidence.
-- Pre-register a useful improvement target. The detailed design suggests 20%
-  lower median hands-on time without worse acceptance quality, with sample
-  size and uncertainty explicitly reported.
+### R5 - Validate useful workflows for all three audiences
 
-Exit gate: all three workflows are independently usable, their results reproduce
-within the declared scope, and comparison evidence supports the value of NMLT.
-If the language adds ceremony without benefit, retain useful libraries,
-simplify the surface, and repeat the focused comparison.
+The [evaluation protocol](docs/r5-evaluation-protocol.md) separates the required
+solo-development track from an optional human study. The 30 reference terms,
+12 finite scenarios and matched batch replay are engineering prerequisites;
+they are not 30 operational trials or a complete usability demonstration.
+The [verification record](docs/r4-r5-verification.md) retains actual outcomes.
+New solo gates remain pending until their scenarios have run successfully.
+
+- Run representative, documented walkthroughs for mathematicians, AI/Lean
+  developers, and software engineers. One developer may exercise all three roles;
+  role coverage is not a count of independent people.
+- Include actual proof repair, context revision, interruption and recovery,
+  exact rechecks, and reuse in a second workflow. Record failures and unknowns.
+- Require every claimed proof/trace success to recheck and every specified
+  invalid control to fail at its intended semantic boundary. Host failure or
+  timeout cannot count as a rejected mathematical candidate.
+- Freeze tasks, inputs, commands, budgets, checker policies and local measures
+  before running. Report edits, interventions, setup, diagnosis, maintenance,
+  reuse and resource costs where actually observed; missing measures stay unknown.
+- Where comparing library and NMLT routes, hold tools, candidates, checking,
+  cache policy and orchestration algorithm fixed; use paired repetitions in
+  both orders. Report what the language contributes separately from the prover.
+- Demonstrate a concrete local benefit, such as eliminating repeated plumbing,
+  retaining checked work through recovery, or reusing a component with stated
+  premises. Document any extra ceremony and simplify when it outweighs benefit.
+
+Exit gate: all three role-based workflows execute end to end, their outputs and
+negative controls reproduce, repair/revision/interruption/recovery and second-use
+requirements have linked evidence, and a written local value/limitations assessment
+supports the chosen surface. A complete current platform verification gate remains
+required. External participants, recruitment, paid/live model calls and a 20%
+human-time improvement are not completion conditions. Optional human/model studies
+retain their own honest protocols and denominators; no population usefulness,
+independent-user validation or speedup follows from self/AI-assisted runs.
 
 ## Sequencing and parallel work
 
@@ -497,21 +516,31 @@ remain later research.
 Defer own foundation-model training, a replacement for Lean/mathlib, another
 proof kernel, optimizing native code generation, a public package registry,
 distributed deployment, runtime attestation, and separate bespoke UIs until
-the pilots justify them. A general production assurance system is not an alpha
+recorded workflow evidence justifies them. A general production assurance system is not an alpha
 deliverable.
 
 ## Publication gate
 
-Before any public PR:
+Before any public PR or release:
 
-- reconstruct a reviewable stack from `origin/main`, preserving the
-  current branch as a safety reference;
-- run Rust and Lean gates at every PR tip and from a clean worktree;
-- reproduce and byte-compare the canonical artifact;
-- reject tracked generated outputs and broken local links;
-- verify every path in the trusted-component inventory;
-- resolve or explicitly waive independent critical-review findings; and
-- complete one authenticated cross-family review.
+- prepare a reviewable change from the intended base, preserving existing work;
+- pass the applicable Rust, Lean and independent-checker gates on the final
+  code and record platform coverage and any unsupported scope;
+- reproduce canonical artifacts, reject tracked generated outputs and broken
+  local links, and verify the trusted-component inventory;
+- record the claim, assumptions, compatibility, negative controls and limits;
+- conduct a separate adversarial review pass and record findings/dispositions.
+  During solo development this may be maintainer and/or AI-assisted review,
+  explicitly labeled as such, with reproducible checks as supporting evidence;
+- resolve correctness/security blockers rather than waiving failing proof,
+  containment or artifact checks. Record the maintainer's release decision.
+
+External human or cross-model review is optional additional evidence, not a
+dependency on unavailable collaborators. It must not be mislabeled as present.
+Independent Lean/NanoDA verification remains a technical requirement, distinct
+from human review. RFC requirements for language/trust changes still apply.
+Publishing itself still needs explicit authorization; completion of these checks
+does not authorize push, PR publication, merge, deployment or outreach.
 
 ## Historical boundary
 

@@ -41,7 +41,7 @@ NMLT interpreter. R1 completed at finite scope; R2 completed at local pre-alpha 
 - Preserve the existing passing baseline and audited working changes in separately reviewable commits when implementation is authorized. A toolchain migration must not silently weaken theorem statements or the axiom policy.
 - Write the three workflows above as input/output contracts and small baseline programs using existing Lean/Python/Rust tools. Use batch Lean project checking first; evaluate LeanInteract only after compatibility with the patched checker is established. Its published supported range currently ends before 4.33.1. [LeanInteract](https://github.com/augustepoiroux/LeanInteract)
 - Freeze benchmark definitions, baseline configurations, model/resource budgets, success meanings, and stop conditions. Start with deterministic adapters and existing proof attempts; model access and compute limits are configuration decisions for implementation, not prerequisites for this planning work.
-- Prepare reusable pilot task cards and an observation form for each audience. As directed by the maintainer, R0 does not require naming or recruiting participants; independent user evaluation remains a later R5 activity.
+- Prepare reusable pilot task cards and an observation form for each audience. As directed by the maintainer, R0 does not require naming or recruiting participants; external user evaluation is optional; R5 has a separate required solo validation track.
 
 Exit: a fresh checker compatibility record; one complete baseline example per audience; a written explanation of the specific friction NMLT will attempt to reduce. Do not deepen a language feature whose benefit is indistinguishable from an existing small library.
 
@@ -162,8 +162,8 @@ The [completion audit](reviews/r3-completion-audit-2026-09-11.md) records the
 passing full reproduction, final native/Mathlib set and combined Mathlib source
 job. Every accepted proof in those sets passed fresh independent rechecking.
 R3 completed at local pre-alpha scope on 2026-09-11 against the integration and
-scale requirements below. Independent human/publication review and RFC
-acceptance remain separate.
+scale requirements below. Current publication checks and RFC acceptance remain separate; external human
+feedback is optional under the solo-maintainer policy.
 
 Owners: Lean integration maintainer. Dependencies: R2; a batch adapter spike and baseline can start in R0.
 
@@ -176,55 +176,55 @@ Owners: Lean integration maintainer. Dependencies: R2; a batch adapter spike and
 
 Exit: the frozen proof task set completes with ordinary accepted Lean output or an explicit failure/unknown outcome; every reported success can be independently rechecked without the generating model session. Identical model responses are not required for replay: replay checks recorded artifacts and execution decisions.
 
-## R4 — Make mathematical discovery an explicit program
+## R4 - Make mathematical discovery an explicit program
 
-Owners: mathematical/domain reviewer and integration maintainer. Dependencies: R3 for integrated execution; question selection and deterministic baselines can start during R0–R1.
+Owner: solo maintainer, with optional external feedback and tool-assisted
+adversarial critique. Dependencies: R3 for integration; question selection and
+deterministic baselines can begin earlier. The current gates are in
+[Plan.md](../Plan.md) and [solo validation](solo-validation.md).
 
-The workflow is: select a reviewed question, generate candidates, search for counterexamples, attempt proofs, examine generalizations, assess novelty, and publish an inspectable result for review. Publishing means preparing a reviewable artifact; external publication remains a separate action.
+Freeze a question and conclusion, explore candidates, seek countermodels, check
+proofs, and record explanations and prior-art limits. Conjectures are unproved;
+bounded computation is not a theorem; a checked refutation must falsify the
+actual conclusion while retaining its hypotheses. Lean proofs do not certify
+informal intent, novelty or general usefulness. Explicit initialization and
+enabledness witnesses guard against vacuity.
 
-Keep these outcomes distinct:
+Retain the three experiments: composition-premise classification, worker-policy
+search against fixed required outcomes, and finite constructions checked against
+exact predicates. Count all attempted cases and unknowns; reject added deadlock
+and cheap failure before scoring. Distinguish graph rows, distinct objects and
+isomorphic rediscovery. Keep source correspondence and finite-scope limits clear.
 
-| Output | Evidence required | What it does not establish |
-|---|---|---|
-| Conjecture | Exact statement, assumptions, provenance | Truth |
-| Computational support | Instances, bounds, evaluator, inputs and outputs | A universal theorem |
-| Refutation | Witness checked against the actual negated claim | Failure merely because a prover timed out |
-| Lean theorem | Checked proof, target and environment, axioms/dependencies | Faithfulness to informal intent or novelty |
-| Candidate contribution | Prior-art search, explanation, independent domain review | An automatic certificate of mathematical importance |
+Exit: reproduce a known result; check one exact generalization, refutation or
+construction; execute its second use in a different question/example; document
+its premises, local value, bounds and prior art. Repeating the calibration cases
+alone does not satisfy reuse. No outside mathematician is required. Novelty and
+independent human assessment remain unestablished unless separately evidenced.
 
-First experiment: classify premises of an NMLT composition theorem. Freeze the conclusion and a family of assumptions; compare deterministic subset analysis, ordinary Lean automation, and agent suggestions. A necessity witness must satisfy the retained assumptions and falsify the conclusion. Require admitted initial states and enabled behaviors so a weaker theorem is not vacuous.
+## R5 - Validate useful workflows for all three audiences
 
-Second experiment: find a useful simplification or resource improvement for the permit-controlled worker protocol. Before search, freeze permitted inputs/environment traces and their required observations and outcomes. Check every case within the declared finite bounds before scoring improvements, including completion where required; reject added deadlocks, missing enabled work, and cheap failure branches that replace required success. Compare with exhaustive or solver-based search on the same bounded problem. These are bounded contract checks, not a general liveness result.
+Owner: the solo maintainer exercising three roles. Dependencies: R2-R4.
+The frozen engineering corpus retains 30 Lean references, 12 finite behavior
+scenarios with invalid variants, and three discovery exercises. Their preflights
+do not substitute for actual repair, revision, interruption and recovery.
 
-Third experiment: a small finite construction laboratory, such as graphs satisfying a fixed exact predicate. Recover known constructions first. Check final objects in Lean, hold out instance sizes, and only then attempt a parameterized family or explanatory lemma. Distinguish isomorphic rediscoveries and new formalizations from candidate mathematical novelty.
-
-Exit: reproduce a known result and obtain at least one useful checked generalization, counterexample, or construction that a domain reviewer can explain and reuse. A successful refutation is a useful outcome. No milestone guarantees a new theorem on a deadline.
-
-## R5 — Validate usefulness for all three audiences
-
-Owners: integration maintainer with independent pilot users. Dependencies: R2–R4.
-
-R0 freezes the small public calibration corpus in its baseline contracts.
-Finalize and freeze a separate evaluation corpus before comparative testing.
-Its proposed initial scope is:
-
-- 30 Lean tasks across ordinary library lemmas, multi-lemma dependencies, proof repair, definition/context sensitivity, and interrupted runs. Separate tuning projects from evaluation projects; report public-benchmark contamination limits.
-- 12 small behavior scenarios covering ownership, composition, outcomes, and budgets, with a separately enumerated set of invalid variants. Exhaustive claims must name the exact finite bounds.
-- Three discovery exercises with known answers or constructions for calibration, plus an optional expert-selected open instance. Keep failed and rejected candidates in the accounting.
-
-These counts are proposed scope, not existing benchmarks or performance results. Finalize them against the actual implementation budget before collecting comparison data.
-
-| Question | Measurement and gate |
+| Question | Feasible solo evidence |
 |---|---|
-| Are accepted results reliable within the declared scope? | Every reported proof/trace success rechecks; every specified invalid control is rejected. Report the finite test denominator, not a universal reliability claim. |
-| Does the new language help? | Include a library-only baseline with identical adapters, orchestration algorithm, prompts, retrieval, caching policy, and checking policy. Compare language/runtime changes separately from proving-system improvements; also measure an existing Lean coding-agent stack. Record time, setup effort, interventions, proof maintenance, and resource use. |
-| Does composition add value? | Reuse a component in a second workflow and demonstrate which property can be reused, under which premises, instead of rechecking everything from scratch. |
-| Can each audience use it? | At least one independent user per audience installs, changes, runs, and explains a workflow. Treat this as qualitative pilot evidence, not market validation. |
-| Is further language growth justified? | Pre-register a useful advantage before the comparison; a suggested target is a 20% reduction in median hands-on task time without worse acceptance quality. Explain sample size and uncertainty rather than presenting the threshold as statistical proof. |
+| Are results reliable within their scope? | Recheck every claimed proof/trace success; reject every specified invalid control at the intended boundary; report actual denominators and failures. |
+| Does the workflow solve a concrete task? | Execute role-based mathematician, AI/Lean developer and software-engineer walkthroughs, recording inputs, edits, commands, outputs, diagnosis and limitations. One operator may cover all roles; roles are not independent participants. |
+| Does composition/recovery add value? | Repair a failed proof, revise its context, interrupt/recover native work and reuse a component or checked property in a second workflow under stated premises. |
+| What does the language contribute? | For comparisons, match adapters, candidates, orchestration, checker policy and cache treatment; use repeated pairs in reversed order. Predeclare local measures such as edits, interventions, setup, diagnosis, maintenance, reuse and resource costs. |
+| Is more language machinery justified? | Explain the observed local benefit and extra ceremony. Simplify or keep the library-only route when evidence does not support the added surface. Missing observations remain unknown. |
 
-If the language adds ceremony without a measured benefit, preserve the useful Lean library and adapters, simplify the surface, and repeat the focused comparison. If only one workflow is ready, label that limited readiness while continuing toward the all-three objective.
-
-Use recorded-response replay to isolate deterministic workflow differences, then paired repeated live runs to measure model variability. Freeze the model, tasks, resource limits, and warm/cold-start conditions; vary the order of user trials to reduce learning effects. Report improvements caused by retrieval or prompts separately from benefits attributable to NMLT.
+Exit: all role walkthroughs and their invalid controls reproduce, required
+operations and second uses have retained evidence, the complete applicable
+verification gate passes, and the local value/limits assessment is written.
+There is no mandatory recruitment, independent participant, paid model run or
+20% human-time threshold. The [optional human-study protocol](r5-evaluation-protocol.md)
+still enforces independent participant identities and honest comparison statistics
+when such a study is actually run. Developer/AI runs establish neither external
+usability nor population speedup or live-model performance.
 
 ## Parallel work and sequencing
 
@@ -238,9 +238,9 @@ The first implementation sequence should be:
 2. Record the executable-profile RFC and three baseline task contracts.
 3. Start M1 semantic unification while a separate branch builds the batch Lean adapter and baseline comparison.
 4. Add the decoded dynamic witness and receive-then-use path before promoting runtime resource guarantees.
-5. Integrate the smallest interpreter and reuse it for all three pilot workflows.
+5. Integrate the smallest interpreter and reuse it for all three role-based workflows.
 
-## Work to defer until the pilots justify it
+## Work to defer until workflow evidence justifies it
 
 Own foundation-model training; a replacement for Lean/mathlib; a second proof kernel; an optimizing native backend; a general package registry; distributed deployment; automatic large-scale paper generation; and a separate bespoke UI for each audience.
 

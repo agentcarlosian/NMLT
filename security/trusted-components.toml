@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
-reviewed = "2026-09-06"
-scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, and R3 bound Lean/Lake tasks, native proof development, explicit revisions and asynchronous project proofs"
+reviewed = "2026-11-26"
+scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, R3 bound Lean/Lake tasks with console-free Windows containment (RFC 0037) and candidate-selected tactic imports (RFC 0038), and bounded R4/R5 discovery, corpus, and solo-validation harnesses"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -95,8 +95,8 @@ trusted_components = ["toolchain.rust", "toolchain.lean", "lean.local_task_bindi
 
 [[components]]
 id = "host.process_supervisor"
-paths = ["crates/nmlt-runtime/Cargo.toml", "Cargo.lock", "crates/nmlt-runtime/src/process.rs", "crates/nmlt-runtime/src/process/file_output.rs", "crates/nmlt-runtime/src/process/profile.rs", "rfcs/0028-contained-process-lifecycle.md", "rfcs/0033-bounded-lean-proof-exports.md", "rfcs/0036-native-lean-project-workflows.md"]
-role = "Pinned ProcessKit 3.3.4 and the OS provide the recorded process/tree resource policy. Ordinary file capture is bounded to 16 MiB; separate project profiles permit 30-minute/8-GiB work and 64-MiB file capture. The fixed project worker coordinator adds no Windows CPU rate cap around already-capped build/checker stages, avoiding nested quota multiplication; its memory, process-count, deadline and tree-cleanup bounds remain explicit. Byte-count/hash receipts require bounded pipes and successful sink flush/EOF. Ordinary R2 limits remain unchanged. Windows Job Objects and Unix process-group/rlimit fallback have distinct limits. Filesystem/network access, system libraries and concurrent filesystem stability remain outside containment."
+paths = ["crates/nmlt-runtime/Cargo.toml", "Cargo.lock", "vendor/processkit/src", "vendor/processkit/NMLT-PROVENANCE.json", "crates/nmlt-runtime/src/process.rs", "crates/nmlt-runtime/src/process/file_output.rs", "crates/nmlt-runtime/src/process/profile.rs", "rfcs/0028-contained-process-lifecycle.md", "rfcs/0033-bounded-lean-proof-exports.md", "rfcs/0036-native-lean-project-workflows.md", "rfcs/0037-console-free-contained-windows-processes.md"]
+role = "Vendored ProcessKit 3.3.4-nmlt.1 (pinned against upstream SHA-256 provenance) and the OS provide the recorded v2 process/tree resource policy, launching managed Windows children without a console (DETACHED_PROCESS) while preserving suspended Job Object assignment and kill-on-close. Ordinary file capture is bounded to 16 MiB; separate project profiles permit 30-minute/8-GiB work and 64-MiB file capture. The fixed project worker coordinator adds no Windows CPU rate cap around already-capped build/checker stages, avoiding nested quota multiplication; its memory, process-count, deadline and tree-cleanup bounds remain explicit. Byte-count/hash receipts require bounded pipes and successful sink flush/EOF. Ordinary R2 limits remain unchanged. Windows Job Objects and Unix process-group/rlimit fallback have distinct limits. Filesystem/network access, system libraries and concurrent filesystem stability remain outside containment."
 
 [[claim_profiles]]
 name = "bound_lean_declaration_context"
@@ -265,6 +265,8 @@ role = "Explore Bool/Unit/enum artifacts, execute bounded finite runs over share
 [[components]]
 id = "rust.job_runtime"
 paths = [
+  "vendor/processkit/src",
+  "vendor/processkit/NMLT-PROVENANCE.json",
   "crates/nmlt-runtime/src/lib.rs",
   "crates/nmlt-runtime/src/protocol.rs",
   "crates/nmlt-runtime/src/lifecycle.rs",
@@ -402,10 +404,45 @@ paths = [
   "tools/check_lean_lsp.py",
   "tools/check_lean_project_jobs.py",
   "tools/check_lean_tasks.sh",
+  "rfcs/0038-candidate-selected-lean-tactic-imports.md",
 ]
-role = "Capture bounded trusted Lean sources, native Lake configurations, locked package provenance and target types; reconstruct with native package options; keep terms, structured automation and explicit revisions separate; provide ordinary editor workspaces; enforce axiom/export-root checks and independent NanoDA checking. Validate source-job receipts against retained proof records, export bytes, task/tool pins and actual constant/projection/reduction/literal/group dependencies. Declaration lookup, editor state and mapped diagnostics are context with assurance none. Source imports and draft plans are distinct from actual proof dependencies. Graph extraction describes export syntax, not an independent proof checker. The host, project configurations/metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent checking does not establish human statement faithfulness."
+role = "Capture bounded trusted Lean sources, native Lake configurations, locked package provenance and target types; reconstruct with native package options; keep terms, structured automation (with fixed candidate-selected tactic imports) and explicit revisions separate; provide ordinary editor workspaces; enforce axiom/export-root checks and independent NanoDA checking. Validate source-job receipts against retained proof records, export bytes, task/tool pins and actual constant/projection/reduction/literal/group dependencies. Declaration lookup, editor state and mapped diagnostics are context with assurance none. Source imports and draft plans are distinct from actual proof dependencies. Graph extraction describes export syntax, not an independent proof checker. The host, project configurations/metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent checking does not establish human statement faithfulness."
+
+[[components]]
+id = "lean.discovery_and_evaluation"
+paths = [
+  "mechanization/lean/NMLT/Counterexamples/WiringPremise.lean",
+  "mechanization/lean/NMLT/Discovery/CompositionPremises.lean",
+  "mechanization/lean/NMLT/Discovery/NestedReuse.lean",
+  "mechanization/lean/NMLT/Discovery/FiniteConstructions.lean",
+  "mechanization/lean/NMLT/Evaluation/Corpus.lean",
+  "mechanization/lean/NMLT/Evaluation/Discovery.lean",
+]
+role = "Bounded R4 discovery controls, nested static reuse, finite construction objects, and exposed R5 mathematical reference corpus imported into NMLT and audited under the unchanged axiom allowlist; no novelty, all-sizes theorem, or human-usability claim."
+
+[[components]]
+id = "reference.r4_r5_experiments"
+paths = [
+  "tools/experiments/laboratory.py",
+  "tools/experiments/check_discovery.py",
+  "tools/experiments/check_evaluation.py",
+  "tools/experiments/replay_evaluation.py",
+  "tools/experiments/run_solo.py",
+  "tools/experiments/summarize_pilot.py",
+  "tools/experiments/summarize_solo.py",
+  "tools/experiments/materialize_task.py",
+  "tools/check_evaluation_replay.sh",
+  "tools/check_solo.sh",
+  "examples/discovery/contract.json",
+  "examples/evaluation/manifest.json",
+  "examples/evaluation/solo-packet.json",
+  "docs/r4-discovery-workflows.md",
+  "docs/r5-evaluation-protocol.md",
+  "docs/solo-validation.md",
+]
+role = "Non-authoritative Python/shell harnesses and frozen contracts for R4 finite searches, R5 engineering preflights, matched recorded replay, and solo operational evidence indexing; all emitted JSON reports carry assurance: none and never substitute for Lean/NanoDA proof checking."
 
 [[components]]
 id = "repository.hygiene"
 paths = ["tools/check_public_surface.py", ".gitignore"]
-role = "Reject stale public links, missing trust-inventory paths, removed active component names, and tracked PDF output."
+role = "Reject stale public links, missing trust-inventory paths, vendored ProcessKit provenance drift, removed active component names, and tracked PDF output."

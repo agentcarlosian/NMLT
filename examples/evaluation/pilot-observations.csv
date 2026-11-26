@@ -1,0 +1,1 @@
+participant,audience,task,repetition,arm,arm_position,setup_seconds,hands_on_seconds,accepted,rechecked,invalid_controls_expected,invalid_controls_rejected,diagnosis_seconds,maintenance_seconds,reuse_explained,cpu_seconds,peak_memory_mb,model_tokens,notes

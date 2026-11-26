@@ -61,10 +61,18 @@ the validation used to evaluate it, negative controls, residual gaps, and
 relevant RFC or decision record. Do not combine a semantics change with an
 unrelated refactor.
 
-Changes to the Lean behavior core or artifact trust boundary should receive an
-independent adversarial review. Publication stacks should also receive a
-cross-family review before push; if that review is unavailable, record it as an
-open gate rather than silently omitting it.
+Changes to the Lean behavior core or artifact trust boundary require a recorded
+adversarial review in addition to their RFC/decision and technical checks.
+During solo development, the maintainer can perform a separate critique pass,
+with optional AI assistance, recording the method, findings, fixes and limits.
+Self/AI review is not independent human evidence. External human or cross-model
+review is welcome additional feedback, not an unavailable-person completion gate.
+
+Before publication, preserve the complete applicable Rust/Lean/NanoDA gates,
+negative controls, artifact reproduction, trust inventory and compatibility
+review. Correctness/security blockers cannot be waived by a review label.
+Record the maintainer's decision and retain explicit publication authorization.
+See the current publication gate in `Plan.md` and the solo policy in `GOVERNANCE.md`.
 
 ## Commits
 

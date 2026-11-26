@@ -1,5 +1,10 @@
 # R0 role-based pilot protocol
 
+Current policy (2026-10-03): human-pilot activities described here are optional.
+The required solo-development completion track is in [solo validation](solo-validation.md)
+and [Plan.md](../Plan.md). Role walkthroughs by one developer are not independent
+human participants; checker requirements and the frozen R0 contracts are unchanged.
+
 Date: 2026-09-06. Status: prepared evaluation plan; no user study or outreach
 has been conducted under this protocol.
 

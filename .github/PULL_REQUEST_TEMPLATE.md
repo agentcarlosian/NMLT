@@ -8,7 +8,13 @@
 
 ## Validation
 
-<!-- Rust/Lean gates, exact artifacts, theorem handles, and independent reviews. -->
+<!-- Rust/Lean and independent checker gates, exact artifacts and theorem handles. -->
+
+## Review method
+
+<!-- Identify separate maintainer/AI/external review passes, findings and fixes.
+Self/AI critique is not independent human evidence. State unavailable evidence
+without making outside participation a solo-development gate. -->
 
 ## Negative controls
 
