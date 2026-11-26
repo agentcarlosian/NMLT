@@ -53,9 +53,9 @@ exact .nmlt bytes
 | Exploration | `nmlt-eval` explores Bool/Unit/enum artifacts and emits v2 paths; frozen value/resource graphs are compared with Lean, always with `assurance: none` |
 | Local execution | R2's first increment adds source-driven finite `run` and exact-executable `replay`; shared v2 steps, structured stop outcomes, no host jobs, `assurance: none` |
 | Local source jobs | Opt-in `job_square` uses bounded attempts, a durable journal, validated subprocess results, timeout/output limits, replay without redispatch, and recovery inspection; executable-only |
-| Source jobs | Typed worker and pinned Init proof-term jobs; affine transfer through functions/folds; poll/cancel/collect, durable decisions, explicit uncertainty and source/project resumption; executable-only |
-| Projects | `init`, `lock`, `run`, `test`, `replay`, `resume`, `fmt`, and `check-project`; complete source/tool identities and structured diagnostics |
-| Lean projects | `lean-task bind/revise/candidate/workspace/inspect/prove/recheck`; pinned Lake dependencies, native editor and automation workflows, asynchronous project proofs, actual dependencies and independent NanoDA checking |
+| Source jobs | Typed worker, pinned Init proof-term, and pluggable SHA-256-pinned subprocess adapters (`[[adapters]]`, `job_start_adapter`); affine transfer through functions/folds; poll/cancel/collect, durable decisions, explicit uncertainty and source/project resumption; executable-only |
+| Projects | `init`, `lock`, `run`, `test`, `replay`, `resume`, `fmt`, and `check-project`; complete source/tool/adapter identities and structured diagnostics |
+| Lean projects & MCP | `nmlt tools status/setup`, `nmlt mcp` (stdio JSON-RPC 2.0 proof oracle), and `lean-task bind/revise/candidate/workspace/inspect/prove/recheck`; pinned Lake dependencies, guarded Lean 4 tactic scripts (`v3`), ergonomic `--task DIR`/`--proof FILE` defaults, actual dependencies, and independent NanoDA checking |
 | User safety properties | Exact source predicates with Lean-checked initialization/preservation or an initialized finite counterexample; decoded finite scope |
 | Pure source workflows | Named entries, structured inputs, records, bounded lists/folds, local modules, acyclic functions, typed outcomes, matching, execution/replay; executable-only, no host jobs |
 
@@ -99,6 +99,7 @@ are recorded with the active definitions in the
 | `NMLT.Behavior.ResourceBehavior` | Define the current behavior and static product/refinement theorem | The checked Lean statements under their explicit premises |
 | `NMLT.Behavior.ResourceWorld` | Model dynamic nominal authority and one-step product simulation | Ownership uniqueness, explained effects, and conditional one-step lifting; no reachability or liveness |
 | `NMLT.Behavior.ResourceDynamics` | Unify control, shared authority, initialization, observation and deferred effects | Scoped binary simulation and finite-path results |
+| `NMLT.Behavior.WorkflowJobBridge` | Formalize the bounded affine workflow/host job-slot lifecycle inside `ResourceDynamics` | Generation pinning, handle transfer, double-collect rejection, and no-fabrication on the abstract slot protocol; no Rust host correspondence claim |
 | Lean invariant checker | Checks finite enumeration, exact predicate, initialization/preservation or a reachable violation | Supplied decoded finite binary model; no verified source translation or host correspondence |
 | Lean v2 execution checker | Check supplied paths from decoded initial states, including receive then consume/retransfer | Finite binary execution and initial synchronized refinement; no verified compilation or host runtime |
 | Lean artifact modules | Decode finite artifacts, construct behaviors, and decide theorem premises | Acceptance of the decoded artifact semantics; no verified source translation |

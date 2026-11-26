@@ -31,11 +31,14 @@ The active repository contains:
   verification authority;
 - an executable-only pure workflow engine (`nmlt-workflow`) and bounded local
   job runtime (`nmlt-runtime`) with durable journals, vendored ProcessKit
-  (`3.3.4-nmlt.1`) console-free Windows process supervision, and pinned `Init`
-  proof-term checking;
-- bound local Lean/Lake task workflows (`nmlt lean-task`) with
-  candidate-selected fixed tactic imports and independent NanoDA proof checking
-  over retained proof artifacts; and
+  (`3.3.4-nmlt.1`) console-free Windows process supervision, pinned `Init`
+  proof-term checking, and SHA-256-pinned pluggable subprocess adapters
+  (`[[adapters]]` / `job_start_adapter`, RFC 0042);
+- bound local Lean/Lake task workflows (`nmlt lean-task`), pinned checker
+  bootstrap (`nmlt tools`), and a stdio MCP proof-oracle facade (`nmlt mcp`)
+  with candidate-selected fixed tactic imports (RFC 0038), guarded Lean 4 tactic
+  scripts (RFC 0039), and independent NanoDA proof checking over retained proof
+  artifacts; and
 - CI gates for Rust, Windows contained workers, Lean, NanoDA, artifact
   mutations, unchecked proof placeholders, and focused theorem dependencies.
 
