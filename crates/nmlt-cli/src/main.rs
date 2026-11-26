@@ -16,6 +16,7 @@ mod invariant;
 mod job_process;
 mod jobs;
 mod lean_task;
+mod mcp;
 mod project;
 mod runtime;
 mod strict_json;
@@ -26,6 +27,7 @@ const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
   nmlt tools <status|setup> [--dir DIR] [--json]       Inspect or bootstrap pinned lean4export + nanoda\n\
+  nmlt mcp [--work-dir DIR]                            Run stdio MCP tamper-proof Lean verification oracle\n\
   nmlt lean-task <bind|revise|candidate|workspace|inspect|prove|recheck> --help  Develop and independently check bound Lean proofs\n\
   nmlt init <new-directory>                             Create a runnable project and tests\n\
   nmlt lock [project-directory]                        Pin imported sources and local tools\n\
@@ -87,6 +89,7 @@ fn dispatch(arguments: Vec<std::ffi::OsString>, json: bool) -> Result<(), diagno
             return lean_task::jobs::worker(&arguments[1..]).map_err(Into::into);
         }
         "tools" => return tools::command(&arguments[1..], json).map_err(Into::into),
+        "mcp" => return mcp::command(&arguments[1..]).map_err(Into::into),
         "lean-task" => return lean_task::command(&arguments[1..]).map_err(Into::into),
         "check-invariant" => return invariant::command(&arguments[1..]),
         "resume" => return project::resume(&arguments[1..]),

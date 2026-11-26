@@ -601,6 +601,203 @@ pub(crate) struct BoundSummary {
     pub permitted_axioms: Vec<String>,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct ProveSummary {
+    pub status: String,
+    pub task_sha256: String,
+    pub proof_root: String,
+    pub axioms: Vec<String>,
+    pub checked_declarations: u64,
+    pub export_sha256: String,
+    pub result_path: PathBuf,
+    pub candidate_schema: String,
+}
+
+pub(crate) fn bind_api(
+    project: &Path,
+    lean_bin: Option<&Path>,
+    output: &Path,
+) -> Result<BoundSummary> {
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    bind(project, &lean, output, None)
+}
+
+pub(crate) fn revise_api(
+    task_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    project: &Path,
+    reason: &str,
+    lean_bin: Option<&Path>,
+    output: &Path,
+) -> Result<BoundSummary> {
+    if reason.trim().is_empty() || reason.len() > 4096 {
+        return Err("task revision requires a non-empty reason (<= 4096 bytes)".into());
+    }
+    let (task_path, digest) =
+        resolve_bound_input(task_or_dir, explicit_digest.map(Path::new), "task.json")?;
+    let parent: Task = read_json(&task_path, MAX_JSON)?;
+    parent.validate()?;
+    if parent.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    bind(project, &lean, output, Some((parent, reason.to_owned())))
+}
+
+pub(crate) fn inspect_api(
+    task_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    prefix: &str,
+    limit: &str,
+    lean_bin: Option<&Path>,
+    output: &Path,
+) -> Result<serde_json::Value> {
+    let (task_path, digest) =
+        resolve_bound_input(task_or_dir, explicit_digest.map(Path::new), "task.json")?;
+    let task: Task = read_json(&task_path, MAX_JSON)?;
+    task.validate()?;
+    if task.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let query = inspection::Query::new(prefix, limit)?;
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    inspection::run(
+        task,
+        query,
+        &lean,
+        output,
+        task_path.parent().unwrap_or(Path::new(".")),
+    )?;
+    read_json(&output.join("inspection.json"), MAX_JSON)
+}
+
+pub(crate) fn prove_api(
+    task_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    proof_source: &str,
+    lean_bin: Option<&Path>,
+    exporter_bin: Option<&Path>,
+    nanoda_bin: Option<&Path>,
+    output: &Path,
+) -> Result<ProveSummary> {
+    let (task_path, digest) =
+        resolve_bound_input(task_or_dir, explicit_digest.map(Path::new), "task.json")?;
+    let task: Task = read_json(&task_path, MAX_JSON)?;
+    task.validate()?;
+    if task.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let candidate = Candidate::from_file(&digest, proof_source, &task.target)?;
+    let candidate_schema = match &candidate {
+        Candidate::Term { .. } => "nmlt-lean-proof-candidate-v1",
+        Candidate::Automation { .. } => "nmlt-lean-proof-candidate-v2",
+        Candidate::Script { .. } => "nmlt-lean-proof-candidate-v3",
+    }
+    .to_owned();
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    let exporter = crate::tools::resolve_exporter(exporter_bin, None)?.0;
+    let nanoda = crate::tools::resolve_nanoda(nanoda_bin, None)?.0;
+    let tools = export::Tools::open(&exporter, &nanoda)?;
+    let record = prove(
+        task,
+        candidate,
+        &lean,
+        tools,
+        output,
+        None,
+        task_path.parent().unwrap_or(Path::new(".")),
+    )?;
+    Ok(ProveSummary {
+        status: record.status,
+        task_sha256: record.task_sha256,
+        proof_root: record.proof.root,
+        axioms: record.proof.axioms,
+        checked_declarations: record.checked_declarations,
+        export_sha256: record.export_sha256,
+        result_path: output.join("result.json"),
+        candidate_schema,
+    })
+}
+
+pub(crate) fn recheck_api(
+    record_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    lean_bin: Option<&Path>,
+    exporter_bin: Option<&Path>,
+    nanoda_bin: Option<&Path>,
+    output: &Path,
+) -> Result<ProveSummary> {
+    let (record_path, digest) =
+        resolve_bound_input(record_or_dir, explicit_digest.map(Path::new), "result.json")?;
+    let value: serde_json::Value = read_json(&record_path, MAX_JSON)?;
+    if value["schema"] == "nmlt-lean-inspection-v1" {
+        return Err(
+            "declaration context is not a proof acceptance record; use lean-task prove".into(),
+        );
+    }
+    if value["schema"] != "nmlt-lean-result-v5" {
+        return Err(
+            "unsupported Lean result version; use its retained original CLI executable".into(),
+        );
+    }
+    let previous: ResultRecord = serde_json::from_value(value).map_err(err)?;
+    if previous.schema != "nmlt-lean-result-v5"
+        || previous.status != "independently_checked"
+        || previous.task_sha256 != digest
+    {
+        return Err("unsupported result or selected task mismatch".into());
+    }
+    if previous.task.lake.is_some() {
+        previous.process_policy.validate_project().map_err(err)?;
+    } else {
+        previous.process_policy.validate().map_err(err)?;
+    }
+    previous.validate_export_capture()?;
+    previous.validate_dependencies()?;
+    let task = previous.task.clone();
+    let candidate = previous.candidate.clone();
+    task.validate()?;
+    if task.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let proof = candidate.validate(&digest)?;
+    let candidate_schema = match &candidate {
+        Candidate::Term { .. } => "nmlt-lean-proof-candidate-v1",
+        Candidate::Automation { .. } => "nmlt-lean-proof-candidate-v2",
+        Candidate::Script { .. } => "nmlt-lean-proof-candidate-v3",
+    }
+    .to_owned();
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    let exporter = crate::tools::resolve_exporter(exporter_bin, None)?.0;
+    let nanoda = crate::tools::resolve_nanoda(nanoda_bin, None)?.0;
+    let tools = export::Tools::open(&exporter, &nanoda)?;
+    if previous.tools != tools.identity {
+        return Err("independent checker tools changed since acceptance".into());
+    }
+    if previous.proof_source != source::proof(&task.target, &proof, &candidate.imports())? {
+        return Err("retained proof source was altered".into());
+    }
+    let record = prove(
+        task,
+        candidate,
+        &lean,
+        tools,
+        output,
+        Some(&previous),
+        record_path.parent().unwrap_or(Path::new(".")),
+    )?;
+    Ok(ProveSummary {
+        status: record.status,
+        task_sha256: record.task_sha256,
+        proof_root: record.proof.root,
+        axioms: record.proof.axioms,
+        checked_declarations: record.checked_declarations,
+        export_sha256: record.export_sha256,
+        result_path: output.join("result.json"),
+        candidate_schema,
+    })
+}
+
 fn bind(
     project: &Path,
     executable: &Path,
