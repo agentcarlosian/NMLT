@@ -542,6 +542,34 @@ fn compiled_file(path: &Path) -> bool {
     .any(|extension| file.ends_with(extension))
 }
 
+fn forward_git_config(command: &mut Command) {
+    let Some(raw_count) = std::env::var_os("GIT_CONFIG_COUNT") else {
+        return;
+    };
+    let Some(count) = raw_count
+        .to_str()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|count| *count <= 16)
+    else {
+        return;
+    };
+    let mut pairs = Vec::with_capacity(count);
+    for index in 0..count {
+        let key_name = format!("GIT_CONFIG_KEY_{index}");
+        let value_name = format!("GIT_CONFIG_VALUE_{index}");
+        let (Some(key), Some(value)) = (std::env::var_os(&key_name), std::env::var_os(&value_name))
+        else {
+            return;
+        };
+        pairs.push((key_name, key, value_name, value));
+    }
+    command.env("GIT_CONFIG_COUNT", raw_count);
+    for (key_name, key, value_name, value) in pairs {
+        command.env(key_name, key);
+        command.env(value_name, value);
+    }
+}
+
 fn command(project: &Path, executable: &Path, resolve: bool) -> Result<Command> {
     let bin = executable
         .parent()
@@ -564,18 +592,12 @@ fn command(project: &Path, executable: &Path, resolve: bool) -> Result<Command> 
         if let Some(path) = std::env::var_os("PATH") {
             command.env("PATH", path);
         }
-        for key in [
-            "HOME",
-            "USERPROFILE",
-            "SSH_AUTH_SOCK",
-            "GIT_CONFIG_COUNT",
-            "GIT_CONFIG_KEY_0",
-            "GIT_CONFIG_VALUE_0",
-        ] {
+        for key in ["HOME", "USERPROFILE", "SSH_AUTH_SOCK"] {
             if let Some(value) = std::env::var_os(key) {
                 command.env(key, value);
             }
         }
+        forward_git_config(&mut command);
     }
     for key in ["SystemRoot", "WINDIR", "TEMP", "TMP"] {
         if let Some(value) = std::env::var_os(key) {
@@ -656,14 +678,12 @@ fn git_command(directory: &Path, args: &[&str]) -> Command {
         "WINDIR",
         "TEMP",
         "TMP",
-        "GIT_CONFIG_COUNT",
-        "GIT_CONFIG_KEY_0",
-        "GIT_CONFIG_VALUE_0",
     ] {
         if let Some(value) = std::env::var_os(key) {
             command.env(key, value);
         }
     }
+    forward_git_config(&mut command);
     command
 }
 

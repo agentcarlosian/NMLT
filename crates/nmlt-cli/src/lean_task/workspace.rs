@@ -48,7 +48,12 @@ pub(super) fn run(task: Task, executable: &Path, output: &Path, origin: &Path) -
     )?;
     write_new(
         &run.build.join("NMLTProof.lean"),
-        source::proof(&task.target, "by\n  sorry")?.as_bytes(),
+        source::proof(
+            &task.target,
+            "by\n  sorry",
+            super::candidate::EDITOR_IMPORTS,
+        )?
+        .as_bytes(),
     )?;
     let bin = executable
         .parent()

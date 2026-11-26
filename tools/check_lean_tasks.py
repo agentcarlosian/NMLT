@@ -157,8 +157,44 @@ def main():
     write(project / "nmlt-lean.json", manifest)
     bound, selected = bind("bound-forbidden-axiom")
     prove("forbidden-axiom", bound, selected, "fun p => fun q => fun h => propext h", False, "axiom")
+    # Ordinary explicit-module policy: a tiny tactic proof must not import the
+    # entire tactic library. Both successes cross Lean and NanoDA again afresh.
+    goals = project / "Example/Goals.lean"
+    goals.write_text(goals.read_text(encoding="utf-8") +
+        "\nnamespace Example\ntheorem tactic_pair (n : Nat) : And (n = n) True := by sorry\nend Example\n",
+        encoding="utf-8", newline="\n")
+    manifest["target"] = "Example.tactic_pair"
+    write(project / "nmlt-lean.json", manifest)
+    tactic_task, tactic_pin = bind("bound-tactic-pair")
+    for label, ending in (("basic-tactics", "exact True.intro"), ("decide-tactic", "decide")):
+        body = evidence / f"{label}.lean"
+        body.write_text("by\n  intro n\n  constructor\n  rfl\n  " + ending + "\n", encoding="utf-8", newline="\n")
+        candidate_path = evidence / f"{label}-candidate.json"
+        command(label + "-candidate", ["candidate", "--task", tactic_task, "--task-sha256", tactic_pin,
+            "--proof", body, "--output", candidate_path])
+        command(label, ["prove", "--task", tactic_task, "--task-sha256", tactic_pin,
+            "--candidate", candidate_path, *tool_args, "--output", evidence / label])
+        record = read(evidence / label / "result.json")
+        assert record["status"] == "independently_checked" and record["proof"]["axioms"] == []
+        assert record["checked_declarations"] == len(record["exported_declarations"]) > 0
+        assert record["process_policy"]["contract"].startswith("nmlt-contained-process-v2;")
+        assert "import Lean.Elab.Tactic\n" not in record["proof_source"]
+        assert record["candidate"] == read(candidate_path) and record["task_sha256"] == tactic_pin
+        command(label + "-fresh", ["recheck", "--record", evidence / label / "result.json",
+            "--task-sha256", tactic_pin, *tool_args, "--output", evidence / (label + "-fresh")])
+        fresh = read(evidence / (label + "-fresh/result.json"))
+        assert fresh["export_sha256"] == record["export_sha256"] and fresh["proof_dependencies"] == record["proof_dependencies"]
+        if label == "basic-tactics":
+            changed = copy.deepcopy(read(candidate_path))
+            changed["steps"][-1]["term"] = "False.elim"
+            wrong = evidence / "wrong-tactics-candidate.json"
+            write(wrong, changed)
+            command("wrong-tactics", ["prove", "--task", tactic_task, "--task-sha256", tactic_pin,
+                "--candidate", wrong, *tool_args, "--output", evidence / "wrong-tactics"], False, "Type mismatch")
     summary = {"accepted": ["definition", "assumption", "polymorphic", "permitted-axiom"],
                "fresh_rechecks": ["fresh"], "rejected": rejected}
+    summary["accepted"].extend(["basic-tactics", "decide-tactic"])
+    summary["fresh_rechecks"].extend(["basic-tactics-fresh", "decide-tactic-fresh"])
     write(evidence / "summary.json", summary)
     print(f"evidence: {evidence.relative_to(ROOT)}", flush=True)
     print("scope: bounded trusted local Lean projects and independently checked exported proofs", flush=True)
