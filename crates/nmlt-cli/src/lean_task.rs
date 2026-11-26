@@ -371,7 +371,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
             return Err("retained task does not match the selected task hash".into());
         }
         let source =
-            String::from_utf8(read_bounded(&options["--proof"], 16 * 1024)?).map_err(err)?;
+            String::from_utf8(read_bounded(&options["--proof"], 64 * 1024)?).map_err(err)?;
         let candidate = Candidate::from_file(digest, &source, &task.target)?;
         write_json(&options["--output"], &candidate)?;
         println!(
@@ -463,7 +463,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
     } else {
         (
             read_json(&options["--task"], MAX_JSON)?,
-            read_json(&options["--candidate"], 16 * 1024)?,
+            read_json(&options["--candidate"], 64 * 1024)?,
         )
     };
     task.validate()?;

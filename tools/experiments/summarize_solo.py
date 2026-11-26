@@ -23,7 +23,7 @@ def inspect_result(path: Path, task: dict, pin: str, candidate: dict, tools: dic
             or record.get("task_sha256") != pin or record.get("task") != task
             or record.get("candidate") != candidate
             or candidate.get("task_sha256") != pin
-            or candidate.get("schema") not in ("nmlt-lean-proof-candidate-v1", "nmlt-lean-proof-candidate-v2")
+            or candidate.get("schema") not in ("nmlt-lean-proof-candidate-v1", "nmlt-lean-proof-candidate-v2", "nmlt-lean-proof-candidate-v3")
             or not re.fullmatch(r"[0-9a-f]{64}", pin)
             or record.get("checked_declarations", 0) <= 0
             or record.get("checked_declarations") != len(record.get("exported_declarations", []))
