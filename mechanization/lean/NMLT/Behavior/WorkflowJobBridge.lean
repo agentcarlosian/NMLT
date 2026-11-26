@@ -106,7 +106,7 @@ def workflowCollectProfile : ResourceProfile Capability JobFact JobGrade where
     | .returning => True
     | _ => False
 
-def startCompatible :
+theorem startCompatible :
     SynchronizationCompatible hostDispatchProfile workflowStartProfile where
   transfer := fun _ => Iff.rfl
   noReverseTransfer := fun _ => Iff.rfl
@@ -117,7 +117,7 @@ def startCompatible :
     intro fact relied
     cases fact <;> exact relied
 
-def collectCompatible :
+theorem collectCompatible :
     SynchronizationCompatible workflowCollectProfile hostDeliverProfile where
   transfer := fun _ => Iff.rfl
   noReverseTransfer := fun _ => Iff.rfl
@@ -222,13 +222,15 @@ theorem bridge_composable :
       cases leftAction with
       | dispatch _ =>
           cases rightAction with
-          | start _ => exact ⟨fun _ => startCompatible, fun impossible => by cases impossible⟩
+          | start _ =>
+              exact ⟨fun _ => startCompatible, fun impossible => Direction.noConfusion impossible⟩
           | collect _ => exact False.elim connected
       | settle _ => exact False.elim connected
       | deliver _ =>
           cases rightAction with
           | start _ => exact False.elim connected
-          | collect _ => exact ⟨fun impossible => by cases impossible, fun _ => collectCompatible⟩
+          | collect _ =>
+              exact ⟨fun impossible => Direction.noConfusion impossible, fun _ => collectCompatible⟩
   }
   participants := by
     intro leftAction rightAction connected
@@ -320,7 +322,8 @@ private theorem collectSyncStep :
   preserved := fun _ _ _ _ notTransferred => False.elim (notTransferred trivial)
 
 private theorem settleLocalStep (world : AuthorityWorld Capability Owner) :
-    LocalStep Owner.host ResourceProfile.empty world world where
+    LocalStep Owner.host (ResourceProfile.empty : ResourceProfile Capability JobFact JobGrade)
+      world world where
   enabled := {
     requires := fun _ impossible => False.elim impossible
     consumes := fun _ impossible => False.elim impossible
@@ -381,6 +384,8 @@ theorem stale_delivery_rejected
     {hostGen workflowGen : Nat} {before after : bridge.State}
     (mismatch : hostGen ≠ workflowGen) :
     ¬ bridge.step before (.sync (.deliver hostGen) (.collect workflowGen)) after := by
+  rcases before with ⟨⟨_, _⟩, _⟩
+  rcases after with ⟨⟨_, _⟩, _⟩
   intro step
   cases step.1 with
   | synchronize connected _ _ => exact mismatch connected
@@ -390,6 +395,8 @@ theorem stale_start_rejected
     {hostGen workflowGen : Nat} {before after : bridge.State}
     (mismatch : hostGen ≠ workflowGen) :
     ¬ bridge.step before (.sync (.dispatch hostGen) (.start workflowGen)) after := by
+  rcases before with ⟨⟨_, _⟩, _⟩
+  rcases after with ⟨⟨_, _⟩, _⟩
   intro step
   cases step.1 with
   | synchronize connected _ _ => exact mismatch connected
