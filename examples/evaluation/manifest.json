@@ -1,0 +1,646 @@
+{
+  "schema": "nmlt-evaluation-corpus-v2",
+  "status": "frozen engineering corpus; required solo operational validation pending; optional human study unobserved",
+  "provenance": "Authored and inspected by the implementing assistant. Public reference solutions. Not a blind model benchmark.",
+  "source_sha256": {
+    "mechanization/lean/NMLT/Evaluation/Corpus.lean": "fe23ed411e27b52dcdb867e611f645409d31097b0ad88ff2e69b4ce08d4eefcf",
+    "examples/evaluation/dispatch.nmlt": "05aa85c6add55513489411b6e3a18084a628b5dff77ae3044d26d1564b240c08",
+    "examples/evaluation/replay.nmlt": "f23dee04e5d103a6f7945e27b613fa4edf675ce804b2bef35a1698f39c2a3589"
+  },
+  "proof_tasks": [
+    {
+      "id": "ordinary01",
+      "category": "ordinary",
+      "declaration": "NMLT.Evaluation.Corpus.ordinary01",
+      "header": "(p q : Prop) : p ∧ q → q ∧ p",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "ordinary02",
+      "category": "ordinary",
+      "declaration": "NMLT.Evaluation.Corpus.ordinary02",
+      "header": "(p q r : Prop) : p ∨ (q ∨ r) → r ∨ (p ∨ q)",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "ordinary03",
+      "category": "ordinary",
+      "declaration": "NMLT.Evaluation.Corpus.ordinary03",
+      "header": "(value : Option Nat) : value.map id = value",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "ordinary04",
+      "category": "ordinary",
+      "declaration": "NMLT.Evaluation.Corpus.ordinary04",
+      "header": "(pair : Nat × Bool) : (pair.1, pair.2) = pair",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "ordinary05",
+      "category": "ordinary",
+      "declaration": "NMLT.Evaluation.Corpus.ordinary05",
+      "header": "(values : List Nat) : values ++ [] = values",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "ordinary06",
+      "category": "ordinary",
+      "declaration": "NMLT.Evaluation.Corpus.ordinary06",
+      "header": "(flag : Bool) : !(!flag) = flag",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "dependency01",
+      "category": "dependency",
+      "declaration": "NMLT.Evaluation.Corpus.dependency01",
+      "header": "(n : Nat) : twice n = n + n",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "dependency02",
+      "category": "dependency",
+      "declaration": "NMLT.Evaluation.Corpus.dependency02",
+      "header": "(n : Nat) : twice (n + 1) = twice n + 2",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "dependency03",
+      "category": "dependency",
+      "declaration": "NMLT.Evaluation.Corpus.dependency03",
+      "header": "(n : Nat) : decode ⟨true, n⟩ = some n",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "dependency04",
+      "category": "dependency",
+      "declaration": "NMLT.Evaluation.Corpus.dependency04",
+      "header": "(n : Nat) : decode ⟨false, n⟩ = none",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "dependency05",
+      "category": "dependency",
+      "declaration": "NMLT.Evaluation.Corpus.dependency05",
+      "header": "(n : Nat) : offset (twice n) = n + n + 3",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "dependency06",
+      "category": "dependency",
+      "declaration": "NMLT.Evaluation.Corpus.dependency06",
+      "header": "(xs ys : List Nat) : (xs ++ ys).length = xs.length + ys.length",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "repair01",
+      "category": "repair",
+      "declaration": "NMLT.Evaluation.Corpus.repair01",
+      "header": "(p q : Prop) : p ∧ q → p",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "repair02",
+      "category": "repair",
+      "declaration": "NMLT.Evaluation.Corpus.repair02",
+      "header": "(p q r : Prop) : (p → q) → (q → r) → p → r",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "repair03",
+      "category": "repair",
+      "declaration": "NMLT.Evaluation.Corpus.repair03",
+      "header": "(n m : Nat) : some n = some m → n = m",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "repair04",
+      "category": "repair",
+      "declaration": "NMLT.Evaluation.Corpus.repair04",
+      "header": "(n m : Nat) : Nat.succ n = Nat.succ m → n = m",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "repair05",
+      "category": "repair",
+      "declaration": "NMLT.Evaluation.Corpus.repair05",
+      "header": "(xs : List Nat) : ([] ++ xs).length = xs.length",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "repair06",
+      "category": "repair",
+      "declaration": "NMLT.Evaluation.Corpus.repair06",
+      "header": "(flag : Bool) : flag = true → !flag = false",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "context01",
+      "category": "context",
+      "declaration": "NMLT.Evaluation.Corpus.context01",
+      "header": ": revision = 3",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "context02",
+      "category": "context",
+      "declaration": "NMLT.Evaluation.Corpus.context02",
+      "header": "(n : Nat) : offset n = n + revision",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "context03",
+      "category": "context",
+      "declaration": "NMLT.Evaluation.Corpus.context03",
+      "header": ": offset 4 = 7",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "context04",
+      "category": "context",
+      "declaration": "NMLT.Evaluation.Corpus.context04",
+      "header": ": twice revision = 6",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "context05",
+      "category": "context",
+      "declaration": "NMLT.Evaluation.Corpus.context05",
+      "header": ": decode ⟨true, revision⟩ = some 3",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "context06",
+      "category": "context",
+      "declaration": "NMLT.Evaluation.Corpus.context06",
+      "header": ": [revision, offset 0].length = 2",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "interrupted01",
+      "category": "interrupted",
+      "declaration": "NMLT.Evaluation.Corpus.interrupted01",
+      "header": "(p : Prop) : p → p",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "interrupted02",
+      "category": "interrupted",
+      "declaration": "NMLT.Evaluation.Corpus.interrupted02",
+      "header": "(p q : Prop) : p → p ∨ q",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "interrupted03",
+      "category": "interrupted",
+      "declaration": "NMLT.Evaluation.Corpus.interrupted03",
+      "header": "(p q : Prop) : q → p ∨ q",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "interrupted04",
+      "category": "interrupted",
+      "declaration": "NMLT.Evaluation.Corpus.interrupted04",
+      "header": "(p q : Prop) : p → q → p ∧ q",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "interrupted05",
+      "category": "interrupted",
+      "declaration": "NMLT.Evaluation.Corpus.interrupted05",
+      "header": "(n : Nat) : (n, true).1 = n",
+      "invalid_proof": "True.intro"
+    },
+    {
+      "id": "interrupted06",
+      "category": "interrupted",
+      "declaration": "NMLT.Evaluation.Corpus.interrupted06",
+      "header": "(xs : List Nat) : xs.map id = xs",
+      "invalid_proof": "True.intro"
+    }
+  ],
+  "behavior_scenarios": [
+    {
+      "id": "direct_completion",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.start,Worker.finish",
+      "max_states": 512,
+      "invalid_control": "wrong_initial_owner",
+      "expected_error": "initializer",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": false,
+          "phase": "Complete",
+          "result": true,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 1
+      }
+    },
+    {
+      "id": "monitored_completion",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.monitor,Worker.start,Worker.finish",
+      "max_states": 512,
+      "invalid_control": "missing_permit",
+      "expected_error": "object fields",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": true,
+          "phase": "Complete",
+          "result": true,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 1
+      }
+    },
+    {
+      "id": "retry_completion",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.start,Worker.fail,Worker.retry,Worker.start,Worker.finish",
+      "max_states": 512,
+      "invalid_control": "retained_sender",
+      "expected_error": "actual unified step",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": false,
+          "phase": "Complete",
+          "result": true,
+          "retried": true
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 2
+      }
+    },
+    {
+      "id": "monitored_retry",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.start,Worker.monitor,Worker.fail,Worker.retry,Worker.start,Worker.finish",
+      "max_states": 512,
+      "invalid_control": "lost_transfer",
+      "expected_error": "actual unified step",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": true,
+          "phase": "Complete",
+          "result": true,
+          "retried": true
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 2
+      }
+    },
+    {
+      "id": "cancel_queued",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.cancel_queued",
+      "max_states": 512,
+      "invalid_control": "unmatched_handoff",
+      "expected_error": "actual unified step",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": false,
+          "phase": "Cancelled",
+          "result": false,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 0
+      }
+    },
+    {
+      "id": "cancel_running",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.start,Worker.cancel_running",
+      "max_states": 512,
+      "invalid_control": "repeat_terminal",
+      "expected_error": "actual unified step",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": false,
+          "phase": "Cancelled",
+          "result": false,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 1
+      }
+    },
+    {
+      "id": "cancel_failed",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.start,Worker.fail,Worker.cancel_failed",
+      "max_states": 512,
+      "invalid_control": "early_finish",
+      "expected_error": "actual unified step",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": false,
+          "phase": "Cancelled",
+          "result": false,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 1
+      }
+    },
+    {
+      "id": "return_unused",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Producer.takeback|Worker.giveback,Producer.reclaim",
+      "max_states": 512,
+      "invalid_control": "unknown_owner",
+      "expected_error": "unknown owner",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": true,
+          "returned": true,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": false,
+          "phase": "Returned",
+          "result": false,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 0
+      }
+    },
+    {
+      "id": "monitored_return",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.monitor,Producer.takeback|Worker.giveback,Producer.reclaim",
+      "max_states": 512,
+      "invalid_control": "outside_domain",
+      "expected_error": "finite domain",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": true,
+          "returned": true,
+          "sent": true
+        },
+        "Worker": {
+          "copied": false,
+          "monitored": true,
+          "phase": "Returned",
+          "result": false,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 0
+      }
+    },
+    {
+      "id": "cache_success",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.start,Worker.finish,Worker.cache",
+      "max_states": 512,
+      "invalid_control": "stale_core",
+      "expected_error": "stale execution artifact digest",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": true,
+          "monitored": false,
+          "phase": "Complete",
+          "result": true,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 1
+      }
+    },
+    {
+      "id": "cache_retry",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.start,Worker.fail,Worker.retry,Worker.start,Worker.finish,Worker.cache",
+      "max_states": 512,
+      "invalid_control": "missing_last_state",
+      "expected_error": "one more state",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": true,
+          "monitored": false,
+          "phase": "Complete",
+          "result": true,
+          "retried": true
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 2
+      }
+    },
+    {
+      "id": "monitor_after_cache",
+      "behavior": "Evaluation",
+      "actions": "Producer.send|Worker.accept,Worker.start,Worker.finish,Worker.cache,Worker.monitor",
+      "max_states": 512,
+      "invalid_control": "no_endpoint",
+      "expected_error": "endpoints",
+      "expected_endpoint": {
+        "Producer": {
+          "reclaimed": false,
+          "returned": false,
+          "sent": true
+        },
+        "Worker": {
+          "copied": true,
+          "monitored": true,
+          "phase": "Complete",
+          "result": true,
+          "retried": false
+        },
+        "authority": {
+          "permit": null
+        },
+        "declared_work": 1
+      }
+    }
+  ],
+  "discovery_exercises": [
+    {
+      "id": "visibility-premise",
+      "workflow": "composition",
+      "mode": "explanatory calibration",
+      "prompt": "Use the fixed 16-subset classification to explain why abstract formation can supply connected-left visibility. State why the decoder formation policy does not change.",
+      "reference": "NMLT.Discovery.CompositionPremises.sufficient_abstract",
+      "contamination": "Shares R4 mathematics; not held-out theorem-discovery evidence."
+    },
+    {
+      "id": "three-generations",
+      "workflow": "worker",
+      "mode": "frozen larger bound",
+      "generations": 3,
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "cancel": [
+        "none",
+        "before",
+        "after"
+      ],
+      "max_deliveries": 4,
+      "selected_policies": [
+        0,
+        1
+      ],
+      "required_cases": 9801,
+      "prompt": "Recheck the two development-surviving policies at the new bound. Do not rescore invalid policies or infer unbounded liveness."
+    },
+    {
+      "id": "new-cycle-sizes",
+      "workflow": "construction",
+      "mode": "frozen larger sizes",
+      "sizes": [
+        8,
+        9
+      ],
+      "steps": "1..size-1",
+      "required_candidates": 15,
+      "prompt": "Check the exact predicate and explicit cycle isomorphisms at sizes 8 and 9. Explain why this is known mathematics and not a theorem for every size."
+    }
+  ],
+  "comparison": {
+    "unit": "one batch containing 30 mathematical reference solutions",
+    "candidates": [
+      "True.intro",
+      "NMLT.Evaluation.Corpus.bundle"
+    ],
+    "repeats": 2,
+    "orders": [
+      [
+        "library",
+        "nmlt"
+      ],
+      [
+        "nmlt",
+        "library"
+      ]
+    ],
+    "permitted_axioms": [
+      "propext"
+    ],
+    "recheck": "fresh existing lean-task recheck for every accepted result",
+    "model_calls": 0,
+    "claim": "orchestration regression replay; no human-time or model-quality inference"
+  },
+  "revision": {
+    "date": "2026-10-03",
+    "previous_canonical_sha256": "3311ce3d913574bec62b94a34d9685e4b698cc34b770e668772225b3192f0597",
+    "previous_manifest": "history/manifest-v1.json",
+    "change": "Separate required solo-development evidence from the optional independent-participant study. Mathematical tasks, source pins, and matched replay contract are unchanged."
+  },
+  "optional_human_study": {
+    "participants_observed": 0,
+    "required_audiences": [
+      "mathematician",
+      "Lean user",
+      "agent-system engineer"
+    ],
+    "preregistered_median_hands_on_reduction": 0.2,
+    "quality_requirement": "no worse proof/trace acceptance quality",
+    "required_for_milestone": false
+  },
+  "solo_validation": {
+    "schema": "nmlt-solo-validation-v1",
+    "roles": [
+      "mathematician",
+      "Lean developer",
+      "software engineer"
+    ],
+    "required_operations": [
+      "modified_input",
+      "invalid_control",
+      "second_use",
+      "proof_repair",
+      "context_revision",
+      "fresh_recheck",
+      "interruption",
+      "recovery",
+      "cancellation",
+      "replay"
+    ],
+    "external_participants_required": false,
+    "live_model_required": false,
+    "human_time_threshold": null,
+    "claim": "Local reproducibility, operational coverage and explicitly limited value assessment; no external usability or population speedup inference."
+  }
+}

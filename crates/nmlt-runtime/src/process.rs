@@ -23,7 +23,7 @@ use profile::Profile;
 pub use profile::{PROJECT_CONTRACT, PROJECT_FILE_CONTRACT, PROJECT_WORKER_CONTRACT};
 
 pub const PIPE_BYTES: usize = 65_536;
-pub const CONTRACT: &str = "nmlt-contained-process-v1;processkit-3.3.4;raw-pipes-65536;tree-kill-before-pipe-drain;explicit-environment;no-filesystem-or-network-sandbox";
+pub const CONTRACT: &str = "nmlt-contained-process-v2;processkit-3.3.4-nmlt.1;windows-console-none;raw-pipes-65536;tree-kill-before-pipe-drain;explicit-environment;no-filesystem-or-network-sandbox";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -198,7 +198,7 @@ impl Process {
         }
         #[cfg(windows)]
         {
-            spec = spec.create_no_window();
+            spec = spec.windows_no_console();
         }
         #[cfg(target_os = "linux")]
         {

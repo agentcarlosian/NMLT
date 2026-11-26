@@ -67,3 +67,15 @@ exact empty-axiom acceptance, admitted/wrong-proof controls, and tool failures.
 `make r2-async` runs real worker concurrency/replay/recovery in the Rust gate;
 `make r2-lean` separately runs actual pinned Lean templates in the complete gate.
 These exercise the initial Rust API; source-level asynchronous handles remain open.
+
+`make experiment-tests` exercises frozen-input validation, stale/duplicate/
+cancellation/deadlock/cheap-failure controls, graph representation and duplicate
+counts, comparison request identity, and incomplete pilot observations.
+`make r4-discovery` reproduces 64 policies over 441 cases, 18 graph rows with
+Lean parity, and descriptive fixed-premise proof controls. `make r5-evaluation`
+checks 30 mathematical references/invalid candidates, 12 finite paths and their
+12 invalid variants, endpoint/work expectations, and larger discovery bounds.
+`make r5-replay` runs two reversed-order pairs through the same native adapter,
+with four accepted batch proofs and four fresh rechecks required. These targets
+are in `make reproduce`. Their exact scope and open human gates are documented
+in the [evaluation protocol](../docs/r5-evaluation-protocol.md).

@@ -72,3 +72,5 @@ evidence.
 | [0034](0034-lean-proof-dependency-graphs.md) | Lean proof dependency graphs | Under review |
 | [0035](0035-bound-lean-inspection-and-diagnostics.md) | Bound Lean inspection and diagnostics | Under review |
 | [0036](0036-native-lean-project-workflows.md) | Native Lean project workflows | Under review |
+| [0037](0037-console-free-contained-windows-processes.md) | Console-free contained Windows processes | Under review |
+| [0038](0038-candidate-selected-lean-tactic-imports.md) | Candidate-selected Lean tactic imports | Under review |

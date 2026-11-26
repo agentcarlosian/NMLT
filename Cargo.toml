@@ -13,6 +13,7 @@ members = [
     "crates/nmlt-cli",
 ]
 default-members = ["crates/nmlt-cli"]
+exclude = ["vendor/processkit"]
 resolver = "3"
 
 [workspace.package]

@@ -476,7 +476,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         if record.tools != tools.identity {
             return Err("independent checker tools changed since acceptance".into());
         }
-        if record.proof_source != source::proof(&task.target, &proof)? {
+        if record.proof_source != source::proof(&task.target, &proof, &candidate.imports())? {
             return Err("retained proof source was altered".into());
         }
     }
@@ -674,7 +674,7 @@ fn prove(
     if actual != task.target {
         return Err("Lean target identity differs from the bound task".into());
     }
-    let proof_source = source::proof(&task.target, &proof)?;
+    let proof_source = source::proof(&task.target, &proof, &candidate.imports())?;
     let output = run.compile("NMLTProof", &proof_source)?;
     let metadata: ProofMetadata = parse_marker(&output.stdout, "NMLT_PROOF=")?;
     if metadata.root != "NMLTChecked.result"

@@ -38,12 +38,7 @@ run_meta do
     )
 }
 
-pub(super) fn proof(target: &Target, term: &str) -> Result<String> {
-    let automation_import = if term.starts_with("by\n") {
-        "import Lean.Elab.Tactic\n"
-    } else {
-        ""
-    };
+pub(super) fn proof(target: &Target, term: &str, automation_import: &str) -> Result<String> {
     if target
         .level_params
         .iter()

@@ -128,6 +128,10 @@ unified model. See the [v2 execution guide](getting-started.md#finite-v2-executi
 - [Decoded finite execution](../rfcs/0016-decoded-finite-execution.md)
   — Under review contract for v2 artifacts, capability continuation, and paths
 - [Historical records](history.md)
+- [R4 bounded discovery workflows](r4-discovery-workflows.md)
+- [R5 engineering corpus and optional pilot protocol](r5-evaluation-protocol.md)
+- [Required solo-development validation](solo-validation.md)
+- [R4/R5 continuation verification](r4-r5-verification.md)
 - [Public pivot pre-PR review](reviews/public-pivot-pre-pr-2026-08-31.md)
 
 Any dated handoff, reproduction report, completion audit, test report, or

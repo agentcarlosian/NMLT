@@ -44,7 +44,9 @@ of structured native automation steps: intro, exact, apply, explicit
 `simp only`/`simpa only`, assumption, rfl, constructor, omega, grind and decide.
 Terms use the existing closed grammar and names are validated separately.
 Candidate data cannot add imports, commands, arbitrary tactics, policy changes
-or a different target. A fixed Lean tactic import supports the native steps.
+or a different target. Adapter-selected Lean imports support the native steps;
+[RFC 0038](0038-candidate-selected-lean-tactic-imports.md) narrows the generated
+imports without changing this candidate boundary.
 Automation still must produce a closed final proof under the selected policy.
 
 `lean-task candidate` converts a proof body or a generated `NMLTProof.lean`

@@ -14,4 +14,10 @@ import NMLT.Artifact.InvariantWitness
 import NMLT.Examples.ResourceWorldTransfer
 import NMLT.Examples.NestedResourceDynamics
 import NMLT.Counterexamples.ResourceBehaviorControls
+import NMLT.Counterexamples.WiringPremise
 import NMLT.Counterexamples.ResourceWorldControls
+import NMLT.Discovery.CompositionPremises
+import NMLT.Discovery.NestedReuse
+import NMLT.Discovery.FiniteConstructions
+import NMLT.Evaluation.Corpus
+import NMLT.Evaluation.Discovery

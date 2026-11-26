@@ -426,7 +426,11 @@ fn validate_receipt(
             .iter()
             .any(|a| !task.manifest.permitted_axioms.contains(a))
         || record.proof_source
-            != source::proof(&task.target, &candidate.validate(&request.task_sha256)?)?
+            != source::proof(
+                &task.target,
+                &candidate.validate(&request.task_sha256)?,
+                &candidate.imports(),
+            )?
     {
         return Err(
             "project acceptance differs from its registered task, proof, tools or policy".into(),

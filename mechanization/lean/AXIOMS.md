@@ -65,3 +65,24 @@ The R2 finite safety universe and initialization/preservation theorems in
 `Quot.sound`. `Counterexample.reachable_violation` reports only `propext`.
 They are included in the unchanged focused behavioral audit. The executable
 predicate parser and JSON checker remain in the package's runtime trust boundary.
+
+The R4 wiring-premise control in `NMLT.Counterexamples.WiringPremise` reports
+only `propext` for `disconnectedComposable` and `matchedWiring_lifts`.
+`wiringDiffers`, `concreteInitialAndEnabled`, `abstractInitialAndEnabled`,
+`noDisconnectedSync`, and
+`disconnectedWiring_blocksLift` report no axioms. All are included in the
+focused behavioral audit.
+
+The broader R4/R5 audit explicitly includes
+`Discovery.CompositionPremises.liftWithVisibleConnections`, both initial
+enabledness witnesses, all `case00` through `case15` declarations, the finite
+construction row/control declarations, `Evaluation.Corpus.bundle`, and
+`Evaluation.Discovery.largerObjects`. They are imported into `NMLT`, so the
+package's full independent export includes them. No allowlist change is made.
+The experimental Python summaries themselves provide no proof assurance.
+
+The second-use example `Discovery.NestedReuse` adds explicit probes for its
+nested refinement, admitted initial/enabled witness, lifted step, resource
+bound, formation rejection and undersized-bound refutation. It uses the same
+focused allowlist and full independent package export. It asserts no dynamic
+authority theorem or accepted source product.
