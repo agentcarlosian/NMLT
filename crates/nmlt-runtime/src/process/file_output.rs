@@ -15,7 +15,7 @@ use tokio_util::sync::CancellationToken;
 
 pub const FILE_BYTES: u64 = 16 * 1024 * 1024;
 pub const PROJECT_FILE_BYTES: u64 = 64 * 1024 * 1024;
-pub const FILE_CONTRACT: &str = "nmlt-contained-file-process-v1;processkit-3.3.4;raw-stdout-file-16777216;raw-stderr-65536;line-assembly-65536;tree-kill-before-pipe-drain;explicit-environment;no-filesystem-or-network-sandbox";
+pub const FILE_CONTRACT: &str = "nmlt-contained-file-process-v2;processkit-3.3.4-nmlt.1;windows-console-none;raw-stdout-file-16777216;raw-stderr-65536;line-assembly-65536;tree-kill-before-pipe-drain;explicit-environment;no-filesystem-or-network-sandbox";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

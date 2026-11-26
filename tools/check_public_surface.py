@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import re
 import os
+import hashlib
+import json
 import subprocess
 import sys
 import tomllib
@@ -12,7 +14,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-IGNORED_PARTS = {".git", ".lake", ".cache", "target"}
+# Upstream documentation is frozen by its separate vendor inventory. Its links
+# describe the complete upstream package, not this library-only snapshot.
+IGNORED_PARTS = {".git", ".lake", ".cache", "target", "vendor"}
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 ACTIVE_SURFACES = (
@@ -117,6 +121,29 @@ def check_trusted_paths() -> list[str]:
     return failures
 
 
+def check_vendor_integrity() -> list[str]:
+    folder = ROOT / "vendor/processkit"
+    inventory = json.loads((folder / "NMLT-PROVENANCE.json").read_text(encoding="utf-8"))
+    failures = []
+    actual = {path.relative_to(folder).as_posix() for path in folder.rglob("*") if path.is_file()}
+    expected = set(inventory["files"]) | {"NMLT.md", "NMLT-PROVENANCE.json"}
+    if actual != expected:
+        failures.append("vendored ProcessKit file inventory changed")
+    changed = []
+    for name, hashes in inventory["files"].items():
+        path = (folder / name).resolve()
+        if not path.is_relative_to(folder.resolve()) or not path.is_file():
+            failures.append(f"invalid vendor inventory path: {name}")
+            continue
+        if hashlib.sha256(path.read_bytes()).hexdigest() != hashes["sha256"]:
+            failures.append(f"vendored ProcessKit bytes changed: {name}")
+        if hashes["upstream_sha256"] != hashes["sha256"]:
+            changed.append(name)
+    if sorted(changed) != ["Cargo.toml", "src/command.rs"]:
+        failures.append("ProcessKit patch exceeds the recorded two-file change")
+    return failures
+
+
 def check_generated_pdfs() -> list[str]:
     result = subprocess.run(
         ["git", "ls-files", "*.pdf"],
@@ -149,6 +176,7 @@ def main() -> int:
     failures = (
         check_links()
         + check_trusted_paths()
+        + check_vendor_integrity()
         + check_generated_pdfs()
         + check_active_component_names()
     )

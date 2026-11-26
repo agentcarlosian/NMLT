@@ -86,7 +86,7 @@ def main():
         assert record["context"]["assurance"] == "none"
         identity = record["snapshot"]["manifest"]["configuration"]["projects"]
         assert identity == record["context"]["projects"] and identity["bindings"] == [{"alias": "offset", "task_sha256": pin}]
-        assert identity["process_contract"].startswith("nmlt-contained-project-worker-v1;")
+        assert identity["process_contract"].startswith("nmlt-contained-project-worker-v2;")
         assert record["snapshot"]["manifest"]["configuration"]["bounds"]["timeout_ms"] == 30000
         for observation in record["snapshot"]["observations"]:
             completion = observation["completion"]

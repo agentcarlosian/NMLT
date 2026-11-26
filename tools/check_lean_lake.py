@@ -113,7 +113,7 @@ def main():
                                 "--lean-bin", args.lean_bin.resolve(), "--output", explicit_editor])
     explicit_workspace = read(explicit_editor / "workspace.json")
     assert explicit_workspace["status"] == "context_only" and explicit_workspace["assurance"] == "none"
-    assert explicit_workspace["process_policy"]["contract"].startswith("nmlt-contained-project-process-v1;")
+    assert explicit_workspace["process_policy"]["contract"].startswith("nmlt-contained-project-process-v2;")
     assert not (explicit_editor / "result.json").exists()
 
     base = bind("bound")

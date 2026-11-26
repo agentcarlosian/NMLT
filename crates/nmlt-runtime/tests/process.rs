@@ -25,6 +25,21 @@ fn process_probe() {
         return;
     };
     match mode.as_str() {
+        #[cfg(windows)]
+        "console-free-pipes" => {
+            let error = std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open("CONOUT$")
+                .expect_err("managed child must start without a console");
+            assert_eq!(error.raw_os_error(), Some(6), "{error}");
+            let mut input = vec![];
+            std::io::stdin().read_to_end(&mut input).unwrap();
+            assert_eq!(input, b"hello");
+            std::io::stdout().write_all(b"pipe-out").unwrap();
+            std::io::stderr().write_all(b"pipe-error").unwrap();
+            std::process::exit(0);
+        }
         "nested-project" => {
             for _ in 0..12 {
                 let mut child = Process::start_project(
@@ -204,6 +219,9 @@ fn project_file_capture_uses_its_own_bounded_receipt_and_policy() {
     child.policy().validate_project().unwrap();
     assert!(child.policy().validate().is_err());
     let mut changed = child.policy().clone();
+    changed.process.contract = legacy_contract(&changed.process.contract);
+    assert!(changed.validate_project().is_err());
+    let mut changed = child.policy().clone();
     changed.max_stdout_bytes += 1;
     assert!(changed.validate_project().is_err());
     let output = child.wait().as_ref().unwrap();
@@ -247,6 +265,9 @@ fn file_capture_preserves_raw_bytes_and_keeps_the_regular_policy_distinct() {
         FileProcess::start(file_probe(count), vec![], Duration::from_secs(5), &path).unwrap();
     child.policy().validate().unwrap();
     assert!(child.policy().process.validate().is_err());
+    let mut altered_policy = child.policy().clone();
+    altered_policy.process.contract = legacy_contract(&altered_policy.process.contract);
+    assert!(altered_policy.validate().is_err());
     let mut altered_policy = child.policy().clone();
     altered_policy.max_stdout_bytes += 1;
     assert!(altered_policy.validate().is_err());
@@ -358,7 +379,10 @@ fn file_capture_cancellation_and_root_exit_reap_descendants() {
         });
         command.env("NMLT_PROCESS_MARKER", &marker);
         let timeout = if action == "timeout" {
-            Duration::from_millis(200)
+            // Match the regular process-tree test: Windows must start both
+            // the probe and its descendant before the timeout reaps them.
+            // The descendant's 800 ms marker still detects failed cleanup.
+            Duration::from_millis(400)
         } else {
             Duration::from_secs(5)
         };
@@ -366,9 +390,16 @@ fn file_capture_cancellation_and_root_exit_reap_descendants() {
         await_ready(&marker);
         match action {
             "cancel" => {
-                assert!(child.cancel().is_err());
+                let failure = child.cancel().as_ref().unwrap_err();
+                assert_eq!(failure.kind, FailureKind::Cancelled);
+                assert!(failure.child_reaped);
             }
             "drop" => drop(child),
+            "timeout" => {
+                let failure = child.wait().as_ref().unwrap_err();
+                assert_eq!(failure.kind, FailureKind::Timeout);
+                assert!(failure.child_reaped);
+            }
             _ => {
                 assert!(child.wait().is_err());
             }
@@ -559,4 +590,79 @@ fn invalid_bounds_fail_before_spawn() {
         )
         .is_err()
     );
+}
+
+#[cfg(windows)]
+#[test]
+fn managed_single_and_concurrent_children_have_no_console_and_keep_all_pipes() {
+    for width in [1, 2, 1, 2] {
+        let mut children = (0..width)
+            .map(|_| {
+                Process::start(
+                    probe("console-free-pipes"),
+                    b"hello".to_vec(),
+                    Duration::from_secs(5),
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
+        for child in &mut children {
+            let output = child.wait().as_ref().unwrap();
+            assert_eq!(output.exit_code, Some(0));
+            // The test harness prints its prefix before the probe body.
+            assert!(output.stdout.ends_with(b"pipe-out"));
+            assert_eq!(output.stderr, b"pipe-error");
+        }
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn console_free_builder_wins_in_both_call_orders() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    for no_window_first in [false, true] {
+        let command = processkit::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "process_probe", "--nocapture"])
+            .env_clear()
+            .env("NMLT_ASYNC_PROBE", "console-free-pipes")
+            .stdin(processkit::Stdin::from_bytes(b"hello".to_vec()))
+            .timeout(Duration::from_secs(5));
+        let command = if no_window_first {
+            command.create_no_window().windows_no_console()
+        } else {
+            command.windows_no_console().create_no_window()
+        };
+        let output = runtime.block_on(command.output_bytes()).unwrap();
+        let output = output.ensure_success().unwrap();
+        assert!(output.stdout().ends_with(b"pipe-out"));
+        assert_eq!(output.stderr(), "pipe-error");
+    }
+}
+
+#[test]
+fn previous_console_policy_cannot_be_reinterpreted_as_current() {
+    for start in [
+        Process::start,
+        Process::start_project,
+        Process::start_project_worker,
+    ] {
+        let mut child = start(probe("input"), b"hello".to_vec(), Duration::from_secs(5)).unwrap();
+        let mut old = child.policy().clone();
+        old.contract = legacy_contract(&old.contract);
+        assert_ne!(old.contract, child.policy().contract);
+        assert!(old.validate().is_err());
+        assert!(old.validate_project().is_err());
+        assert!(old.validate_project_worker().is_err());
+        assert_eq!(child.wait().as_ref().unwrap().exit_code, Some(0));
+    }
+}
+
+fn legacy_contract(contract: &str) -> String {
+    contract.replace(
+        "-v2;processkit-3.3.4-nmlt.1;windows-console-none;",
+        "-v1;processkit-3.3.4;",
+    )
 }
