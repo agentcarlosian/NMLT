@@ -992,8 +992,7 @@ private theorem step_unwrap {s s' : SessionState} {cmd : Command} {r : Receipt}
         rcases pair with ⟨mid, r'⟩
         simp [happly] at h
         rcases h with ⟨h1, h2⟩
-        rw [h2] at happly
-        exact ⟨mid, happly, h1.symm⟩
+        exact ⟨mid, by rw [h2], h1.symm⟩
 
 -- Headline safety theorems audited under the focused axiom allowlist.
 
