@@ -15,6 +15,7 @@ mod dependencies;
 mod diagnostics;
 mod discovery;
 mod export;
+pub(crate) use export::exporter_library_digest;
 mod inspection;
 pub(crate) mod jobs;
 mod lake;

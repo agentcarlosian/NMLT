@@ -8,7 +8,7 @@
 
 Add `nmlt tools status` and `nmlt tools setup` to inspect and build the pinned
 independent Lean verification toolchain (`lean4export` and `nanoda`) in a
-content-addressed local cache, add `elan` auto-resolution for `--lean-bin`, and
+verified local cache, add `elan` auto-resolution for `--lean-bin`, and
 allow ergonomic `lean-task` defaults (`--task DIR`, `--record DIR`, and
 `--proof FILE` directly on `lean-task prove`) while preserving every
 cryptographic pin and explicit-flag override.
@@ -42,11 +42,19 @@ Default cache directory:
 `nmlt tools setup [--dir DIR]` fetches the exact commits into `DIR`, verifies
 `git rev-parse HEAD` equals the pinned commit before building, builds
 `lean4export` with `lake build` and `nanoda_bin` with `cargo build --locked --release`,
-and writes `DIR/provenance.json` recording the commits and SHA-256 digests.
+in a fresh installation directory, then verifies the binaries and exporter
+library tree before publishing `DIR/checker-provenance-v2.json` atomically.
+That file records the source pins, Rust version, generation, and SHA-256
+digests. A failed replacement leaves the last published generation intact;
+the command never removes older generations or pre-existing tool directories.
+An old flat-layout cache is not trusted automatically. Run setup once to
+publish a checked generation; those old files remain untouched.
 
 `nmlt tools status [--dir DIR] [--json]` inspects whether Lean, `lean4export`,
-and `nanoda_bin` are resolved and present, reporting paths, SHA-256 digests,
-pinned commits, and `ready: true|false`.
+and `nanoda_bin` resolve, reporting paths, digests, source labels, required pins,
+and `ready: true|false`. Automatically resolved checkers must match the
+published provenance. Environment or explicit overrides remain trusted local
+selections, not verified cache entries. Readiness is not proof acceptance.
 
 ### 2. Auto-resolution without weakening cryptographic pins
 
@@ -56,8 +64,9 @@ Resolution order (strictest explicit override first):
   `~/.elan/toolchains/leanprover--lean4---v<version>/bin/lean[.exe]` ->
   `elan which --toolchain leanprover/lean4:v<version> lean`.
 - Independent checkers: `--exporter`/`--nanoda` ->
-  `NMLT_EXPORTER_BIN`/`NMLT_NANODA_BIN` -> cached binaries under
-  `default_cache_dir()`.
+  `NMLT_EXPORTER_BIN`/`NMLT_NANODA_BIN` -> the published cache generation under
+  `default_cache_dir()`, only if provenance and the selected checker’s file
+  identities match.
 
 Regardless of how a path is discovered, `lean_task` still canonicalizes every
 binary, verifies the exact `lean::Toolchain` installation manifest, hashes
