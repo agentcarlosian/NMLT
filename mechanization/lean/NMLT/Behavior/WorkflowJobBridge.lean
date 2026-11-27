@@ -491,7 +491,7 @@ theorem step_preserves_handle_owned
               cases workflowAction with
               | start _ =>
                   have effectStep :
-                      SyncStep .host .workflow hostDispatchProfile workflowStartProfile _ _ :=
+                      SyncStep Owner.host Owner.workflow hostDispatchProfile workflowStartProfile _ _ :=
                     step.2
                   exact Or.inr (effectStep.left_transfer_changes_owner trivial)
               | collect _ => exact False.elim connected
@@ -501,7 +501,7 @@ theorem step_preserves_handle_owned
               | start _ => exact False.elim connected
               | collect _ =>
                   have effectStep :
-                      SyncStep .host .workflow hostDeliverProfile workflowCollectProfile _ _ :=
+                      SyncStep Owner.host Owner.workflow hostDeliverProfile workflowCollectProfile _ _ :=
                     step.2
                   exact Or.inl (effectStep.right_transfer_changes_owner trivial)
 
@@ -534,7 +534,11 @@ theorem reachable_handle_never_vacant
     ¬ state.authority.Vacant .slotHandle := by
   intro vacant
   cases reachable_handle_conserved reachable with
-  | inl hostOwns => exact Option.noConfusion (vacant.symm.trans hostOwns)
-  | inr workflowOwns => exact Option.noConfusion (vacant.symm.trans workflowOwns)
+  | inl hostOwns =>
+      have impossible : (none : Option Owner) = some Owner.host := vacant.symm.trans hostOwns
+      cases impossible
+  | inr workflowOwns =>
+      have impossible : (none : Option Owner) = some Owner.workflow := vacant.symm.trans workflowOwns
+      cases impossible
 
 end NMLT.Behavior.WorkflowJobBridge
