@@ -1641,6 +1641,7 @@ mod tests {
             executable: exe.clone(),
             args: vec!["--flag".into()],
             timeout_ms: 1000,
+            inputs: vec![],
         }])
         .unwrap();
         let dir = std::env::temp_dir().join(format!(
@@ -1677,6 +1678,7 @@ mod tests {
                 executable: exe.clone(),
                 args: vec!["a".repeat(custom_adapter::MAX_ARG_BYTES); custom_adapter::MAX_ARGS],
                 timeout_ms: 1000,
+                inputs: vec![],
             })
             .collect();
         assert!(custom_adapter::Registry::open(oversized_specs).is_err());

@@ -1,13 +1,14 @@
 # NMLT execution plan
 
 - Status: active execution plan for pre-alpha language and mathematics research
-- Current architecture: Rust frontend and reference evaluator; Lean behavioral semantics
-- Current result: unified resource-aware semantics, decoded finite execution,
-  executable source/project workflows and independently checked native Lean proofs
-- Next milestone: R4 — discovery workflows
+- Current architecture: Rust frontend, workflow/job runtime, MCP proof oracle, and Lean behavioral semantics
+- Current result: unified resource-aware semantics (`ResourceDynamics` + `WorkflowJobBridge`), decoded finite execution,
+  executable source/project workflows with pluggable SHA-256-pinned adapters, discovery calibration,
+  and independently checked native Lean proofs (v1/v2/v3 guarded tactic scripts)
+- Next milestone: R4/R5 solo operational walkthroughs, MCP productization, and multi-slot runtime bridge
 - Target: one executable language serving AI/Lean developers, mathematicians,
   and software engineers
-- Updated: 2026-10-03
+- Updated: 2026-11-26
 
 This file governs execution priorities and milestone completion. The
 [practical language design](docs/practical-language-plan.md) supplies detailed

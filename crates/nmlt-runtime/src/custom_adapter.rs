@@ -1,10 +1,11 @@
 //! Pluggable pinned subprocess adapters speaking `nmlt-job-response-v1` (RFC 0042).
 use crate::{
-    Adapter, Dispatch, Error, RESPONSE_SCHEMA, Response, ResponseOutcome, Value, ValueType, lean,
-    process, sha256,
+    Adapter, Dispatch, Error, RESPONSE_SCHEMA, Response, ResponseOutcome, Value, ValueType,
+    identity, lean, process, sha256,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 pub const IDENTITY_SCHEMA: &str = "nmlt-custom-adapters-v1";
@@ -12,6 +13,8 @@ pub const REQUEST_SCHEMA: &str = "nmlt-custom-adapter-request-v1";
 pub const MAX_ADAPTERS: usize = 16;
 pub const MAX_ARGS: usize = 16;
 pub const MAX_ARG_BYTES: usize = 512;
+pub const MAX_ADAPTER_INPUTS: usize = 16;
+pub const MAX_INPUT_FILE_BYTES: u64 = 16 * 1024 * 1024;
 pub const MAX_TIMEOUT_MS: u64 = 30_000;
 pub const MAX_INPUT_BYTES: usize = 3072;
 pub const MAX_IDENTITY_BYTES: usize = 32_768;
@@ -40,6 +43,8 @@ pub struct EntryIdentity {
     pub executable_sha256: String,
     pub args: Vec<String>,
     pub timeout_ms: u64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inputs: Vec<identity::FileIdentity>,
 }
 
 impl EntryIdentity {
@@ -52,8 +57,22 @@ impl EntryIdentity {
                 .iter()
                 .any(|a| a.len() > MAX_ARG_BYTES || a.bytes().any(|b| b == 0))
             || !(1..=MAX_TIMEOUT_MS).contains(&self.timeout_ms)
+            || self.inputs.len() > MAX_ADAPTER_INPUTS
         {
             return Err(Error("invalid custom adapter entry identity".into()));
+        }
+        let mut seen_inputs = BTreeSet::new();
+        for input in &self.inputs {
+            if input.path.is_empty()
+                || input.path.len() > 512
+                || input.path.bytes().any(|b| b == 0)
+                || input.bytes > MAX_INPUT_FILE_BYTES
+                || !crate::valid_digest(&input.sha256)
+                || input.link_target.is_some()
+                || !seen_inputs.insert(&input.path)
+            {
+                return Err(Error("invalid custom adapter pinned input identity".into()));
+            }
         }
         Ok(())
     }
@@ -194,11 +213,24 @@ pub fn response(
 }
 
 #[derive(Clone, Debug)]
+pub struct InputSpec {
+    pub label: String,
+    pub path: PathBuf,
+}
+
+#[derive(Clone, Debug)]
 pub struct Spec {
     pub alias: String,
     pub executable: PathBuf,
     pub args: Vec<String>,
     pub timeout_ms: u64,
+    pub inputs: Vec<InputSpec>,
+}
+
+#[derive(Clone, Debug)]
+struct PinnedInput {
+    source: PathBuf,
+    identity: identity::FileIdentity,
 }
 
 #[derive(Clone, Debug)]
@@ -208,6 +240,46 @@ struct Entry {
     executable_sha256: String,
     args: Vec<String>,
     timeout_ms: u64,
+    inputs: Vec<PinnedInput>,
+}
+
+fn pin_input_file(spec: &InputSpec) -> Result<PinnedInput, Error> {
+    let meta = fs::symlink_metadata(&spec.path)?;
+    if !meta.is_file() || meta.file_type().is_symlink() {
+        return Err(Error(format!(
+            "custom adapter pinned input '{}' must be a regular non-symlink file",
+            spec.label
+        )));
+    }
+    let source = spec.path.canonicalize()?;
+    let (bytes, sha256) = identity::file(&source, MAX_INPUT_FILE_BYTES)?;
+    Ok(PinnedInput {
+        source,
+        identity: identity::FileIdentity {
+            path: spec.label.clone(),
+            bytes,
+            sha256,
+            link_target: None,
+        },
+    })
+}
+
+fn verify_pinned_input(alias: &str, input: &PinnedInput) -> Result<(), Error> {
+    let meta = fs::symlink_metadata(&input.source)?;
+    if !meta.is_file() || meta.file_type().is_symlink() {
+        return Err(Error(format!(
+            "custom adapter '{alias}' pinned input '{}' is no longer a regular file",
+            input.identity.path
+        )));
+    }
+    let (bytes, sha256) = identity::file(&input.source, MAX_INPUT_FILE_BYTES)?;
+    if bytes != input.identity.bytes || sha256 != input.identity.sha256 {
+        return Err(Error(format!(
+            "custom adapter '{alias}' pinned input '{}' changed after preflight",
+            input.identity.path
+        )));
+    }
+    Ok(())
 }
 
 #[derive(Clone, Debug)]
@@ -226,13 +298,27 @@ impl Registry {
         let mut entries = Vec::with_capacity(specs.len());
         let mut ids = Vec::with_capacity(specs.len());
         for spec in specs {
+            if spec.inputs.len() > MAX_ADAPTER_INPUTS {
+                return Err(Error(format!(
+                    "custom adapter '{}' exceeds {MAX_ADAPTER_INPUTS} pinned input files",
+                    spec.alias
+                )));
+            }
             let executable = spec.executable.canonicalize()?;
             let digest = lean::executable_digest(&executable)?;
+            let mut pinned_inputs = Vec::with_capacity(spec.inputs.len());
+            let mut input_ids = Vec::with_capacity(spec.inputs.len());
+            for input_spec in &spec.inputs {
+                let pinned = pin_input_file(input_spec)?;
+                input_ids.push(pinned.identity.clone());
+                pinned_inputs.push(pinned);
+            }
             let id = EntryIdentity {
                 alias: spec.alias.clone(),
                 executable_sha256: digest.clone(),
                 args: spec.args.clone(),
                 timeout_ms: spec.timeout_ms,
+                inputs: input_ids,
             };
             id.validate()?;
             entries.push(Entry {
@@ -241,6 +327,7 @@ impl Registry {
                 executable_sha256: digest,
                 args: spec.args,
                 timeout_ms: spec.timeout_ms,
+                inputs: pinned_inputs,
             });
             ids.push(id);
         }
@@ -269,6 +356,9 @@ impl Registry {
                 entry.alias
             )));
         }
+        for input in &entry.inputs {
+            verify_pinned_input(&entry.alias, input)?;
+        }
         let mut command = std::process::Command::new(&entry.executable);
         command.env_clear().args(&entry.args);
         if let Some(parent) = entry.executable.parent() {
@@ -290,6 +380,9 @@ impl Registry {
                     "custom adapter '{}' executable changed",
                     entry.alias
                 )));
+            }
+            for input in &entry.inputs {
+                verify_pinned_input(&entry.alias, input)?;
             }
         }
         Ok(())
@@ -316,6 +409,7 @@ mod tests {
                 executable_sha256: "a".repeat(64),
                 args: vec!["--strict".into()],
                 timeout_ms: 5000,
+                inputs: vec![],
             }],
         }
     }
@@ -397,27 +491,46 @@ mod tests {
     }
 
     #[test]
-    fn registry_detects_tampered_executable_before_launch() {
+    fn registry_detects_tampered_executable_and_pinned_inputs_before_launch() {
         let path = std::env::temp_dir().join(format!(
             "nmlt-custom-adapter-test-{}.bin",
             std::process::id()
         ));
+        let script_path = std::env::temp_dir().join(format!(
+            "nmlt-custom-adapter-script-{}.py",
+            std::process::id()
+        ));
         std::fs::write(&path, b"version-1").unwrap();
+        std::fs::write(&script_path, b"print('v1')").unwrap();
         let registry = Registry::open(vec![Spec {
             alias: "demo".into(),
             executable: path.clone(),
             args: vec![],
             timeout_ms: 1000,
+            inputs: vec![InputSpec {
+                label: "script.py".into(),
+                path: script_path.clone(),
+            }],
         }])
         .unwrap();
+        assert_eq!(registry.identity().entries[0].inputs.len(), 1);
+        assert_eq!(registry.identity().entries[0].inputs[0].path, "script.py");
         assert!(registry.command("demo").is_ok());
         assert!(registry.command("missing").is_err());
 
-        // Mutating the executable after open must fail closed!
+        // Mutating a pinned input script after open must fail closed!
+        std::fs::write(&script_path, b"print('tampered')").unwrap();
+        assert!(registry.command("demo").is_err());
+        assert!(registry.verify_unchanged().is_err());
+
+        // Restoring the pinned script passes again, then mutating the executable fails closed.
+        std::fs::write(&script_path, b"print('v1')").unwrap();
+        assert!(registry.command("demo").is_ok());
         std::fs::write(&path, b"version-2-tampered").unwrap();
         assert!(registry.command("demo").is_err());
         assert!(registry.verify_unchanged().is_err());
         let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_file(&script_path);
     }
 
     #[test]
@@ -428,6 +541,7 @@ mod tests {
                 executable_sha256: "a".repeat(64),
                 args: vec!["x".repeat(MAX_ARG_BYTES); MAX_ARGS],
                 timeout_ms: 5000,
+                inputs: vec![],
             })
             .collect();
         let oversized = Identity {

@@ -76,8 +76,9 @@ fn mcp_stdio_process_emits_pure_json_rpc_lines_including_successful_inspect() {
     .unwrap();
 
     let work_dir = root.join("mcp-work");
-    let bind_out = root.join("bound-task");
-    let inspect_out = root.join("inspect-out");
+    let bind_out = work_dir.join("bound-task");
+    let inspect_out = work_dir.join("inspect-out");
+    let escaped_out = root.join("escaped-outside-workdir");
 
     let requests = [
         json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}),
@@ -92,13 +93,26 @@ fn mcp_stdio_process_emits_pure_json_rpc_lines_including_successful_inspect() {
                 "arguments": {
                     "project": project.display().to_string(),
                     "lean_bin": mock_lean.display().to_string(),
-                    "output": bind_out.display().to_string()
+                    "output": escaped_out.display().to_string()
                 }
             }
         }),
         json!({
             "jsonrpc": "2.0",
             "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": "nmlt_lean_bind",
+                "arguments": {
+                    "project": project.display().to_string(),
+                    "lean_bin": mock_lean.display().to_string(),
+                    "output": bind_out.display().to_string()
+                }
+            }
+        }),
+        json!({
+            "jsonrpc": "2.0",
+            "id": 5,
             "method": "tools/call",
             "params": {
                 "name": "nmlt_lean_inspect",
@@ -139,11 +153,11 @@ fn mcp_stdio_process_emits_pure_json_rpc_lines_including_successful_inspect() {
 
     let stdout = String::from_utf8(output.stdout).expect("stdout must be UTF-8");
     let lines: Vec<&str> = stdout.lines().collect();
-    // Notification produces no reply -> exactly 4 JSON-RPC response lines.
+    // Notification produces no reply -> exactly 5 JSON-RPC response lines.
     assert_eq!(
         lines.len(),
-        4,
-        "expected exactly 4 pure JSON-RPC lines on stdout, got {}:\n{stdout}",
+        5,
+        "expected exactly 5 pure JSON-RPC lines on stdout, got {}:\n{stdout}",
         lines.len()
     );
 
@@ -156,11 +170,16 @@ fn mcp_stdio_process_emits_pure_json_rpc_lines_including_successful_inspect() {
         })
         .collect();
 
-    // Verify bind succeeded cleanly.
+    // Verify output path escaping --work-dir is rejected by default and not created.
     assert_eq!(responses[2]["id"], 3);
-    assert_eq!(responses[2]["result"]["isError"], false);
+    assert_eq!(responses[2]["result"]["isError"], true);
+    assert!(!escaped_out.exists());
+
+    // Verify bind inside --work-dir succeeded cleanly.
+    assert_eq!(responses[3]["id"], 4);
+    assert_eq!(responses[3]["result"]["isError"], false);
     let bind_payload: Value = serde_json::from_str(
-        responses[2]["result"]["content"][0]["text"]
+        responses[3]["result"]["content"][0]["text"]
             .as_str()
             .unwrap(),
     )
@@ -169,14 +188,14 @@ fn mcp_stdio_process_emits_pure_json_rpc_lines_including_successful_inspect() {
     assert_eq!(bind_payload["task_sha256"].as_str().unwrap().len(), 64);
 
     // Verify successful inspection produced zero non-JSON stdout leakage and valid payload.
-    assert_eq!(responses[3]["id"], 4);
+    assert_eq!(responses[4]["id"], 5);
     assert_eq!(
-        responses[3]["result"]["isError"], false,
+        responses[4]["result"]["isError"], false,
         "inspect failed: {}",
-        responses[3]
+        responses[4]
     );
     let inspect_payload: Value = serde_json::from_str(
-        responses[3]["result"]["content"][0]["text"]
+        responses[4]["result"]["content"][0]["text"]
             .as_str()
             .unwrap(),
     )

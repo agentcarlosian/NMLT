@@ -6,9 +6,12 @@ use nmlt_runtime::{self as rt, project_proof as protocol};
 #[serde(deny_unknown_fields)]
 struct Registry {
     schema: String,
-    lean_bin: PathBuf,
-    exporter: PathBuf,
-    nanoda: PathBuf,
+    #[serde(default)]
+    lean_bin: Option<PathBuf>,
+    #[serde(default)]
+    exporter: Option<PathBuf>,
+    #[serde(default)]
+    nanoda: Option<PathBuf>,
     timeout_ms: u64,
     tasks: Vec<Entry>,
 }
@@ -41,9 +44,27 @@ pub(crate) fn open(path: &Path) -> Result<protocol::Tool> {
         return Err("unsupported project job registry or task count".into());
     }
     let resolve = |p: &Path| parent.join(p).canonicalize().map_err(err);
-    let lean_bin = resolve(&registry.lean_bin)?;
-    let exporter = resolve(&registry.exporter)?;
-    let nanoda = resolve(&registry.nanoda)?;
+    let lean_bin = match &registry.lean_bin {
+        Some(p) => resolve(p)?,
+        None => crate::tools::resolve_lean(None)?
+            .0
+            .canonicalize()
+            .map_err(err)?,
+    };
+    let exporter = match &registry.exporter {
+        Some(p) => resolve(p)?,
+        None => crate::tools::resolve_exporter(None, None)?
+            .0
+            .canonicalize()
+            .map_err(err)?,
+    };
+    let nanoda = match &registry.nanoda {
+        Some(p) => resolve(p)?,
+        None => crate::tools::resolve_nanoda(None, None)?
+            .0
+            .canonicalize()
+            .map_err(err)?,
+    };
     let lean = lean::Toolchain::open(&lean_bin).map_err(err)?;
     let tools = export::Tools::open(&exporter, &nanoda)?;
     let mut inputs = vec![];

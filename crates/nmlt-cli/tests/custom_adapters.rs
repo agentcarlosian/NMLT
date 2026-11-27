@@ -94,6 +94,8 @@ fn custom_adapter_end_to_end_project_lock_run_replay_and_tamper_rejection() {
 
     let adapter_bin = compile_test_adapter(&root);
     let bin_name = adapter_bin.file_name().unwrap().to_str().unwrap();
+    let pinned_config = root.join("adapter_policy.txt");
+    fs::write(&pinned_config, "strict-policy-v1\n").unwrap();
 
     let workflow = r#"
 fn main(first_in: Text, backup_in: Text) -> Outcome<Text> {
@@ -132,6 +134,7 @@ alias = "echo"
 executable = "{bin_name}"
 args = []
 timeout_ms = 5000
+inputs = ["adapter_policy.txt"]
 
 [[tests]]
 name = "fallback succeeds via custom adapter"
@@ -162,6 +165,7 @@ expect = {{ Ok = "ADAPTER:DIRECT" }}
     let lock_text = fs::read_to_string(root.join("nmlt.lock")).unwrap();
     assert!(lock_text.contains("nmlt-custom-adapters-v1"));
     assert!(lock_text.contains("\"alias\": \"echo\""));
+    assert!(lock_text.contains("adapter_policy.txt"));
 
     // 2. `nmlt test` runs both real subprocess adapter tests and verifies outcomes.
     let test_out = Command::new(nmlt_bin())
@@ -206,7 +210,20 @@ expect = {{ Ok = "ADAPTER:DIRECT" }}
         String::from_utf8_lossy(&replay_out.stderr)
     );
 
-    // 5. Negative control: tampering with the pinned adapter binary must be rejected!
+    // 5a. Negative control: tampering with a pinned `inputs` file must be rejected!
+    fs::write(&pinned_config, "tampered-policy\n").unwrap();
+    let tampered_input_out = Command::new(nmlt_bin())
+        .args(["run"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert!(
+        !tampered_input_out.status.success(),
+        "tampered pinned adapter input file must fail lock verification"
+    );
+    fs::write(&pinned_config, "strict-policy-v1\n").unwrap();
+
+    // 5b. Negative control: tampering with the pinned adapter binary must be rejected!
     let mut bytes = fs::read(&adapter_bin).unwrap();
     bytes.push(0);
     fs::write(&adapter_bin, bytes).unwrap();

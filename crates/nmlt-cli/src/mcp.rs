@@ -11,7 +11,7 @@ const MAX_LINE_BYTES: usize = 256 * 1024;
 
 const HELP: &str = "\
 Stdio MCP tamper-proof Lean verification oracle (RFC 0041):
-  nmlt mcp [--work-dir DIR]
+  nmlt mcp [--work-dir DIR] [--allow-external-output]
 
 Speaks newline-delimited JSON-RPC 2.0 over stdin/stdout and exposes:
   nmlt_tools_status  Inspect resolved Lean, lean4export, and nanoda paths and digests
@@ -20,6 +20,9 @@ Speaks newline-delimited JSON-RPC 2.0 over stdin/stdout and exposes:
   nmlt_lean_prove    Independently verify a Lean proof (v1/v2/v3) with Lean + lean4export + nanoda
   nmlt_lean_recheck  Independently recheck a retained acceptance record
   nmlt_lean_revise   Explicitly revise a bound task with an audit reason
+
+By default, caller-supplied `output` paths are confined inside `--work-dir`.
+Pass `--allow-external-output` to allow tool calls to write outside `--work-dir`.
 ";
 
 pub fn command(args: &[OsString]) -> Result<(), String> {
@@ -28,6 +31,7 @@ pub fn command(args: &[OsString]) -> Result<(), String> {
         return Ok(());
     }
     let mut work_dir: Option<PathBuf> = None;
+    let mut allow_external_output = false;
     let mut rest = args;
     while !rest.is_empty() {
         match rest {
@@ -36,6 +40,10 @@ pub fn command(args: &[OsString]) -> Result<(), String> {
                     return Err("duplicate --work-dir option".into());
                 }
                 work_dir = Some(PathBuf::from(value));
+                rest = tail;
+            }
+            [flag, tail @ ..] if flag == "--allow-external-output" => {
+                allow_external_output = true;
                 rest = tail;
             }
             _ => return Err(format!("invalid mcp option\n\n{HELP}")),
@@ -54,36 +62,127 @@ pub fn command(args: &[OsString]) -> Result<(), String> {
     let stdout = io::stdout();
     let reader = BufReader::new(stdin.lock());
     let writer = BufWriter::new(stdout.lock());
-    let mut server = Server::new(work_dir);
+    let mut server = Server::new(work_dir, allow_external_output);
     server.serve_io(reader, writer)
 }
 
 struct Server {
     work_dir: PathBuf,
+    allow_external_output: bool,
     counter: u64,
 }
 
 impl Server {
-    fn new(work_dir: PathBuf) -> Self {
+    fn new(work_dir: PathBuf, allow_external_output: bool) -> Self {
         Self {
             work_dir,
+            allow_external_output,
             counter: 0,
         }
     }
 
-    fn next_output_dir(&mut self, prefix: &str, explicit: Option<&str>) -> Result<PathBuf, String> {
-        if let Some(path) = explicit {
-            return Ok(PathBuf::from(path));
-        }
+    fn ensure_work_dir(&self) -> Result<PathBuf, String> {
         fs::create_dir_all(&self.work_dir).map_err(|e| {
             format!(
                 "failed to create MCP work directory '{}': {e}",
                 self.work_dir.display()
             )
         })?;
+        self.work_dir.canonicalize().map_err(|e| {
+            format!(
+                "failed to canonicalize MCP work directory '{}': {e}",
+                self.work_dir.display()
+            )
+        })
+    }
+
+    fn confine_output_path(&self, raw: &str) -> Result<PathBuf, String> {
+        if raw.is_empty() || raw.bytes().any(|b| b == 0) {
+            return Err("output path must be non-empty without NUL bytes".into());
+        }
+        let requested = Path::new(raw);
+        if self.allow_external_output {
+            return Ok(requested.to_path_buf());
+        }
+        if requested
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err(format!(
+                "MCP output path '{raw}' cannot contain '..' traversal segments"
+            ));
+        }
+        let canonical_work = self.ensure_work_dir()?;
+        let candidate = if requested.is_absolute() {
+            requested.to_path_buf()
+        } else {
+            canonical_work.join(requested)
+        };
+        // Walk upward to the deepest existing ancestor, rejecting symlinks along the way,
+        // and verify the resolved ancestor stays within `canonical_work`.
+        let mut suffix = Vec::new();
+        let mut cursor = candidate.as_path();
+        loop {
+            match fs::symlink_metadata(cursor) {
+                Ok(meta) => {
+                    if meta.file_type().is_symlink() {
+                        return Err(format!(
+                            "MCP output path '{raw}' cannot traverse symlink '{}'",
+                            cursor.display()
+                        ));
+                    }
+                    let resolved_base = cursor.canonicalize().map_err(|e| {
+                        format!(
+                            "failed to resolve MCP output ancestor '{}': {e}",
+                            cursor.display()
+                        )
+                    })?;
+                    if !resolved_base.starts_with(&canonical_work) {
+                        return Err(format!(
+                            "MCP output path '{raw}' escapes --work-dir '{}' (pass --allow-external-output to allow external outputs)",
+                            canonical_work.display()
+                        ));
+                    }
+                    let mut final_path = resolved_base;
+                    for segment in suffix.into_iter().rev() {
+                        final_path.push(segment);
+                    }
+                    if !final_path.starts_with(&canonical_work) {
+                        return Err(format!(
+                            "MCP output path '{raw}' escapes --work-dir '{}'",
+                            canonical_work.display()
+                        ));
+                    }
+                    return Ok(final_path);
+                }
+                Err(_) => {
+                    let Some(name) = cursor.file_name() else {
+                        return Err(format!(
+                            "MCP output path '{raw}' escapes --work-dir '{}' (pass --allow-external-output to allow external outputs)",
+                            canonical_work.display()
+                        ));
+                    };
+                    suffix.push(name.to_os_string());
+                    let Some(parent) = cursor.parent() else {
+                        return Err(format!(
+                            "MCP output path '{raw}' escapes --work-dir '{}'",
+                            canonical_work.display()
+                        ));
+                    };
+                    cursor = parent;
+                }
+            }
+        }
+    }
+
+    fn next_output_dir(&mut self, prefix: &str, explicit: Option<&str>) -> Result<PathBuf, String> {
+        if let Some(path) = explicit {
+            return self.confine_output_path(path);
+        }
+        let work_dir = self.ensure_work_dir()?;
         loop {
             self.counter += 1;
-            let candidate = self.work_dir.join(format!("{prefix}-{:04}", self.counter));
+            let candidate = work_dir.join(format!("{prefix}-{:04}", self.counter));
             if !candidate.exists() {
                 return Ok(candidate);
             }
@@ -514,7 +613,7 @@ mod tests {
         let _ = fs::remove_dir_all(&base);
         let input = format!("{}\n", lines.join("\n"));
         let mut output = Vec::new();
-        let mut server = Server::new(base.clone());
+        let mut server = Server::new(base.clone(), false);
         server
             .serve_io(io::Cursor::new(input.as_bytes()), &mut output)
             .unwrap();
