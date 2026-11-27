@@ -1,4 +1,4 @@
-.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda finite-parity execution r0-baseline-tests r0-baselines r2-jobs r2-async r2-lean r2-source-async r2-source-lean r2-project r2-project-lean r2-invariants r2-lean-terms r3-lean-projects experiment-tests r4-discovery r5-evaluation r5-replay r5-solo ci reproduce
+.PHONY: help fmt fmt-check check lint test behavior-fixtures behavior-artifact public-surface metatheory nanoda finite-parity lifecycle-parity execution r0-baseline-tests r0-baselines r2-jobs r2-async r2-lean r2-source-async r2-source-lean r2-project r2-project-lean r2-invariants r2-lean-terms r3-lean-projects experiment-tests r4-discovery r5-evaluation r5-replay r5-solo ci reproduce
 
 R0_LEAN_TOOLCHAIN = $(strip $(shell cat mechanization/lean/lean-toolchain))
 PYTHON ?= python3
@@ -76,6 +76,9 @@ nanoda:
 finite-parity:
 	bash tools/check_finite_parity.sh
 
+lifecycle-parity:
+	bash tools/check_lifecycle_parity.sh
+
 execution:
 	bash tools/check_execution.sh
 
@@ -134,4 +137,4 @@ r5-solo: metatheory
 
 ci: fmt-check check lint test behavior-artifact public-surface r0-baseline-tests r2-jobs r2-async r2-source-async r2-project experiment-tests
 
-reproduce: ci metatheory nanoda finite-parity execution r0-baselines r2-lean r2-source-lean r2-project-lean r2-invariants r2-lean-terms r3-lean-projects r4-discovery r5-evaluation r5-replay r5-solo
+reproduce: ci metatheory nanoda finite-parity lifecycle-parity execution r0-baselines r2-lean r2-source-lean r2-project-lean r2-invariants r2-lean-terms r3-lean-projects r4-discovery r5-evaluation r5-replay r5-solo

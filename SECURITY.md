@@ -35,10 +35,11 @@ The active repository contains:
   proof-term checking, and SHA-256-pinned pluggable subprocess adapters
   (`[[adapters]]` / `job_start_adapter`, RFC 0042);
 - bound local Lean/Lake task workflows (`nmlt lean-task`), pinned checker
-  bootstrap (`nmlt tools`), and a stdio MCP proof-oracle facade (`nmlt mcp`)
-  with candidate-selected fixed tactic imports (RFC 0038), guarded Lean 4 tactic
-  scripts (RFC 0039), and independent NanoDA proof checking over retained proof
-  artifacts; and
+  bootstrap (`nmlt tools`), and a stdio MCP proof-oracle and workflow server
+  (`nmlt mcp`, RFC 0041 & RFC 0043) with default `--work-dir` output
+  confinement, fast `assurance: none` draft compilation, candidate-selected
+  fixed tactic imports (RFC 0038), guarded Lean 4 tactic scripts (RFC 0039), and
+  independent NanoDA proof checking over retained proof artifacts; and
 - CI gates for Rust, Windows contained workers, Lean, NanoDA, artifact
   mutations, unchecked proof placeholders, and focused theorem dependencies.
 

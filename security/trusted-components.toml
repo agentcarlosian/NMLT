@@ -168,9 +168,10 @@ id = "lean.resource_dynamics"
 paths = [
   "mechanization/lean/NMLT/Behavior/ResourceDynamics.lean",
   "mechanization/lean/NMLT/Behavior/WorkflowJobBridge.lean",
+  "mechanization/lean/NMLT/Behavior/WorkflowSessionBridge.lean",
   "mechanization/lean/NMLT/Examples/NestedResourceDynamics.lean",
 ]
-role = "Combine control state and shared authority, preserve leaf effects through binary composition, model the bounded affine workflow/host job-slot bridge (generation pinning, handle transfer, double-collect rejection, unilateral-start rejection, and conservation of the seeded handle across reachable states), and prove scoped simulation/path results; v1 artifact checking remains on its existing path."
+role = "Combine control state and shared authority, preserve leaf effects through binary composition, model both the single-slot affine workflow/host bridge (`WorkflowJobBridge`) and the multi-slot bounded job-session lifecycle (`WorkflowSessionBridge`: budget non-exceeding, monotonic work charging, monotonic slot generations, stale-generation rejection, uncertain recovery, and double-collect rejection), and prove scoped simulation/path results; v1 artifact checking remains on its existing path."
 
 [[components]]
 id = "reference.r0_baselines"
@@ -305,8 +306,8 @@ role = "Interpret canonical imports and function/record slices, resolve file sco
 
 [[components]]
 id = "rust.cli"
-paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs", "crates/nmlt-cli/src/workflow.rs", "crates/nmlt-cli/src/strict_json.rs", "crates/nmlt-cli/src/jobs.rs", "crates/nmlt-cli/src/job_process.rs", "crates/nmlt-cli/src/async_jobs.rs", "crates/nmlt-cli/src/async_jobs/ledger.rs", "crates/nmlt-cli/src/async_jobs/validation.rs", "crates/nmlt-cli/src/adapters.rs", "crates/nmlt-cli/src/tools.rs", "crates/nmlt-cli/src/mcp.rs", "tools/check_source_async.py", "crates/nmlt-cli/src/project.rs", "crates/nmlt-cli/src/formatting.rs", "crates/nmlt-cli/src/diagnostics.rs", "tools/check_project.py", "rfcs/0040-lean-tool-bootstrap-and-ergonomics.md", "rfcs/0041-mcp-proof-oracle-server.md"]
-role = "Route finite/pure/project execution, bootstrap and resolve pinned local Lean/NanoDA caches, serve the stdio JSON-RPC MCP proof-oracle facade over lean-task, load pinned [[adapters]] registries, preserve source snapshots and tool locks, bind durable source intents/replies to exact runtime transitions, validate resumed prefixes and retained results, quarantine only explicitly acknowledged incomplete tails, and expose structured diagnostics. These executable-only workflows do not gain host or compiler-correctness theorems."
+paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs", "crates/nmlt-cli/src/workflow.rs", "crates/nmlt-cli/src/strict_json.rs", "crates/nmlt-cli/src/jobs.rs", "crates/nmlt-cli/src/job_process.rs", "crates/nmlt-cli/src/async_jobs.rs", "crates/nmlt-cli/src/async_jobs/ledger.rs", "crates/nmlt-cli/src/async_jobs/validation.rs", "crates/nmlt-cli/src/adapters.rs", "crates/nmlt-cli/src/tools.rs", "crates/nmlt-cli/src/mcp.rs", "tools/check_source_async.py", "crates/nmlt-cli/src/project.rs", "crates/nmlt-cli/src/formatting.rs", "crates/nmlt-cli/src/diagnostics.rs", "tools/check_project.py", "rfcs/0040-lean-tool-bootstrap-and-ergonomics.md", "rfcs/0041-mcp-proof-oracle-server.md", "rfcs/0043-mcp-draft-checking-and-workflow-tools.md"]
+role = "Route finite/pure/project execution, bootstrap and resolve pinned local Lean/NanoDA caches, serve the stdio JSON-RPC MCP proof-oracle and workflow server (with default --work-dir output confinement, fast assurance-none draft checking, and client config generation), load pinned [[adapters]] registries (with executable and optional input-file SHA-256 pinning), preserve source snapshots and tool locks, bind durable source intents/replies to exact runtime transitions, validate resumed prefixes and retained results, quarantine only explicitly acknowledged incomplete tails, and expose structured diagnostics. These executable-only workflows do not gain host or compiler-correctness theorems."
 
 [[components]]
 id = "artifact.schema"
@@ -376,6 +377,9 @@ paths = [
   "tools/check_finite_parity.sh",
   "mechanization/lean/tests/FiniteParity.lean",
   "crates/nmlt-eval/examples/finite_parity.rs",
+  "tools/check_lifecycle_parity.sh",
+  "mechanization/lean/tests/LifecycleParity.lean",
+  "crates/nmlt-runtime/examples/lifecycle_parity.rs",
   "tools/check_execution.sh",
   "tests/execution/check_controls.py",
   "mechanization/lean/tests/ExecutionParity.lean",

@@ -202,6 +202,15 @@ import NMLT
 #print axioms NMLT.Behavior.WorkflowJobBridge.path_preserves_handle_owned
 #print axioms NMLT.Behavior.WorkflowJobBridge.reachable_handle_conserved
 #print axioms NMLT.Behavior.WorkflowJobBridge.reachable_handle_never_vacant
+#print axioms NMLT.Behavior.WorkflowSessionBridge.step_preserves_budget
+#print axioms NMLT.Behavior.WorkflowSessionBridge.reachable_budget_non_exceeding
+#print axioms NMLT.Behavior.WorkflowSessionBridge.step_preserves_charged_monotonic
+#print axioms NMLT.Behavior.WorkflowSessionBridge.step_preserves_generations_monotonic
+#print axioms NMLT.Behavior.WorkflowSessionBridge.reserve_increments_generation
+#print axioms NMLT.Behavior.WorkflowSessionBridge.stale_generation_delivery_rejected
+#print axioms NMLT.Behavior.WorkflowSessionBridge.recover_marks_inflight_uncertain
+#print axioms NMLT.Behavior.WorkflowSessionBridge.collect_rejects_uncertain
+#print axioms NMLT.Behavior.WorkflowSessionBridge.double_collect_rejected
 EOF
 (
   cd "$lean_root"

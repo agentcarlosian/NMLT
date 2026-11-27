@@ -101,3 +101,16 @@ states) into `NMLT.Behavior.ResourceDynamics`. Its theorems (`bridge_composable`
 in the focused behavioral audit under the unchanged `propext`/`Quot.sound`
 allowlist (reporting no axioms). This models the abstract slot-lifecycle
 protocol; it does not prove Rust implementation or OS process correspondence.
+
+The multi-slot session bridge `NMLT.Behavior.WorkflowSessionBridge` extends that
+formalization to bounded multi-slot `nmlt-runtime::Lifecycle` transitions
+(`reserve`, `transfer`, `dispatch`, `cancel`, `timeout`, `deliver`, `reconcile`,
+`collect`, `recover`) with work-budget reservation and monotonic charging. Its
+nine audited theorems (`step_preserves_budget`, `reachable_budget_non_exceeding`,
+`step_preserves_charged_monotonic`, `step_preserves_generations_monotonic`,
+`reserve_increments_generation`, `stale_generation_delivery_rejected`,
+`recover_marks_inflight_uncertain`, `collect_rejects_uncertain`, and
+`double_collect_rejected`) are proved constructively under the unchanged
+`propext`/`Quot.sound` focused allowlist without `Classical.choice`. Differential
+parity against Rust `nmlt-runtime::Lifecycle` is checked separately on a frozen
+19-command multi-slot scenario by `tools/check_lifecycle_parity.sh`.
