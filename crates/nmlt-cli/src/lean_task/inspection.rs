@@ -1,7 +1,14 @@
 //! Bounded declaration lookup in a freshly rebuilt, bound Lean environment.
 use super::{Result, Run, Task, err, lean, name, parse_marker, retain_cli, write_json, write_new};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+pub(super) struct Summary {
+    pub declarations: usize,
+    pub matched: usize,
+    pub task_sha256: String,
+    pub inspection_path: PathBuf,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -118,7 +125,7 @@ pub(super) fn run(
     executable: &Path,
     output: &Path,
     origin: &Path,
-) -> Result<()> {
+) -> Result<Summary> {
     let digest = task.digest()?;
     let toolchain = lean::Toolchain::open(executable).map_err(err)?;
     if *toolchain.identity() != task.lean {
@@ -158,14 +165,14 @@ pub(super) fn run(
         &run.directory.join("context.md"),
         markdown(&record).as_bytes(),
     )?;
-    write_json(&run.directory.join("inspection.json"), &record)?;
-    println!(
-        "context_only: {} declarations ({} matched)\ntask: {digest}\ninspection: {}",
-        record.context.declarations.len(),
-        record.context.matched,
-        run.directory.join("inspection.json").display()
-    );
-    Ok(())
+    let inspection_path = run.directory.join("inspection.json");
+    write_json(&inspection_path, &record)?;
+    Ok(Summary {
+        declarations: record.context.declarations.len(),
+        matched: record.context.matched,
+        task_sha256: digest,
+        inspection_path,
+    })
 }
 
 fn source(query: &Query, permitted: &[String]) -> Result<String> {

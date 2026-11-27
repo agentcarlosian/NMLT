@@ -74,3 +74,7 @@ evidence.
 | [0036](0036-native-lean-project-workflows.md) | Native Lean project workflows | Under review |
 | [0037](0037-console-free-contained-windows-processes.md) | Console-free contained Windows processes | Under review |
 | [0038](0038-candidate-selected-lean-tactic-imports.md) | Candidate-selected Lean tactic imports | Under review |
+| [0039](0039-guarded-lean-tactic-scripts.md) | Guarded Lean 4 tactic scripts | Under review |
+| [0040](0040-lean-tool-bootstrap-and-ergonomics.md) | Lean tool bootstrap and ergonomic `lean-task` defaults | Under review |
+| [0041](0041-mcp-proof-oracle-server.md) | Stdio MCP tamper-proof Lean verification oracle (`nmlt mcp`) | Under review |
+| [0042](0042-pluggable-workflow-adapters.md) | Pluggable pinned subprocess adapters (`[[adapters]]`) | Under review |

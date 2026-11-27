@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod custom_adapter;
 pub mod identity;
 mod journal;
 pub mod lean;

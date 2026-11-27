@@ -28,6 +28,8 @@ pub(super) struct Manifest {
     jobs: Option<Jobs>,
     #[serde(default)]
     tools: Tools,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    adapters: Vec<super::adapters::AdapterSpec>,
     #[serde(default)]
     tests: Vec<Test>,
 }
@@ -70,6 +72,8 @@ struct Lock {
     lean: Option<LeanLock>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     projects: Option<nmlt_runtime::project_proof::Identity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    adapters: Option<nmlt_runtime::custom_adapter::Identity>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -205,6 +209,15 @@ impl Project {
                 })
             })
             .transpose()?;
+        let adapters = if self.manifest.adapters.is_empty() {
+            None
+        } else {
+            Some(
+                super::adapters::open_specs(&self.root, &self.manifest.adapters)?
+                    .identity()
+                    .clone(),
+            )
+        };
         let lock = Lock {
             schema: "nmlt-lock-v1".into(),
             implementation_sha256: runtime::implementation_digest()?,
@@ -216,6 +229,7 @@ impl Project {
                 .map(super::lean_task::jobs::open)
                 .transpose()?
                 .map(|t| t.identity().clone()),
+            adapters,
         };
         if serde_json::to_vec(&lock)?.len() > 24 * 1024 * 1024 {
             return Err("dependency lock exceeds 24 MiB".into());
@@ -280,6 +294,12 @@ impl Project {
             return Err(Error::new(
                 "NMLT-LEAN-CONFIG",
                 "project proof entry requires tools.lean_projects",
+            ));
+        }
+        if self.program.requires_custom_jobs(entry)? && self.manifest.adapters.is_empty() {
+            return Err(Error::new(
+                "NMLT-ADAPTER-CONFIG",
+                "custom adapter entry requires [[adapters]] in nmlt.toml",
             ));
         }
         Ok(inputs)
@@ -387,6 +407,9 @@ impl Project {
                     self.projects_path()
                         .ok_or("missing project proof registry")?,
                 );
+            }
+            if !self.manifest.adapters.is_empty() {
+                command.arg("--adapters").arg(self.root.join(MANIFEST));
             }
         }
         let output = command.output()?;
@@ -519,6 +542,21 @@ fn bind(project: &Project, record: &Record, execution: &Json) -> Result<(), Erro
             return Err(Error::new(
                 "NMLT-PROJECT-REPLAY",
                 "project proof registry identity mismatch",
+            ));
+        }
+    }
+    if project.program.requires_custom_jobs(&record.entry)? {
+        let adapters = record
+            .lock
+            .adapters
+            .as_ref()
+            .ok_or("project record lacks bound custom adapters")?;
+        if execution["snapshot"]["manifest"]["configuration"]["adapters"] != json!(adapters)
+            || context["adapters"] != json!(adapters)
+        {
+            return Err(Error::new(
+                "NMLT-PROJECT-REPLAY",
+                "project custom adapter identity mismatch",
             ));
         }
     }
@@ -863,6 +901,9 @@ pub(super) fn resume(arguments: &[OsString]) -> Result<(), Error> {
                     .ok_or("saved Lean configuration missing")?,
             ),
         );
+    }
+    if !project.manifest.adapters.is_empty() {
+        command.arg("--adapters").arg(project_root.join(MANIFEST));
     }
     if let Some(reason) = acknowledgement {
         command.args(["--acknowledge-uncertain-effects", &reason]);

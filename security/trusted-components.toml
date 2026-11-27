@@ -1,7 +1,7 @@
 manifest_version = "2.0.0"
 status = "pre-alpha"
 reviewed = "2026-11-26"
-scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution, R2 local executable/recovery workflows, R3 bound Lean/Lake tasks with console-free Windows containment (RFC 0037) and candidate-selected tactic imports (RFC 0038), and bounded R4/R5 discovery, corpus, and solo-validation harnesses"
+scope = "Active NMLT language-and-mathematics pivot, R0 workflows, R1 finite v2 execution and WorkflowJobBridge formalization, R2 local executable/recovery workflows with pluggable pinned subprocess adapters (RFC 0042), R3 bound Lean/Lake tasks with console-free Windows containment (RFC 0037), candidate-selected tactic imports (RFC 0038), guarded Lean 4 tactic scripts (RFC 0039), pinned tool bootstrap (RFC 0040), stdio MCP proof oracle (RFC 0041), and bounded R4/R5 discovery, corpus, and solo-validation harnesses"
 
 forbidden_claims = [
   "semantic verification from parsing or Rust typechecking",
@@ -167,9 +167,10 @@ role = "Prove finite state/action enumeration complete, independently parse/type
 id = "lean.resource_dynamics"
 paths = [
   "mechanization/lean/NMLT/Behavior/ResourceDynamics.lean",
+  "mechanization/lean/NMLT/Behavior/WorkflowJobBridge.lean",
   "mechanization/lean/NMLT/Examples/NestedResourceDynamics.lean",
 ]
-role = "Combine control state and shared authority, preserve leaf effects through binary composition, and prove scoped simulation/path results; v1 artifact checking remains on its existing path."
+role = "Combine control state and shared authority, preserve leaf effects through binary composition, model the bounded affine workflow/host job-slot bridge (generation pinning, handle transfer, double-collect rejection, unilateral-start rejection, and conservation of the seeded handle across reachable states), and prove scoped simulation/path results; v1 artifact checking remains on its existing path."
 
 [[components]]
 id = "reference.r0_baselines"
@@ -278,14 +279,16 @@ paths = [
   "crates/nmlt-runtime/src/session_store.rs",
   "crates/nmlt-runtime/src/session.rs",
   "crates/nmlt-runtime/src/project_proof.rs",
+  "crates/nmlt-runtime/src/custom_adapter.rs",
   "crates/nmlt-runtime/src/identity.rs",
   "crates/nmlt-runtime/examples/local_worker.rs",
   "crates/nmlt-runtime/examples/async_jobs.rs",
   "tools/check_job_runtime.py",
   "tools/check_async_jobs.py",
   "tools/check_lean_terms.py",
+  "rfcs/0042-pluggable-workflow-adapters.md",
 ]
-role = "Bound local control and response identities, flush dispatch/evidence before settlement, restore private handles under a journal lock, require explicit uncertainty acknowledgements, and validate square, closed Init-term or registered project-proof observations. Project receipts have fixed alias/task/dispatch/artifact identities; the CLI additionally validates their proof bundles. Complete bin/lib identities, trusted worker code, pinned checkers, ProcessKit and OS observations remain named host trust boundaries; no exactly-once claim."
+role = "Bound local control and response identities, flush dispatch/evidence before settlement, restore private handles under a journal lock, require explicit uncertainty acknowledgements, and validate square, closed Init-term, registered project-proof, or pinned custom subprocess adapter observations. Custom adapters are pinned by executable SHA-256 and speak canonical nmlt-job-response-v1 under ProcessKit containment without claiming formal soundness over adapter internals. Project receipts have fixed alias/task/dispatch/artifact identities; the CLI additionally validates their proof bundles. Complete bin/lib identities, trusted worker code, pinned checkers, ProcessKit and OS observations remain named host trust boundaries; no exactly-once claim."
 
 [[components]]
 id = "rust.workflow"
@@ -302,8 +305,8 @@ role = "Interpret canonical imports and function/record slices, resolve file sco
 
 [[components]]
 id = "rust.cli"
-paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs", "crates/nmlt-cli/src/workflow.rs", "crates/nmlt-cli/src/strict_json.rs", "crates/nmlt-cli/src/jobs.rs", "crates/nmlt-cli/src/job_process.rs", "crates/nmlt-cli/src/async_jobs.rs", "crates/nmlt-cli/src/async_jobs/ledger.rs", "crates/nmlt-cli/src/async_jobs/validation.rs", "tools/check_source_async.py", "crates/nmlt-cli/src/project.rs", "crates/nmlt-cli/src/formatting.rs", "crates/nmlt-cli/src/diagnostics.rs", "tools/check_project.py"]
-role = "Route finite/pure/project execution, preserve source snapshots and tool locks, bind durable source intents/replies to exact runtime transitions, validate resumed prefixes and retained results, quarantine only explicitly acknowledged incomplete tails, and expose structured diagnostics. These executable-only workflows do not gain host or compiler-correctness theorems."
+paths = ["crates/nmlt-cli/src/main.rs", "crates/nmlt-cli/src/runtime.rs", "crates/nmlt-cli/src/workflow.rs", "crates/nmlt-cli/src/strict_json.rs", "crates/nmlt-cli/src/jobs.rs", "crates/nmlt-cli/src/job_process.rs", "crates/nmlt-cli/src/async_jobs.rs", "crates/nmlt-cli/src/async_jobs/ledger.rs", "crates/nmlt-cli/src/async_jobs/validation.rs", "crates/nmlt-cli/src/adapters.rs", "crates/nmlt-cli/src/tools.rs", "crates/nmlt-cli/src/mcp.rs", "tools/check_source_async.py", "crates/nmlt-cli/src/project.rs", "crates/nmlt-cli/src/formatting.rs", "crates/nmlt-cli/src/diagnostics.rs", "tools/check_project.py", "rfcs/0040-lean-tool-bootstrap-and-ergonomics.md", "rfcs/0041-mcp-proof-oracle-server.md"]
+role = "Route finite/pure/project execution, bootstrap and resolve pinned local Lean/NanoDA caches, serve the stdio JSON-RPC MCP proof-oracle facade over lean-task, load pinned [[adapters]] registries, preserve source snapshots and tool locks, bind durable source intents/replies to exact runtime transitions, validate resumed prefixes and retained results, quarantine only explicitly acknowledged incomplete tails, and expose structured diagnostics. These executable-only workflows do not gain host or compiler-correctness theorems."
 
 [[components]]
 id = "artifact.schema"
@@ -405,8 +408,9 @@ paths = [
   "tools/check_lean_project_jobs.py",
   "tools/check_lean_tasks.sh",
   "rfcs/0038-candidate-selected-lean-tactic-imports.md",
+  "rfcs/0039-guarded-lean-tactic-scripts.md",
 ]
-role = "Capture bounded trusted Lean sources, native Lake configurations, locked package provenance and target types; reconstruct with native package options; keep terms, structured automation (with fixed candidate-selected tactic imports) and explicit revisions separate; provide ordinary editor workspaces; enforce axiom/export-root checks and independent NanoDA checking. Validate source-job receipts against retained proof records, export bytes, task/tool pins and actual constant/projection/reduction/literal/group dependencies. Declaration lookup, editor state and mapped diagnostics are context with assurance none. Source imports and draft plans are distinct from actual proof dependencies. Graph extraction describes export syntax, not an independent proof checker. The host, project configurations/metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent checking does not establish human statement faithfulness."
+role = "Capture bounded trusted Lean sources, native Lake configurations, locked package provenance and target types; reconstruct with native package options; keep terms (v1), structured automation (v2), guarded Lean 4 tactic scripts (v3, with lexer-aware static guards and fixed candidate-selected tactic imports), and explicit revisions separate; provide ordinary editor workspaces; enforce axiom/export-root checks and independent NanoDA checking. Validate source-job receipts against retained proof records, export bytes, task/tool pins and actual constant/projection/reduction/literal/group dependencies. Declaration lookup, editor state and mapped diagnostics are context with assurance none. Source imports and draft plans are distinct from actual proof dependencies. Graph extraction describes export syntax, not an independent proof checker. The host, project configurations/metaprograms, parser/capture/binding helpers, supplied tools and exporter remain trusted; independent checking does not establish human statement faithfulness."
 
 [[components]]
 id = "lean.discovery_and_evaluation"

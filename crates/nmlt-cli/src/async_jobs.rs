@@ -24,6 +24,7 @@ pub(super) struct Options {
     pub bounds: session::Bounds,
     pub lean: Option<PathBuf>,
     pub projects: Option<PathBuf>,
+    pub adapters: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,6 +44,8 @@ struct Context {
     bounds: session::Bounds,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     projects: Option<rt::project_proof::Identity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    adapters: Option<rt::custom_adapter::Identity>,
 }
 impl Context {
     fn digest(&self) -> String {
@@ -51,6 +54,9 @@ impl Context {
     fn validate(&self) -> Result<(), String> {
         super::workflow::validate_project_context(&self.project_context_sha256)?;
         if let Some(identity) = &self.projects {
+            identity.validate().map_err(|e| e.to_string())?;
+        }
+        if let Some(identity) = &self.adapters {
             identity.validate().map_err(|e| e.to_string())?;
         }
         if self.schema != "nmlt-async-source-context-v2"
@@ -84,6 +90,7 @@ impl Context {
         if manifest.configuration.parent_context_sha256 != self.digest()
             || manifest.configuration.bounds != self.bounds
             || manifest.configuration.projects != self.projects
+            || manifest.configuration.adapters != self.adapters
             || manifest.configuration.square_executable_sha256.as_ref()
                 != Some(&self.implementation_sha256)
         {
@@ -173,6 +180,17 @@ fn request(manifest: &session::Manifest, input: &JobRequest) -> Result<rt::Reque
                 .and_then(|r| r.input())
                 .map_err(|e| e.to_string())?,
         ),
+        JobRequest::CustomAdapter { alias, input } => (
+            rt::custom_adapter::adapter(),
+            manifest
+                .configuration
+                .adapters
+                .as_ref()
+                .ok_or("custom adapters are not configured")?
+                .request(alias, input)
+                .and_then(|r| r.input())
+                .map_err(|e| e.to_string())?,
+        ),
         JobRequest::Lean(_) | JobRequest::LeanCheck { .. } => {
             let request = rt::lean::Request::new(
                 manifest
@@ -249,10 +267,21 @@ pub(super) fn run(
             "source project proofs require --lean-projects with a pinned task registry".into(),
         );
     }
+    if program.requires_custom_jobs(&entry)? && options.adapters.is_none() {
+        return Err(
+            "source custom adapter jobs require --adapters with a pinned adapter configuration"
+                .into(),
+        );
+    }
     let projects = options
         .projects
         .as_deref()
         .map(super::lean_task::jobs::open)
+        .transpose()?;
+    let adapters = options
+        .adapters
+        .as_deref()
+        .map(super::adapters::load_file)
         .transpose()?;
     let project_session = project_session(output, &options.directory, projects.is_some())?;
     let context = Context {
@@ -268,6 +297,7 @@ pub(super) fn run(
         max_steps,
         bounds: options.bounds,
         projects: projects.as_ref().map(|t| t.identity().clone()),
+        adapters: adapters.as_ref().map(|a| a.identity().clone()),
     };
     context.validate()?;
     let square = session::SquareTool::open(&std::env::current_exe().map_err(|e| e.to_string())?)
@@ -285,7 +315,7 @@ pub(super) fn run(
     let run_id = format!("source-{}-{nonce}", std::process::id());
     let mut output =
         File::create_new(output).map_err(|e| format!("could not create new async record: {e}"))?;
-    let session = session::Session::create_with_projects(
+    let session = session::Session::create_with_tools(
         &options.directory,
         run_id,
         context.digest(),
@@ -293,6 +323,7 @@ pub(super) fn run(
         Some(square),
         lean,
         projects,
+        adapters,
     )
     .map_err(|e| e.to_string())?;
     persist(
@@ -466,6 +497,9 @@ impl Live {
                     JobRequest::Square(i) => self.session.start_square(&task, *i),
                     JobRequest::LeanProject { alias, proof } => {
                         self.session.start_project_proof(&task, alias, proof)
+                    }
+                    JobRequest::CustomAdapter { alias, input } => {
+                        self.session.start_custom_adapter(&task, alias, input)
                     }
                     JobRequest::Lean(_) | JobRequest::LeanCheck { .. } => {
                         self.session.start_lean_candidate(
@@ -795,8 +829,10 @@ pub(super) fn recover(directory: &Path) -> Result<(), String> {
         &directory.join("source-context.json"),
         2 * 1024 * 1024,
     )?)?;
-    let manifest: session::Manifest =
-        exact(&bounded_read(&directory.join("manifest.json"), 65_536)?)?;
+    let manifest: session::Manifest = exact(&bounded_read(
+        &directory.join("manifest.json"),
+        session::MAX_MANIFEST_BYTES as u64,
+    )?)?;
     context.bind(&manifest)?;
     let snapshot = session::recover_snapshot(directory).map_err(|e| e.to_string())?;
     super::lean_task::jobs::validate_snapshot(&directory.join("projects"), &snapshot, false)?;
@@ -816,12 +852,16 @@ pub(super) fn resume(args: &[std::ffi::OsString]) -> Result<(), String> {
         .ok_or("jobs-resume requires a saved jobs directory")?;
     let mut output = None;
     let mut lean_path = None;
+    let mut adapters_path = None;
     let mut acknowledgement = None;
     let mut pairs = args[1..].chunks_exact(2);
     for pair in &mut pairs {
         match pair[0].to_str() {
             Some("--emit-run") if output.is_none() => output = Some(PathBuf::from(&pair[1])),
             Some("--lean-bin") if lean_path.is_none() => lean_path = Some(PathBuf::from(&pair[1])),
+            Some("--adapters") if adapters_path.is_none() => {
+                adapters_path = Some(PathBuf::from(&pair[1]))
+            }
             Some("--acknowledge-uncertain-effects") if acknowledgement.is_none() => {
                 let reason = pair[1].to_str().ok_or("acknowledgement must be UTF-8")?;
                 if reason.trim().is_empty() || reason.len() > 1024 {
@@ -846,6 +886,7 @@ pub(super) fn resume(args: &[std::ffi::OsString]) -> Result<(), String> {
         &directory,
         &output,
         lean_path.as_deref(),
+        adapters_path.as_deref(),
         acknowledgement.as_deref(),
     )
 }
@@ -866,8 +907,10 @@ pub(super) fn repair(args: &[std::ffi::OsString]) -> Result<(), String> {
         &directory.join("source-context.json"),
         2 * 1024 * 1024,
     )?)?;
-    let manifest: session::Manifest =
-        exact(&bounded_read(&directory.join("manifest.json"), 65_536)?)?;
+    let manifest: session::Manifest = exact(&bounded_read(
+        &directory.join("manifest.json"),
+        session::MAX_MANIFEST_BYTES as u64,
+    )?)?;
     context.bind(&manifest)?;
     let (mut guard, runtime_tail) =
         rt::Journal::open_repair(&directory.join("journal.jsonl"), &manifest.spec, reason)
@@ -889,14 +932,17 @@ pub(super) fn resume_source(
     directory: &Path,
     output: &Path,
     lean_path: Option<&Path>,
+    adapters_path: Option<&Path>,
     acknowledgement: Option<&str>,
 ) -> Result<(), String> {
     let context: Context = exact(&bounded_read(
         &directory.join("source-context.json"),
         2 * 1024 * 1024,
     )?)?;
-    let manifest: session::Manifest =
-        exact(&bounded_read(&directory.join("manifest.json"), 65_536)?)?;
+    let manifest: session::Manifest = exact(&bounded_read(
+        &directory.join("manifest.json"),
+        session::MAX_MANIFEST_BYTES as u64,
+    )?)?;
     context.bind(&manifest)?;
     let logical = &context
         .sources
@@ -913,6 +959,12 @@ pub(super) fn resume_source(
             "resuming this run requires --lean-bin with the original pinned installation".into(),
         );
     }
+    if manifest.configuration.adapters.is_some() && adapters_path.is_none() {
+        return Err(
+            "resuming this run requires --adapters with the original pinned adapter configuration"
+                .into(),
+        );
+    }
     let square = session::SquareTool::open(&std::env::current_exe().map_err(|e| e.to_string())?)
         .map_err(|e| e.to_string())?;
     let lean = lean_path
@@ -925,12 +977,14 @@ pub(super) fn resume_source(
         .as_ref()
         .map(|identity| super::lean_task::jobs::restore(&directory.join("projects"), identity))
         .transpose()?;
-    let mut session = session::Session::resume_with_projects(
+    let adapters = adapters_path.map(super::adapters::load_file).transpose()?;
+    let mut session = session::Session::resume_with_tools(
         directory,
         &context.digest(),
         Some(square),
         lean,
         projects,
+        adapters,
     )
     .map_err(|e| e.to_string())?;
     super::lean_task::jobs::validate_snapshot(

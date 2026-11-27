@@ -22,23 +22,29 @@ pub(super) struct Tools {
     nanoda: PathBuf,
 }
 const ADAPTER: &str = "lean4export NMLTProof -- NMLTChecked.result; byte-exact raw stdout file <= 16777216 bytes for local tasks or <= 67108864 bytes for Lake tasks; SHA-256 and byte-count receipt; stderr <= 65536 bytes; nmlt-lean-proof-dependencies-v1; explicit constants/projections/reductions/literal-support/export-groups";
+pub(crate) fn exporter_library_digest(exporter: &Path) -> Result<String> {
+    let root = exporter
+        .parent()
+        .and_then(Path::parent)
+        .ok_or("exporter must use the Lake build/bin layout")?;
+    let library = identity::tree(root, &["lib"]).map_err(err)?;
+    if !library
+        .iter()
+        .any(|file| file.path == "lib/lean/Main.olean")
+    {
+        return Err("exporter library lacks Main.olean".into());
+    }
+    Ok(sha256(&serde_json::to_vec(&library).map_err(err)?))
+}
+
 impl Tools {
     pub fn open(exporter: &Path, nanoda: &Path) -> Result<Self> {
         let exporter = exporter.canonicalize().map_err(err)?;
         let nanoda = nanoda.canonicalize().map_err(err)?;
-        let library_root = exporter
-            .parent()
-            .and_then(Path::parent)
-            .ok_or("exporter must use the Lake build/bin layout")?
-            .to_path_buf();
-        let library = identity::tree(&library_root, &["lib"]).map_err(err)?;
-        if !library.iter().any(|f| f.path == "lib/lean/Main.olean") {
-            return Err("exporter library lacks Main.olean".into());
-        }
         let identity = Identity {
             format: "lean4export-ndjson-3.1.0".into(),
             exporter_sha256: identity::file(&exporter, 256 * 1024 * 1024).map_err(err)?.1,
-            exporter_library_sha256: sha256(&serde_json::to_vec(&library).map_err(err)?),
+            exporter_library_sha256: exporter_library_digest(&exporter)?,
             nanoda_sha256: identity::file(&nanoda, 256 * 1024 * 1024).map_err(err)?.1,
             export_adapter_sha256: sha256(ADAPTER.as_bytes()),
         };

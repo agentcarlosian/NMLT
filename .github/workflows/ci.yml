@@ -39,6 +39,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cargo test --locked -p nmlt-cli --test async_jobs -- --test-threads=1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Check MCP stdio and custom adapter integrations
+        shell: pwsh
+        run: |
+          cargo test --locked -p nmlt-cli --test mcp_stdio --test custom_adapters -- --test-threads=1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   rust:
     name: Rust workspace

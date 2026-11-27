@@ -3,13 +3,15 @@
 use crate::session_store::{self as store, Evidence as StoredEvidence, Stored};
 use crate::{
     Command, Control, Dispatch, Error, Journal, Lifecycle, Limits, Outcome, Phase, Receipt,
-    Request, Response, ResponseOutcome, RunSpec, Value, lean, process, project_proof, sha256,
-    worker,
+    Request, Response, ResponseOutcome, RunSpec, Value, custom_adapter, lean, process,
+    project_proof, sha256, worker,
 };
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
+
+pub const MAX_MANIFEST_BYTES: usize = 65_536;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -45,6 +47,8 @@ pub struct Configuration {
     pub lean: Option<lean::Identity>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub projects: Option<project_proof::Identity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adapters: Option<custom_adapter::Identity>,
 }
 impl Configuration {
     fn validate(&self) -> Result<(), Error> {
@@ -77,6 +81,9 @@ impl Configuration {
         if let Some(identity) = &self.projects {
             identity.validate()?;
         }
+        if let Some(identity) = &self.adapters {
+            identity.validate()?;
+        }
         Ok(())
     }
     fn limits(&self) -> Limits {
@@ -104,6 +111,11 @@ impl Manifest {
             return Err(Error("async session context or limits mismatch".into()));
         }
         Lifecycle::new(self.spec.clone())?;
+        if serde_json::to_vec(self)?.len() > MAX_MANIFEST_BYTES {
+            return Err(Error(format!(
+                "session manifest exceeds {MAX_MANIFEST_BYTES}-byte bound"
+            )));
+        }
         Ok(())
     }
 }
@@ -181,6 +193,7 @@ pub struct Session {
     square: Option<SquareTool>,
     lean: Option<lean::Toolchain>,
     projects: Option<project_proof::Tool>,
+    adapters: Option<custom_adapter::Registry>,
     instance: Arc<()>,
     tasks: Vec<Task>,
     observations: Vec<Observation>,
@@ -215,6 +228,28 @@ impl Session {
         lean: Option<lean::Toolchain>,
         projects: Option<project_proof::Tool>,
     ) -> Result<Self, Error> {
+        Self::create_with_tools(
+            directory,
+            run_id,
+            parent_context_sha256,
+            bounds,
+            square,
+            lean,
+            projects,
+            None,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_with_tools(
+        directory: &Path,
+        run_id: String,
+        parent_context_sha256: String,
+        bounds: Bounds,
+        square: Option<SquareTool>,
+        lean: Option<lean::Toolchain>,
+        projects: Option<project_proof::Tool>,
+        adapters: Option<custom_adapter::Registry>,
+    ) -> Result<Self, Error> {
         use std::io::Write;
         let configuration = Configuration {
             schema: "nmlt-async-session-v3".into(),
@@ -224,6 +259,7 @@ impl Session {
             square_executable_sha256: square.as_ref().map(|s| s.identity.clone()),
             lean: lean.as_ref().map(|s| s.identity().clone()),
             projects: projects.as_ref().map(|s| s.identity().clone()),
+            adapters: adapters.as_ref().map(|a| a.identity().clone()),
         };
         configuration.validate()?;
         let spec = RunSpec {
@@ -236,13 +272,19 @@ impl Session {
             spec,
         };
         manifest.validate()?;
+        let manifest_bytes = serde_json::to_vec(&manifest)?;
+        if manifest_bytes.len() > MAX_MANIFEST_BYTES {
+            return Err(Error(format!(
+                "session manifest exceeds {MAX_MANIFEST_BYTES}-byte bound"
+            )));
+        }
         std::fs::create_dir(directory)?;
         let projects = projects
             .as_ref()
             .map(|tool| tool.retain(&directory.join("projects")))
             .transpose()?;
         let mut file = std::fs::File::create_new(directory.join("manifest.json"))?;
-        file.write_all(&serde_json::to_vec(&manifest)?)?;
+        file.write_all(&manifest_bytes)?;
         file.sync_all()?;
         if let Some(tool) = &lean {
             store::write(
@@ -258,6 +300,7 @@ impl Session {
             square,
             lean,
             projects,
+            adapters,
             instance: Arc::new(()),
             tasks: vec![],
             observations: vec![],
@@ -313,19 +356,31 @@ impl Session {
         lean: Option<lean::Toolchain>,
         projects: Option<project_proof::Tool>,
     ) -> Result<Self, Error> {
-        let manifest: Manifest = store::read(&directory.join("manifest.json"), 65_536)?;
+        Self::resume_with_tools(directory, parent_context, square, lean, projects, None)
+    }
+    pub fn resume_with_tools(
+        directory: &Path,
+        parent_context: &str,
+        square: Option<SquareTool>,
+        lean: Option<lean::Toolchain>,
+        projects: Option<project_proof::Tool>,
+        adapters: Option<custom_adapter::Registry>,
+    ) -> Result<Self, Error> {
+        let manifest: Manifest =
+            store::read(&directory.join("manifest.json"), MAX_MANIFEST_BYTES as u64)?;
         manifest.validate()?;
         if manifest.configuration.parent_context_sha256 != parent_context
             || manifest.configuration.square_executable_sha256
                 != square.as_ref().map(|t| t.identity.clone())
             || manifest.configuration.lean != lean.as_ref().map(|t| t.identity().clone())
             || manifest.configuration.projects != projects.as_ref().map(|t| t.identity().clone())
+            || manifest.configuration.adapters != adapters.as_ref().map(|t| t.identity().clone())
         {
             return Err(Error(
                 "resumption context or exact tool identities differ".into(),
             ));
         }
-        Self::restore(directory, manifest, square, lean, projects)
+        Self::restore(directory, manifest, square, lean, projects, adapters)
     }
     fn restore(
         directory: &Path,
@@ -333,6 +388,7 @@ impl Session {
         square: Option<SquareTool>,
         lean: Option<lean::Toolchain>,
         projects: Option<project_proof::Tool>,
+        adapters: Option<custom_adapter::Registry>,
     ) -> Result<Self, Error> {
         let mut journal = Journal::open_existing(&directory.join("journal.jsonl"), &manifest.spec)?;
         let (_, mut commands) =
@@ -361,6 +417,7 @@ impl Session {
             square,
             lean,
             projects,
+            adapters,
             instance: Arc::new(()),
             tasks: vec![],
             observations,
@@ -502,6 +559,19 @@ impl Session {
                     .as_ref()
                     .ok_or_else(|| Error("project tool missing".into()))?
                     .command(&self.directory.join("projects"))?;
+                self.launch(index, command, |dispatch| {
+                    serde_json::to_vec(dispatch).expect("dispatch")
+                })?;
+            } else if attempt.request.adapter == custom_adapter::adapter() {
+                let Value::Text(input) = &attempt.request.input else {
+                    return Err(Error("invalid resumed custom adapter input".into()));
+                };
+                let req: custom_adapter::Request = serde_json::from_str(input)?;
+                let (command, _) = self
+                    .adapters
+                    .as_ref()
+                    .ok_or_else(|| Error("custom adapter registry missing".into()))?
+                    .command(&req.alias)?;
                 self.launch(index, command, |dispatch| {
                     serde_json::to_vec(dispatch).expect("dispatch")
                 })?;
@@ -675,6 +745,26 @@ impl Session {
             return Err(error);
         }
         let project = dispatch.binding.adapter == project_proof::adapter();
+        let custom_timeout_ms = if dispatch.binding.adapter == custom_adapter::adapter() {
+            let Value::Text(raw) = &dispatch.input else {
+                return Err(Error("custom adapter input must be text".into()));
+            };
+            let req: custom_adapter::Request = serde_json::from_str(raw)?;
+            let entry = self
+                .manifest
+                .configuration
+                .adapters
+                .as_ref()
+                .ok_or_else(|| Error("missing custom adapter configuration".into()))?
+                .entry(&req.alias)?;
+            Some(
+                entry
+                    .timeout_ms
+                    .min(self.manifest.configuration.bounds.timeout_ms),
+            )
+        } else {
+            None
+        };
         self.tasks[index].dispatch = Some(dispatch);
         self.tasks[index].control = control;
         let launched = if project {
@@ -694,7 +784,9 @@ impl Session {
             process::Process::start(
                 command,
                 input,
-                Duration::from_millis(self.manifest.configuration.bounds.timeout_ms),
+                Duration::from_millis(
+                    custom_timeout_ms.unwrap_or(self.manifest.configuration.bounds.timeout_ms),
+                ),
             )
         };
         let (process, failed) = match launched {
@@ -745,6 +837,28 @@ impl Session {
         let command = tool.command(&self.directory.join("projects"))?;
         let request = Request {
             adapter: project_proof::adapter(),
+            context_sha256: self.manifest.spec.context_sha256.clone(),
+            input,
+            reserved_work: 1,
+        };
+        self.start(task, request, command, |dispatch| {
+            serde_json::to_vec(dispatch).expect("dispatch")
+        })
+    }
+    pub fn start_custom_adapter(
+        &mut self,
+        task: &str,
+        alias: &str,
+        input_text: &str,
+    ) -> Result<Handle, Error> {
+        let registry = self
+            .adapters
+            .as_ref()
+            .ok_or_else(|| Error("custom adapters are not configured".into()))?;
+        let input = registry.identity().request(alias, input_text)?.input()?;
+        let (command, _) = registry.command(alias)?;
+        let request = Request {
+            adapter: custom_adapter::adapter(),
             context_sha256: self.manifest.spec.context_sha256.clone(),
             input,
             reserved_work: 1,
@@ -992,6 +1106,14 @@ fn check_dispatch(configuration: &Configuration, dispatch: &Dispatch) -> Result<
                 .ok_or_else(|| Error("unconfigured project proof dispatch".into()))?,
             dispatch,
         )?;
+    } else if dispatch.binding.adapter == custom_adapter::adapter() {
+        custom_adapter::request(
+            configuration
+                .adapters
+                .as_ref()
+                .ok_or_else(|| Error("unconfigured custom adapter dispatch".into()))?,
+            dispatch,
+        )?;
     } else {
         return Err(Error("unsupported asynchronous adapter".into()));
     }
@@ -1068,6 +1190,16 @@ fn response(
                 .projects
                 .as_ref()
                 .ok_or_else(|| Error("project identity missing".into()))?,
+            &observation.dispatch,
+            output,
+        )
+        .ok())
+    } else if observation.dispatch.binding.adapter == custom_adapter::adapter() {
+        Ok(custom_adapter::response(
+            configuration
+                .adapters
+                .as_ref()
+                .ok_or_else(|| Error("custom adapter identity missing".into()))?,
             &observation.dispatch,
             output,
         )
@@ -1186,9 +1318,9 @@ pub fn recover_snapshot(directory: &Path) -> Result<Snapshot, Error> {
     use std::io::Read;
     let mut bytes = vec![];
     std::fs::File::open(directory.join("manifest.json"))?
-        .take(65_537)
+        .take((MAX_MANIFEST_BYTES + 1) as u64)
         .read_to_end(&mut bytes)?;
-    if bytes.len() > 65_536 {
+    if bytes.len() > MAX_MANIFEST_BYTES {
         return Err(Error("session manifest exceeds bound".into()));
     }
     let manifest: Manifest = serde_json::from_slice(&bytes)?;
@@ -1196,7 +1328,7 @@ pub fn recover_snapshot(directory: &Path) -> Result<Snapshot, Error> {
         return Err(Error("session manifest is not canonical".into()));
     }
     manifest.validate()?;
-    Session::restore(directory, manifest, None, None, None)?.snapshot()
+    Session::restore(directory, manifest, None, None, None, None)?.snapshot()
 }
 
 #[cfg(test)]
@@ -1497,5 +1629,82 @@ mod tests {
         assert_eq!(session.state().accounting().dispatched_attempts, 1);
         drop(session);
         assert!(recover(&directory).is_err());
+    }
+
+    #[test]
+    fn manifest_bound_matches_resume_limit_and_fails_before_creating_session_dir() {
+        // Construct a valid custom-adapter identity right under MAX_IDENTITY_BYTES and verify
+        // a valid session manifest always stays within MAX_MANIFEST_BYTES and resumes cleanly.
+        let exe = std::env::current_exe().unwrap();
+        let registry = custom_adapter::Registry::open(vec![custom_adapter::Spec {
+            alias: "ok_adapter".into(),
+            executable: exe.clone(),
+            args: vec!["--flag".into()],
+            timeout_ms: 1000,
+        }])
+        .unwrap();
+        let dir = std::env::temp_dir().join(format!(
+            "nmlt-session-manifest-bound-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        let parent = sha256(b"parent");
+        let session = Session::create_with_tools(
+            &dir,
+            "run-bound".into(),
+            parent.clone(),
+            Bounds {
+                slots: 1,
+                max_attempts: 2,
+                timeout_ms: 5000,
+            },
+            None,
+            None,
+            None,
+            Some(registry.clone()),
+        )
+        .unwrap();
+        drop(session);
+        let resumed = Session::resume_with_tools(&dir, &parent, None, None, None, Some(registry));
+        assert!(resumed.is_ok());
+        let _ = std::fs::remove_dir_all(&dir);
+
+        // An oversized custom-adapter spec (> 32 KiB) must fail Registry::open before any session
+        // directory is created.
+        let oversized_specs = (0..16)
+            .map(|idx| custom_adapter::Spec {
+                alias: format!("big_{idx}"),
+                executable: exe.clone(),
+                args: vec!["a".repeat(custom_adapter::MAX_ARG_BYTES); custom_adapter::MAX_ARGS],
+                timeout_ms: 1000,
+            })
+            .collect();
+        assert!(custom_adapter::Registry::open(oversized_specs).is_err());
+
+        // Direct Manifest::validate() enforces the exact same MAX_MANIFEST_BYTES ceiling as resume.
+        let valid_cfg = Configuration {
+            schema: "nmlt-async-session-v3".into(),
+            process_contract: process::CONTRACT.into(),
+            parent_context_sha256: parent,
+            bounds: Bounds {
+                slots: 1,
+                max_attempts: 2,
+                timeout_ms: 5000,
+            },
+            square_executable_sha256: None,
+            lean: None,
+            projects: None,
+            adapters: None,
+        };
+        let manifest = Manifest {
+            spec: RunSpec {
+                run_id: "r".into(),
+                context_sha256: sha256(&serde_json::to_vec(&valid_cfg).unwrap()),
+                limits: valid_cfg.limits(),
+            },
+            configuration: valid_cfg,
+        };
+        assert!(manifest.validate().is_ok());
+        assert!(serde_json::to_vec(&manifest).unwrap().len() <= MAX_MANIFEST_BYTES);
     }
 }

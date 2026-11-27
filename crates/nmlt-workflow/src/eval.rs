@@ -19,6 +19,7 @@ pub enum JobRequest {
     Lean(String),
     LeanCheck { statement: String, proof: String },
     LeanProject { alias: String, proof: String },
+    CustomAdapter { alias: String, input: String },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -222,20 +223,24 @@ impl Machine<'_> {
         let overflow = || Stop::IntegerOverflow { at: node.span };
         let value = match &node.kind {
             TypedKind::JobLeanCheck(statement, proof)
-            | TypedKind::JobLeanProject(statement, proof) => {
+            | TypedKind::JobLeanProject(statement, proof)
+            | TypedKind::JobCustom(statement, proof) => {
                 let Value::Text(statement) = self.data(statement, env, depth + 1)? else {
                     unreachable!()
                 };
                 let Value::Text(proof) = self.data(proof, env, depth + 1)? else {
                     unreachable!()
                 };
-                let request = if matches!(&node.kind, TypedKind::JobLeanProject(..)) {
-                    JobRequest::LeanProject {
+                let request = match &node.kind {
+                    TypedKind::JobLeanProject(..) => JobRequest::LeanProject {
                         alias: statement,
                         proof,
-                    }
-                } else {
-                    JobRequest::LeanCheck { statement, proof }
+                    },
+                    TypedKind::JobCustom(..) => JobRequest::CustomAdapter {
+                        alias: statement,
+                        input: proof,
+                    },
+                    _ => JobRequest::LeanCheck { statement, proof },
                 };
                 let id =
                     self.host

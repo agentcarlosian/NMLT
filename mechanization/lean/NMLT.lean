@@ -6,6 +6,7 @@ import NMLT.Correspondence.M9Kernel
 import NMLT.Behavior.ResourceBehavior
 import NMLT.Behavior.ResourceWorld
 import NMLT.Behavior.ResourceDynamics
+import NMLT.Behavior.WorkflowJobBridge
 import NMLT.Artifact.BehaviorCore
 import NMLT.Artifact.SemanticClosure
 import NMLT.Artifact.ExecutionWitness

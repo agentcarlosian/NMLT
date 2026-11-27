@@ -15,6 +15,7 @@ mod dependencies;
 mod diagnostics;
 mod discovery;
 mod export;
+pub(crate) use export::exporter_library_digest;
 mod inspection;
 pub(crate) mod jobs;
 mod lake;
@@ -25,15 +26,16 @@ const MAX_JSON: u64 = 64 * 1024 * 1024;
 const MAX_SOURCE: u64 = 1024 * 1024;
 const EXPORT_PATH: &str = "build/environment.ndjson";
 const HELP: &str = "\
-Bound Lean projects (trusted project code; closed terms and bounded native automation):
-  nmlt lean-task bind --project DIR --lean-bin FILE --output NEW_DIR
-  nmlt lean-task revise --task task.json --task-sha256 HASH --project DIR --reason FILE --lean-bin FILE --output NEW_DIR
-  nmlt lean-task candidate --task task.json --task-sha256 HASH --proof FILE --output NEW_FILE
-  nmlt lean-task workspace --task task.json --task-sha256 HASH --lean-bin FILE --output NEW_DIR
-  nmlt lean-task inspect --task task.json --task-sha256 HASH --prefix NAME --limit 1..16 --lean-bin FILE --output NEW_DIR
-  nmlt lean-task prove --task task.json --task-sha256 HASH --candidate candidate.json --lean-bin FILE --exporter FILE --nanoda FILE --output NEW_DIR
-  nmlt lean-task recheck --record result.json --task-sha256 HASH --lean-bin FILE --exporter FILE --nanoda FILE --output NEW_DIR
+Bound Lean projects (trusted project code; closed terms, bounded native automation, and guarded scripts):
+  nmlt lean-task bind --project DIR [--lean-bin FILE] --output NEW_DIR
+  nmlt lean-task revise --task TASK_OR_DIR [--task-sha256 HASH] --project DIR --reason FILE [--lean-bin FILE] --output NEW_DIR
+  nmlt lean-task candidate --task TASK_OR_DIR [--task-sha256 HASH] --proof FILE --output NEW_FILE
+  nmlt lean-task workspace --task TASK_OR_DIR [--task-sha256 HASH] [--lean-bin FILE] --output NEW_DIR
+  nmlt lean-task inspect --task TASK_OR_DIR [--task-sha256 HASH] --prefix NAME --limit 1..16 [--lean-bin FILE] --output NEW_DIR
+  nmlt lean-task prove --task TASK_OR_DIR [--task-sha256 HASH] (--candidate FILE | --proof FILE) [--lean-bin FILE] [--exporter FILE] [--nanoda FILE] --output NEW_DIR
+  nmlt lean-task recheck --record RESULT_OR_DIR [--task-sha256 HASH] [--lean-bin FILE] [--exporter FILE] [--nanoda FILE] --output NEW_DIR
 Projects select explicit modules or source roots, target and axiom policy in nmlt-lean.json.
+Omitted --lean-bin / --exporter / --nanoda resolve via `nmlt tools` defaults while still pinning exact SHA-256 digests.
 Binding is not human approval. Select the task hash outside the candidate channel.
 ";
 
@@ -295,43 +297,65 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         return Ok(());
     }
     let action = args[0].to_str().ok_or("command must be UTF-8")?;
-    let allowed: &[&str] = match action {
-        "bind" => &["--project", "--lean-bin", "--output"],
-        "revise" => &[
-            "--task",
-            "--task-sha256",
-            "--project",
-            "--reason",
-            "--lean-bin",
-            "--output",
-        ],
-        "candidate" => &["--task", "--task-sha256", "--proof", "--output"],
-        "workspace" => &["--task", "--task-sha256", "--lean-bin", "--output"],
-        "inspect" => &[
-            "--task",
-            "--task-sha256",
-            "--prefix",
-            "--limit",
-            "--lean-bin",
-            "--output",
-        ],
-        "prove" => &[
-            "--task",
-            "--task-sha256",
-            "--candidate",
-            "--lean-bin",
-            "--exporter",
-            "--nanoda",
-            "--output",
-        ],
-        "recheck" => &[
-            "--record",
-            "--task-sha256",
-            "--lean-bin",
-            "--exporter",
-            "--nanoda",
-            "--output",
-        ],
+    let (allowed, required): (&[&str], &[&str]) = match action {
+        "bind" => (
+            &["--project", "--lean-bin", "--output"],
+            &["--project", "--output"],
+        ),
+        "revise" => (
+            &[
+                "--task",
+                "--task-sha256",
+                "--project",
+                "--reason",
+                "--lean-bin",
+                "--output",
+            ],
+            &["--task", "--project", "--reason", "--output"],
+        ),
+        "candidate" => (
+            &["--task", "--task-sha256", "--proof", "--output"],
+            &["--task", "--proof", "--output"],
+        ),
+        "workspace" => (
+            &["--task", "--task-sha256", "--lean-bin", "--output"],
+            &["--task", "--output"],
+        ),
+        "inspect" => (
+            &[
+                "--task",
+                "--task-sha256",
+                "--prefix",
+                "--limit",
+                "--lean-bin",
+                "--output",
+            ],
+            &["--task", "--prefix", "--limit", "--output"],
+        ),
+        "prove" => (
+            &[
+                "--task",
+                "--task-sha256",
+                "--candidate",
+                "--proof",
+                "--lean-bin",
+                "--exporter",
+                "--nanoda",
+                "--output",
+            ],
+            &["--task", "--output"],
+        ),
+        "recheck" => (
+            &[
+                "--record",
+                "--task-sha256",
+                "--lean-bin",
+                "--exporter",
+                "--nanoda",
+                "--output",
+            ],
+            &["--record", "--output"],
+        ),
         _ => return Err(HELP.into()),
     };
     let mut options = BTreeMap::new();
@@ -343,35 +367,44 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         }
         rest = tail;
     }
-    if !rest.is_empty() || options.len() != allowed.len() {
+    if !rest.is_empty() || required.iter().any(|flag| !options.contains_key(flag)) {
         return Err(HELP.into());
     }
+    if action == "prove" && options.contains_key("--candidate") == options.contains_key("--proof") {
+        return Err("prove requires exactly one of --candidate <FILE> or --proof <FILE>".into());
+    }
     if action == "bind" {
-        return bind(
-            &options["--project"],
-            &options["--lean-bin"].canonicalize().map_err(err)?,
-            &options["--output"],
-            None,
+        let lean = crate::tools::resolve_lean(options.get("--lean-bin").map(PathBuf::as_path))?.0;
+        let bound = bind(&options["--project"], &lean, &options["--output"], None)?;
+        println!(
+            "bound_task: {}\ntask: {}",
+            bound.task_sha256,
+            bound.task_path.display()
         );
+        return Ok(());
     }
-    let digest = options["--task-sha256"]
-        .to_str()
-        .ok_or("hash must be UTF-8")?;
-    if digest.len() != 64
-        || !digest
-            .bytes()
-            .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
-    {
-        return Err("task hash requires 64 lowercase hexadecimal digits".into());
-    }
+    let (artifact_path, digest) = if action == "recheck" {
+        resolve_bound_input(
+            &options["--record"],
+            options.get("--task-sha256").map(PathBuf::as_path),
+            "result.json",
+        )?
+    } else {
+        resolve_bound_input(
+            &options["--task"],
+            options.get("--task-sha256").map(PathBuf::as_path),
+            "task.json",
+        )?
+    };
+    let digest = digest.as_str();
     if action == "candidate" {
-        let task: Task = read_json(&options["--task"], MAX_JSON)?;
+        let task: Task = read_json(&artifact_path, MAX_JSON)?;
         task.validate()?;
         if task.digest()? != digest {
             return Err("retained task does not match the selected task hash".into());
         }
         let source =
-            String::from_utf8(read_bounded(&options["--proof"], 16 * 1024)?).map_err(err)?;
+            String::from_utf8(read_bounded(&options["--proof"], 64 * 1024)?).map_err(err)?;
         let candidate = Candidate::from_file(digest, &source, &task.target)?;
         write_json(&options["--output"], &candidate)?;
         println!(
@@ -380,9 +413,9 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         );
         return Ok(());
     }
-    let lean = options["--lean-bin"].canonicalize().map_err(err)?;
+    let lean = crate::tools::resolve_lean(options.get("--lean-bin").map(PathBuf::as_path))?.0;
     if action == "revise" {
-        let parent: Task = read_json(&options["--task"], MAX_JSON)?;
+        let parent: Task = read_json(&artifact_path, MAX_JSON)?;
         parent.validate()?;
         if parent.digest()? != digest {
             return Err("retained task does not match the selected task hash".into());
@@ -391,15 +424,21 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         if reason.trim().is_empty() {
             return Err("task revision requires a reason".into());
         }
-        return bind(
+        let bound = bind(
             &options["--project"],
             &lean,
             &options["--output"],
             Some((parent, reason)),
+        )?;
+        println!(
+            "bound_task: {}\ntask: {}",
+            bound.task_sha256,
+            bound.task_path.display()
         );
+        return Ok(());
     }
     if action == "workspace" {
-        let task: Task = read_json(&options["--task"], MAX_JSON)?;
+        let task: Task = read_json(&artifact_path, MAX_JSON)?;
         task.validate()?;
         if task.digest()? != digest {
             return Err("retained task does not match the selected task hash".into());
@@ -408,7 +447,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
             task,
             &lean,
             &options["--output"],
-            options["--task"].parent().unwrap_or(Path::new(".")),
+            artifact_path.parent().unwrap_or(Path::new(".")),
         );
     }
     if action == "inspect" {
@@ -416,21 +455,29 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
             options["--prefix"].to_str().ok_or("prefix must be UTF-8")?,
             options["--limit"].to_str().ok_or("limit must be UTF-8")?,
         )?;
-        let task: Task = read_json(&options["--task"], MAX_JSON)?;
+        let task: Task = read_json(&artifact_path, MAX_JSON)?;
         task.validate()?;
         if task.digest()? != digest {
             return Err("retained task does not match the selected task hash".into());
         }
-        return inspection::run(
+        let summary = inspection::run(
             task,
             query,
             &lean,
             &options["--output"],
-            options["--task"].parent().unwrap_or(Path::new(".")),
+            artifact_path.parent().unwrap_or(Path::new(".")),
+        )?;
+        println!(
+            "context_only: {} declarations ({} matched)\ntask: {}\ninspection: {}",
+            summary.declarations,
+            summary.matched,
+            summary.task_sha256,
+            summary.inspection_path.display()
         );
+        return Ok(());
     }
     let previous: Option<ResultRecord> = if action == "recheck" {
-        let value: serde_json::Value = read_json(&options["--record"], MAX_JSON)?;
+        let value: serde_json::Value = read_json(&artifact_path, MAX_JSON)?;
         if value["schema"] == "nmlt-lean-inspection-v1" {
             return Err(
                 "declaration context is not a proof acceptance record; use lean-task prove".into(),
@@ -461,17 +508,30 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         record.validate_dependencies()?;
         (record.task.clone(), record.candidate.clone())
     } else {
-        (
-            read_json(&options["--task"], MAX_JSON)?,
-            read_json(&options["--candidate"], 16 * 1024)?,
-        )
+        let task: Task = read_json(&artifact_path, MAX_JSON)?;
+        task.validate()?;
+        if task.digest()? != digest {
+            return Err("retained task does not match the selected task hash".into());
+        }
+        let candidate = if let Some(candidate_path) = options.get("--candidate") {
+            read_json(candidate_path, 64 * 1024)?
+        } else {
+            let source =
+                String::from_utf8(read_bounded(&options["--proof"], 64 * 1024)?).map_err(err)?;
+            Candidate::from_file(digest, &source, &task.target)?
+        };
+        (task, candidate)
     };
     task.validate()?;
     if task.digest()? != digest {
         return Err("retained task does not match the selected task hash".into());
     }
     let proof = candidate.validate(digest)?;
-    let tools = export::Tools::open(&options["--exporter"], &options["--nanoda"])?;
+    let exporter =
+        crate::tools::resolve_exporter(options.get("--exporter").map(PathBuf::as_path), None)?.0;
+    let nanoda =
+        crate::tools::resolve_nanoda(options.get("--nanoda").map(PathBuf::as_path), None)?.0;
+    let tools = export::Tools::open(&exporter, &nanoda)?;
     if let Some(record) = &previous {
         if record.tools != tools.identity {
             return Err("independent checker tools changed since acceptance".into());
@@ -487,13 +547,7 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         tools,
         &options["--output"],
         previous.as_ref(),
-        options[if previous.is_some() {
-            "--record"
-        } else {
-            "--task"
-        }]
-        .parent()
-        .unwrap_or(Path::new(".")),
+        artifact_path.parent().unwrap_or(Path::new(".")),
     )?;
     println!(
         "independently_checked: {}\ntask: {}\ndeclarations: {}\nresult: {}",
@@ -505,12 +559,260 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
     Ok(())
 }
 
+pub(crate) fn validate_digest(digest: &str) -> Result<&str> {
+    if digest.len() != 64
+        || !digest
+            .bytes()
+            .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+    {
+        return Err("task hash requires 64 lowercase hexadecimal digits".into());
+    }
+    Ok(digest)
+}
+
+pub(crate) fn resolve_bound_input(
+    raw: &Path,
+    explicit_digest: Option<&Path>,
+    default_file: &str,
+) -> Result<(PathBuf, String)> {
+    let artifact_path = if raw.is_dir() {
+        raw.join(default_file)
+    } else {
+        raw.to_path_buf()
+    };
+    let digest = if let Some(value) = explicit_digest {
+        let s = value.to_str().ok_or("hash must be UTF-8")?;
+        validate_digest(s)?.to_owned()
+    } else {
+        let sha_file = artifact_path
+            .parent()
+            .unwrap_or(Path::new("."))
+            .join("task.sha256");
+        if !sha_file.is_file() {
+            return Err(format!(
+                "--task-sha256 was omitted and '{}' does not exist",
+                sha_file.display()
+            ));
+        }
+        let text = String::from_utf8(read_bounded(&sha_file, 256)?).map_err(err)?;
+        validate_digest(text.trim())?.to_owned()
+    };
+    Ok((artifact_path, digest))
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct BoundSummary {
+    pub task_sha256: String,
+    pub task_path: PathBuf,
+    pub target_declaration: String,
+    pub target_module: String,
+    pub target_type: String,
+    pub permitted_axioms: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct ProveSummary {
+    pub status: String,
+    pub task_sha256: String,
+    pub proof_root: String,
+    pub axioms: Vec<String>,
+    pub checked_declarations: u64,
+    pub export_sha256: String,
+    pub result_path: PathBuf,
+    pub candidate_schema: String,
+}
+
+pub(crate) fn bind_api(
+    project: &Path,
+    lean_bin: Option<&Path>,
+    output: &Path,
+) -> Result<BoundSummary> {
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    bind(project, &lean, output, None)
+}
+
+pub(crate) fn revise_api(
+    task_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    project: &Path,
+    reason: &str,
+    lean_bin: Option<&Path>,
+    output: &Path,
+) -> Result<BoundSummary> {
+    if reason.trim().is_empty() || reason.len() > 4096 {
+        return Err("task revision requires a non-empty reason (<= 4096 bytes)".into());
+    }
+    let (task_path, digest) =
+        resolve_bound_input(task_or_dir, explicit_digest.map(Path::new), "task.json")?;
+    let parent: Task = read_json(&task_path, MAX_JSON)?;
+    parent.validate()?;
+    if parent.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    bind(project, &lean, output, Some((parent, reason.to_owned())))
+}
+
+pub(crate) fn inspect_api(
+    task_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    prefix: &str,
+    limit: &str,
+    lean_bin: Option<&Path>,
+    output: &Path,
+) -> Result<serde_json::Value> {
+    let (task_path, digest) =
+        resolve_bound_input(task_or_dir, explicit_digest.map(Path::new), "task.json")?;
+    let task: Task = read_json(&task_path, MAX_JSON)?;
+    task.validate()?;
+    if task.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let query = inspection::Query::new(prefix, limit)?;
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    let summary = inspection::run(
+        task,
+        query,
+        &lean,
+        output,
+        task_path.parent().unwrap_or(Path::new(".")),
+    )?;
+    read_json(&summary.inspection_path, MAX_JSON)
+}
+
+pub(crate) fn prove_api(
+    task_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    proof_source: &str,
+    lean_bin: Option<&Path>,
+    exporter_bin: Option<&Path>,
+    nanoda_bin: Option<&Path>,
+    output: &Path,
+) -> Result<ProveSummary> {
+    let (task_path, digest) =
+        resolve_bound_input(task_or_dir, explicit_digest.map(Path::new), "task.json")?;
+    let task: Task = read_json(&task_path, MAX_JSON)?;
+    task.validate()?;
+    if task.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let candidate = Candidate::from_file(&digest, proof_source, &task.target)?;
+    let candidate_schema = match &candidate {
+        Candidate::Term { .. } => "nmlt-lean-proof-candidate-v1",
+        Candidate::Automation { .. } => "nmlt-lean-proof-candidate-v2",
+        Candidate::Script { .. } => "nmlt-lean-proof-candidate-v3",
+    }
+    .to_owned();
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    let exporter = crate::tools::resolve_exporter(exporter_bin, None)?.0;
+    let nanoda = crate::tools::resolve_nanoda(nanoda_bin, None)?.0;
+    let tools = export::Tools::open(&exporter, &nanoda)?;
+    let record = prove(
+        task,
+        candidate,
+        &lean,
+        tools,
+        output,
+        None,
+        task_path.parent().unwrap_or(Path::new(".")),
+    )?;
+    Ok(ProveSummary {
+        status: record.status,
+        task_sha256: record.task_sha256,
+        proof_root: record.proof.root,
+        axioms: record.proof.axioms,
+        checked_declarations: record.checked_declarations,
+        export_sha256: record.export_sha256,
+        result_path: output.join("result.json"),
+        candidate_schema,
+    })
+}
+
+pub(crate) fn recheck_api(
+    record_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    lean_bin: Option<&Path>,
+    exporter_bin: Option<&Path>,
+    nanoda_bin: Option<&Path>,
+    output: &Path,
+) -> Result<ProveSummary> {
+    let (record_path, digest) =
+        resolve_bound_input(record_or_dir, explicit_digest.map(Path::new), "result.json")?;
+    let value: serde_json::Value = read_json(&record_path, MAX_JSON)?;
+    if value["schema"] == "nmlt-lean-inspection-v1" {
+        return Err(
+            "declaration context is not a proof acceptance record; use lean-task prove".into(),
+        );
+    }
+    if value["schema"] != "nmlt-lean-result-v5" {
+        return Err(
+            "unsupported Lean result version; use its retained original CLI executable".into(),
+        );
+    }
+    let previous: ResultRecord = serde_json::from_value(value).map_err(err)?;
+    if previous.schema != "nmlt-lean-result-v5"
+        || previous.status != "independently_checked"
+        || previous.task_sha256 != digest
+    {
+        return Err("unsupported result or selected task mismatch".into());
+    }
+    if previous.task.lake.is_some() {
+        previous.process_policy.validate_project().map_err(err)?;
+    } else {
+        previous.process_policy.validate().map_err(err)?;
+    }
+    previous.validate_export_capture()?;
+    previous.validate_dependencies()?;
+    let task = previous.task.clone();
+    let candidate = previous.candidate.clone();
+    task.validate()?;
+    if task.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let proof = candidate.validate(&digest)?;
+    let candidate_schema = match &candidate {
+        Candidate::Term { .. } => "nmlt-lean-proof-candidate-v1",
+        Candidate::Automation { .. } => "nmlt-lean-proof-candidate-v2",
+        Candidate::Script { .. } => "nmlt-lean-proof-candidate-v3",
+    }
+    .to_owned();
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    let exporter = crate::tools::resolve_exporter(exporter_bin, None)?.0;
+    let nanoda = crate::tools::resolve_nanoda(nanoda_bin, None)?.0;
+    let tools = export::Tools::open(&exporter, &nanoda)?;
+    if previous.tools != tools.identity {
+        return Err("independent checker tools changed since acceptance".into());
+    }
+    if previous.proof_source != source::proof(&task.target, &proof, &candidate.imports())? {
+        return Err("retained proof source was altered".into());
+    }
+    let record = prove(
+        task,
+        candidate,
+        &lean,
+        tools,
+        output,
+        Some(&previous),
+        record_path.parent().unwrap_or(Path::new(".")),
+    )?;
+    Ok(ProveSummary {
+        status: record.status,
+        task_sha256: record.task_sha256,
+        proof_root: record.proof.root,
+        axioms: record.proof.axioms,
+        checked_declarations: record.checked_declarations,
+        export_sha256: record.export_sha256,
+        result_path: output.join("result.json"),
+        candidate_schema,
+    })
+}
+
 fn bind(
     project: &Path,
     executable: &Path,
     output: &Path,
     parent: Option<(Task, String)>,
-) -> Result<()> {
+) -> Result<BoundSummary> {
     let project = project.canonicalize().map_err(err)?;
     let input: serde_json::Value = read_json(&project.join("nmlt-lean.json"), 16 * 1024)?;
     enum SourcePlan {
@@ -619,11 +921,14 @@ fn bind(
         &run.directory.join("task.sha256"),
         format!("{digest}\n").as_bytes(),
     )?;
-    println!(
-        "bound_task: {digest}\ntask: {}",
-        run.directory.join("task.json").display()
-    );
-    Ok(())
+    Ok(BoundSummary {
+        task_sha256: digest,
+        task_path: run.directory.join("task.json"),
+        target_declaration: task.target.declaration,
+        target_module: task.target.module,
+        target_type: task.target.type_lean,
+        permitted_axioms: task.manifest.permitted_axioms,
+    })
 }
 
 fn explicit_sources(project: &Path, manifest: &Manifest) -> Result<Vec<Source>> {
@@ -1125,5 +1430,63 @@ mod tests {
             parse_marker::<Vec<String>>(b"NMLT_TASK=[]\nNMLT_TASK=[]\n", "NMLT_TASK=").is_err()
         );
         assert!(parse_marker::<Vec<String>>(b"success\n", "NMLT_TASK=").is_err());
+    }
+
+    #[test]
+    fn ergonomic_task_directory_and_digest_resolution_fail_closed() {
+        let base =
+            std::env::temp_dir().join(format!("nmlt-lean-task-ergonomics-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(&base).unwrap();
+        let digest = "a".repeat(64);
+        fs::write(base.join("task.json"), b"{}").unwrap();
+        fs::write(base.join("task.sha256"), format!("{digest}\n")).unwrap();
+
+        let (resolved_path, resolved_digest) =
+            resolve_bound_input(&base, None, "task.json").unwrap();
+        assert_eq!(resolved_path, base.join("task.json"));
+        assert_eq!(resolved_digest, digest);
+
+        // Explicit hash overrides task.sha256 file.
+        let other = "b".repeat(64);
+        let (_, overridden) =
+            resolve_bound_input(&base, Some(Path::new(&other)), "task.json").unwrap();
+        assert_eq!(overridden, other);
+
+        // Invalid hash fails closed.
+        assert!(resolve_bound_input(&base, Some(Path::new("not-hex")), "task.json").is_err());
+
+        // Missing task.sha256 without explicit flag fails closed.
+        let no_sha = base.join("no-sha");
+        fs::create_dir_all(&no_sha).unwrap();
+        assert!(resolve_bound_input(&no_sha, None, "task.json").is_err());
+
+        // prove rejects supplying both --candidate and --proof, or neither.
+        assert!(
+            command(&[
+                "prove".into(),
+                "--task".into(),
+                base.as_os_str().to_os_string(),
+                "--candidate".into(),
+                "a.json".into(),
+                "--proof".into(),
+                "p.lean".into(),
+                "--output".into(),
+                "out".into(),
+            ])
+            .is_err()
+        );
+        assert!(
+            command(&[
+                "prove".into(),
+                "--task".into(),
+                base.as_os_str().to_os_string(),
+                "--output".into(),
+                "out".into(),
+            ])
+            .is_err()
+        );
+
+        let _ = fs::remove_dir_all(&base);
     }
 }

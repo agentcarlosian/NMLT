@@ -186,6 +186,22 @@ import NMLT
 #print axioms NMLT.Artifact.FiniteInvariant.reachable_safe
 #print axioms NMLT.Artifact.InvariantWitness.Certificate.safe
 #print axioms NMLT.Artifact.InvariantWitness.Counterexample.reachable_violation
+#print axioms NMLT.Behavior.WorkflowJobBridge.bridge_composable
+#print axioms NMLT.Behavior.WorkflowJobBridge.initial_valid
+#print axioms NMLT.Behavior.WorkflowJobBridge.start_transfers_handle
+#print axioms NMLT.Behavior.WorkflowJobBridge.collect_returns_handle
+#print axioms NMLT.Behavior.WorkflowJobBridge.stale_delivery_rejected
+#print axioms NMLT.Behavior.WorkflowJobBridge.stale_start_rejected
+#print axioms NMLT.Behavior.WorkflowJobBridge.double_collect_rejected
+#print axioms NMLT.Behavior.WorkflowJobBridge.workflow_cannot_fabricate_handle
+#print axioms NMLT.Behavior.WorkflowJobBridge.host_cannot_dispatch_alone
+#print axioms NMLT.Behavior.WorkflowJobBridge.generation_zero_cycle
+#print axioms NMLT.Behavior.WorkflowJobBridge.next_cycle_reachable
+#print axioms NMLT.Behavior.WorkflowJobBridge.reachable_handle_owner_unique
+#print axioms NMLT.Behavior.WorkflowJobBridge.step_preserves_handle_owned
+#print axioms NMLT.Behavior.WorkflowJobBridge.path_preserves_handle_owned
+#print axioms NMLT.Behavior.WorkflowJobBridge.reachable_handle_conserved
+#print axioms NMLT.Behavior.WorkflowJobBridge.reachable_handle_never_vacant
 EOF
 (
   cd "$lean_root"
