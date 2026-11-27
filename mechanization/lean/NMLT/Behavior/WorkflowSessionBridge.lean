@@ -590,13 +590,13 @@ private theorem applyTransfer_invariants {s s' : SessionState} {c : Control} {to
         refine ⟨rfl, ?_, ?_, rfl⟩
         · apply usedWork_setAt_le
           intro x hx
-          have : x = a := Option.some.inj (hx.symm.trans hatt)
-          subst this
-          simp [attemptUsed, attemptCharged, attemptReserved]
+          have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+          rw [← hax]
+          simp [attemptUsed, attemptCharged, attemptReserved, hp]
         · apply chargedWork_setAt_ge
           intro x hx
-          have : x = a := Option.some.inj (hx.symm.trans hatt)
-          subst this
+          have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+          rw [← hax]
           simp [attemptCharged]
 
 private theorem applyDispatch_invariants {s s' : SessionState} {c : Control} {r : Receipt}
@@ -617,14 +617,14 @@ private theorem applyDispatch_invariants {s s' : SessionState} {c : Control} {r 
       refine ⟨rfl, ?_, ?_, rfl⟩
       · apply usedWork_setAt_le
         intro x hx
-        have : x = a := Option.some.inj (hx.symm.trans hatt)
-        subst this
+        have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+        rw [← hax]
         cases hd : a.dispatched <;>
           simp [attemptUsed, attemptCharged, attemptReserved, hp, hd]
       · apply chargedWork_setAt_ge
         intro x hx
-        have : x = a := Option.some.inj (hx.symm.trans hatt)
-        subst this
+        have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+        rw [← hax]
         cases hd : a.dispatched <;> simp [attemptCharged, hd]
 
 private theorem applyCancel_invariants {s s' : SessionState} {c : Control} {r : Receipt}
@@ -647,14 +647,14 @@ private theorem applyCancel_invariants {s s' : SessionState} {c : Control} {r : 
           refine ⟨rfl, ?_, ?_, rfl⟩
           · apply usedWork_setAt_le
             intro x hx
-            have : x = a := Option.some.inj (hx.symm.trans hatt)
-            subst this
+            have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+            rw [← hax]
             cases hd : a.dispatched <;>
               simp [attemptUsed, attemptCharged, attemptReserved, hp, hd]
           · apply chargedWork_setAt_ge
             intro x hx
-            have : x = a := Option.some.inj (hx.symm.trans hatt)
-            subst this
+            have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+            rw [← hax]
             simp [attemptCharged]
       | running =>
           simp [hp] at h
@@ -662,14 +662,14 @@ private theorem applyCancel_invariants {s s' : SessionState} {c : Control} {r : 
           refine ⟨rfl, ?_, ?_, rfl⟩
           · apply usedWork_setAt_le
             intro x hx
-            have : x = a := Option.some.inj (hx.symm.trans hatt)
-            subst this
+            have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+            rw [← hax]
             cases hd : a.dispatched <;>
               simp [attemptUsed, attemptCharged, attemptReserved, hp, hd]
           · apply chargedWork_setAt_ge
             intro x hx
-            have : x = a := Option.some.inj (hx.symm.trans hatt)
-            subst this
+            have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+            rw [← hax]
             simp [attemptCharged]
       | cancelRequested => simp [hp] at h
       | uncertain cr =>
@@ -681,14 +681,14 @@ private theorem applyCancel_invariants {s s' : SessionState} {c : Control} {r : 
               refine ⟨rfl, ?_, ?_, rfl⟩
               · apply usedWork_setAt_le
                 intro x hx
-                have : x = a := Option.some.inj (hx.symm.trans hatt)
-                subst this
+                have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+                rw [← hax]
                 cases hd : a.dispatched <;>
                   simp [attemptUsed, attemptCharged, attemptReserved, hp, hd]
               · apply chargedWork_setAt_ge
                 intro x hx
-                have : x = a := Option.some.inj (hx.symm.trans hatt)
-                subst this
+                have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+                rw [← hax]
                 simp [attemptCharged]
       | finished _ => simp [hp] at h
       | collected _ => simp [hp] at h
@@ -713,14 +713,14 @@ private theorem applyTimeout_invariants {s s' : SessionState} {c : Control} {r :
           refine ⟨rfl, ?_, ?_, rfl⟩
           · apply usedWork_setAt_le
             intro x hx
-            have : x = a := Option.some.inj (hx.symm.trans hatt)
-            subst this
+            have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+            rw [← hax]
             cases hd : a.dispatched <;>
               simp [attemptUsed, attemptCharged, attemptReserved, hp, hd]
           · apply chargedWork_setAt_ge
             intro x hx
-            have : x = a := Option.some.inj (hx.symm.trans hatt)
-            subst this
+            have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+            rw [← hax]
             simp [attemptCharged]
       | cancelRequested =>
           simp [hp] at h
@@ -728,14 +728,14 @@ private theorem applyTimeout_invariants {s s' : SessionState} {c : Control} {r :
           refine ⟨rfl, ?_, ?_, rfl⟩
           · apply usedWork_setAt_le
             intro x hx
-            have : x = a := Option.some.inj (hx.symm.trans hatt)
-            subst this
+            have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+            rw [← hax]
             cases hd : a.dispatched <;>
               simp [attemptUsed, attemptCharged, attemptReserved, hp, hd]
           · apply chargedWork_setAt_ge
             intro x hx
-            have : x = a := Option.some.inj (hx.symm.trans hatt)
-            subst this
+            have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+            rw [← hax]
             simp [attemptCharged]
       | reserved => simp [hp] at h
       | uncertain _ => simp [hp] at h
@@ -754,13 +754,13 @@ private theorem finish_attempt_invariants {s : SessionState} {idx : Nat} {a : At
   constructor
   · apply usedWork_setAt_le
     intro x hx
-    have : x = a := Option.some.inj (hx.symm.trans hatt)
-    subst this
+    have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+    rw [← hax]
     simp [attemptUsed, attemptCharged, attemptReserved, hdisp]
   · apply chargedWork_setAt_ge
     intro x hx
-    have : x = a := Option.some.inj (hx.symm.trans hatt)
-    subst this
+    have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+    rw [← hax]
     simp [attemptCharged, hdisp]
 
 private theorem applyResponse_invariants {s s' : SessionState} {resp : Response}
@@ -868,9 +868,8 @@ private theorem applyResponse_invariants {s s' : SessionState} {resp : Response}
                   exact ⟨rfl, Nat.le_refl _, Nat.le_refl _, rfl⟩
               | some idx =>
                   simp [hslot] at h
-                  by_cases hne : cidx ≠ idx
-                  · simp [hne] at h
-                  · simp [hne] at h
+                  by_cases heq : cidx = idx
+                  · simp [heq] at h
                     cases hatt : getAt s.attempts idx with
                     | none =>
                         simp [hatt] at h
@@ -933,6 +932,7 @@ private theorem applyResponse_invariants {s s' : SessionState} {resp : Response}
                               simp [hp] at h
                               rcases h with ⟨rfl, rfl⟩
                               exact ⟨rfl, Nat.le_refl _, Nat.le_refl _, rfl⟩
+                  · simp [heq] at h
 
 private theorem applyCollect_invariants {s s' : SessionState} {c : Control} {r : Receipt}
     (h : applyCollect s c = .ok (s', r)) :
@@ -952,14 +952,14 @@ private theorem applyCollect_invariants {s s' : SessionState} {c : Control} {r :
       refine ⟨rfl, ?_, ?_, rfl⟩
       · apply usedWork_setAt_le
         intro x hx
-        have : x = a := Option.some.inj (hx.symm.trans hatt)
-        subst this
+        have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+        rw [← hax]
         cases hd : a.dispatched <;>
           simp [attemptUsed, attemptCharged, attemptReserved, hp, hd]
       · apply chargedWork_setAt_ge
         intro x hx
-        have : x = a := Option.some.inj (hx.symm.trans hatt)
-        subst this
+        have hax : a = x := Option.some.inj (hatt.symm.trans hx)
+        rw [← hax]
         simp [attemptCharged]
 
 private theorem applyRecover_invariants {s s' : SessionState} {r : Receipt}
@@ -991,8 +991,9 @@ private theorem step_unwrap {s s' : SessionState} {cmd : Command} {r : Receipt}
     | ok pair =>
         rcases pair with ⟨mid, r'⟩
         simp [happly] at h
-        rcases h with ⟨rfl, rfl⟩
-        exact ⟨mid, happly, rfl⟩
+        rcases h with ⟨h1, h2⟩
+        rw [h2] at happly
+        exact ⟨mid, happly, h1.symm⟩
 
 -- Headline safety theorems audited under the focused axiom allowlist.
 
@@ -1019,10 +1020,12 @@ theorem step_preserves_budget {s s' : SessionState} {cmd : Command} {r : Receipt
       have ⟨hl, hu, _, _⟩ := applyTimeout_invariants happly
       exact ⟨hl, by rw [hl]; exact Nat.le_trans hu hbud⟩
   | deliver resp =>
-      have ⟨hl, hu, _, _⟩ := applyResponse_invariants happly
+      have hresp : applyResponse s resp none = .ok (mid, r) := happly
+      have ⟨hl, hu, _, _⟩ := applyResponse_invariants hresp
       exact ⟨hl, by rw [hl]; exact Nat.le_trans hu hbud⟩
   | reconcile c resp =>
-      have ⟨hl, hu, _, _⟩ := applyResponse_invariants happly
+      have hresp : applyResponse s resp (some c) = .ok (mid, r) := happly
+      have ⟨hl, hu, _, _⟩ := applyResponse_invariants hresp
       exact ⟨hl, by rw [hl]; exact Nat.le_trans hu hbud⟩
   | collect c =>
       have ⟨hl, hu, _, _⟩ := applyCollect_invariants happly
@@ -1059,8 +1062,12 @@ theorem step_preserves_charged_monotonic {s s' : SessionState} {cmd : Command} {
   | dispatch c => exact (applyDispatch_invariants happly).2.2.1
   | cancel c => exact (applyCancel_invariants happly).2.2.1
   | timeout c => exact (applyTimeout_invariants happly).2.2.1
-  | deliver resp => exact (applyResponse_invariants happly).2.2.1
-  | reconcile c resp => exact (applyResponse_invariants happly).2.2.1
+  | deliver resp =>
+      have hresp : applyResponse s resp none = .ok (mid, r) := happly
+      exact (applyResponse_invariants hresp).2.2.1
+  | reconcile c resp =>
+      have hresp : applyResponse s resp (some c) = .ok (mid, r) := happly
+      exact (applyResponse_invariants hresp).2.2.1
   | collect c => exact (applyCollect_invariants happly).2.2.1
   | recover => exact (applyRecover_invariants happly).2.2.1
 
@@ -1084,10 +1091,12 @@ theorem step_preserves_generations_monotonic {s s' : SessionState} {cmd : Comman
       have hg := (applyTimeout_invariants happly).2.2.2
       simp [hg]
   | deliver resp =>
-      have hg := (applyResponse_invariants happly).2.2.2
+      have hresp : applyResponse s resp none = .ok (mid, r) := happly
+      have hg := (applyResponse_invariants hresp).2.2.2
       simp [hg]
   | reconcile c resp =>
-      have hg := (applyResponse_invariants happly).2.2.2
+      have hresp : applyResponse s resp (some c) = .ok (mid, r) := happly
+      have hg := (applyResponse_invariants hresp).2.2.2
       simp [hg]
   | collect c =>
       have hg := (applyCollect_invariants happly).2.2.2
