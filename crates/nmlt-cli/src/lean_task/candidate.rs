@@ -235,70 +235,56 @@ fn scan_guarded_script(raw: &str) -> Result<(String, BTreeSet<String>)> {
     if !(first == "by" || first.starts_with("by ") || first.starts_with("by\t")) {
         return Err("guarded tactic script must begin with 'by'".into());
     }
-    // Enforce Lean 4 layout containment: every non-empty, non-comment line after
-    // the opening `by` line must be indented so the script cannot terminate
-    // `theorem NMLTChecked.result` and start a new top-level command at column 0.
-    let mut block_comment_depth: usize = 0;
-    for (line_idx, line) in lines.iter().enumerate() {
-        let mut chars = line.chars().peekable();
-        if line_idx > 0 && block_comment_depth == 0 {
-            let trimmed = line.trim();
-            if !trimmed.is_empty() && !trimmed.starts_with("--") && !line.starts_with([' ', '\t']) {
-                return Err(
-                    "guarded tactic script lines after 'by' must be indented to stay inside the proof block"
-                        .into(),
-                );
-            }
-        }
-        // Track nested block-comment state across lines for accurate indentation check.
-        let bytes = line.as_bytes();
-        let mut i = 0;
-        let mut in_string = false;
-        while i < bytes.len() {
-            if block_comment_depth > 0 {
-                if i + 1 < bytes.len() && bytes[i] == b'/' && bytes[i + 1] == b'-' {
-                    block_comment_depth += 1;
-                    i += 2;
-                } else if i + 1 < bytes.len() && bytes[i] == b'-' && bytes[i + 1] == b'/' {
-                    block_comment_depth -= 1;
-                    i += 2;
-                } else {
-                    i += 1;
-                }
-            } else if in_string {
-                if bytes[i] == b'\\' && i + 1 < bytes.len() {
-                    i += 2;
-                } else if bytes[i] == b'"' {
-                    in_string = false;
-                    i += 1;
-                } else {
-                    i += 1;
-                }
-            } else if i + 1 < bytes.len() && bytes[i] == b'-' && bytes[i + 1] == b'-' {
-                break;
-            } else if i + 1 < bytes.len() && bytes[i] == b'/' && bytes[i + 1] == b'-' {
-                block_comment_depth += 1;
-                i += 2;
-            } else if bytes[i] == b'"' {
-                in_string = true;
-                i += 1;
-            } else {
-                i += 1;
-            }
-        }
-        let _ = chars.peek();
-    }
-
-    // Full lexer scan across the script for banned tokens, command prefixes,
-    // raw strings, char literals, nested block comments, and balanced delimiters.
+    // Single-pass lexer across the script: enforces Lean 4 layout containment
+    // (every non-empty, non-comment line after the opening `by` line outside
+    // block comments and string/raw-string literals must be indented) while
+    // simultaneously scanning for banned tokens, command prefixes, raw strings,
+    // char literals, nested block comments, and balanced delimiters.
     let src = trimmed_start;
     let bytes = src.as_bytes();
     let mut i = 0;
+    let mut line_idx: usize = 0;
+    let mut at_line_start = true;
     let mut delimiters: Vec<char> = Vec::new();
     let mut identifiers = BTreeSet::new();
     let mut has_tactic_token = false;
 
     while i < bytes.len() {
+        if at_line_start {
+            let mut had_indent = false;
+            while i < bytes.len() && (bytes[i] == b' ' || bytes[i] == b'\t') {
+                had_indent = true;
+                i += 1;
+            }
+            if i >= bytes.len() {
+                break;
+            }
+            if bytes[i] == b'\n' {
+                i += 1;
+                line_idx += 1;
+                continue;
+            }
+            // Standalone line comments `-- ...` do not need indentation.
+            if i + 1 < bytes.len() && bytes[i] == b'-' && bytes[i + 1] == b'-' {
+                while i < bytes.len() && bytes[i] != b'\n' {
+                    i += 1;
+                }
+                continue;
+            }
+            if line_idx > 0 && !had_indent {
+                return Err(
+                    "guarded tactic script lines after 'by' must be indented to stay inside the proof block"
+                        .into(),
+                );
+            }
+            at_line_start = false;
+        }
+        if bytes[i] == b'\n' {
+            i += 1;
+            line_idx += 1;
+            at_line_start = true;
+            continue;
+        }
         // Line comment `-- ...`
         if i + 1 < bytes.len() && bytes[i] == b'-' && bytes[i + 1] == b'-' {
             while i < bytes.len() && bytes[i] != b'\n' {
@@ -311,7 +297,10 @@ fn scan_guarded_script(raw: &str) -> Result<(String, BTreeSet<String>)> {
             let mut depth = 1usize;
             i += 2;
             while i < bytes.len() && depth > 0 {
-                if i + 1 < bytes.len() && bytes[i] == b'/' && bytes[i + 1] == b'-' {
+                if bytes[i] == b'\n' {
+                    line_idx += 1;
+                    i += 1;
+                } else if i + 1 < bytes.len() && bytes[i] == b'/' && bytes[i + 1] == b'-' {
                     depth += 1;
                     i += 2;
                 } else if i + 1 < bytes.len() && bytes[i] == b'-' && bytes[i + 1] == b'/' {
@@ -334,17 +323,24 @@ fn scan_guarded_script(raw: &str) -> Result<(String, BTreeSet<String>)> {
                     || bytes[i - 1] == b'\''))
             && let Some(end) = match_raw_string(bytes, i)
         {
+            line_idx += bytes[i..end].iter().filter(|&&b| b == b'\n').count();
             i = end;
             has_tactic_token = true;
             continue;
         }
-        // Ordinary string `"..."`
+        // Ordinary string `"..."` (may span multiple lines in Lean 4)
         if bytes[i] == b'"' {
             i += 1;
             let mut closed = false;
             while i < bytes.len() {
                 if bytes[i] == b'\\' {
+                    if i + 1 < bytes.len() && bytes[i + 1] == b'\n' {
+                        line_idx += 1;
+                    }
                     i += 2;
+                } else if bytes[i] == b'\n' {
+                    line_idx += 1;
+                    i += 1;
                 } else if bytes[i] == b'"' {
                     i += 1;
                     closed = true;
@@ -788,10 +784,34 @@ by
                 "expected rejection for: {bad}"
             );
         }
-        // Char-literal containing `"` must NOT swallow a following `sorry`.
+        // Char-literal containing `"` must NOT swallow a following `sorry` or `/-`.
         assert!(Candidate::from_proof("pin", "by\n  have c := '\"'\n  sorry\n").is_err());
-        // Legitimate char literal `'"'` without banned tokens is allowed.
-        assert!(Candidate::from_proof("pin", "by\n  have c := '\"'\n  rfl\n").is_ok());
+        // Legitimate char literal `'"'` followed by block comment on the same line is allowed.
+        assert!(
+            Candidate::from_proof(
+                "pin",
+                "by\n  have c := '\"' /- multi\ncomment line at col 0 -/\n  rfl\n"
+            )
+            .is_ok()
+        );
+        // Column-0 escape after a multi-line block comment is still rejected.
+        assert!(
+            Candidate::from_proof(
+                "pin",
+                "by\n  have c := '\"' /- multi\ncomment -/\naxiom bad : False\n"
+            )
+            .is_err()
+        );
+        // Multi-line ordinary and raw string literals with column-0 continuation are allowed,
+        // while unindented code after them is still rejected.
+        assert!(Candidate::from_proof("pin", "by\n  have s := \"line1\nline2\"\n  rfl\n").is_ok());
+        assert!(
+            Candidate::from_proof("pin", "by\n  have s := r#\"line1\nline2\"#\n  rfl\n").is_ok()
+        );
+        assert!(Candidate::from_proof("pin", "by\n  have s := \"line1\nline2\"\nrfl\n").is_err());
+        assert!(
+            Candidate::from_proof("pin", "by\n  have s := r#\"line1\nline2\"#\nrfl\n").is_err()
+        );
     }
 
     #[test]

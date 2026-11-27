@@ -10,24 +10,36 @@ const PROTOCOL_VERSION: &str = "2024-11-05";
 const MAX_LINE_BYTES: usize = 256 * 1024;
 
 const HELP: &str = "\
-Stdio MCP tamper-proof Lean verification oracle (RFC 0041):
-  nmlt mcp [--work-dir DIR]
+Stdio MCP tamper-proof Lean verification oracle & workflow server (RFC 0041, RFC 0043):
+  nmlt mcp [--work-dir DIR] [--allow-external-output]
+  nmlt mcp init-config [--client claude-code|cursor|codex|generic] [--work-dir DIR]
 
 Speaks newline-delimited JSON-RPC 2.0 over stdin/stdout and exposes:
-  nmlt_tools_status  Inspect resolved Lean, lean4export, and nanoda paths and digests
-  nmlt_lean_bind     Bind a Lean project into an immutable task directory + task_sha256
-  nmlt_lean_inspect  Query bound Lean declarations by bounded prefix
-  nmlt_lean_prove    Independently verify a Lean proof (v1/v2/v3) with Lean + lean4export + nanoda
-  nmlt_lean_recheck  Independently recheck a retained acceptance record
-  nmlt_lean_revise   Explicitly revise a bound task with an audit reason
+  nmlt_tools_status        Inspect resolved Lean, lean4export, and nanoda paths and digests
+  nmlt_lean_bind           Bind a Lean project into an immutable task directory + task_sha256
+  nmlt_lean_inspect        Query bound Lean declarations by bounded prefix
+  nmlt_lean_check_draft    Fast Lean draft compilation with structured diagnostics (assurance: none)
+  nmlt_lean_prove          Independently verify a Lean proof (v1/v2/v3) with Lean + lean4export + nanoda
+  nmlt_lean_recheck        Independently recheck a retained acceptance record
+  nmlt_lean_revise         Explicitly revise a bound task with an audit reason
+  nmlt_workflow_typecheck  Typecheck a .nmlt workflow package (assurance: none)
+  nmlt_workflow_run        Run a pure .nmlt workflow entry point with JSON inputs (assurance: none)
+  nmlt_project_check       Check a local nmlt.toml project, lock, and test signatures (assurance: none)
+
+By default, caller-supplied `output` paths are confined inside `--work-dir`.
+Pass `--allow-external-output` to allow tool calls to write outside `--work-dir`.
 ";
 
 pub fn command(args: &[OsString]) -> Result<(), String> {
+    if args.first().is_some_and(|a| a == "init-config") {
+        return init_config_command(&args[1..]);
+    }
     if args.iter().any(|a| a == "--help" || a == "-h") {
         print!("{HELP}");
         return Ok(());
     }
     let mut work_dir: Option<PathBuf> = None;
+    let mut allow_external_output = false;
     let mut rest = args;
     while !rest.is_empty() {
         match rest {
@@ -36,6 +48,10 @@ pub fn command(args: &[OsString]) -> Result<(), String> {
                     return Err("duplicate --work-dir option".into());
                 }
                 work_dir = Some(PathBuf::from(value));
+                rest = tail;
+            }
+            [flag, tail @ ..] if flag == "--allow-external-output" => {
+                allow_external_output = true;
                 rest = tail;
             }
             _ => return Err(format!("invalid mcp option\n\n{HELP}")),
@@ -54,36 +70,203 @@ pub fn command(args: &[OsString]) -> Result<(), String> {
     let stdout = io::stdout();
     let reader = BufReader::new(stdin.lock());
     let writer = BufWriter::new(stdout.lock());
-    let mut server = Server::new(work_dir);
+    let mut server = Server::new(work_dir, allow_external_output);
     server.serve_io(reader, writer)
+}
+
+fn init_config_command(args: &[OsString]) -> Result<(), String> {
+    let mut client = "generic".to_owned();
+    let mut work_dir: Option<PathBuf> = None;
+    let mut rest = args;
+    while !rest.is_empty() {
+        match rest {
+            [flag, ..] if flag == "--help" || flag == "-h" => {
+                print!("{HELP}");
+                return Ok(());
+            }
+            [flag, value, tail @ ..] if flag == "--client" => {
+                let s = value
+                    .to_str()
+                    .ok_or("--client must be valid UTF-8")?
+                    .to_owned();
+                if !matches!(s.as_str(), "claude-code" | "cursor" | "codex" | "generic") {
+                    return Err(format!(
+                        "unsupported --client '{s}' (expected claude-code, cursor, codex, or generic)"
+                    ));
+                }
+                client = s;
+                rest = tail;
+            }
+            [flag, value, tail @ ..] if flag == "--work-dir" => {
+                if work_dir.is_some() {
+                    return Err("duplicate --work-dir option".into());
+                }
+                work_dir = Some(PathBuf::from(value));
+                rest = tail;
+            }
+            _ => return Err(format!("invalid mcp init-config option\n\n{HELP}")),
+        }
+    }
+    let exe =
+        std::env::current_exe().map_err(|e| format!("cannot locate current nmlt binary: {e}"))?;
+    let rendered = render_client_config(&client, &exe, work_dir.as_deref())?;
+    println!("{rendered}");
+    Ok(())
+}
+
+fn render_client_config(
+    client: &str,
+    exe: &Path,
+    work_dir: Option<&Path>,
+) -> Result<String, String> {
+    let command = exe.display().to_string();
+    let mut mcp_args = vec!["mcp".to_owned()];
+    if let Some(dir) = work_dir {
+        mcp_args.push("--work-dir".to_owned());
+        mcp_args.push(dir.display().to_string());
+    }
+    match client {
+        "codex" => {
+            let escaped_cmd = serde_json::to_string(&command).map_err(|e| e.to_string())?;
+            let escaped_args = mcp_args
+                .iter()
+                .map(|a| serde_json::to_string(a).map_err(|e| e.to_string()))
+                .collect::<Result<Vec<_>, _>>()?
+                .join(", ");
+            Ok(format!(
+                "[mcp_servers.nmlt]\ncommand = {escaped_cmd}\nargs = [{escaped_args}]"
+            ))
+        }
+        "claude-code" | "cursor" | "generic" => serde_json::to_string_pretty(&json!({
+            "mcpServers": {
+                "nmlt": {
+                    "command": command,
+                    "args": mcp_args
+                }
+            }
+        }))
+        .map_err(|e| e.to_string()),
+        other => Err(format!("unsupported MCP client '{other}'")),
+    }
 }
 
 struct Server {
     work_dir: PathBuf,
+    allow_external_output: bool,
     counter: u64,
 }
 
 impl Server {
-    fn new(work_dir: PathBuf) -> Self {
+    fn new(work_dir: PathBuf, allow_external_output: bool) -> Self {
         Self {
             work_dir,
+            allow_external_output,
             counter: 0,
         }
     }
 
-    fn next_output_dir(&mut self, prefix: &str, explicit: Option<&str>) -> Result<PathBuf, String> {
-        if let Some(path) = explicit {
-            return Ok(PathBuf::from(path));
-        }
+    fn ensure_work_dir(&self) -> Result<PathBuf, String> {
         fs::create_dir_all(&self.work_dir).map_err(|e| {
             format!(
                 "failed to create MCP work directory '{}': {e}",
                 self.work_dir.display()
             )
         })?;
+        self.work_dir.canonicalize().map_err(|e| {
+            format!(
+                "failed to canonicalize MCP work directory '{}': {e}",
+                self.work_dir.display()
+            )
+        })
+    }
+
+    fn confine_output_path(&self, raw: &str) -> Result<PathBuf, String> {
+        if raw.is_empty() || raw.bytes().any(|b| b == 0) {
+            return Err("output path must be non-empty without NUL bytes".into());
+        }
+        let requested = Path::new(raw);
+        if self.allow_external_output {
+            return Ok(requested.to_path_buf());
+        }
+        if requested
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err(format!(
+                "MCP output path '{raw}' cannot contain '..' traversal segments"
+            ));
+        }
+        let canonical_work = self.ensure_work_dir()?;
+        let candidate = if requested.is_absolute() {
+            requested.to_path_buf()
+        } else {
+            canonical_work.join(requested)
+        };
+        // Walk upward to the deepest existing ancestor, rejecting symlinks along the way,
+        // and verify the resolved ancestor stays within `canonical_work`.
+        let mut suffix = Vec::new();
+        let mut cursor = candidate.as_path();
+        loop {
+            match fs::symlink_metadata(cursor) {
+                Ok(meta) => {
+                    if meta.file_type().is_symlink() {
+                        return Err(format!(
+                            "MCP output path '{raw}' cannot traverse symlink '{}'",
+                            cursor.display()
+                        ));
+                    }
+                    let resolved_base = cursor.canonicalize().map_err(|e| {
+                        format!(
+                            "failed to resolve MCP output ancestor '{}': {e}",
+                            cursor.display()
+                        )
+                    })?;
+                    if !resolved_base.starts_with(&canonical_work) {
+                        return Err(format!(
+                            "MCP output path '{raw}' escapes --work-dir '{}' (pass --allow-external-output to allow external outputs)",
+                            canonical_work.display()
+                        ));
+                    }
+                    let mut final_path = resolved_base;
+                    for segment in suffix.into_iter().rev() {
+                        final_path.push(segment);
+                    }
+                    if !final_path.starts_with(&canonical_work) {
+                        return Err(format!(
+                            "MCP output path '{raw}' escapes --work-dir '{}'",
+                            canonical_work.display()
+                        ));
+                    }
+                    return Ok(final_path);
+                }
+                Err(_) => {
+                    let Some(name) = cursor.file_name() else {
+                        return Err(format!(
+                            "MCP output path '{raw}' escapes --work-dir '{}' (pass --allow-external-output to allow external outputs)",
+                            canonical_work.display()
+                        ));
+                    };
+                    suffix.push(name.to_os_string());
+                    let Some(parent) = cursor.parent() else {
+                        return Err(format!(
+                            "MCP output path '{raw}' escapes --work-dir '{}'",
+                            canonical_work.display()
+                        ));
+                    };
+                    cursor = parent;
+                }
+            }
+        }
+    }
+
+    fn next_output_dir(&mut self, prefix: &str, explicit: Option<&str>) -> Result<PathBuf, String> {
+        if let Some(path) = explicit {
+            return self.confine_output_path(path);
+        }
+        let work_dir = self.ensure_work_dir()?;
         loop {
             self.counter += 1;
-            let candidate = self.work_dir.join(format!("{prefix}-{:04}", self.counter));
+            let candidate = work_dir.join(format!("{prefix}-{:04}", self.counter));
             if !candidate.exists() {
                 return Ok(candidate);
             }
@@ -188,9 +371,13 @@ impl Server {
             "nmlt_tools_status" => self.call_tools_status(&args),
             "nmlt_lean_bind" => self.call_lean_bind(&args),
             "nmlt_lean_inspect" => self.call_lean_inspect(&args),
+            "nmlt_lean_check_draft" => self.call_lean_check_draft(&args),
             "nmlt_lean_prove" => self.call_lean_prove(&args),
             "nmlt_lean_recheck" => self.call_lean_recheck(&args),
             "nmlt_lean_revise" => self.call_lean_revise(&args),
+            "nmlt_workflow_typecheck" => self.call_workflow_typecheck(&args),
+            "nmlt_workflow_run" => self.call_workflow_run(&args),
+            "nmlt_project_check" => self.call_project_check(&args),
             _ => return jsonrpc_error(id, -32602, &format!("unknown tool: {name}")),
         };
         match outcome {
@@ -272,6 +459,22 @@ impl Server {
         }))
     }
 
+    fn call_lean_check_draft(&mut self, args: &Value) -> Result<Value, String> {
+        let task = req_str(args, "task")?;
+        let digest = opt_str(args, "task_sha256")?;
+        let proof = req_str(args, "proof")?;
+        let lean_bin = opt_str(args, "lean_bin")?.map(PathBuf::from);
+        let output = self.next_output_dir("draft", opt_str(args, "output")?)?;
+        let summary = crate::lean_task::check_draft_api(
+            Path::new(task),
+            digest,
+            proof,
+            lean_bin.as_deref(),
+            &output,
+        )?;
+        serde_json::to_value(summary).map_err(|e| e.to_string())
+    }
+
     fn call_lean_prove(&mut self, args: &Value) -> Result<Value, String> {
         let task = req_str(args, "task")?;
         let digest = opt_str(args, "task_sha256")?;
@@ -335,6 +538,41 @@ impl Server {
             "target_type": bound.target_type,
             "permitted_axioms": bound.permitted_axioms,
         }))
+    }
+
+    fn call_workflow_typecheck(&self, args: &Value) -> Result<Value, String> {
+        let source = req_str(args, "source")?;
+        crate::workflow::typecheck_api(Path::new(source))
+    }
+
+    fn call_workflow_run(&self, args: &Value) -> Result<Value, String> {
+        let source = req_str(args, "source")?;
+        let entry = req_str(args, "entry")?;
+        let max_steps = match args.get("max_steps") {
+            None | Some(Value::Null) => 10_000u32,
+            Some(Value::Number(n)) => n
+                .as_u64()
+                .and_then(|v| u32::try_from(v).ok())
+                .ok_or("`max_steps` must be an integer in 1..=100000")?,
+            _ => return Err("`max_steps` must be an integer in 1..=100000".into()),
+        };
+        let mut raw_inputs = std::collections::BTreeMap::new();
+        if let Some(inputs_val) = args.get("inputs")
+            && !inputs_val.is_null()
+        {
+            let obj = inputs_val
+                .as_object()
+                .ok_or("`inputs` must be a JSON object mapping parameter names to values")?;
+            for (k, v) in obj {
+                raw_inputs.insert(k.clone(), v.clone());
+            }
+        }
+        crate::workflow::run_pure_api(Path::new(source), entry, &raw_inputs, max_steps)
+    }
+
+    fn call_project_check(&self, args: &Value) -> Result<Value, String> {
+        let project = req_str(args, "project")?;
+        crate::project::check_api(Path::new(project))
     }
 }
 
@@ -454,6 +692,21 @@ fn tool_definitions() -> Value {
             }
         },
         {
+            "name": "nmlt_lean_check_draft",
+            "description": "Fast Lean draft compilation of a proof candidate (v1/v2/v3) returning structured diagnostics and axiom summary without invoking lean4export or nanoda. Always reports assurance: none; run nmlt_lean_prove for independent verification.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["task", "proof"],
+                "properties": {
+                    "task": { "type": "string", "description": "Path to bound task.json or task directory." },
+                    "task_sha256": { "type": "string", "description": "Optional 64-hex task digest (auto-read from task.sha256 if omitted)." },
+                    "proof": { "type": "string", "description": "Lean 4 proof term or `by ...` tactic script." },
+                    "lean_bin": { "type": "string", "description": "Optional direct Lean executable override." },
+                    "output": { "type": "string", "description": "Optional new output directory path." }
+                }
+            }
+        },
+        {
             "name": "nmlt_lean_prove",
             "description": "Validate a Lean 4 proof candidate (term, bounded automation, or RFC 0039 guarded tactic script) and independently verify it with Lean, lean4export, and nanoda under the task's immutable target and axiom policy.",
             "inputSchema": {
@@ -501,6 +754,42 @@ fn tool_definitions() -> Value {
                     "output": { "type": "string", "description": "Optional new output directory path." }
                 }
             }
+        },
+        {
+            "name": "nmlt_workflow_typecheck",
+            "description": "Typecheck an NMLT workflow package (.nmlt) and inspect entries, records, program_sha256, and capability flags (assurance: none).",
+            "inputSchema": {
+                "type": "object",
+                "required": ["source"],
+                "properties": {
+                    "source": { "type": "string", "description": "Path to entry .nmlt workflow source file." }
+                }
+            }
+        },
+        {
+            "name": "nmlt_workflow_run",
+            "description": "Execute a pure NMLT workflow entry point with JSON inputs and a step budget (assurance: none).",
+            "inputSchema": {
+                "type": "object",
+                "required": ["source", "entry"],
+                "properties": {
+                    "source": { "type": "string", "description": "Path to entry .nmlt workflow source file." },
+                    "entry": { "type": "string", "description": "Function entry name to execute." },
+                    "inputs": { "type": "object", "description": "Map of parameter name to JSON input value." },
+                    "max_steps": { "type": "integer", "minimum": 1, "maximum": 100000, "description": "Evaluation step budget (default 10000)." }
+                }
+            }
+        },
+        {
+            "name": "nmlt_project_check",
+            "description": "Validate an nmlt.toml project, verify its nmlt.lock digests, and typecheck all declared tests (assurance: none).",
+            "inputSchema": {
+                "type": "object",
+                "required": ["project"],
+                "properties": {
+                    "project": { "type": "string", "description": "Path to local NMLT project directory containing nmlt.toml." }
+                }
+            }
         }
     ])
 }
@@ -514,7 +803,7 @@ mod tests {
         let _ = fs::remove_dir_all(&base);
         let input = format!("{}\n", lines.join("\n"));
         let mut output = Vec::new();
-        let mut server = Server::new(base.clone());
+        let mut server = Server::new(base.clone(), false);
         server
             .serve_io(io::Cursor::new(input.as_bytes()), &mut output)
             .unwrap();
@@ -543,7 +832,7 @@ mod tests {
         assert_eq!(responses[1]["id"], 2);
         assert_eq!(responses[1]["result"], json!({}));
         let tools = responses[2]["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 6);
+        assert_eq!(tools.len(), 10);
         let names: Vec<_> = tools.iter().map(|t| t["name"].as_str().unwrap()).collect();
         assert_eq!(
             names,
@@ -551,9 +840,13 @@ mod tests {
                 "nmlt_tools_status",
                 "nmlt_lean_bind",
                 "nmlt_lean_inspect",
+                "nmlt_lean_check_draft",
                 "nmlt_lean_prove",
                 "nmlt_lean_recheck",
                 "nmlt_lean_revise",
+                "nmlt_workflow_typecheck",
+                "nmlt_workflow_run",
+                "nmlt_project_check",
             ]
         );
         assert_eq!(responses[3]["id"], 4);
@@ -584,5 +877,30 @@ mod tests {
         assert_eq!(responses[3]["id"], 3);
         assert_eq!(responses[3]["result"]["isError"], true);
         assert_eq!(responses[4]["error"]["code"], -32600);
+    }
+
+    #[test]
+    fn mcp_init_config_renders_valid_json_and_codex_toml() {
+        let exe = Path::new("/usr/local/bin/nmlt");
+        let work = Path::new("/tmp/nmlt-work");
+        for client in ["generic", "claude-code", "cursor"] {
+            let raw = render_client_config(client, exe, Some(work)).unwrap();
+            let parsed: Value = serde_json::from_str(&raw).unwrap();
+            assert_eq!(
+                parsed["mcpServers"]["nmlt"]["command"],
+                "/usr/local/bin/nmlt"
+            );
+            assert_eq!(
+                parsed["mcpServers"]["nmlt"]["args"],
+                json!(["mcp", "--work-dir", "/tmp/nmlt-work"])
+            );
+        }
+        let codex = render_client_config("codex", exe, Some(work)).unwrap();
+        let parsed: toml::Value = toml::from_str(&codex).unwrap();
+        assert_eq!(
+            parsed["mcp_servers"]["nmlt"]["command"].as_str().unwrap(),
+            "/usr/local/bin/nmlt"
+        );
+        assert!(render_client_config("unknown", exe, None).is_err());
     }
 }

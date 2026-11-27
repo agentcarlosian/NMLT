@@ -32,12 +32,21 @@ R3 completed at local pre-alpha scope on 2026-09-11; see the
 [Lean project profile](r3-lean-tasks.md) binds exact targets and pinned local or
 native Lake environments, including the exercised Mathlib environment. Native
 editor workspaces, declaration lookup and diagnostics support proof development;
-structured automation, explicit revisions and durable source/project jobs
+structured automation (`v2`), guarded multi-line Lean 4 tactic scripts (`v3`,
+RFC 0039), explicit revisions and durable source/project jobs
 share the final target, axiom-policy and NanoDA checks. Accepted artifacts
 retain readable patches and actual dependency graphs, and the frozen set
 passes fresh reconstruction from retained inputs. Resource bounds and the
 distinction between editing context and proof acceptance remain explicit.
-R4 discovery workflows are the next milestone.
+
+Since R3, Sprint 1 landed R4/R5 calibration and evaluation scaffolding (RFCs
+0037–0038), one-command checker provisioning and auto-discovery (`nmlt tools`,
+RFC 0040), the stdio JSON-RPC 2.0 MCP proof oracle (`nmlt mcp`, RFC 0041),
+pluggable SHA-256-pinned subprocess adapters (`[[adapters]]`, RFC 0042), and
+the formal Lean `NMLT.Behavior.WorkflowJobBridge` handle-transfer and
+handle-conservation mechanization under the unchanged axiom allowlist.
+Current work focuses on hardening, MCP workflow/draft-checking productization,
+portfolio proof search examples, and multi-slot runtime-bridge formalization.
 
 ## Now: make the pivot publicly coherent
 

@@ -1,0 +1,43 @@
+// Portfolio proof search over SHA-256-pinned custom adapters (RFC 0042).
+// Demonstrates concurrent launch, polling, cancellation of the losing branch,
+// affine Job<Text> handle transfer/collection, and optional Lean verification.
+
+fn launch_fast(goal: Text) -> Job<Text> {
+  job_start_adapter("proposer_fast", goal)
+}
+
+fn launch_deep(goal: Text) -> Job<Text> {
+  job_start_adapter("proposer_deep", goal)
+}
+
+// Race a fast proposer against a deeper backup proposer.
+// If the fast proposer succeeds, cancel the deep branch before collecting both
+// affine handles so zero jobs leak and cancellation is recorded in the journal.
+fn search_portfolio(goal: Text) -> Outcome<Text> {
+  let fast = launch_fast(goal);
+  let deep = launch_deep(goal);
+  let fast_ready = job_poll(fast);
+  match job_collect(fast) {
+    Ok(candidate) => {
+      let stopped = job_cancel(deep);
+      let unused = job_collect(deep);
+      Ok(candidate)
+    },
+    Err(fast_err) => {
+      let deep_ready = job_poll(deep);
+      job_collect(deep)
+    }
+  }
+}
+
+// End-to-end portfolio propose + independently check via bound Lean project.
+fn propose_and_verify(alias: Text, goal: Text) -> Outcome<Text> {
+  match search_portfolio(goal) {
+    Ok(candidate) => {
+      let proof_job = job_start_lean_project(alias, candidate);
+      let ready = job_poll(proof_job);
+      job_collect(proof_job)
+    },
+    Err(message) => Err(message)
+  }
+}

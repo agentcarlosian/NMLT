@@ -28,7 +28,8 @@ const HELP: &str = "\
 NMLT language frontend (pre-alpha)\n\n\
 Usage:\n\
   nmlt tools <status|setup> [--dir DIR] [--json]       Inspect or bootstrap pinned lean4export + nanoda\n\
-  nmlt mcp [--work-dir DIR]                            Run stdio MCP tamper-proof Lean verification oracle\n\
+  nmlt mcp [--work-dir DIR] [--allow-external-output]  Run stdio MCP Lean verification oracle & workflow server
+  nmlt mcp init-config [--client NAME] [--work-dir DIR] Print ready-to-paste MCP client configuration\n\
   nmlt lean-task <bind|revise|candidate|workspace|inspect|prove|recheck> --help  Develop and independently check bound Lean proofs\n\
   nmlt init <new-directory>                             Create a runnable project and tests\n\
   nmlt lock [project-directory]                        Pin imported sources and local tools\n\

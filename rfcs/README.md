@@ -78,3 +78,4 @@ evidence.
 | [0040](0040-lean-tool-bootstrap-and-ergonomics.md) | Lean tool bootstrap and ergonomic `lean-task` defaults | Under review |
 | [0041](0041-mcp-proof-oracle-server.md) | Stdio MCP tamper-proof Lean verification oracle (`nmlt mcp`) | Under review |
 | [0042](0042-pluggable-workflow-adapters.md) | Pluggable pinned subprocess adapters (`[[adapters]]`) | Under review |
+| [0043](0043-mcp-draft-checking-and-workflow-tools.md) | MCP draft checking, workflow tools, and client configuration | Under review |

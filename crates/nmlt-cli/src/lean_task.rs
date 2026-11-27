@@ -622,6 +622,19 @@ pub(crate) struct ProveSummary {
     pub candidate_schema: String,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct DraftSummary {
+    pub schema: String,
+    pub status: String,
+    pub assurance: String,
+    pub task_sha256: String,
+    pub candidate_schema: String,
+    pub axioms: Option<Vec<String>>,
+    pub axioms_within_policy: bool,
+    pub diagnostics: diagnostics::Report,
+    pub error_summary: Option<String>,
+}
+
 pub(crate) fn bind_api(
     project: &Path,
     lean_bin: Option<&Path>,
@@ -725,6 +738,92 @@ pub(crate) fn prove_api(
         export_sha256: record.export_sha256,
         result_path: output.join("result.json"),
         candidate_schema,
+    })
+}
+
+pub(crate) fn check_draft_api(
+    task_or_dir: &Path,
+    explicit_digest: Option<&str>,
+    proof_source: &str,
+    lean_bin: Option<&Path>,
+    output: &Path,
+) -> Result<DraftSummary> {
+    let (task_path, digest) =
+        resolve_bound_input(task_or_dir, explicit_digest.map(Path::new), "task.json")?;
+    let task: Task = read_json(&task_path, MAX_JSON)?;
+    task.validate()?;
+    if task.digest()? != digest {
+        return Err("retained task does not match the selected task hash".into());
+    }
+    let candidate = Candidate::from_file(&digest, proof_source, &task.target)?;
+    let candidate_schema = match &candidate {
+        Candidate::Term { .. } => "nmlt-lean-proof-candidate-v1",
+        Candidate::Automation { .. } => "nmlt-lean-proof-candidate-v2",
+        Candidate::Script { .. } => "nmlt-lean-proof-candidate-v3",
+    }
+    .to_owned();
+    let proof = candidate.validate(&digest)?;
+    let lean = crate::tools::resolve_lean(lean_bin)?.0;
+    let toolchain = lean::Toolchain::open(&lean).map_err(err)?;
+    if *toolchain.identity() != task.lean {
+        return Err("Lean installation differs from the bound task".into());
+    }
+    let origin = task_path.parent().unwrap_or(Path::new("."));
+    let mut run = Run::new(output, &lean)?;
+    task.prepare(origin, &mut run)?;
+    let actual = run.target(&task.manifest)?;
+    if actual != task.target {
+        return Err("Lean target identity differs from the bound task".into());
+    }
+    let proof_source = source::proof(&task.target, &proof, &candidate.imports())?;
+    let (compiled_output, report, _) = run.compile_report("NMLTProof", &proof_source)?;
+    toolchain.verify_unchanged().map_err(err)?;
+    let assurance = "none (Lean draft compilation only; run nmlt_lean_prove for independent NanoDA verification)".to_owned();
+    if compiled_output.exit_code != Some(0) || report.has_errors() {
+        let mut detail = report.error_text();
+        if detail.is_empty() {
+            detail = format!(
+                "{}{}",
+                String::from_utf8_lossy(&compiled_output.stdout),
+                String::from_utf8_lossy(&compiled_output.stderr)
+            );
+        }
+        return Ok(DraftSummary {
+            schema: "nmlt-lean-draft-v1".into(),
+            status: "draft_rejected".into(),
+            assurance,
+            task_sha256: digest,
+            candidate_schema,
+            axioms: None,
+            axioms_within_policy: false,
+            diagnostics: report,
+            error_summary: Some(detail),
+        });
+    }
+    let metadata: ProofMetadata = parse_marker(&compiled_output.stdout, "NMLT_PROOF=")?;
+    let axioms_within_policy = metadata.root == "NMLTChecked.result"
+        && metadata
+            .axioms
+            .iter()
+            .all(|a| task.manifest.permitted_axioms.contains(a));
+    let (status, error_summary) = if axioms_within_policy {
+        ("draft_compiled".into(), None)
+    } else {
+        (
+            "draft_rejected".into(),
+            Some("proof uses an axiom outside the selected transitive policy".into()),
+        )
+    };
+    Ok(DraftSummary {
+        schema: "nmlt-lean-draft-v1".into(),
+        status,
+        assurance,
+        task_sha256: digest,
+        candidate_schema,
+        axioms: Some(metadata.axioms),
+        axioms_within_policy,
+        diagnostics: report,
+        error_summary,
     })
 }
 
@@ -1216,7 +1315,11 @@ impl Run {
         }
         Ok(captured.file)
     }
-    fn compile(&mut self, module: &str, text: &str) -> Result<process::Output> {
+    fn compile_report(
+        &mut self,
+        module: &str,
+        text: &str,
+    ) -> Result<(process::Output, diagnostics::Report, PathBuf)> {
         let relative = module_path(module);
         let path = self.build.join(&relative);
         if let Some(parent) = path.parent() {
@@ -1245,6 +1348,10 @@ impl Run {
             .directory
             .join(format!("diagnostics-{}.json", self.stages.len()));
         write_json(&report_path, &report)?;
+        Ok((output, report, report_path))
+    }
+    fn compile(&mut self, module: &str, text: &str) -> Result<process::Output> {
+        let (output, report, report_path) = self.compile_report(module, text)?;
         if output.exit_code != Some(0) || report.has_errors() {
             let mut detail = report.error_text();
             if detail.is_empty() {

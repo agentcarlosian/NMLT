@@ -91,21 +91,29 @@ pub struct Request {
     pub task_sha256: String,
     pub proof: String,
 }
+pub const MAX_PROOF_BYTES: usize = 32_768;
+pub const MAX_REQUEST_BYTES: usize = 49_152;
+
 impl Request {
     pub fn input(&self) -> Result<Value, Error> {
         if self.schema != "nmlt-project-proof-request-v1"
             || !alias(&self.alias)
             || !crate::valid_digest(&self.task_sha256)
-            || !(1..=8192).contains(&self.proof.len())
-            || !self.proof.is_ascii()
+            || !(1..=MAX_PROOF_BYTES).contains(&self.proof.len())
             || self
                 .proof
-                .bytes()
-                .any(|b| b.is_ascii_control() && !b"\t\n\r".contains(&b))
+                .chars()
+                .any(|c| c.is_control() && !matches!(c, '\t' | '\n' | '\r'))
         {
             return Err(Error("invalid bounded project proof request".into()));
         }
-        Ok(Value::Text(serde_json::to_string(self)?))
+        let encoded = serde_json::to_string(self)?;
+        if encoded.len() > MAX_REQUEST_BYTES {
+            return Err(Error(format!(
+                "project proof request exceeds {MAX_REQUEST_BYTES}-byte protocol bound"
+            )));
+        }
+        Ok(Value::Text(encoded))
     }
 }
 pub fn request(identity: &Identity, dispatch: &Dispatch) -> Result<Request, Error> {
@@ -432,7 +440,9 @@ mod tests {
     }
     #[test]
     fn project_profile_does_not_expand_ordinary_request_bounds() {
-        let long = identity().request("offset", &"x".repeat(8192)).unwrap();
+        let long = identity()
+            .request("offset", &"x".repeat(MAX_PROOF_BYTES))
+            .unwrap();
         let mut request = crate::Request {
             adapter: adapter(),
             context_sha256: "a".repeat(64),
@@ -440,9 +450,27 @@ mod tests {
             reserved_work: 1,
         };
         assert!(request.validate().is_ok());
+        // UTF-8 v3 guarded tactic scripts (e.g. `⟨⟩`, `∀`, `→`) are supported.
+        let utf8_script = identity()
+            .request("offset", "by\n  intro h\n  exact ⟨rfl, h⟩\n")
+            .unwrap();
+        assert!(
+            crate::Request {
+                adapter: adapter(),
+                context_sha256: "a".repeat(64),
+                input: utf8_script.input().unwrap(),
+                reserved_work: 1,
+            }
+            .validate()
+            .is_ok()
+        );
         request.adapter = crate::lean::adapter();
         assert!(request.validate().is_err());
-        assert!(identity().request("offset", &"x".repeat(8193)).is_err());
+        assert!(
+            identity()
+                .request("offset", &"x".repeat(MAX_PROOF_BYTES + 1))
+                .is_err()
+        );
         assert!(identity().request("elsewhere", "True.intro").is_err());
         let mut changed = identity();
         changed.process_contract = process::CONTRACT.into();

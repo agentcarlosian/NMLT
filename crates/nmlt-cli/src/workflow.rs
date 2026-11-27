@@ -118,13 +118,85 @@ pub(super) fn load_diagnostic(
         diagnostic
     })
 }
-pub(super) fn typecheck(path: &Path) -> Result<(), String> {
+pub(super) fn typecheck_api(path: &Path) -> Result<serde_json::Value, String> {
     let program = load(path, None)?;
-    println!(
-        "{}",
-        serde_json::json!({ "schema": "nmlt-workflow-typecheck-v6", "profile": "workflow-v6", "assurance": "none", "program_sha256": program.identity(), "records": program.records(), "sources": program.sources(),
-        "entries": program.entries().map(|(name, parameters, result)| serde_json::json!({"name":name, "parameters": parameters, "result":result, "can_run_as_entry":program.can_run_as_entry(name), "requires_jobs":program.requires_jobs(name).expect("entry"), "requires_async_jobs":program.requires_async_jobs(name).expect("entry"), "requires_lean_jobs":program.requires_lean_jobs(name).expect("entry")})).collect::<Vec<_>>() })
-    );
+    Ok(serde_json::json!({
+        "schema": "nmlt-workflow-typecheck-v6",
+        "profile": "workflow-v6",
+        "assurance": "none",
+        "program_sha256": program.identity(),
+        "records": program.records(),
+        "sources": program.sources(),
+        "entries": program
+            .entries()
+            .map(|(name, parameters, result)| serde_json::json!({
+                "name": name,
+                "parameters": parameters,
+                "result": result,
+                "can_run_as_entry": program.can_run_as_entry(name),
+                "requires_jobs": program.requires_jobs(name).expect("entry"),
+                "requires_async_jobs": program.requires_async_jobs(name).expect("entry"),
+                "requires_lean_jobs": program.requires_lean_jobs(name).expect("entry"),
+                "requires_project_jobs": program.requires_project_jobs(name).expect("entry"),
+                "requires_custom_jobs": program.requires_custom_jobs(name).expect("entry")
+            }))
+            .collect::<Vec<_>>()
+    }))
+}
+
+pub(super) fn run_pure_api(
+    path: &Path,
+    entry: &str,
+    raw_inputs: &std::collections::BTreeMap<String, serde_json::Value>,
+    max_steps: u32,
+) -> Result<serde_json::Value, String> {
+    if !(1..=100_000).contains(&max_steps) {
+        return Err("max_steps must be in 1..=100000".into());
+    }
+    let program = load(path, None)?;
+    let (_, parameters, _) = program
+        .entries()
+        .find(|(n, _, _)| *n == entry)
+        .ok_or_else(|| format!("unknown workflow entry `{entry}`"))?;
+    if !program.can_run_as_entry(entry) {
+        return Err(format!("entry `{entry}` cannot be invoked directly"));
+    }
+    if program.requires_jobs(entry)? {
+        return Err(format!(
+            "entry `{entry}` requires local/async job host configuration; use `nmlt run` on a locked project"
+        ));
+    }
+    let expected: std::collections::BTreeSet<&str> =
+        parameters.iter().map(|p| p.name.as_str()).collect();
+    let provided: std::collections::BTreeSet<&str> =
+        raw_inputs.keys().map(String::as_str).collect();
+    if expected != provided {
+        return Err(format!(
+            "entry `{entry}` requires exact inputs {:?}, got {:?}",
+            expected, provided
+        ));
+    }
+    let mut inputs = Inputs::new();
+    for parameter in parameters {
+        let value = program
+            .input_value(&parameter.ty, &raw_inputs[&parameter.name])
+            .map_err(|reason| format!("input `{}`: {reason}", parameter.name))?;
+        inputs.insert(parameter.name.clone(), value);
+    }
+    let execution = execute(&program, entry, &inputs, max_steps)?;
+    Ok(serde_json::json!({
+        "schema": "nmlt-workflow-run-v1",
+        "assurance": "none",
+        "program_sha256": program.identity(),
+        "entry": entry,
+        "max_steps": max_steps,
+        "execution": execution
+    }))
+}
+
+pub(super) fn typecheck(path: &Path) -> Result<(), String> {
+    let report = typecheck_api(path)?;
+    println!("{report}");
     Ok(())
 }
 fn record(

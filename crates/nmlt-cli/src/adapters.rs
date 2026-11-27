@@ -16,6 +16,8 @@ pub(crate) struct AdapterSpec {
     pub args: Vec<String>,
     #[serde(default = "default_timeout_ms")]
     pub timeout_ms: u64,
+    #[serde(default)]
+    pub inputs: Vec<PathBuf>,
 }
 
 fn default_timeout_ms() -> u64 {
@@ -43,11 +45,25 @@ pub(crate) fn open_specs(
             } else {
                 base_dir.join(&spec.executable)
             };
+            let inputs = spec
+                .inputs
+                .iter()
+                .map(|input| {
+                    let path = if input.is_absolute() {
+                        input.clone()
+                    } else {
+                        base_dir.join(input)
+                    };
+                    let label = input.to_string_lossy().replace('\\', "/");
+                    custom_adapter::InputSpec { label, path }
+                })
+                .collect();
             custom_adapter::Spec {
                 alias: spec.alias.clone(),
                 executable,
                 args: spec.args.clone(),
                 timeout_ms: spec.timeout_ms,
+                inputs,
             }
         })
         .collect();

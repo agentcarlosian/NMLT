@@ -78,8 +78,11 @@ impl Request {
             let Value::Text(text) = &self.input else {
                 return Err(Error("project proof requires text".into()));
             };
-            if text.len() > 32768 {
-                return Err(Error("project proof input exceeds 32768 bytes".into()));
+            if text.len() > crate::project_proof::MAX_REQUEST_BYTES {
+                return Err(Error(format!(
+                    "project proof input exceeds {} bytes",
+                    crate::project_proof::MAX_REQUEST_BYTES
+                )));
             }
             let request: crate::project_proof::Request = serde_json::from_str(text)?;
             if request.input()? != self.input {

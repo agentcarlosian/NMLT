@@ -50,7 +50,7 @@ struct Diagnostic {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Report {
+pub(crate) struct Report {
     schema: String,
     module: String,
     source_path: String,

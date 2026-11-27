@@ -94,6 +94,8 @@ fn custom_adapter_end_to_end_project_lock_run_replay_and_tamper_rejection() {
 
     let adapter_bin = compile_test_adapter(&root);
     let bin_name = adapter_bin.file_name().unwrap().to_str().unwrap();
+    let pinned_config = root.join("adapter_policy.txt");
+    fs::write(&pinned_config, "strict-policy-v1\n").unwrap();
 
     let workflow = r#"
 fn main(first_in: Text, backup_in: Text) -> Outcome<Text> {
@@ -132,6 +134,7 @@ alias = "echo"
 executable = "{bin_name}"
 args = []
 timeout_ms = 5000
+inputs = ["adapter_policy.txt"]
 
 [[tests]]
 name = "fallback succeeds via custom adapter"
@@ -162,6 +165,7 @@ expect = {{ Ok = "ADAPTER:DIRECT" }}
     let lock_text = fs::read_to_string(root.join("nmlt.lock")).unwrap();
     assert!(lock_text.contains("nmlt-custom-adapters-v1"));
     assert!(lock_text.contains("\"alias\": \"echo\""));
+    assert!(lock_text.contains("adapter_policy.txt"));
 
     // 2. `nmlt test` runs both real subprocess adapter tests and verifies outcomes.
     let test_out = Command::new(nmlt_bin())
@@ -206,7 +210,20 @@ expect = {{ Ok = "ADAPTER:DIRECT" }}
         String::from_utf8_lossy(&replay_out.stderr)
     );
 
-    // 5. Negative control: tampering with the pinned adapter binary must be rejected!
+    // 5a. Negative control: tampering with a pinned `inputs` file must be rejected!
+    fs::write(&pinned_config, "tampered-policy\n").unwrap();
+    let tampered_input_out = Command::new(nmlt_bin())
+        .args(["run"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert!(
+        !tampered_input_out.status.success(),
+        "tampered pinned adapter input file must fail lock verification"
+    );
+    fs::write(&pinned_config, "strict-policy-v1\n").unwrap();
+
+    // 5b. Negative control: tampering with the pinned adapter binary must be rejected!
     let mut bytes = fs::read(&adapter_bin).unwrap();
     bytes.push(0);
     fs::write(&adapter_bin, bytes).unwrap();
@@ -253,6 +270,165 @@ expect = {{ Ok = "ADAPTER:DIRECT" }}
     assert!(
         !dbl_check.status.success(),
         "double-collected adapter handle must fail typecheck"
+    );
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
+fn custom_adapter_parallel_portfolio_poll_cancel_collect_and_replay() {
+    // 1. Verify the shipped portfolio proof search example typechecks cleanly under workflow profile.
+    let example = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../examples/adapters/portfolio_search.nmlt");
+    let tc_out = Command::new(nmlt_bin())
+        .args(["typecheck"])
+        .arg(&example)
+        .args(["--profile", "workflow"])
+        .output()
+        .unwrap();
+    assert!(
+        tc_out.status.success(),
+        "examples/adapters/portfolio_search.nmlt failed typecheck: {}",
+        String::from_utf8_lossy(&tc_out.stderr)
+    );
+    let tc_json: serde_json::Value = serde_json::from_slice(&tc_out.stdout).unwrap();
+    let entries = tc_json["entries"].as_array().unwrap();
+    let search_entry = entries
+        .iter()
+        .find(|e| e["name"] == "search_portfolio")
+        .expect("search_portfolio entry");
+    assert_eq!(search_entry["requires_custom_jobs"], true);
+    assert_eq!(search_entry["requires_project_jobs"], false);
+    let verify_entry = entries
+        .iter()
+        .find(|e| e["name"] == "propose_and_verify")
+        .expect("propose_and_verify entry");
+    assert_eq!(verify_entry["requires_custom_jobs"], true);
+    assert_eq!(verify_entry["requires_project_jobs"], true);
+
+    // 2. Run a real 2-slot parallel portfolio project with fast + slow adapters,
+    // exercising `job_start_adapter`, `job_poll`, `job_cancel`, `job_collect`, and `nmlt replay`.
+    let root = std::env::temp_dir().join(format!(
+        "nmlt-custom-adapter-portfolio-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&root);
+    fs::create_dir_all(&root).unwrap();
+
+    let adapter_bin = compile_test_adapter(&root);
+    let bin_name = adapter_bin.file_name().unwrap().to_str().unwrap();
+
+    let workflow = r#"
+fn race(fast_in: Text, deep_in: Text) -> Outcome<Text> {
+  let fast = job_start_adapter("proposer_fast", fast_in);
+  let deep = job_start_adapter("proposer_deep", deep_in);
+  let fast_ready = job_poll(fast);
+  match job_collect(fast) {
+    Ok(winner) => {
+      let cancelled = job_cancel(deep);
+      let unused = job_collect(deep);
+      Ok(winner)
+    },
+    Err(fast_err) => {
+      let deep_ready = job_poll(deep);
+      job_collect(deep)
+    }
+  }
+}
+"#;
+    fs::write(root.join("main.nmlt"), workflow).unwrap();
+
+    let manifest = format!(
+        r#"schema = "nmlt-project-v1"
+source = "main.nmlt"
+entry = "race"
+max_steps = 1000
+
+[inputs]
+fast_in = "fast_hit"
+deep_in = "deep_backup"
+
+[jobs]
+slots = 2
+max_attempts = 4
+timeout_ms = 10000
+
+[[adapters]]
+alias = "proposer_fast"
+executable = "{bin_name}"
+args = []
+timeout_ms = 5000
+
+[[adapters]]
+alias = "proposer_deep"
+executable = "{bin_name}"
+args = []
+timeout_ms = 5000
+
+[[tests]]
+name = "fast strategy wins and cancels deep branch"
+entry = "race"
+inputs = {{ fast_in = "fast_hit", deep_in = "deep_backup" }}
+expect = {{ Ok = "ADAPTER:FAST_HIT" }}
+
+[[tests]]
+name = "deep strategy rescues when fast fails"
+entry = "race"
+inputs = {{ fast_in = "fail:fast_miss", deep_in = "deep_hit" }}
+expect = {{ Ok = "ADAPTER:DEEP_HIT" }}
+"#
+    );
+    fs::write(root.join("nmlt.toml"), manifest).unwrap();
+
+    let lock_out = Command::new(nmlt_bin())
+        .args(["lock"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert!(
+        lock_out.status.success(),
+        "portfolio lock failed: {}",
+        String::from_utf8_lossy(&lock_out.stderr)
+    );
+
+    let test_out = Command::new(nmlt_bin())
+        .args(["test"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert!(
+        test_out.status.success(),
+        "portfolio test failed: {}\n{}",
+        String::from_utf8_lossy(&test_out.stdout),
+        String::from_utf8_lossy(&test_out.stderr)
+    );
+
+    let run_out = Command::new(nmlt_bin())
+        .args(["run"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert!(
+        run_out.status.success(),
+        "portfolio run failed: {}",
+        String::from_utf8_lossy(&run_out.stderr)
+    );
+    let run_json: serde_json::Value = serde_json::from_slice(&run_out.stdout).unwrap();
+    assert_eq!(
+        run_json["value"],
+        serde_json::json!({"kind": "ok", "value": {"kind": "text", "value": "ADAPTER:FAST_HIT"}})
+    );
+    let record_path = run_json["record"].as_str().unwrap();
+
+    let replay_out = Command::new(nmlt_bin())
+        .args(["replay", record_path, "--project"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert!(
+        replay_out.status.success(),
+        "portfolio replay failed: {}",
+        String::from_utf8_lossy(&replay_out.stderr)
     );
 
     let _ = fs::remove_dir_all(&root);
