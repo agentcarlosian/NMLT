@@ -659,6 +659,24 @@ fn retained_executable(root: &Path, digest: &str) -> Result<PathBuf, Error> {
     Ok(path)
 }
 
+pub(super) fn check_api(root: &Path) -> Result<Json, String> {
+    let project = Project::open(root).map_err(|e| e.to_string())?;
+    let lock = project.verify_lock().map_err(|e| e.to_string())?;
+    project.validate_tests().map_err(|e| e.to_string())?;
+    Ok(json!({
+        "schema": "nmlt-project-check-v1",
+        "assurance": "none",
+        "checked": true,
+        "root": project.root.display().to_string(),
+        "entry": project.manifest.entry,
+        "sources": project.program.sources(),
+        "tests": project.manifest.tests.len(),
+        "adapters": lock.adapters.as_ref().map(|a| a.entries.len()).unwrap_or(0),
+        "has_lean_lock": lock.lean.is_some(),
+        "has_project_proof_lock": lock.projects.is_some(),
+    }))
+}
+
 pub(super) fn command(command: &str, arguments: &[OsString]) -> Result<(), Error> {
     let root = arguments
         .first()
