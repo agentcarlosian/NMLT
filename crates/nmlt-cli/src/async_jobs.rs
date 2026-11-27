@@ -829,8 +829,10 @@ pub(super) fn recover(directory: &Path) -> Result<(), String> {
         &directory.join("source-context.json"),
         2 * 1024 * 1024,
     )?)?;
-    let manifest: session::Manifest =
-        exact(&bounded_read(&directory.join("manifest.json"), 65_536)?)?;
+    let manifest: session::Manifest = exact(&bounded_read(
+        &directory.join("manifest.json"),
+        session::MAX_MANIFEST_BYTES as u64,
+    )?)?;
     context.bind(&manifest)?;
     let snapshot = session::recover_snapshot(directory).map_err(|e| e.to_string())?;
     super::lean_task::jobs::validate_snapshot(&directory.join("projects"), &snapshot, false)?;
@@ -905,8 +907,10 @@ pub(super) fn repair(args: &[std::ffi::OsString]) -> Result<(), String> {
         &directory.join("source-context.json"),
         2 * 1024 * 1024,
     )?)?;
-    let manifest: session::Manifest =
-        exact(&bounded_read(&directory.join("manifest.json"), 65_536)?)?;
+    let manifest: session::Manifest = exact(&bounded_read(
+        &directory.join("manifest.json"),
+        session::MAX_MANIFEST_BYTES as u64,
+    )?)?;
     context.bind(&manifest)?;
     let (mut guard, runtime_tail) =
         rt::Journal::open_repair(&directory.join("journal.jsonl"), &manifest.spec, reason)
@@ -935,8 +939,10 @@ pub(super) fn resume_source(
         &directory.join("source-context.json"),
         2 * 1024 * 1024,
     )?)?;
-    let manifest: session::Manifest =
-        exact(&bounded_read(&directory.join("manifest.json"), 65_536)?)?;
+    let manifest: session::Manifest = exact(&bounded_read(
+        &directory.join("manifest.json"),
+        session::MAX_MANIFEST_BYTES as u64,
+    )?)?;
     context.bind(&manifest)?;
     let logical = &context
         .sources

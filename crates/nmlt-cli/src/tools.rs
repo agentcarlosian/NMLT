@@ -56,12 +56,14 @@ pub struct StatusReport {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Provenance {
     schema: String,
     lean_toolchain: String,
     lean4export_commit: String,
     nanoda_commit: String,
     rust_toolchain: String,
+    rustc_version: String,
     exporter_path: String,
     exporter_sha256: String,
     nanoda_path: String,
@@ -391,20 +393,29 @@ pub fn setup(cache_dir: &Path) -> Result<StatusReport, String> {
         .map_err(|e| format!("failed to canonicalize '{}': {e}", cache_dir.display()))?;
     let (lean_bin, _) = resolve_lean(None)?;
     let lake_bin = resolve_lake_sibling(&lean_bin);
+    let expected_lean = format!("leanprover/lean4:v{}", lean::version());
 
     let exporter_dir = root.join("lean4export");
     let exporter_bin = cached_exporter_path(&root);
-    if !exporter_bin.is_file() {
+    let nanoda_dir = root.join("nanoda");
+    let nanoda_bin = cached_nanoda_path(&root);
+
+    let cached_provenance = read_provenance(&root);
+    let reuse_exporter =
+        can_reuse_exporter(cached_provenance.as_ref(), &exporter_bin, &expected_lean);
+    let reuse_nanoda = can_reuse_nanoda(cached_provenance.as_ref(), &nanoda_bin);
+
+    if !reuse_exporter {
         if exporter_dir.exists() {
             fs::remove_dir_all(&exporter_dir).map_err(|e| {
                 format!(
-                    "failed to clean incomplete '{}': {e}",
+                    "failed to clean unverified or incomplete '{}': {e}",
                     exporter_dir.display()
                 )
             })?;
         }
         fetch_pinned_git(LEAN4EXPORT_REPO, LEAN4EXPORT_COMMIT, &exporter_dir)?;
-        let toolchain_text = format!("leanprover/lean4:v{}\n", lean::version());
+        let toolchain_text = format!("{expected_lean}\n");
         fs::write(exporter_dir.join("lean-toolchain"), toolchain_text)
             .map_err(|e| format!("failed to write lean4export lean-toolchain: {e}"))?;
         run_checked(
@@ -421,12 +432,20 @@ pub fn setup(cache_dir: &Path) -> Result<StatusReport, String> {
         }
     }
 
-    let nanoda_dir = root.join("nanoda");
-    let nanoda_bin = cached_nanoda_path(&root);
-    if !nanoda_bin.is_file() {
+    let rustc_version = if reuse_nanoda {
+        cached_provenance
+            .as_ref()
+            .expect("verified provenance")
+            .rustc_version
+            .clone()
+    } else {
+        let (use_rustup_override, actual_rustc) = resolve_pinned_rust()?;
         if nanoda_dir.exists() {
             fs::remove_dir_all(&nanoda_dir).map_err(|e| {
-                format!("failed to clean incomplete '{}': {e}", nanoda_dir.display())
+                format!(
+                    "failed to clean unverified or incomplete '{}': {e}",
+                    nanoda_dir.display()
+                )
             })?;
         }
         fetch_pinned_git(NANODA_REPO, NANODA_COMMIT, &nanoda_dir)?;
@@ -441,25 +460,25 @@ pub fn setup(cache_dir: &Path) -> Result<StatusReport, String> {
             file.write_all(b"\n[workspace]\n")
                 .map_err(|e| format!("failed to patch nanoda Cargo.toml: {e}"))?;
         }
-        let mut cargo_pinned = Command::new("cargo");
-        cargo_pinned
-            .arg(format!("+{NANODA_RUST_TOOLCHAIN}"))
+        let mut cargo_cmd = Command::new("cargo");
+        if use_rustup_override {
+            cargo_cmd.arg(format!("+{NANODA_RUST_TOOLCHAIN}"));
+        }
+        cargo_cmd
             .args(["build", "--locked", "--release", "--manifest-path"])
             .arg(&cargo_toml);
-        if run_checked(&mut cargo_pinned, "cargo +1.94.0 build (nanoda)").is_err() {
-            let mut cargo_default = Command::new("cargo");
-            cargo_default
-                .args(["build", "--locked", "--release", "--manifest-path"])
-                .arg(&cargo_toml);
-            run_checked(&mut cargo_default, "cargo build (nanoda)")?;
-        }
+        run_checked(
+            &mut cargo_cmd,
+            &format!("cargo +{NANODA_RUST_TOOLCHAIN} build (nanoda)"),
+        )?;
         if !nanoda_bin.is_file() {
             return Err(format!(
                 "cargo build succeeded but '{}' was not produced",
                 nanoda_bin.display()
             ));
         }
-    }
+        actual_rustc
+    };
 
     let exporter_sha256 = identity::file(&exporter_bin, 256 * 1024 * 1024)
         .map_err(|e| e.to_string())?
@@ -469,10 +488,11 @@ pub fn setup(cache_dir: &Path) -> Result<StatusReport, String> {
         .1;
     let provenance = Provenance {
         schema: "nmlt-tools-provenance-v1".into(),
-        lean_toolchain: format!("leanprover/lean4:v{}", lean::version()),
+        lean_toolchain: expected_lean,
         lean4export_commit: LEAN4EXPORT_COMMIT.into(),
         nanoda_commit: NANODA_COMMIT.into(),
         rust_toolchain: NANODA_RUST_TOOLCHAIN.into(),
+        rustc_version,
         exporter_path: exporter_bin.display().to_string(),
         exporter_sha256,
         nanoda_path: nanoda_bin.display().to_string(),
@@ -482,6 +502,89 @@ pub fn setup(cache_dir: &Path) -> Result<StatusReport, String> {
     fs::write(root.join("provenance.json"), bytes)
         .map_err(|e| format!("failed to write provenance.json: {e}"))?;
     status(Some(&root))
+}
+
+fn read_provenance(root: &Path) -> Option<Provenance> {
+    let bytes = fs::read(root.join("provenance.json")).ok()?;
+    let prov: Provenance = serde_json::from_slice(&bytes).ok()?;
+    (prov.schema == "nmlt-tools-provenance-v1").then_some(prov)
+}
+
+fn can_reuse_exporter(
+    provenance: Option<&Provenance>,
+    exporter_bin: &Path,
+    expected_lean: &str,
+) -> bool {
+    let Some(prov) = provenance else {
+        return false;
+    };
+    if prov.lean_toolchain != expected_lean || prov.lean4export_commit != LEAN4EXPORT_COMMIT {
+        return false;
+    }
+    if !exporter_bin.is_file() {
+        return false;
+    }
+    identity::file(exporter_bin, 256 * 1024 * 1024)
+        .map(|(_, digest)| digest == prov.exporter_sha256)
+        .unwrap_or(false)
+}
+
+fn can_reuse_nanoda(provenance: Option<&Provenance>, nanoda_bin: &Path) -> bool {
+    let Some(prov) = provenance else {
+        return false;
+    };
+    if prov.nanoda_commit != NANODA_COMMIT
+        || prov.rust_toolchain != NANODA_RUST_TOOLCHAIN
+        || verify_rustc_matches_pin(&prov.rustc_version).is_err()
+    {
+        return false;
+    }
+    if !nanoda_bin.is_file() {
+        return false;
+    }
+    identity::file(nanoda_bin, 256 * 1024 * 1024)
+        .map(|(_, digest)| digest == prov.nanoda_sha256)
+        .unwrap_or(false)
+}
+
+fn verify_rustc_matches_pin(version_line: &str) -> Result<String, String> {
+    let trimmed = version_line.trim();
+    let expected_prefix = format!("rustc {NANODA_RUST_TOOLCHAIN} ");
+    if trimmed.starts_with(&expected_prefix) || trimmed == format!("rustc {NANODA_RUST_TOOLCHAIN}")
+    {
+        Ok(trimmed.to_owned())
+    } else {
+        Err(format!(
+            "pinned Rust toolchain {NANODA_RUST_TOOLCHAIN} is required to build nanoda (found '{trimmed}'); run `rustup toolchain install {NANODA_RUST_TOOLCHAIN}`"
+        ))
+    }
+}
+
+fn resolve_pinned_rust() -> Result<(bool, String), String> {
+    if let Ok(output) = Command::new("rustc")
+        .arg(format!("+{NANODA_RUST_TOOLCHAIN}"))
+        .arg("--version")
+        .output()
+        && output.status.success()
+    {
+        let line = String::from_utf8_lossy(&output.stdout);
+        return Ok((true, verify_rustc_matches_pin(&line)?));
+    }
+    let output = Command::new("rustc")
+        .arg("--version")
+        .output()
+        .map_err(|e| {
+            format!(
+                "failed to invoke rustc while verifying pinned Rust {NANODA_RUST_TOOLCHAIN}: {e}"
+            )
+        })?;
+    if !output.status.success() {
+        return Err(format!(
+            "pinned Rust toolchain {NANODA_RUST_TOOLCHAIN} is unavailable; run `rustup toolchain install {NANODA_RUST_TOOLCHAIN}`"
+        ));
+    }
+    let line = String::from_utf8_lossy(&output.stdout);
+    Ok((false, verify_rustc_matches_pin(&line)?))
 }
 
 fn resolve_lake_sibling(lean_bin: &Path) -> PathBuf {
@@ -606,6 +709,65 @@ mod tests {
         assert!(err.contains("nmlt tools setup"));
         let err = resolve_nanoda(None, Some(&missing)).unwrap_err();
         assert!(err.contains("nmlt tools setup"));
+
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn cached_reuse_requires_verified_provenance_and_pinned_rust() {
+        let base =
+            std::env::temp_dir().join(format!("nmlt-tools-prov-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let exporter = cached_exporter_path(&base);
+        let nanoda = cached_nanoda_path(&base);
+        fs::create_dir_all(exporter.parent().unwrap()).unwrap();
+        fs::create_dir_all(nanoda.parent().unwrap()).unwrap();
+        fs::write(&exporter, b"pinned-exporter-bytes").unwrap();
+        fs::write(&nanoda, b"pinned-nanoda-bytes").unwrap();
+
+        let expected_lean = format!("leanprover/lean4:v{}", lean::version());
+        // Pre-existing binaries with no provenance.json must never be blindly reused.
+        assert!(!can_reuse_exporter(
+            read_provenance(&base).as_ref(),
+            &exporter,
+            &expected_lean
+        ));
+        assert!(!can_reuse_nanoda(read_provenance(&base).as_ref(), &nanoda));
+
+        let exp_sha = identity::file(&exporter, 1024 * 1024).unwrap().1;
+        let nan_sha = identity::file(&nanoda, 1024 * 1024).unwrap().1;
+        let valid = Provenance {
+            schema: "nmlt-tools-provenance-v1".into(),
+            lean_toolchain: expected_lean.clone(),
+            lean4export_commit: LEAN4EXPORT_COMMIT.into(),
+            nanoda_commit: NANODA_COMMIT.into(),
+            rust_toolchain: NANODA_RUST_TOOLCHAIN.into(),
+            rustc_version: format!("rustc {NANODA_RUST_TOOLCHAIN} (pinned-test)"),
+            exporter_path: exporter.display().to_string(),
+            exporter_sha256: exp_sha,
+            nanoda_path: nanoda.display().to_string(),
+            nanoda_sha256: nan_sha,
+        };
+        fs::write(
+            base.join("provenance.json"),
+            serde_json::to_vec_pretty(&valid).unwrap(),
+        )
+        .unwrap();
+        assert!(can_reuse_exporter(
+            read_provenance(&base).as_ref(),
+            &exporter,
+            &expected_lean
+        ));
+        assert!(can_reuse_nanoda(read_provenance(&base).as_ref(), &nanoda));
+
+        // Tampering a cached binary invalidates reuse immediately.
+        fs::write(&nanoda, b"tampered-nanoda-bytes").unwrap();
+        assert!(!can_reuse_nanoda(read_provenance(&base).as_ref(), &nanoda));
+
+        // Unpinned Rust versions fail closed.
+        assert!(verify_rustc_matches_pin("rustc 1.94.0 (4a4ef493e 2026-03-02)").is_ok());
+        assert!(verify_rustc_matches_pin("rustc 1.95.0 (other)").is_err());
+        assert!(verify_rustc_matches_pin("rustc 1.94.0-nightly (other)").is_err());
 
         let _ = fs::remove_dir_all(&base);
     }

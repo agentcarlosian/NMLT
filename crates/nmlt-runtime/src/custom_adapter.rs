@@ -14,6 +14,7 @@ pub const MAX_ARGS: usize = 16;
 pub const MAX_ARG_BYTES: usize = 512;
 pub const MAX_TIMEOUT_MS: u64 = 30_000;
 pub const MAX_INPUT_BYTES: usize = 3072;
+pub const MAX_IDENTITY_BYTES: usize = 32_768;
 
 pub fn adapter() -> Adapter {
     Adapter {
@@ -83,6 +84,11 @@ impl Identity {
                     entry.alias
                 )));
             }
+        }
+        if serde_json::to_vec(self)?.len() > MAX_IDENTITY_BYTES {
+            return Err(Error(format!(
+                "custom adapter registry identity exceeds {MAX_IDENTITY_BYTES}-byte serialized bound"
+            )));
         }
         Ok(())
     }
@@ -412,5 +418,23 @@ mod tests {
         assert!(registry.command("demo").is_err());
         assert!(registry.verify_unchanged().is_err());
         let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn oversized_adapter_registry_is_rejected_before_session_manifest() {
+        let entries = (0..16)
+            .map(|idx| EntryIdentity {
+                alias: format!("adapter_{idx}"),
+                executable_sha256: "a".repeat(64),
+                args: vec!["x".repeat(MAX_ARG_BYTES); MAX_ARGS],
+                timeout_ms: 5000,
+            })
+            .collect();
+        let oversized = Identity {
+            schema: IDENTITY_SCHEMA.into(),
+            process_contract: process::CONTRACT.into(),
+            entries,
+        };
+        assert!(oversized.validate().is_err());
     }
 }

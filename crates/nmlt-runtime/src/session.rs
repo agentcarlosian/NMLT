@@ -11,6 +11,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
+pub const MAX_MANIFEST_BYTES: usize = 65_536;
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Bounds {
@@ -109,6 +111,11 @@ impl Manifest {
             return Err(Error("async session context or limits mismatch".into()));
         }
         Lifecycle::new(self.spec.clone())?;
+        if serde_json::to_vec(self)?.len() > MAX_MANIFEST_BYTES {
+            return Err(Error(format!(
+                "session manifest exceeds {MAX_MANIFEST_BYTES}-byte bound"
+            )));
+        }
         Ok(())
     }
 }
@@ -265,13 +272,19 @@ impl Session {
             spec,
         };
         manifest.validate()?;
+        let manifest_bytes = serde_json::to_vec(&manifest)?;
+        if manifest_bytes.len() > MAX_MANIFEST_BYTES {
+            return Err(Error(format!(
+                "session manifest exceeds {MAX_MANIFEST_BYTES}-byte bound"
+            )));
+        }
         std::fs::create_dir(directory)?;
         let projects = projects
             .as_ref()
             .map(|tool| tool.retain(&directory.join("projects")))
             .transpose()?;
         let mut file = std::fs::File::create_new(directory.join("manifest.json"))?;
-        file.write_all(&serde_json::to_vec(&manifest)?)?;
+        file.write_all(&manifest_bytes)?;
         file.sync_all()?;
         if let Some(tool) = &lean {
             store::write(
@@ -353,7 +366,8 @@ impl Session {
         projects: Option<project_proof::Tool>,
         adapters: Option<custom_adapter::Registry>,
     ) -> Result<Self, Error> {
-        let manifest: Manifest = store::read(&directory.join("manifest.json"), 65_536)?;
+        let manifest: Manifest =
+            store::read(&directory.join("manifest.json"), MAX_MANIFEST_BYTES as u64)?;
         manifest.validate()?;
         if manifest.configuration.parent_context_sha256 != parent_context
             || manifest.configuration.square_executable_sha256
@@ -1304,9 +1318,9 @@ pub fn recover_snapshot(directory: &Path) -> Result<Snapshot, Error> {
     use std::io::Read;
     let mut bytes = vec![];
     std::fs::File::open(directory.join("manifest.json"))?
-        .take(65_537)
+        .take((MAX_MANIFEST_BYTES + 1) as u64)
         .read_to_end(&mut bytes)?;
-    if bytes.len() > 65_536 {
+    if bytes.len() > MAX_MANIFEST_BYTES {
         return Err(Error("session manifest exceeds bound".into()));
     }
     let manifest: Manifest = serde_json::from_slice(&bytes)?;
@@ -1615,5 +1629,82 @@ mod tests {
         assert_eq!(session.state().accounting().dispatched_attempts, 1);
         drop(session);
         assert!(recover(&directory).is_err());
+    }
+
+    #[test]
+    fn manifest_bound_matches_resume_limit_and_fails_before_creating_session_dir() {
+        // Construct a valid custom-adapter identity right under MAX_IDENTITY_BYTES and verify
+        // a valid session manifest always stays within MAX_MANIFEST_BYTES and resumes cleanly.
+        let exe = std::env::current_exe().unwrap();
+        let registry = custom_adapter::Registry::open(vec![custom_adapter::Spec {
+            alias: "ok_adapter".into(),
+            executable: exe.clone(),
+            args: vec!["--flag".into()],
+            timeout_ms: 1000,
+        }])
+        .unwrap();
+        let dir = std::env::temp_dir().join(format!(
+            "nmlt-session-manifest-bound-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        let parent = sha256(b"parent");
+        let session = Session::create_with_tools(
+            &dir,
+            "run-bound".into(),
+            parent.clone(),
+            Bounds {
+                slots: 1,
+                max_attempts: 2,
+                timeout_ms: 5000,
+            },
+            None,
+            None,
+            None,
+            Some(registry.clone()),
+        )
+        .unwrap();
+        drop(session);
+        let resumed = Session::resume_with_tools(&dir, &parent, None, None, None, Some(registry));
+        assert!(resumed.is_ok());
+        let _ = std::fs::remove_dir_all(&dir);
+
+        // An oversized custom-adapter spec (> 32 KiB) must fail Registry::open before any session
+        // directory is created.
+        let oversized_specs = (0..16)
+            .map(|idx| custom_adapter::Spec {
+                alias: format!("big_{idx}"),
+                executable: exe.clone(),
+                args: vec!["a".repeat(custom_adapter::MAX_ARG_BYTES); custom_adapter::MAX_ARGS],
+                timeout_ms: 1000,
+            })
+            .collect();
+        assert!(custom_adapter::Registry::open(oversized_specs).is_err());
+
+        // Direct Manifest::validate() enforces the exact same MAX_MANIFEST_BYTES ceiling as resume.
+        let valid_cfg = Configuration {
+            schema: "nmlt-async-session-v3".into(),
+            process_contract: process::CONTRACT.into(),
+            parent_context_sha256: parent,
+            bounds: Bounds {
+                slots: 1,
+                max_attempts: 2,
+                timeout_ms: 5000,
+            },
+            square_executable_sha256: None,
+            lean: None,
+            projects: None,
+            adapters: None,
+        };
+        let manifest = Manifest {
+            spec: RunSpec {
+                run_id: "r".into(),
+                context_sha256: sha256(&serde_json::to_vec(&valid_cfg).unwrap()),
+                limits: valid_cfg.limits(),
+            },
+            configuration: valid_cfg,
+        };
+        assert!(manifest.validate().is_ok());
+        assert!(serde_json::to_vec(&manifest).unwrap().len() <= MAX_MANIFEST_BYTES);
     }
 }

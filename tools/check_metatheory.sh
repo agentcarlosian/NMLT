@@ -198,7 +198,10 @@ import NMLT
 #print axioms NMLT.Behavior.WorkflowJobBridge.generation_zero_cycle
 #print axioms NMLT.Behavior.WorkflowJobBridge.next_cycle_reachable
 #print axioms NMLT.Behavior.WorkflowJobBridge.reachable_handle_owner_unique
-#print axioms NMLT.Behavior.WorkflowJobBridge.reachable_no_fabrication
+#print axioms NMLT.Behavior.WorkflowJobBridge.step_preserves_handle_owned
+#print axioms NMLT.Behavior.WorkflowJobBridge.path_preserves_handle_owned
+#print axioms NMLT.Behavior.WorkflowJobBridge.reachable_handle_conserved
+#print axioms NMLT.Behavior.WorkflowJobBridge.reachable_handle_never_vacant
 EOF
 (
   cd "$lean_root"

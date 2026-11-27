@@ -89,13 +89,15 @@ authority theorem or accepted source product.
 
 The workflow-job bridge `NMLT.Behavior.WorkflowJobBridge` connects the bounded
 affine job-slot lifecycle (`dispatch`/`start` -> `settle` -> `deliver`/`collect`,
-generation-pinned non-interference, double-collect rejection, and no-fabrication)
-into `NMLT.Behavior.ResourceDynamics`. Its theorems (`bridge_composable`,
+generation-pinned non-interference, double-collect rejection, no unilateral
+start/dispatch, and conservation of the seeded slot handle over all reachable
+states) into `NMLT.Behavior.ResourceDynamics`. Its theorems (`bridge_composable`,
 `initial_valid`, `start_transfers_handle`, `collect_returns_handle`,
 `stale_delivery_rejected`, `stale_start_rejected`, `double_collect_rejected`,
 `workflow_cannot_fabricate_handle`, `host_cannot_dispatch_alone`,
 `generation_zero_cycle`, `next_cycle_reachable`, `reachable_handle_owner_unique`,
-and `reachable_no_fabrication`) are included in the focused behavioral audit under
-the unchanged `propext`/`Quot.sound` allowlist (reporting no axioms or at most
-`propext`). This models the abstract slot-lifecycle protocol; it does not prove
-Rust implementation or OS process correspondence.
+`step_preserves_handle_owned`, `path_preserves_handle_owned`,
+`reachable_handle_conserved`, and `reachable_handle_never_vacant`) are included
+in the focused behavioral audit under the unchanged `propext`/`Quot.sound`
+allowlist (reporting no axioms). This models the abstract slot-lifecycle
+protocol; it does not prove Rust implementation or OS process correspondence.

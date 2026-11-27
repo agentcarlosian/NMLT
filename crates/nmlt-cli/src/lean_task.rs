@@ -459,13 +459,21 @@ pub(super) fn command(args: &[OsString]) -> Result<()> {
         if task.digest()? != digest {
             return Err("retained task does not match the selected task hash".into());
         }
-        return inspection::run(
+        let summary = inspection::run(
             task,
             query,
             &lean,
             &options["--output"],
             artifact_path.parent().unwrap_or(Path::new(".")),
+        )?;
+        println!(
+            "context_only: {} declarations ({} matched)\ntask: {}\ninspection: {}",
+            summary.declarations,
+            summary.matched,
+            summary.task_sha256,
+            summary.inspection_path.display()
         );
+        return Ok(());
     }
     let previous: Option<ResultRecord> = if action == "recheck" {
         let value: serde_json::Value = read_json(&artifact_path, MAX_JSON)?;
@@ -661,14 +669,14 @@ pub(crate) fn inspect_api(
     }
     let query = inspection::Query::new(prefix, limit)?;
     let lean = crate::tools::resolve_lean(lean_bin)?.0;
-    inspection::run(
+    let summary = inspection::run(
         task,
         query,
         &lean,
         output,
         task_path.parent().unwrap_or(Path::new(".")),
     )?;
-    read_json(&output.join("inspection.json"), MAX_JSON)
+    read_json(&summary.inspection_path, MAX_JSON)
 }
 
 pub(crate) fn prove_api(

@@ -456,11 +456,85 @@ theorem reachable_handle_owner_unique
     left = right :=
   ResourceDynamics.reachable_unique_owner reachable leftOwns rightOwns
 
-theorem reachable_no_fabrication
+/-- Any enabled step of the bridge preserves ownership of the single seeded job-slot handle
+within `{Owner.host, Owner.workflow}` (it is transferred on synchronized start/collect and
+preserved on local host settlement, never vacated). -/
+theorem step_preserves_handle_owned
+    {before after : bridge.State} {action : ProductAction HostAction WorkflowAction}
+    (step : bridge.step before action after)
+    (owned : before.authority.Owns .host .slotHandle ∨
+      before.authority.Owns .workflow .slotHandle) :
+    after.authority.Owns .host .slotHandle ∨
+      after.authority.Owns .workflow .slotHandle := by
+  cases action with
+  | left hostAction =>
+      cases hostAction with
+      | dispatch _ => exact False.elim (step.2.noTransfer .slotHandle trivial)
+      | deliver _ => exact False.elim (step.2.noReceive .slotHandle trivial)
+      | settle _ =>
+          have preserved : after.authority.owner .slotHandle = before.authority.owner .slotHandle :=
+            step.2.preserved .slotHandle (fun impossible => impossible)
+          cases owned with
+          | inl hostOwns => exact Or.inl (preserved.trans hostOwns)
+          | inr workflowOwns => exact Or.inr (preserved.trans workflowOwns)
+  | right workflowAction =>
+      cases workflowAction with
+      | start _ => exact False.elim (step.2.noReceive .slotHandle trivial)
+      | collect _ => exact False.elim (step.2.noTransfer .slotHandle trivial)
+  | sync hostAction workflowAction =>
+      rcases before with ⟨⟨_, _⟩, _⟩
+      rcases after with ⟨⟨_, _⟩, _⟩
+      cases step.1 with
+      | synchronize connected _ _ =>
+          cases hostAction with
+          | dispatch _ =>
+              cases workflowAction with
+              | start _ =>
+                  have effectStep :
+                      SyncStep .host .workflow hostDispatchProfile workflowStartProfile _ _ :=
+                    step.2
+                  exact Or.inr (effectStep.left_transfer_changes_owner trivial)
+              | collect _ => exact False.elim connected
+          | settle _ => exact False.elim connected
+          | deliver _ =>
+              cases workflowAction with
+              | start _ => exact False.elim connected
+              | collect _ =>
+                  have effectStep :
+                      SyncStep .host .workflow hostDeliverProfile workflowCollectProfile _ _ :=
+                    step.2
+                  exact Or.inl (effectStep.right_transfer_changes_owner trivial)
+
+theorem path_preserves_handle_owned
+    {before after : bridge.State} {actions : List (ProductAction HostAction WorkflowAction)}
+    (path : ResourceDynamics.Path bridge before actions after)
+    (owned : before.authority.Owns .host .slotHandle ∨
+      before.authority.Owns .workflow .slotHandle) :
+    after.authority.Owns .host .slotHandle ∨
+      after.authority.Owns .workflow .slotHandle := by
+  induction path with
+  | nil => exact owned
+  | cons step _ ih => exact ih (step_preserves_handle_owned step owned)
+
+/-- Conservation of the seeded job-slot handle across every reachable state:
+starting from any valid initial state (where `host` holds `.slotHandle`),
+the handle remains owned by either `host` or `workflow` at every reachable state. -/
+theorem reachable_handle_conserved
     {state : bridge.State}
-    (initiallyVacant : ∀ initial, bridge.init initial → initial.authority.Vacant .slotHandle)
     (reachable : ResourceDynamics.Reachable bridge state) :
-    state.authority.Vacant .slotHandle :=
-  ResourceDynamics.reachable_no_fabrication initiallyVacant reachable
+    state.authority.Owns .host .slotHandle ∨
+      state.authority.Owns .workflow .slotHandle := by
+  rcases reachable with ⟨initial, _, initialized, path⟩
+  exact path_preserves_handle_owned path (Or.inl initialized.2.1)
+
+/-- Corollary: the seeded job-slot handle is never vacated along any reachable execution. -/
+theorem reachable_handle_never_vacant
+    {state : bridge.State}
+    (reachable : ResourceDynamics.Reachable bridge state) :
+    ¬ state.authority.Vacant .slotHandle := by
+  intro vacant
+  cases reachable_handle_conserved reachable with
+  | inl hostOwns => exact Option.noConfusion (vacant.symm.trans hostOwns)
+  | inr workflowOwns => exact Option.noConfusion (vacant.symm.trans workflowOwns)
 
 end NMLT.Behavior.WorkflowJobBridge

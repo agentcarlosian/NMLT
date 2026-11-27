@@ -170,7 +170,7 @@ paths = [
   "mechanization/lean/NMLT/Behavior/WorkflowJobBridge.lean",
   "mechanization/lean/NMLT/Examples/NestedResourceDynamics.lean",
 ]
-role = "Combine control state and shared authority, preserve leaf effects through binary composition, model the bounded affine workflow/host job-slot bridge (generation pinning, handle transfer, double-collect rejection, and no-fabrication), and prove scoped simulation/path results; v1 artifact checking remains on its existing path."
+role = "Combine control state and shared authority, preserve leaf effects through binary composition, model the bounded affine workflow/host job-slot bridge (generation pinning, handle transfer, double-collect rejection, unilateral-start rejection, and conservation of the seeded handle across reachable states), and prove scoped simulation/path results; v1 artifact checking remains on its existing path."
 
 [[components]]
 id = "reference.r0_baselines"
